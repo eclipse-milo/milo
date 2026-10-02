@@ -44,6 +44,21 @@ public interface SessionListener {
   default void onSessionIdentityChanged(Session session) {}
 
   /**
+   * Called after ActivateSession has moved an active Session onto a replacement SecureChannel (Part
+   * 4 §5.7.3.1), so that {@link Session#getEndpoint()} and {@link
+   * Session#getSecurityConfiguration()} describe the new channel.
+   *
+   * <p>The identity is unchanged, since re-activation on another channel requires the same user,
+   * but the MessageSecurityMode and the endpoint a {@link RoleMapper} consults may differ. The new
+   * endpoint may describe the same security as before, so a listener that caches anything derived
+   * from the endpoint should refresh it either way. A re-activation that fails leaves the Session
+   * on its previous channel and is not reported.
+   *
+   * @param session the Session whose SecureChannel and endpoint changed.
+   */
+  default void onSessionEndpointChanged(Session session) {}
+
+  /**
    * Called after a Session has been closed and removed from the {@link SessionManager}.
    *
    * @param session the closed Session.

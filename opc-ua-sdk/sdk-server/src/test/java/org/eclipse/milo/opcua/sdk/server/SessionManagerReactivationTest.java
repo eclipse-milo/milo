@@ -62,8 +62,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** When {@link SessionManager} reports a Session's identity change to its listeners. */
-class SessionManagerIdentityChangeTest {
+/**
+ * When {@link SessionManager} reports a re-activated Session's identity or endpoint change to its
+ * listeners.
+ */
+class SessionManagerReactivationTest {
 
   private static final String ENDPOINT_URL = "opc.tcp://localhost:4840/test";
 
@@ -87,6 +90,7 @@ class SessionManagerIdentityChangeTest {
 
   private final RecordingListener listener = new RecordingListener();
   private final ServiceRequestContext channel = new TestServiceRequestContext(1L);
+  private final ServiceRequestContext replacementChannel = new TestServiceRequestContext(2L);
 
   private OpcUaServer server;
   private SessionManager sessions;
@@ -166,6 +170,44 @@ class SessionManagerIdentityChangeTest {
     assertEquals(List.of("created", "closed"), listener.events, failure.getMessage());
   }
 
+  /**
+   * Part 4 §5.7.3.1: ActivateSession may move a Session onto a replacement SecureChannel. A
+   * listener that derives anything from the Session's endpoint or security mode must hear about
+   * that exactly once, after the move is committed, and in order with the other notifications.
+   */
+  @Test
+  void reactivationOnAReplacementChannelReportsTheEndpointChangeOnce() throws Exception {
+    NodeId token = createSession();
+
+    sessions.activateSession(channel, activateAnonymous(token));
+    sessions.activateSession(replacementChannel, activateAnonymous(token));
+    closeSession();
+
+    listener.closed.get(10, SECONDS);
+    assertEquals(List.of("created", "endpointChanged", "closed"), listener.events);
+    assertEquals(
+        List.of(2L), listener.channelIdsSeen, "the listener sees the Session on its new channel");
+  }
+
+  // A re-activation on another channel that fails, here because it presents another identity,
+  // leaves the Session on its previous channel, so there is no change to report.
+  @Test
+  void failedReactivationOnAReplacementChannelReportsNoEndpointChange() throws Exception {
+    NodeId token = createSession();
+
+    sessions.activateSession(channel, activateAnonymous(token));
+    UaException failure =
+        assertThrows(
+            UaException.class,
+            () ->
+                sessions.activateSession(
+                    replacementChannel, activateUsername(token, USERNAME_POLICY.getPolicyId())));
+    closeSession();
+
+    listener.closed.get(10, SECONDS);
+    assertEquals(List.of("created", "closed"), listener.events, failure.getMessage());
+  }
+
   private NodeId createSession() throws UaException {
     return sessions.createSession(channel, createSessionRequest()).getAuthenticationToken();
   }
@@ -224,11 +266,12 @@ class SessionManagerIdentityChangeTest {
     return new RequestHeader(authToken, DateTime.now(), uint(1), uint(0), null, uint(10_000), null);
   }
 
-  /** Records the order of notifications and the identity each identity change delivered. */
+  /** Records the order of notifications and what each change delivered. */
   private static final class RecordingListener implements SessionListener {
 
     final List<String> events = new CopyOnWriteArrayList<>();
     final List<Identity> identitiesSeen = new CopyOnWriteArrayList<>();
+    final List<Long> channelIdsSeen = new CopyOnWriteArrayList<>();
     final CompletableFuture<Session> closed = new CompletableFuture<>();
 
     @Override
@@ -240,6 +283,12 @@ class SessionManagerIdentityChangeTest {
     public void onSessionIdentityChanged(Session session) {
       events.add("identityChanged");
       identitiesSeen.add(session.getIdentity());
+    }
+
+    @Override
+    public void onSessionEndpointChanged(Session session) {
+      events.add("endpointChanged");
+      channelIdsSeen.add(session.getSecureChannelId());
     }
 
     @Override

@@ -714,6 +714,17 @@ public class SessionManager {
     }
   }
 
+  private void fireSessionEndpointChanged(Session session) {
+    if (!isShutdownRequested()) {
+      sessionListenerTaskQueue.execute(
+          () -> {
+            if (!isShutdownRequested()) {
+              notifySessionEndpointChanged(session);
+            }
+          });
+    }
+  }
+
   /** Queue a session-closed notification unless shutdown has already started. */
   private void fireSessionClosed(Session session) {
     if (!isShutdownRequested()) {
@@ -750,6 +761,20 @@ public class SessionManager {
             }
 
             listener.onSessionIdentityChanged(session);
+          }
+        });
+  }
+
+  /** Notify listeners until shutdown starts or the listener snapshot is exhausted. */
+  private void notifySessionEndpointChanged(Session session) {
+    withSessionListenerCallback(
+        () -> {
+          for (SessionListener listener : sessionListeners) {
+            if (isShutdownRequested()) {
+              break;
+            }
+
+            listener.onSessionEndpointChanged(session);
           }
         });
   }
@@ -1014,6 +1039,8 @@ public class SessionManager {
               session.setLocaleIds(request.getLocaleIds());
 
               activated = true;
+
+              fireSessionEndpointChanged(session);
 
               return new ActivateSessionResponse(
                   createResponseHeader(request, StatusCode.GOOD, additionalHeader),
