@@ -46,7 +46,7 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
   private volatile DataValue lastValue = null;
   private volatile DataChangeFilter filter = null;
   private volatile @Nullable Range euRange = null;
-  private volatile @Nullable StatusCode readAccessDenied = null;
+  private volatile AccessResult readAccessResult = AccessResult.ALLOWED;
 
   public MonitoredDataItem(
       OpcUaServer server,
@@ -125,28 +125,31 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
    */
   @Override
   public synchronized void setReadAccessResult(AccessResult accessResult) {
-    if (accessResult instanceof AccessResult.Denied denied) {
-      StatusCode previous = readAccessDenied;
-      readAccessDenied = denied.statusCode();
+    AccessResult previous = readAccessResult;
+    readAccessResult = accessResult;
 
+    if (accessResult instanceof AccessResult.Denied denied) {
       // Queue the denial when it is new, or when nothing has been reported since the item was
       // created or monitoring resumed. Part 4 §7.23: a Disabled item queues no Notifications.
       boolean unreported = lastValue == null;
-      if ((!denied.statusCode().equals(previous) || unreported)
+      if ((!denied.equals(previous) || unreported)
           && getMonitoringMode() != MonitoringMode.Disabled) {
         setValue(new DataValue(denied.statusCode()));
       }
-    } else if (readAccessDenied != null) {
-      readAccessDenied = null;
+    } else if (previous instanceof AccessResult.Denied) {
       lastValue = null;
     }
   }
 
   @Override
+  public AccessResult getReadAccessResult() {
+    return readAccessResult;
+  }
+
+  @Override
   public synchronized void setValue(DataValue value) {
-    StatusCode denied = readAccessDenied;
-    if (denied != null) {
-      value = new DataValue(denied);
+    if (readAccessResult instanceof AccessResult.Denied denied) {
+      value = new DataValue(denied.statusCode());
     }
 
     boolean valuePassesFilter =

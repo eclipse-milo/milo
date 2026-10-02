@@ -163,6 +163,32 @@ class MonitoredDataItemTest {
     assertEquals(7, queued.get(0).value().value());
   }
 
+  // A sampler that leaves denied items out of its own reads, or a component that refreshes
+  // results on its own schedule, needs to see the result the item is enforcing.
+  @Test
+  void getReadAccessResultReflectsTheLastResultApplied() {
+    assertEquals(
+        AccessResult.ALLOWED, item.getReadAccessResult(), "allowed until a result is applied");
+
+    item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
+    assertEquals(AccessResult.DENIED_USER_ACCESS, item.getReadAccessResult());
+
+    item.setReadAccessResult(AccessResult.ALLOWED);
+    assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
+  }
+
+  // The result is tracked while Disabled even though nothing is queued, so a refresher reading
+  // it back sees the denial it applied rather than the last reported state.
+  @Test
+  void getReadAccessResultTracksResultsAppliedWhileDisabled() {
+    item.setMonitoringMode(MonitoringMode.Disabled);
+
+    item.setReadAccessResult(AccessResult.DENIED_NOT_READABLE);
+
+    assertEquals(AccessResult.DENIED_NOT_READABLE, item.getReadAccessResult());
+    assertTrue(drain().isEmpty(), "nothing may be queued while Disabled");
+  }
+
   @Test
   void changedDenialReasonIsReported() {
     item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);

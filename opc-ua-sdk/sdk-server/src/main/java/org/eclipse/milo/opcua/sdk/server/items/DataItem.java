@@ -55,4 +55,16 @@ public interface DataItem extends MonitoredItem {
    * @param accessResult the result of the read access check.
    */
   void setReadAccessResult(AccessResult accessResult);
+
+  /**
+   * Get the result of the most recent read access check applied to this item.
+   *
+   * <p>A sampler can use this to leave out items the Session may not read from its own reads, and a
+   * component that refreshes results can use it to see the state an item is enforcing without
+   * tracking that state itself.
+   *
+   * @return the {@link AccessResult} most recently passed to {@link
+   *     #setReadAccessResult(AccessResult)}, or {@link AccessResult#ALLOWED} if none has been.
+   */
+  AccessResult getReadAccessResult();
 }

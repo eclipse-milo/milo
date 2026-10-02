@@ -147,6 +147,10 @@ class SubscriptionManagerReadAccessTest {
     List<DataValue> queued = drain(item);
     assertEquals(1, queued.size());
     assertEquals(StatusCodes.Bad_UserAccessDenied, queued.get(0).statusCode().getValue());
+    assertEquals(
+        AccessResult.DENIED_USER_ACCESS,
+        item.getReadAccessResult(),
+        "the create-time result is the result the item reports");
   }
 
   // Only read-access denials are deferred; an AccessRestriction the channel does not satisfy
