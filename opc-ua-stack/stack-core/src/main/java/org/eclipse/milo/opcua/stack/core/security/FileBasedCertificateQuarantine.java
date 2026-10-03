@@ -25,13 +25,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A {@link CertificateQuarantine} that stores rejected certificates as files in a directory.
+ *
+ * <p>Every regular file in the directory is read as a certificate; files that fail to decode are
+ * logged and skipped. Hidden files, whose names start with {@code .}, and subdirectories are not
+ * read, so files such as the {@code .DS_Store} that macOS Finder creates are not listed, do not
+ * count toward the rejected-certificate limit, and are never pruned.
+ */
 public class FileBasedCertificateQuarantine implements CertificateQuarantine {
 
   private static final Logger LOGGER =
@@ -59,13 +66,9 @@ public class FileBasedCertificateQuarantine implements CertificateQuarantine {
 
   @Override
   public List<X509Certificate> getRejectedCertificates() {
-    File[] files = rejectedDir.listFiles();
-    if (files == null) files = new File[0];
-
-    return List.copyOf(
-        Arrays.stream(files)
-            .flatMap(cert -> decodeCertificateFile(cert).stream())
-            .collect(Collectors.toList()));
+    return listCertificateFiles(rejectedDir).stream()
+        .flatMap(file -> decodeCertificateFile(file).stream())
+        .toList();
   }
 
   @Override
@@ -91,7 +94,9 @@ public class FileBasedCertificateQuarantine implements CertificateQuarantine {
         return Optional.of(CertificateUtil.decodeCertificate(inputStream));
       }
     } catch (Throwable t) {
-      LOGGER.warn("Error decoding certificate file: {}", f.toString(), t);
+      // This repeats every time the directory is listed, so the stack trace is logged at DEBUG.
+      LOGGER.warn("Error decoding certificate file {}: {}", f, t.toString());
+      LOGGER.debug("Error decoding certificate file {}", f, t);
 
       return Optional.empty();
     }
@@ -115,10 +120,7 @@ public class FileBasedCertificateQuarantine implements CertificateQuarantine {
   }
 
   private synchronized boolean deleteCertificateFile(File dir, ByteString thumbprint) {
-    File[] files = dir.listFiles();
-    if (files == null) files = new File[0];
-
-    for (File file : files) {
+    for (File file : listCertificateFiles(dir)) {
       boolean matchesThumbprint =
           decodeCertificateFile(file)
               .map(
@@ -150,18 +152,18 @@ public class FileBasedCertificateQuarantine implements CertificateQuarantine {
    * room to add a new one).
    */
   static synchronized void pruneOldCertificates(File rejectedDir, int maxRejectedCertificates) {
-    File[] files = rejectedDir.listFiles();
+    List<File> files = listCertificateFiles(rejectedDir);
 
-    if (files != null && files.length >= maxRejectedCertificates) {
-      int excessCount = files.length - maxRejectedCertificates;
+    if (files.size() >= maxRejectedCertificates) {
+      int excessCount = files.size() - maxRejectedCertificates;
 
       // If last modified of any file changes during the sort it can lead
       // to "IllegalArgumentException: Comparison method violates its general contract!"
       // thrown from Java's TimSort implementation.
       Map<File, Long> stableLastModified = new HashMap<>();
-      Arrays.stream(files).forEach(f -> stableLastModified.put(f, f.lastModified()));
+      files.forEach(f -> stableLastModified.put(f, f.lastModified()));
 
-      Arrays.stream(files)
+      files.stream()
           .sorted(
               (f1, f2) ->
                   Long.compareUnsigned(stableLastModified.get(f1), stableLastModified.get(f2)))
@@ -173,6 +175,13 @@ public class FileBasedCertificateQuarantine implements CertificateQuarantine {
                 }
               });
     }
+  }
+
+  /** List the regular files in {@code dir} whose names do not start with {@code .}. */
+  private static List<File> listCertificateFiles(File dir) {
+    File[] files = dir.listFiles(f -> f.isFile() && !f.getName().startsWith("."));
+
+    return files != null ? Arrays.asList(files) : List.of();
   }
 
   /**

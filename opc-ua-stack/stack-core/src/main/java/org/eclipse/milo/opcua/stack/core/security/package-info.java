@@ -139,7 +139,10 @@
  * certificate and CRL files independently of their names. Removal finds those files by their
  * decoded contents; removing CRLs from a bundle preserves its unrelated entries. Persistence
  * remains best-effort on I/O failure, and a subsequent directory reload reconciles the published
- * snapshot with the files that remain.
+ * snapshot with the files that remain. It and {@link
+ * org.eclipse.milo.opcua.stack.core.security.FileBasedCertificateQuarantine} skip hidden files,
+ * whose names start with {@code .}, and subdirectories, so operating system metadata such as macOS
+ * {@code .DS_Store} files is never read as a certificate or CRL.
  *
  * <p>{@link org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager} provides a
  * thread-safe mutable group registry. Applications own the groups and their backing stores,
