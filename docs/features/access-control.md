@@ -144,6 +144,12 @@ it lets Read report `Bad_NodeIdUnknown` and lets a refresher leave a MonitoredIt
 in place. A MonitoredItem whose last result is a denial then reports `Bad_NodeIdUnknown` in place
 of the denial, still with no value.
 
+Decide from the Session as it is when the check runs: its identity, role ids, and endpoint. Do
+not decide from state the controller keeps up to date in a `SessionListener`. ActivateSession
+re-checks a Session's MonitoredItems before it responds, and Session listeners run later, on a
+queue, so a controller that clears a per-Session cache from `onSessionIdentityChanged` would
+answer that re-check for the previous user.
+
 ## Service checks
 
 Every check begins with `AccessRestrictions` against the channel's security mode and reports
