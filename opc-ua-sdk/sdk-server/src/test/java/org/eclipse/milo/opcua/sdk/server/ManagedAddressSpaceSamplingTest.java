@@ -122,6 +122,25 @@ class ManagedAddressSpaceSamplingTest {
     assertEquals(100.0, modified.revisedSamplingInterval(), "a zero request becomes the floor");
   }
 
+  // A subclass that samples its own items keeps the intervals it had, and tells the client so, by
+  // overriding the one revision hook rather than both service callbacks.
+  @Test
+  void aSubclassWithItsOwnSamplerRevisesBothCallbacksThroughOneHook() {
+    ManagedAddressSpace addressSpace =
+        new ManagedAddressSpaceWithLifecycle(server) {
+          @Override
+          protected double reviseSamplingInterval(double requestedSamplingInterval) {
+            return requestedSamplingInterval;
+          }
+        };
+    var readValueId = new ReadValueId(new NodeId(2, "v"), AttributeId.Value.uid(), null, null);
+
+    assertEquals(
+        10.0, addressSpace.onCreateDataItem(readValueId, 10.0, uint(5)).revisedSamplingInterval());
+    assertEquals(
+        75.0, addressSpace.onModifyDataItem(readValueId, 75.0, uint(5)).revisedSamplingInterval());
+  }
+
   /**
    * A custom SamplingGroup can use a resource, such as a device connection, that a lifecycle the
    * subclass adds opens and closes. Sampling starts after that lifecycle and stops before it, so no
