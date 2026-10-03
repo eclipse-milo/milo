@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.servicesets.impl;
 
+import static java.util.Objects.requireNonNull;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -103,7 +104,8 @@ class DefaultMethodServiceSetTest {
     verify(addressSpaceManager).call(any(CallContext.class), eq(List.of(allowedRequest)));
     verifyNoMoreInteractions(addressSpaceManager);
     assertEquals(
-        new StatusCode(StatusCodes.Bad_UserAccessDenied), response.getResults()[0].getStatusCode());
+        new StatusCode(StatusCodes.Bad_UserAccessDenied),
+        requireNonNull(response.getResults())[0].getStatusCode());
     assertEquals(StatusCode.GOOD, response.getResults()[1].getStatusCode());
   }
 }

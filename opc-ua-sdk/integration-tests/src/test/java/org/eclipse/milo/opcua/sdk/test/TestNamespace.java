@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.test;
 
+import static java.util.Objects.requireNonNull;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
@@ -301,7 +302,7 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
                           protected void validateInputArgumentValues(Variant[] inputArgumentValues)
                               throws InvalidArgumentException {
 
-                            int i = (int) inputArgumentValues[0].value();
+                            int i = (int) requireNonNull(inputArgumentValues[0].value());
 
                             if (i < 0) {
                               StatusCode[] inputArgumentResults = {
@@ -771,8 +772,7 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
     }
 
     @Override
-    protected Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues)
-        throws UaException {
+    protected Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues) {
       return new Variant[] {inputValues[0]};
     }
 

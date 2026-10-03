@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.subscriptions;
 
+import static java.util.Objects.requireNonNull;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -164,15 +165,16 @@ class SubscriptionManagerEventItemTest {
     CreateMonitoredItemsResponse response =
         manager.createMonitoredItems(context, createRequest(createItem(badOperandEventFilter())));
 
-    MonitoredItemCreateResult result = response.getResults()[0];
+    MonitoredItemCreateResult result = requireNonNull(response.getResults())[0];
     assertEquals(StatusCode.GOOD, result.getStatusCode());
 
     EventFilterResult filterResult =
         (EventFilterResult) result.getFilterResult().decode(DefaultEncodingContext.INSTANCE);
     ContentFilterElementResult elementResult =
-        filterResult.getWhereClauseResult().getElementResults()[0];
+        requireNonNull(filterResult.getWhereClauseResult().getElementResults())[0];
     assertEquals(
-        StatusCodes.Bad_FilterOperandInvalid, elementResult.getOperandStatusCodes()[0].value());
+        StatusCodes.Bad_FilterOperandInvalid,
+        requireNonNull(elementResult.getOperandStatusCodes())[0].value());
 
     MonitoredEventItem item =
         assertInstanceOf(
@@ -192,7 +194,7 @@ class SubscriptionManagerEventItemTest {
   void monitoringModeTogglesRegistrationOfItemWithRejectedFilterOperand() throws Exception {
     CreateMonitoredItemsResponse response =
         manager.createMonitoredItems(context, createRequest(createItem(badOperandEventFilter())));
-    UInteger itemId = response.getResults()[0].getMonitoredItemId();
+    UInteger itemId = requireNonNull(response.getResults())[0].getMonitoredItemId();
     MonitoredEventItem item =
         assertInstanceOf(MonitoredEventItem.class, ownedMonitoredItems.get(itemId));
 

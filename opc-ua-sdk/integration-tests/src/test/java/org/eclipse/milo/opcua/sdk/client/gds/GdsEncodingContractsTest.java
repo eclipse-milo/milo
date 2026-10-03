@@ -9,6 +9,7 @@
  */
 package org.eclipse.milo.opcua.sdk.client.gds;
 
+import static java.util.Objects.requireNonNull;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,7 +57,7 @@ class GdsEncodingContractsTest extends AbstractGdsClientTest {
         gdsClient.startNewKeyPairRequest(
             application, null, null, "CN=Test", new String[0], format, password);
     var issued = gdsClient.finishRequest(application, request);
-    byte[] bytes = issued.privateKey().bytesOrEmpty();
+    byte[] bytes = requireNonNull(issued.privateKey()).bytesOrEmpty();
     PrivateKey key;
     if (format.equals("PFX")) {
       KeyStore pfx = KeyStore.getInstance("PKCS12");

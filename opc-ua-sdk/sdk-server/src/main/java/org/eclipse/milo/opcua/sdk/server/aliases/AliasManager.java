@@ -1013,7 +1013,7 @@ public final class AliasManager extends AbstractLifecycle {
    * in the {@code AliasFor} hierarchy. Everything else is reported per entry, and a failed entry
    * does not affect any other entry. {@code LastChange} is bumped once per affected category after
    * all entries are processed. Each entry locates its alias by scanning the category's directly
-   * organized members (see {@link AliasLimits#maxOperationsPerCall}), so a call costs O(entries
+   * organized members (see {@link AliasLimits#maxOperationsPerCall()}), so a call costs O(entries
    * &times; category size) under the manager lock.
    *
    * <p>Unlike the programmatic {@link #addAlias} — where a non-local {@link ExpandedNodeId} with a
@@ -1210,8 +1210,8 @@ public final class AliasManager extends AbstractLifecycle {
    * absent {@code TargetServers} array. Per-entry failures affect only their own entry, and {@code
    * LastChange} is bumped once per affected category after all entries are processed. Each entry
    * locates its aliases by scanning the category's directly organized members (see {@link
-   * AliasLimits#maxOperationsPerCall}), so a call costs O(entries &times; category size) under the
-   * manager lock.
+   * AliasLimits#maxOperationsPerCall()}), so a call costs O(entries &times; category size) under
+   * the manager lock.
    *
    * <p>Called by the network-facing Method handler after authorization; the {@link
    * AliasAuthorizationPolicy} is not consulted here.
@@ -1921,21 +1921,17 @@ public final class AliasManager extends AbstractLifecycle {
    * organizing categories' new versions are prepared (persisted) <em>before</em> deletion, so a
    * failed save aborts the deletion and a deletion that throws partway through still gets its
    * {@code LastChange} bumps published.
-   *
-   * @return {@code true} if the alias was targetless and deleted.
    */
-  private boolean deleteIfTargetless(UaNode aliasNode) throws UaException {
+  private void deleteIfTargetless(UaNode aliasNode) throws UaException {
     NodeId aliasNodeId = aliasNode.getNodeId();
 
     if (!collectRemainingTargets(aliasNodeId).isEmpty()) {
-      return false;
+      return;
     }
 
     versionManager.prepare(getOrganizingCategories(aliasNodeId));
 
     deleteAliasNode(aliasNode);
-
-    return true;
   }
 
   private void deleteAliasNode(UaNode aliasNode) {
