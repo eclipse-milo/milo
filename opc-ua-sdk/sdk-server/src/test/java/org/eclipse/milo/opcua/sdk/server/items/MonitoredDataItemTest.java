@@ -189,28 +189,53 @@ class MonitoredDataItemTest {
     assertTrue(drain().isEmpty(), "nothing may be queued while Disabled");
   }
 
-  // A Node the AddressSpace no longer knows is no decision about access. The item keeps the result
-  // it had, so a denial stays enforced and an allowed item keeps reporting what its sampler
-  // delivers, typically the AddressSpace's own Bad_NodeIdUnknown.
+  // A Node the AddressSpace no longer knows is no decision about access. An allowed item keeps the
+  // result it had and reports what its sampler delivers, typically the AddressSpace's own
+  // Bad_NodeIdUnknown.
   @Test
-  void unknownNodeResultLeavesTheLastResultInPlace() {
+  void unknownNodeLeavesAnAllowedItemReportingWhatItsSamplerDelivers() {
+    item.setReadAccessResult(AccessResult.NODE_UNKNOWN);
+    item.setValue(new DataValue(new StatusCode(StatusCodes.Bad_NodeIdUnknown)));
+
+    assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
+    assertEquals(List.of(StatusCodes.Bad_NodeIdUnknown), statusCodes(drain()));
+  }
+
+  /**
+   * Part 4 §5.13.1.6: a MonitoredItem whose Node is deleted reports Bad_NodeIdUnknown. A denied
+   * item is not sampled, so it reports that itself, once, in place of the denial, and still
+   * withholds values, since no decision has allowed them.
+   */
+  @Test
+  void deniedItemWhoseNodeIsUnknownReportsNodeIdUnknownOnceAndWithholdsValues() {
     item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
     drain();
 
     item.setReadAccessResult(AccessResult.NODE_UNKNOWN);
     item.setValue(new DataValue(new Variant(1)));
-
-    assertEquals(AccessResult.DENIED_USER_ACCESS, item.getReadAccessResult());
-    assertTrue(drain().isEmpty(), "the denial stays enforced and is not queued again");
-
-    item.setReadAccessResult(AccessResult.ALLOWED);
     item.setReadAccessResult(AccessResult.NODE_UNKNOWN);
-    item.setValue(new DataValue(new StatusCode(StatusCodes.Bad_NodeIdUnknown)));
 
-    assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
-    List<DataValue> queued = drain();
-    assertEquals(1, queued.size(), "an allowed item reports what its sampler delivers");
-    assertEquals(StatusCodes.Bad_NodeIdUnknown, queued.get(0).statusCode().getValue());
+    assertEquals(
+        AccessResult.DENIED_USER_ACCESS,
+        item.getReadAccessResult(),
+        "no decision leaves the decision in place");
+    assertEquals(
+        List.of(StatusCodes.Bad_NodeIdUnknown),
+        statusCodes(drain()),
+        "reported once, and the value is withheld");
+  }
+
+  // The client was last told the Node was unknown, so when it comes back the next decision is
+  // reported even if it is the same denial as before.
+  @Test
+  void theDenialIsReportedAgainWhenTheNodeComesBack() {
+    item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
+    item.setReadAccessResult(AccessResult.NODE_UNKNOWN);
+    drain();
+
+    item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
+
+    assertEquals(List.of(StatusCodes.Bad_UserAccessDenied), statusCodes(drain()));
   }
 
   @Test
@@ -223,6 +248,10 @@ class MonitoredDataItemTest {
     List<DataValue> queued = drain();
     assertEquals(1, queued.size());
     assertEquals(StatusCodes.Bad_NotReadable, queued.get(0).statusCode().getValue());
+  }
+
+  private static List<Long> statusCodes(List<DataValue> values) {
+    return values.stream().map(value -> value.statusCode().getValue()).toList();
   }
 
   private List<DataValue> drain() {

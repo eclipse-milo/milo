@@ -125,8 +125,11 @@ using the last answer uncached. After dropping entries the server tells every
 changes, Subscription transfers, and Session close, and for the first three also re-checks the
 affected items itself; the application invalidates for everything it controls.
 
-A result that is not a decision never changes an item. A check that throws, a Session whose
-check failed, and `AccessResult.NODE_UNKNOWN` all leave the item's last result in place. The
+A result that is not a decision never changes an item's decision. A check that throws, a Session
+whose check failed, and `AccessResult.NODE_UNKNOWN` all leave the item's last result in place.
+An item whose last result is a denial is not read, so on `NODE_UNKNOWN` it reports
+`Bad_NodeIdUnknown` once in place of the denial, still with no value, until a decision arrives.
+The
 refresh and the read are separate steps that do not re-authorize each other: the default
 `AddressSpaceSamplingGroup` calls `AddressSpace.read()`, which sits below the service layer's
 access check, after the refresh has already decided.

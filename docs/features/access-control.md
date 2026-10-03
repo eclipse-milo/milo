@@ -141,7 +141,8 @@ OpcUaServerConfig.builder()
 
 Preserve the default's denials and its `AccessResult.NODE_UNKNOWN`. Unknown is "no decision":
 it lets Read report `Bad_NodeIdUnknown` and lets a refresher leave a MonitoredItem's last result
-in place.
+in place. A MonitoredItem whose last result is a denial then reports `Bad_NodeIdUnknown` in place
+of the denial, still with no value.
 
 ## Service checks
 

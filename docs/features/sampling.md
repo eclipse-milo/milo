@@ -169,9 +169,11 @@ What an invalidation does and does not do:
   keeps being overtaken is used once without being cached.
 - A check that throws, returns no answer, or returns `AccessResult.NODE_UNKNOWN` leaves the
   item's last result in place. A retained grant keeps delivering until a later refresh sees the
-  revocation; a retained denial keeps withholding. If your application needs revocation to take
-  effect faster than the sampling cadence, it has to coordinate the change, the refresh, and
-  delivery itself.
+  revocation; a retained denial keeps withholding. A denied item whose Node is unknown is not
+  read, so it reports `Bad_NodeIdUnknown` once in place of the denial, as Part 4 §5.13.1.6
+  requires for a deleted Node, and the next decision is reported as new. If your application
+  needs revocation to take effect faster than the sampling cadence, it has to coordinate the
+  change, the refresh, and delivery itself.
 
 A custom policy implements one method, `check(OpcUaServer, List<DataItem>)`, returning a result
 for each item it has an answer for. Resolve each item's Session at call time, key any cache of

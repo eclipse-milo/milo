@@ -135,7 +135,8 @@ public interface AccessController {
      * <p>A service that goes on to ask the AddressSpace for the Node, such as Read, proceeds and
      * lets the AddressSpace answer {@code Bad_NodeIdUnknown} as it would have anyway. A component
      * that refreshes a previous decision, such as the read access result of a MonitoredItem, leaves
-     * that decision in place, the same as for a check that failed.
+     * that decision in place, the same as for a check that failed; a MonitoredItem whose decision
+     * is a denial reports {@code Bad_NodeIdUnknown} in its place.
      */
     record NodeUnknown() implements AccessResult {}
 

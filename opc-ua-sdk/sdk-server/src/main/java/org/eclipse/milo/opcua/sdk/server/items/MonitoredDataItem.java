@@ -43,10 +43,15 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
   public static final DataChangeFilter DEFAULT_FILTER =
       new DataChangeFilter(DataChangeTrigger.StatusValue, uint(DeadbandType.None.getValue()), 0.0);
 
+  private static final StatusCode NODE_ID_UNKNOWN = new StatusCode(StatusCodes.Bad_NodeIdUnknown);
+
   private volatile DataValue lastValue = null;
   private volatile DataChangeFilter filter = null;
   private volatile @Nullable Range euRange = null;
   private volatile AccessResult readAccessResult = AccessResult.ALLOWED;
+
+  // Whether a check since the last decision, a denial, found the Node unknown. Guarded by this.
+  private boolean nodeUnknown = false;
 
   public MonitoredDataItem(
       OpcUaServer server,
@@ -126,16 +131,30 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
   @Override
   public synchronized void setReadAccessResult(AccessResult accessResult) {
     if (!accessResult.isDecision()) {
+      // A denied item is not sampled, so nothing else reports that its Node has gone (Part 4
+      // §5.13.1.6). Report it in place of the denial, which keeps withholding values.
+      if (readAccessResult instanceof AccessResult.Denied) {
+        boolean unreported = !nodeUnknown || lastValue == null;
+        nodeUnknown = true;
+
+        if (unreported && getMonitoringMode() != MonitoringMode.Disabled) {
+          setValue(new DataValue(NODE_ID_UNKNOWN));
+        }
+      }
       return;
     }
+
+    boolean wasNodeUnknown = nodeUnknown;
+    nodeUnknown = false;
 
     AccessResult previous = readAccessResult;
     readAccessResult = accessResult;
 
     if (accessResult instanceof AccessResult.Denied denied) {
       // Queue the denial when it is new, or when nothing has been reported since the item was
-      // created or monitoring resumed. Part 4 §7.23: a Disabled item queues no Notifications.
-      boolean unreported = lastValue == null;
+      // created, monitoring resumed, or its Node was reported unknown. Part 4 §7.23: a Disabled
+      // item queues no Notifications.
+      boolean unreported = lastValue == null || wasNodeUnknown;
       if ((!denied.equals(previous) || unreported)
           && getMonitoringMode() != MonitoringMode.Disabled) {
         setValue(new DataValue(denied.statusCode()));
@@ -153,7 +172,7 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
   @Override
   public synchronized void setValue(DataValue value) {
     if (readAccessResult instanceof AccessResult.Denied denied) {
-      value = new DataValue(denied.statusCode());
+      value = new DataValue(nodeUnknown ? NODE_ID_UNKNOWN : denied.statusCode());
     }
 
     boolean valuePassesFilter =
