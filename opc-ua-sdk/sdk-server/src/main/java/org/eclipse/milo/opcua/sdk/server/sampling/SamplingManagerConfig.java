@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.server.sampling;
 import com.google.common.math.DoubleMath;
 import com.google.common.math.LongMath;
 import java.math.RoundingMode;
+import java.util.Objects;
 
 /**
  * How a {@link SamplingManager} buckets intervals, floors them, debounces initial samples, and
@@ -71,9 +72,7 @@ public record SamplingManagerConfig(
     if (overrunWarningMultiple < 1) {
       throw new IllegalArgumentException("overrunWarningMultiple < 1: " + overrunWarningMultiple);
     }
-    if (readAccessPolicy == null) {
-      throw new NullPointerException("readAccessPolicy");
-    }
+    Objects.requireNonNull(readAccessPolicy, "readAccessPolicy");
   }
 
   /**

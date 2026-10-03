@@ -79,6 +79,7 @@ class SamplingManagerConfigTest {
     assertThrows(
         IllegalArgumentException.class, () -> defaults.withInitialSampleMaxWindowMillis(50));
     assertThrows(IllegalArgumentException.class, () -> defaults.withOverrunWarningMultiple(0));
+    //noinspection DataFlowIssue
     assertThrows(NullPointerException.class, () -> defaults.withReadAccessPolicy(null));
   }
 }

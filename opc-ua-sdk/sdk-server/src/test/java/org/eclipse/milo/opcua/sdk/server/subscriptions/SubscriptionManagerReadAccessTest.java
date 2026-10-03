@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.subscriptions;
 
+import static java.util.Objects.requireNonNull;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -138,7 +139,7 @@ class SubscriptionManagerReadAccessTest {
     CreateMonitoredItemsResponse response =
         manager.createMonitoredItems(context, createRequest(createItem()));
 
-    MonitoredItemCreateResult[] results = response.getResults();
+    MonitoredItemCreateResult[] results = requireNonNull(response.getResults());
     assertEquals(1, results.length);
     assertEquals(StatusCode.GOOD, results[0].getStatusCode());
 
@@ -165,7 +166,7 @@ class SubscriptionManagerReadAccessTest {
     CreateMonitoredItemsResponse response =
         manager.createMonitoredItems(context, createRequest(createItem()));
 
-    MonitoredItemCreateResult[] results = response.getResults();
+    MonitoredItemCreateResult[] results = requireNonNull(response.getResults());
     assertEquals(1, results.length);
     assertEquals(
         new StatusCode(StatusCodes.Bad_SecurityModeInsufficient), results[0].getStatusCode());
@@ -196,7 +197,7 @@ class SubscriptionManagerReadAccessTest {
     CreateMonitoredItemsResponse response =
         manager.createMonitoredItems(context, createRequest(request));
 
-    MonitoredItemCreateResult[] results = response.getResults();
+    MonitoredItemCreateResult[] results = requireNonNull(response.getResults());
     assertEquals(1, results.length);
     assertEquals(new StatusCode(StatusCodes.Bad_UserAccessDenied), results[0].getStatusCode());
 

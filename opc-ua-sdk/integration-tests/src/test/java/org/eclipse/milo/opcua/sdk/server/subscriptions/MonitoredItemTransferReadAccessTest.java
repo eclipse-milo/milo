@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.subscriptions;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -117,7 +118,7 @@ public class MonitoredItemTransferReadAccessTest extends AbstractClientServerTes
 
       TransferSubscriptionsResponse response =
           plainClient.transferSubscriptions(List.of(subscriptionId), false);
-      assertEquals(StatusCode.GOOD, response.getResults()[0].getStatusCode());
+      assertEquals(StatusCode.GOOD, requireNonNull(response.getResults())[0].getStatusCode());
 
       // The plain client has no client-side Subscription object, so it asks for the Publish
       // response itself: each request returns when the server has a notification or a keep-alive,
@@ -178,6 +179,7 @@ public class MonitoredItemTransferReadAccessTest extends AbstractClientServerTes
   }
 
   private OpcUaClient createSecureClient() throws Exception {
+    //noinspection resource
     var trustList = new MemoryTrustListManager();
     trustList.addTrustedCertificate(
         server.getConfig().getEndpoints().iterator().next().getCertificate());

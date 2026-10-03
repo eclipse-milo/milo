@@ -528,6 +528,7 @@ class SamplingGroupTest {
     long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
     while (!scheduler.pendingDelays().contains(0L)) {
       assertTrue(System.nanoTime() < deadline, "no handoff was scheduled");
+      //noinspection BusyWait
       Thread.sleep(10);
     }
     runHandoffs();
@@ -604,7 +605,7 @@ class SamplingGroupTest {
     final Map<DataItem, AccessResult> results = new ConcurrentHashMap<>();
     final List<String> events;
 
-    volatile RuntimeException failure;
+    volatile @Nullable RuntimeException failure;
     volatile ThrowingRunnable beforeRefresh = () -> {};
 
     RecordingPolicy(List<String> events) {
@@ -631,8 +632,9 @@ class SamplingGroupTest {
       refreshes.add(List.copyOf(items));
       events.add("refresh");
 
-      if (failure != null) {
-        throw failure;
+      RuntimeException toThrow = failure;
+      if (toThrow != null) {
+        throw toThrow;
       }
 
       return answers;

@@ -27,7 +27,6 @@ final class CachedReadAccessPolicy implements ReadAccessPolicy {
   @Override
   public Map<DataItem, AccessResult> check(OpcUaServer server, List<DataItem> items) {
     return ReadAccessPolicies.check(
-        server,
         items,
         (session, readValueIds) ->
             server

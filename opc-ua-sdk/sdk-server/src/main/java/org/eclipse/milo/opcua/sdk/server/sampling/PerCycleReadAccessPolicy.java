@@ -26,7 +26,6 @@ final class PerCycleReadAccessPolicy implements ReadAccessPolicy {
   @Override
   public Map<DataItem, AccessResult> check(OpcUaServer server, List<DataItem> items) {
     return ReadAccessPolicies.check(
-        server,
         items,
         (session, readValueIds) ->
             server.getAccessController().checkReadAccess(session, readValueIds));

@@ -172,7 +172,7 @@ class AccessControlManagerTest {
   // A removed listener is a component that has shut down; calling it afterwards would hand work
   // to something that can no longer do it.
   @Test
-  void aRemovedListenerIsNotCalled() throws Exception {
+  void aRemovedListenerIsNotCalled() {
     var heard = new CopyOnWriteArrayList<ReadAccessScope>();
     ReadAccessListener listener = heard::add;
 

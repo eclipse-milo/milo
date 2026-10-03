@@ -61,6 +61,7 @@ import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransportFactory;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -341,7 +342,7 @@ class SessionManagerReactivationTest {
     final List<ReadAccessScope> scopes = new CopyOnWriteArrayList<>();
 
     @Override
-    public void onReadAccessChanged(ReadAccessScope scope) {
+    public void onReadAccessChanged(@NonNull ReadAccessScope scope) {
       scopes.add(scope);
     }
 

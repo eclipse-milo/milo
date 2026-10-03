@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.servicesets.impl;
 
+import static java.util.Objects.requireNonNull;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -134,7 +135,7 @@ class DefaultSubscriptionServiceSetTransferTest {
     TransferSubscriptionsResponse response =
         serviceSet.onTransferSubscriptions(context, transferRequest());
 
-    assertEquals(StatusCode.GOOD, response.getResults()[0].getStatusCode());
+    assertEquals(StatusCode.GOOD, requireNonNull(response.getResults())[0].getStatusCode());
     assertEquals(1, deliveries.size(), "the AddressSpace hears about a transfer once");
     assertEquals(List.of(dataItem), deliveries.get(0), "only data items are reported");
     assertEquals(
@@ -191,7 +192,8 @@ class DefaultSubscriptionServiceSetTransferTest {
         serviceSet.onTransferSubscriptions(context, transferRequest());
 
     assertEquals(
-        new StatusCode(StatusCodes.Bad_UserAccessDenied), response.getResults()[0].getStatusCode());
+        new StatusCode(StatusCodes.Bad_UserAccessDenied),
+        requireNonNull(response.getResults())[0].getStatusCode());
     verify(addressSpaceManager, never()).onDataItemsTransferred(anyList());
     verify(server, never()).getDataItemListener();
     verify(accessControlManager, never()).invalidateReadAccess(any(ReadAccessScope.class));
@@ -205,7 +207,7 @@ class DefaultSubscriptionServiceSetTransferTest {
     TransferSubscriptionsResponse response =
         serviceSet.onTransferSubscriptions(context, transferRequest());
 
-    assertEquals(StatusCode.GOOD, response.getResults()[0].getStatusCode());
+    assertEquals(StatusCode.GOOD, requireNonNull(response.getResults())[0].getStatusCode());
     verify(addressSpaceManager, never()).onDataItemsTransferred(anyList());
   }
 

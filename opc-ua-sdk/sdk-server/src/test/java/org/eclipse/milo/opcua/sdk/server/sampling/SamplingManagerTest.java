@@ -341,6 +341,7 @@ class SamplingManagerTest {
     long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
     while (!condition.getAsBoolean()) {
       assertTrue(System.nanoTime() < deadline, "timed out waiting");
+      //noinspection BusyWait
       Thread.sleep(10);
     }
   }

@@ -109,16 +109,13 @@ class AddressSpaceSamplingGroupTest {
 
     verify(addressSpace)
         .read(
-            argThat(
-                (ReadContext ctx) -> ctx != null && ctx.getSession().equals(Optional.of(session))),
+            argThat((ReadContext ctx) -> ctx.getSession().equals(Optional.of(session))),
             eq(0d),
             eq(TimestampsToReturn.Both),
             eq(List.of(a.getReadValueId(), b.getReadValueId())));
     verify(addressSpace)
         .read(
-            argThat(
-                (ReadContext ctx) ->
-                    ctx != null && ctx.getSession().equals(Optional.of(otherSession))),
+            argThat((ReadContext ctx) -> ctx.getSession().equals(Optional.of(otherSession))),
             eq(0d),
             eq(TimestampsToReturn.Both),
             eq(List.of(c.getReadValueId())));
@@ -158,16 +155,13 @@ class AddressSpaceSamplingGroupTest {
     MonitoredDataItem a = SamplingTestItems.item(server, session, "a");
     MonitoredDataItem c = SamplingTestItems.item(server, otherSession, "c");
     when(addressSpace.read(
-            argThat(
-                (ReadContext ctx) -> ctx != null && ctx.getSession().equals(Optional.of(session))),
+            argThat((ReadContext ctx) -> ctx.getSession().equals(Optional.of(session))),
             eq(0d),
             any(),
             anyList()))
         .thenThrow(new IllegalStateException("device unreachable"));
     when(addressSpace.read(
-            argThat(
-                (ReadContext ctx) ->
-                    ctx != null && ctx.getSession().equals(Optional.of(otherSession))),
+            argThat((ReadContext ctx) -> ctx.getSession().equals(Optional.of(otherSession))),
             eq(0d),
             any(),
             anyList()))

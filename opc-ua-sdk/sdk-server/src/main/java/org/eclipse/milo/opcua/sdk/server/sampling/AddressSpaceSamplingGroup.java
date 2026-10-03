@@ -87,7 +87,7 @@ public class AddressSpaceSamplingGroup extends SamplingGroup {
           logger.warn(
               "Read failed for the {} ms group, Session {}: {}",
               getIntervalMillis(),
-              session != null ? session.getSessionId() : null,
+              session.getSessionId(),
               t.getMessage(),
               t);
         }

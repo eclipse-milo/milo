@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.subscriptions;
 
+import static java.util.Objects.requireNonNull;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -140,7 +141,7 @@ class SubscriptionManagerDataItemListenerTest {
     CreateMonitoredItemsResponse response =
         manager.createMonitoredItems(context, createRequest(createItem()));
 
-    assertEquals(StatusCode.GOOD, response.getResults()[0].getStatusCode());
+    assertEquals(StatusCode.GOOD, requireNonNull(response.getResults())[0].getStatusCode());
     List<DataItem> created = List.of((DataItem) ownedMonitoredItems.values().iterator().next());
 
     InOrder inOrder = inOrder(listener, addressSpaceManager);

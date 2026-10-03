@@ -16,7 +16,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
@@ -41,7 +40,6 @@ final class ReadAccessPolicies {
    * checked.
    */
   static Map<DataItem, AccessResult> check(
-      OpcUaServer server,
       List<DataItem> items,
       BiFunction<Session, List<ReadValueId>, Map<ReadValueId, AccessResult>> check) {
 

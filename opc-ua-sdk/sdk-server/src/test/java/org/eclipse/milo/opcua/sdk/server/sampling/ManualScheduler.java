@@ -54,11 +54,6 @@ public final class ManualScheduler {
     due.forEach(s -> s.task().run());
   }
 
-  /** Run and remove every pending task. */
-  public void runAll() {
-    run(delay -> true);
-  }
-
   private final class Executor extends java.util.concurrent.AbstractExecutorService
       implements ScheduledExecutorService {
 
