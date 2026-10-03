@@ -313,8 +313,11 @@ one.
 
 A server can keep an existing device scheduler or a push-based source that calls
 `DataItem.setValue()` itself. Override the managed data-item callbacks so the inherited manager
-does not also sample those items, and give one component the job of keeping their stored read
-access results current. The SDK provides the observations; the ordering is yours.
+does not also sample those items. `ManagedAddressSpace` still revises requested intervals to the
+inherited manager's buckets in `onCreateDataItem()` and `onModifyDataItem()`, so override those
+too if your sampler supports other intervals; whatever they return is what the items carry and
+the client is told. Then give one component the job of keeping the items' stored read access
+results current. The SDK provides the observations; the ordering is yours.
 
 | Hook | What it tells you |
 | --- | --- |
