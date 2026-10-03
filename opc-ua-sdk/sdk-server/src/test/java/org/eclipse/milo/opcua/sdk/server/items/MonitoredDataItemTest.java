@@ -189,6 +189,24 @@ class MonitoredDataItemTest {
     assertTrue(drain().isEmpty(), "nothing may be queued while Disabled");
   }
 
+  /**
+   * Part 4 §7.23: a Disabled item queues no Notifications. A sample that was in flight when
+   * monitoring was disabled can still be delivered; here it lands while the item is denied and
+   * would be replaced by the denial, which access restored before resuming would leave stale.
+   */
+  @Test
+  void aSampleDeliveredWhileDisabledQueuesNothing() {
+    item.setMonitoringMode(MonitoringMode.Disabled);
+    item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
+
+    item.setValue(new DataValue(new Variant(1)));
+
+    item.setReadAccessResult(AccessResult.ALLOWED);
+    item.setMonitoringMode(MonitoringMode.Reporting);
+
+    assertTrue(drain().isEmpty(), "nothing generated while Disabled reaches the client");
+  }
+
   // A Node the AddressSpace no longer knows is no decision about access. An allowed item keeps the
   // result it had and reports what its sampler delivers, typically the AddressSpace's own
   // Bad_NodeIdUnknown.

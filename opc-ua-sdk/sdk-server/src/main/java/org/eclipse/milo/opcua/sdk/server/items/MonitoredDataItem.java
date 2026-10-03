@@ -169,8 +169,18 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
     return readAccessResult;
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>A value set while the item is {@link MonitoringMode#Disabled}, such as a sample that was in
+   * flight when monitoring was disabled, is dropped (Part 4 §7.23).
+   */
   @Override
   public synchronized void setValue(DataValue value) {
+    if (getMonitoringMode() == MonitoringMode.Disabled) {
+      return;
+    }
+
     if (readAccessResult instanceof AccessResult.Denied denied) {
       value = new DataValue(nodeUnknown ? NODE_ID_UNKNOWN : denied.statusCode());
     }
