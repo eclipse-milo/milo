@@ -19,6 +19,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -154,18 +156,22 @@ class AddressSpaceSamplingGroupTest {
   void aFailingReadForOneSessionDoesNotStopTheOthers() throws Exception {
     MonitoredDataItem a = SamplingTestItems.item(server, session, "a");
     MonitoredDataItem c = SamplingTestItems.item(server, otherSession, "c");
-    when(addressSpace.read(
+    // doThrow/doReturn, because when(mock.read(...)) would call read() with the matchers' null
+    // placeholders and run the first stub's matcher on a null ReadContext.
+    doThrow(new IllegalStateException("device unreachable"))
+        .when(addressSpace)
+        .read(
             argThat((ReadContext ctx) -> ctx.getSession().equals(Optional.of(session))),
             eq(0d),
             any(),
-            anyList()))
-        .thenThrow(new IllegalStateException("device unreachable"));
-    when(addressSpace.read(
+            anyList());
+    doReturn(List.of(new DataValue(new Variant(7))))
+        .when(addressSpace)
+        .read(
             argThat((ReadContext ctx) -> ctx.getSession().equals(Optional.of(otherSession))),
             eq(0d),
             any(),
-            anyList()))
-        .thenReturn(List.of(new DataValue(new Variant(7))));
+            anyList());
 
     CompletionStage<@Nullable Void> stage = group.sample(List.of(a, c));
     stage.toCompletableFuture().get(5, TimeUnit.SECONDS);
