@@ -153,7 +153,8 @@ Selecting the cached policy caches sampling's checks only; Read and CreateMonito
 ask the controller.
 
 The SDK invalidates for a Session's identity or endpoint change, a Subscription transfer, and a
-Session close. The application invalidates for its own changes, with the scopes shown in
+Session close, and for the first three also re-checks the affected items itself. The
+application invalidates for its own changes, with the scopes shown in
 [Changing permissions at runtime](access-control.md#changing-permissions-at-runtime). If you
 cannot name every such change, stay on the per-cycle policy.
 
@@ -339,8 +340,10 @@ A refresh task snapshots the live items with their Sessions, checks them with
 `item.setReadAccessResult()` only if the item is still tracked, still on that Session, and no
 newer refresh has been requested for it. `setReadAccessResult()` is thread-safe but applies calls
 in arrival order and cannot tell an old allowance from a new one, so the coordinator serializes
-or versions its checks. Re-enabled items need a refresh before their next value; transferred
-items are checked for the new Session. Repeated cache hits do not bound staleness, so a periodic
+or versions its checks. The SDK re-checks a Session's items itself when its identity or
+endpoint changes and checks transferred items for their new Session; re-enabled items need a
+refresh before their next value, and so does every change the application makes. Repeated cache
+hits do not bound staleness, so a periodic
 fallback either asks the controller directly or invalidates before re-checking. Do not run such
 a refresher alongside a framework group for the same items.
 

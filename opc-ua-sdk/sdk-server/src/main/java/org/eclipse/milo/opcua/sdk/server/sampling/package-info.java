@@ -64,8 +64,9 @@
  * <ul>
  *   <li>Every path into {@code sample} is preceded by a refresh of the items it receives, and only
  *       items whose Session may read them are passed.
- *   <li>A Session is resolved from the item on every refresh and every sample, never cached by a
- *       group, so a transferred item is checked and read for its new Session on its next cycle.
+ *   <li>A Session is resolved from the item on every refresh and every sample, never kept by a
+ *       group between turns, and a check whose item moved to another Session while it ran is not
+ *       applied, so a transferred item is checked and read for its new Session.
  *   <li>A group runs one refresh-and-sample at a time, holding its turn until the sample's stage
  *       completes, and applies a check's results only to items still in the group, so no two checks
  *       for an item are in flight and a result from before an item moved to another group cannot

@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.server.subscriptions;
 
 import static java.util.Objects.requireNonNull;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -202,6 +203,48 @@ class SubscriptionManagerReadAccessTest {
     assertEquals(new StatusCode(StatusCodes.Bad_UserAccessDenied), results[0].getStatusCode());
 
     assertTrue(ownedMonitoredItems.isEmpty());
+  }
+
+  /**
+   * Part 4 §5.13.2.1: an identity or endpoint change can revoke read access to every item of the
+   * Session at once. The re-check reaches every data item, whoever samples it, and a new denial is
+   * queued without waiting for a sample.
+   */
+  @Test
+  void refreshReadAccessAppliesTheCurrentAnswerToEveryDataItem() throws Exception {
+    MonitoredDataItem item = createAllowedItem();
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenReturn(Map.of(itemToMonitor, AccessResult.DENIED_USER_ACCESS));
+
+    manager.refreshReadAccess();
+
+    assertEquals(AccessResult.DENIED_USER_ACCESS, item.getReadAccessResult());
+    assertEquals(
+        List.of(StatusCodes.Bad_UserAccessDenied),
+        drain(item).stream().map(value -> value.statusCode().getValue()).toList());
+  }
+
+  // ActivateSession calls the refresh after committing the change, so a check that throws must
+  // neither fail the service nor change any item.
+  @Test
+  void refreshReadAccessWhoseCheckThrowsChangesNothing() throws Exception {
+    MonitoredDataItem item = createAllowedItem();
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenThrow(new IllegalStateException("attribute filter failed"));
+
+    assertDoesNotThrow(() -> manager.refreshReadAccess());
+
+    assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
+    assertTrue(drain(item).isEmpty());
+  }
+
+  private MonitoredDataItem createAllowedItem() throws Exception {
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenReturn(Map.of(itemToMonitor, AccessResult.ALLOWED));
+    manager.createMonitoredItems(context, createRequest(createItem()));
+
+    return assertInstanceOf(
+        MonitoredDataItem.class, ownedMonitoredItems.values().iterator().next());
   }
 
   private static List<DataValue> drain(MonitoredDataItem item) {

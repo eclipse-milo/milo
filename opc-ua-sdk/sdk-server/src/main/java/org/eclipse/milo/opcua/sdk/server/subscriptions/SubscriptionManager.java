@@ -169,6 +169,48 @@ public class SubscriptionManager {
     return new ArrayList<>(subscriptions.values());
   }
 
+  /**
+   * Check the read access of every data item in this Session's Subscriptions now, and apply each
+   * result to its item.
+   *
+   * <p>The server calls this when the Session's identity or endpoint changes, the two events that
+   * can change every answer for a Session at once, so the items stop enforcing answers for the
+   * previous user or channel whoever samples them (Part 4 §5.13.2.1). It is called from
+   * ActivateSession after the change is committed, so it never throws: a failure is logged and
+   * leaves the items' results as they were. An item that a TransferSubscriptions moved to another
+   * Session meanwhile is skipped, since the transfer applies the answer for its new Session itself.
+   */
+  public void refreshReadAccess() {
+    try {
+      List<DataItem> dataItems =
+          subscriptions.values().stream()
+              .flatMap(subscription -> subscription.getMonitoredItems().values().stream())
+              .filter(item -> item instanceof DataItem)
+              .map(item -> (DataItem) item)
+              .toList();
+
+      if (dataItems.isEmpty()) {
+        return;
+      }
+
+      List<ReadValueId> readValueIds =
+          dataItems.stream().map(MonitoredItem::getReadValueId).distinct().toList();
+
+      Map<ReadValueId, AccessResult> results =
+          server.getAccessController().checkReadAccess(session, readValueIds);
+
+      for (DataItem item : dataItems) {
+        AccessResult result = results.get(item.getReadValueId());
+
+        if (result != null && item.getSession() == session) {
+          item.setReadAccessResult(result);
+        }
+      }
+    } catch (Throwable t) {
+      logger.warn("Read access refresh failed for Session {}", session.getSessionId(), t);
+    }
+  }
+
   public CompletableFuture<CreateSubscriptionResponse> createSubscription(
       CreateSubscriptionRequest request) {
     if (subscriptions.size()

@@ -40,9 +40,9 @@
  *
  * <p>{@link org.eclipse.milo.opcua.sdk.server.access.AccessControlManager}, one per {@link
  * org.eclipse.milo.opcua.sdk.server.OpcUaServer}, owns the controller, the cache, and the
- * listeners. The SDK invalidates when a Session's identity or endpoint changes and when a
- * Subscription is transferred; the application invalidates for its own changes, after committing
- * them.
+ * listeners. The SDK invalidates, and re-checks the affected data items, when a Session's identity
+ * or endpoint changes and when a Subscription is transferred; the application invalidates for its
+ * own changes, after committing them.
  *
  * <h2>Runtime boundaries</h2>
  *

@@ -46,15 +46,19 @@
  * recent read access check, exposes it through {@link
  * org.eclipse.milo.opcua.sdk.server.items.DataItem#getReadAccessResult}, and replaces the values it
  * is given with the denial status while access is denied; this package seeds that result at create
- * time. Keeping it current is the server's responsibility, and the server chooses where that
- * happens: the sampling framework in {@link org.eclipse.milo.opcua.sdk.server.sampling} refreshes
- * it before every sample, an AddressSpace that samples on its own can do the same through {@link
+ * time. It also re-checks every data item of a Session whose identity or endpoint changes, with
+ * {@link org.eclipse.milo.opcua.sdk.server.subscriptions.SubscriptionManager#refreshReadAccess}
+ * from ActivateSession, and TransferSubscriptions checks the items it moves for their new Session,
+ * whoever samples them. For every other change, keeping the result current is the server's
+ * responsibility, and the server chooses where that happens: the sampling framework in {@link
+ * org.eclipse.milo.opcua.sdk.server.sampling} refreshes it before every sample, an AddressSpace
+ * that samples on its own can do the same through {@link
  * org.eclipse.milo.opcua.sdk.server.items.DataItem#setReadAccessResult}, or a component of the
- * server's own can refresh every item it knows of on configuration, identity, or transfer events,
- * on any schedule that bounds how stale a result can be. That method is safe to call from any
- * thread alongside the sampler's {@code setValue} and is idempotent, and results apply in call
- * order, so a refresher with several triggers must order its checks per item. An item whose result
- * is never refreshed is stale, not unsafe: it keeps enforcing the result it was created with.
+ * server's own can refresh every item it knows of on configuration events, on any schedule that
+ * bounds how stale a result can be. That method is safe to call from any thread alongside the
+ * sampler's {@code setValue} and is idempotent, and results apply in call order, so a refresher
+ * with several triggers must order its checks per item. An item whose result is never refreshed is
+ * stale, not unsafe: it keeps enforcing the result it was created with.
  *
  * <p>A component that refreshes on its own schedule can learn of every data item on the server from
  * a {@link org.eclipse.milo.opcua.sdk.server.DataItemListener}, and of the events that change a

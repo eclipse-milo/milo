@@ -122,8 +122,8 @@ generation under the cache's write lock; a fill stores its answers only if the g
 read before checking is still current, and otherwise checks again, up to three times, before
 using the last answer uncached. After dropping entries the server tells every
 `ReadAccessListener` on the calling thread. The SDK invalidates for identity and endpoint
-changes, Subscription transfers, and Session close; the application invalidates for everything it
-controls.
+changes, Subscription transfers, and Session close, and for the first three also re-checks the
+affected items itself; the application invalidates for everything it controls.
 
 A result that is not a decision never changes an item. A check that throws, a Session whose
 check failed, and `AccessResult.NODE_UNKNOWN` all leave the item's last result in place. The
