@@ -10,7 +10,6 @@
 
 package org.eclipse.milo.opcua.sdk.server.namespaces;
 
-import java.util.List;
 import java.util.NoSuchElementException;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceComposite;
@@ -22,10 +21,7 @@ import org.eclipse.milo.opcua.sdk.server.Namespace;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.SimpleAddressSpaceFilter;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.objects.ServerDiagnosticsObject;
-import org.eclipse.milo.opcua.sdk.server.items.DataItem;
-import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerDiagnosticsTypeNode;
-import org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 
@@ -93,12 +89,8 @@ public class ServerNamespace extends AddressSpaceComposite implements Lifecycle,
     private final AddressSpaceFilter filter =
         SimpleAddressSpaceFilter.create(getNodeManager()::containsNode);
 
-    private final SubscriptionModel subscriptionModel;
-
     public DiagnosticsFragment(OpcUaServer server) {
       super(server, ServerNamespace.this);
-
-      subscriptionModel = new SubscriptionModel(server, this);
 
       ServerDiagnosticsTypeNode serverDiagnosticsNode =
           (ServerDiagnosticsTypeNode)
@@ -117,33 +109,12 @@ public class ServerNamespace extends AddressSpaceComposite implements Lifecycle,
       ServerDiagnosticsObject serverDiagnosticsObject =
           new ServerDiagnosticsObject(serverDiagnosticsNode, getNodeManager());
 
-      getLifecycleManager().addLifecycle(subscriptionModel);
       getLifecycleManager().addLifecycle(serverDiagnosticsObject);
     }
 
     @Override
     public AddressSpaceFilter getFilter() {
       return filter;
-    }
-
-    @Override
-    public void onDataItemsCreated(List<DataItem> dataItems) {
-      subscriptionModel.onDataItemsCreated(dataItems);
-    }
-
-    @Override
-    public void onDataItemsModified(List<DataItem> dataItems) {
-      subscriptionModel.onDataItemsModified(dataItems);
-    }
-
-    @Override
-    public void onDataItemsDeleted(List<DataItem> dataItems) {
-      subscriptionModel.onDataItemsDeleted(dataItems);
-    }
-
-    @Override
-    public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {
-      subscriptionModel.onMonitoringModeChanged(monitoredItems);
     }
   }
 }

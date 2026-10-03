@@ -10,7 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.items;
 
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 
@@ -49,19 +49,32 @@ public interface DataItem extends MonitoredItem {
    *
    * <p>The server must keep this result current, with the result of {@code
    * AccessController.checkReadAccess} for {@link #getSession()}, so that access rights that change
-   * after the item was created reach the client as Part 4 §5.13.2.1 requires. {@link
-   * org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel} does so on every sampling cycle. A
-   * server may instead keep it current from a component of its own, for example on configuration,
-   * identity, or transfer events, on any schedule that bounds how stale a result can be. An item
-   * whose result is never refreshed is stale, not unsafe: it keeps enforcing the result it was
-   * created with.
+   * after the item was created reach the client as Part 4 §5.13.2.1 requires. The sampling
+   * framework, {@link org.eclipse.milo.opcua.sdk.server.sampling.SamplingManager}, does so before
+   * every sample. Whoever samples the item, the SDK re-checks it when its Session's identity or
+   * endpoint changes and when a TransferSubscriptions moves it to another Session. A server that
+   * samples outside the framework keeps it current for every other change from a component of its
+   * own, on any schedule that bounds how stale a result can be, using the server's {@link
+   * org.eclipse.milo.opcua.sdk.server.DataItemListener} and {@link
+   * org.eclipse.milo.opcua.sdk.server.access.AccessControlManager#invalidateReadAccess} to learn
+   * when. An item whose result is never refreshed is stale, not unsafe: it keeps enforcing the
+   * result it was created with.
+   *
+   * <p>A result that is not a decision, {@link AccessResult#NODE_UNKNOWN}, leaves the last result
+   * in place, the same as a check that failed. An allowed item keeps reporting whatever its sampler
+   * delivers, typically the AddressSpace's own status for a Node it no longer knows. A denied item
+   * is not sampled, so it reports {@code Bad_NodeIdUnknown} once in place of the denial, as Part 4
+   * §5.13.1.6 requires for a deleted Node, and keeps withholding values; the next decision is
+   * reported as new.
    *
    * <p>This method is safe to call from any thread, concurrently with {@link #setValue(DataValue)},
    * and is idempotent: repeating a call with the same result has no further effect. Results apply
    * in the order the calls arrive, and the item does not know which Session or which check a result
    * came from. A refresher with more than one trigger, for example a schedule and {@link
    * org.eclipse.milo.opcua.sdk.server.AddressSpace#onDataItemsTransferred}, must order its own
-   * checks per item so that the result of an older check never lands after a newer one.
+   * checks per item so that the result of an older check never lands after a newer one. {@link
+   * org.eclipse.milo.opcua.sdk.server.Session#getAccessEpoch()} tells it when a check straddled a
+   * change of the Session's identity or endpoint.
    *
    * <p>{@link MonitoredDataItem}, the item the SDK creates for every data MonitoredItem, is the
    * implementation that enforces this. The default implementation does nothing, so an

@@ -25,6 +25,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
@@ -74,6 +75,9 @@ public class Session {
 
   /** Ensures timeout, subscription, and lifecycle cleanup run once across all close paths. */
   private final AtomicBoolean closed = new AtomicBoolean(false);
+
+  /** Bumped after every change to the identity or endpoint access decisions are made from. */
+  private final AtomicLong accessEpoch = new AtomicLong(0L);
 
   private final LinkedList<String> clientUserIdHistory = new LinkedList<>();
 
@@ -248,6 +252,7 @@ public class Session {
   public void setIdentity(Identity identity, UserIdentityToken identityToken) {
     this.identity = identity;
     this.identityToken = identityToken;
+    accessEpoch.incrementAndGet();
 
     synchronized (clientUserIdHistory) {
       clientUserIdHistory.addLast(getClientUserId(identityToken));
@@ -260,6 +265,7 @@ public class Session {
 
   public void setEndpoint(EndpointDescription endpoint) {
     this.endpoint = endpoint;
+    accessEpoch.incrementAndGet();
   }
 
   public void setSecurityConfiguration(SecurityConfiguration securityConfiguration) {
@@ -447,6 +453,20 @@ public class Session {
 
   public Semaphore getCallSemaphore() {
     return callSemaphore;
+  }
+
+  /**
+   * Get a count of the changes to what this Session's access decisions are made from: its identity
+   * and its endpoint.
+   *
+   * <p>A component that checks access for this Session reads it before the check and discards the
+   * answers if it has changed by the time they would apply, since they may describe the Session as
+   * it was before the change. Only a change in the value means anything.
+   *
+   * @return the current access epoch.
+   */
+  public long getAccessEpoch() {
+    return accessEpoch.get();
   }
 
   /**

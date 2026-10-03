@@ -15,21 +15,32 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.netty.channel.Channel;
+import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
+import org.eclipse.milo.opcua.sdk.server.access.ReadAccessListener;
+import org.eclipse.milo.opcua.sdk.server.access.ReadAccessScope;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity.UsernameIdentity;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
+import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
+import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
+import org.eclipse.milo.opcua.sdk.server.subscriptions.SubscriptionManager;
+import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.SecureChannel;
 import org.eclipse.milo.opcua.stack.core.channel.ServerSecureChannel;
@@ -41,13 +52,17 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ActivateSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserNameIdentityToken;
@@ -57,15 +72,22 @@ import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransportFactory;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** When {@link SessionManager} reports a Session's identity change to its listeners. */
-class SessionManagerIdentityChangeTest {
+/**
+ * When {@link SessionManager} reports a re-activated Session's identity or endpoint change to its
+ * listeners.
+ */
+class SessionManagerReactivationTest {
 
   private static final String ENDPOINT_URL = "opc.tcp://localhost:4840/test";
+
+  private static final ReadValueId SERVER_STATUS =
+      new ReadValueId(new NodeId(0, 2256), AttributeId.Value.uid(), null, null);
 
   private static final UserTokenPolicy ANONYMOUS_POLICY =
       new UserTokenPolicy("anonymous", UserTokenType.Anonymous, null, null, null);
@@ -86,7 +108,9 @@ class SessionManagerIdentityChangeTest {
           };
 
   private final RecordingListener listener = new RecordingListener();
+  private final RecordingInvalidations invalidations = new RecordingInvalidations();
   private final ServiceRequestContext channel = new TestServiceRequestContext(1L);
+  private final ServiceRequestContext replacementChannel = new TestServiceRequestContext(2L);
 
   private OpcUaServer server;
   private SessionManager sessions;
@@ -121,6 +145,7 @@ class SessionManagerIdentityChangeTest {
     server = new OpcUaServer(config, NO_OP_TRANSPORTS);
     sessions = server.getSessionManager();
     sessions.addSessionListener(listener);
+    server.getAccessControlManager().addReadAccessListener(invalidations);
   }
 
   @AfterEach
@@ -147,6 +172,10 @@ class SessionManagerIdentityChangeTest {
     UsernameIdentity identity =
         assertInstanceOf(UsernameIdentity.class, listener.identitiesSeen.get(0));
     assertEquals("alice", identity.getUsername(), "the listener sees the new identity");
+    assertEquals(
+        List.of(listener.closed.get()),
+        invalidations.sessions(),
+        "the Session's read access answers are invalidated once, for that Session only");
   }
 
   // A re-activation that fails, here with a policy id the endpoint does not offer, leaves the
@@ -164,6 +193,150 @@ class SessionManagerIdentityChangeTest {
 
     listener.closed.get(10, SECONDS);
     assertEquals(List.of("created", "closed"), listener.events, failure.getMessage());
+    assertEquals(List.of(), invalidations.sessions(), "nothing changed, nothing is invalidated");
+  }
+
+  /**
+   * Part 4 §5.7.3.1: ActivateSession may move a Session onto a replacement SecureChannel. A
+   * listener that derives anything from the Session's endpoint or security mode must hear about
+   * that exactly once, after the move is committed, and in order with the other notifications.
+   */
+  @Test
+  void reactivationOnAReplacementChannelReportsTheEndpointChangeOnce() throws Exception {
+    NodeId token = createSession();
+
+    sessions.activateSession(channel, activateAnonymous(token));
+    sessions.activateSession(replacementChannel, activateAnonymous(token));
+    closeSession();
+
+    listener.closed.get(10, SECONDS);
+    assertEquals(List.of("created", "endpointChanged", "closed"), listener.events);
+    assertEquals(
+        List.of(2L), listener.channelIdsSeen, "the listener sees the Session on its new channel");
+    assertEquals(
+        List.of(listener.closed.get()),
+        invalidations.sessions(),
+        "the Session's read access answers are invalidated once, for that Session only");
+  }
+
+  /**
+   * A re-activation on another channel that fails, here because it presents another identity,
+   * leaves the Session on its previous channel, so there is no change to report. The candidate
+   * endpoint was visible while the identity was validated, though, so a read access check that ran
+   * meanwhile answered for a channel the Session never moved to: those answers are dropped.
+   */
+  @Test
+  void failedReactivationOnAReplacementChannelReportsNoEndpointChangeButDropsCachedAnswers()
+      throws Exception {
+    NodeId token = createSession();
+
+    sessions.activateSession(channel, activateAnonymous(token));
+    Session session = sessions.getAllSessions().iterator().next();
+    server
+        .getAccessControlManager()
+        .getReadAccessCache()
+        .getOrCheck(session, List.of(SERVER_STATUS));
+    assertEquals(1, server.getAccessControlManager().getReadAccessCache().size());
+
+    UaException failure =
+        assertThrows(
+            UaException.class,
+            () ->
+                sessions.activateSession(
+                    replacementChannel, activateUsername(token, USERNAME_POLICY.getPolicyId())));
+
+    assertEquals(
+        0,
+        server.getAccessControlManager().getReadAccessCache().size(),
+        "answers from the candidate window go");
+    assertEquals(List.of(session), invalidations.sessions(), "and other refreshers hear about it");
+
+    closeSession();
+
+    listener.closed.get(10, SECONDS);
+    assertEquals(List.of("created", "closed"), listener.events, failure.getMessage());
+  }
+
+  /**
+   * Part 4 §5.13.2.1: a new user can have other read access than the previous one, so every data
+   * item of the Session is re-checked before ActivateSession returns, whoever samples it, rather
+   * than enforcing the previous user's answer until something else refreshes it.
+   */
+  @Test
+  void identityChangeRechecksTheSessionsDataItemsBeforeActivateSessionReturns() throws Exception {
+    NodeId token = createSession();
+    sessions.activateSession(channel, activateAnonymous(token));
+    Session session = sessions.getAllSessions().iterator().next();
+    MonitoredDataItem item = putDataItem(session, AccessResult.DENIED_USER_ACCESS);
+
+    try {
+      sessions.activateSession(channel, activateUsername(token, USERNAME_POLICY.getPolicyId()));
+
+      assertEquals(
+          AccessResult.ALLOWED,
+          item.getReadAccessResult(),
+          "the answer for alice, who may read ServerStatus, replaced the previous user's");
+    } finally {
+      subscriptions(session.getSubscriptionManager()).clear();
+    }
+  }
+
+  // The same for a move to a replacement channel, whose security mode feeds AccessRestrictions.
+  @Test
+  void endpointChangeRechecksTheSessionsDataItemsBeforeActivateSessionReturns() throws Exception {
+    NodeId token = createSession();
+    sessions.activateSession(channel, activateAnonymous(token));
+    Session session = sessions.getAllSessions().iterator().next();
+    MonitoredDataItem item = putDataItem(session, AccessResult.DENIED_SECURITY_MODE);
+
+    try {
+      sessions.activateSession(replacementChannel, activateAnonymous(token));
+
+      assertEquals(
+          AccessResult.ALLOWED,
+          item.getReadAccessResult(),
+          "the answer for the replacement channel replaced the previous channel's");
+    } finally {
+      subscriptions(session.getSubscriptionManager()).clear();
+    }
+  }
+
+  /**
+   * Put a data item for ServerStatus into {@code session}'s Subscriptions, enforcing {@code result}
+   * as if an earlier check had answered it.
+   */
+  private MonitoredDataItem putDataItem(Session session, AccessResult result)
+      throws ReflectiveOperationException {
+
+    var item =
+        new MonitoredDataItem(
+            server,
+            session,
+            uint(1),
+            uint(1),
+            SERVER_STATUS,
+            MonitoringMode.Reporting,
+            TimestampsToReturn.Both,
+            uint(1),
+            1000.0,
+            uint(1),
+            true);
+    item.setReadAccessResult(result);
+
+    Subscription subscription = mock(Subscription.class);
+    when(subscription.getMonitoredItems()).thenReturn(Map.of(item.getId(), item));
+    subscriptions(session.getSubscriptionManager()).put(uint(1), subscription);
+
+    return item;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Map<UInteger, Subscription> subscriptions(SubscriptionManager manager)
+      throws ReflectiveOperationException {
+
+    Field field = SubscriptionManager.class.getDeclaredField("subscriptions");
+    field.setAccessible(true);
+    return (Map<UInteger, Subscription>) field.get(manager);
   }
 
   private NodeId createSession() throws UaException {
@@ -224,11 +397,12 @@ class SessionManagerIdentityChangeTest {
     return new RequestHeader(authToken, DateTime.now(), uint(1), uint(0), null, uint(10_000), null);
   }
 
-  /** Records the order of notifications and the identity each identity change delivered. */
+  /** Records the order of notifications and what each change delivered. */
   private static final class RecordingListener implements SessionListener {
 
     final List<String> events = new CopyOnWriteArrayList<>();
     final List<Identity> identitiesSeen = new CopyOnWriteArrayList<>();
+    final List<Long> channelIdsSeen = new CopyOnWriteArrayList<>();
     final CompletableFuture<Session> closed = new CompletableFuture<>();
 
     @Override
@@ -243,9 +417,30 @@ class SessionManagerIdentityChangeTest {
     }
 
     @Override
+    public void onSessionEndpointChanged(Session session) {
+      events.add("endpointChanged");
+      channelIdsSeen.add(session.getSecureChannelId());
+    }
+
+    @Override
     public void onSessionClosed(Session session) {
       events.add("closed");
       closed.complete(session);
+    }
+  }
+
+  /** Records the Session each read access invalidation was for. */
+  private static final class RecordingInvalidations implements ReadAccessListener {
+
+    final List<ReadAccessScope> scopes = new CopyOnWriteArrayList<>();
+
+    @Override
+    public void onReadAccessChanged(@NonNull ReadAccessScope scope) {
+      scopes.add(scope);
+    }
+
+    List<Session> sessions() {
+      return scopes.stream().map(scope -> scope.session().orElseThrow()).toList();
     }
   }
 

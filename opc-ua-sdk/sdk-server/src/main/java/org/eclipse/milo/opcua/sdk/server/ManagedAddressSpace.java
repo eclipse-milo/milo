@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import org.eclipse.milo.opcua.sdk.core.Reference;
+import org.eclipse.milo.opcua.sdk.server.items.DataItem;
+import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
@@ -22,6 +24,11 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaServerNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
+import org.eclipse.milo.opcua.sdk.server.sampling.AddressSpaceSamplingGroup;
+import org.eclipse.milo.opcua.sdk.server.sampling.SamplingGroup;
+import org.eclipse.milo.opcua.sdk.server.sampling.SamplingGroupFactory;
+import org.eclipse.milo.opcua.sdk.server.sampling.SamplingManager;
+import org.eclipse.milo.opcua.sdk.server.sampling.SamplingManagerConfig;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -31,15 +38,28 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ViewDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * An {@link AddressSpace} backed by a {@link UaNodeManager}, with the service implementations that
+ * reading, writing, browsing, and calling its Nodes need.
+ *
+ * <p>Data MonitoredItems are sampled by a {@link SamplingManager} of this AddressSpace's own, which
+ * the four data item callbacks forward to by default; see {@link #getSamplingManager()}. The
+ * sampling interval of a created or modified item is revised to the one that manager samples at, so
+ * the client is told the interval in effect. A subclass that samples some other way overrides the
+ * four callbacks instead, and {@link #reviseSamplingInterval} if its sampler supports other
+ * intervals.
+ */
 public abstract class ManagedAddressSpace implements AddressSpace {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -49,6 +69,9 @@ public abstract class ManagedAddressSpace implements AddressSpace {
 
   private final OpcUaServer server;
   private final UaNodeManager nodeManager;
+
+  private final Object samplingManagerLock = new Object();
+  private volatile @Nullable SamplingManager samplingManager;
 
   public ManagedAddressSpace(OpcUaServer server) {
     this(server, new UaNodeManager());
@@ -107,6 +130,169 @@ public abstract class ManagedAddressSpace implements AddressSpace {
 
   public UaNodeManager getNodeManager() {
     return nodeManager;
+  }
+
+  /**
+   * Get the {@link SamplingManager} that samples this AddressSpace's data MonitoredItems.
+   *
+   * <p>It is created on first use from {@link #samplingGroupFactory()} and {@link
+   * #samplingManagerConfig()}, and the default {@code onDataItems*} and {@code
+   * onMonitoringModeChanged} callbacks forward to it. {@link ManagedAddressSpaceWithLifecycle},
+   * {@link ManagedAddressSpaceFragmentWithLifecycle}, and {@link ManagedNamespaceWithLifecycle}
+   * start it after their registration and every lifecycle the subclass adds, and stop it before any
+   * of them; a {@code ManagedAddressSpace} without one of those lifecycles must start and stop it
+   * itself, since items that arrive before it starts are kept but not sampled.
+   *
+   * <p>Configure this manager through the two hooks rather than wiring another {@link
+   * SamplingManager} beside it: {@link #onCreateDataItem} and {@link #onModifyDataItem} revise
+   * sampling intervals with this manager's configuration, so a manager wired separately would
+   * sample at intervals other than the ones the client is told.
+   *
+   * @return the {@link SamplingManager} for this AddressSpace.
+   */
+  public SamplingManager getSamplingManager() {
+    SamplingManager manager = samplingManager;
+
+    if (manager == null) {
+      synchronized (samplingManagerLock) {
+        manager = samplingManager;
+
+        if (manager == null) {
+          manager = new SamplingManager(server, samplingGroupFactory(), samplingManagerConfig());
+          samplingManager = manager;
+        }
+      }
+    }
+
+    return manager;
+  }
+
+  /**
+   * Start {@code lifecycleManager}, then {@link #getSamplingManager()}, so sampling begins after
+   * every lifecycle the subclass added, and a {@link SamplingGroup} can use what they started. If
+   * sampling fails to start, {@code lifecycleManager} is shut down again before the failure
+   * propagates, so nothing stays registered.
+   */
+  final void startupWithSampling(LifecycleManager lifecycleManager) {
+    lifecycleManager.startup();
+
+    try {
+      getSamplingManager().startup();
+    } catch (Throwable t) {
+      try {
+        lifecycleManager.shutdown();
+      } catch (Throwable cleanupFailure) {
+        t.addSuppressed(cleanupFailure);
+      }
+      throw t;
+    }
+  }
+
+  /**
+   * Stop {@link #getSamplingManager()}, if it was started, then {@code lifecycleManager}, so no
+   * sampling cycle runs on what the subclass's lifecycles release.
+   */
+  final void shutdownWithSampling(LifecycleManager lifecycleManager) {
+    try {
+      SamplingManager manager = samplingManager;
+
+      if (manager != null && manager.isRunning()) {
+        manager.shutdown();
+      }
+    } finally {
+      lifecycleManager.shutdown();
+    }
+  }
+
+  /**
+   * The factory {@link #getSamplingManager()} creates its groups with.
+   *
+   * <p>The default creates an {@link AddressSpaceSamplingGroup} that reads through this
+   * AddressSpace. Override to sample with a {@link SamplingGroup} of your own.
+   *
+   * @return the {@link SamplingGroupFactory} for this AddressSpace's groups.
+   */
+  protected SamplingGroupFactory samplingGroupFactory() {
+    return (server, intervalMillis) -> new AddressSpaceSamplingGroup(server, this, intervalMillis);
+  }
+
+  /**
+   * The configuration {@link #getSamplingManager()} is created with.
+   *
+   * <p>The default is {@link SamplingManagerConfig#defaults()}. Override to change, for example,
+   * the minimum sampling interval or the {@link
+   * org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessPolicy}.
+   *
+   * @return the {@link SamplingManagerConfig} for this AddressSpace's sampling.
+   */
+  protected SamplingManagerConfig samplingManagerConfig() {
+    return SamplingManagerConfig.defaults();
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Revises the sampling interval with {@link #reviseSamplingInterval}, by default to the one
+   * {@link #getSamplingManager()} samples at. The queue size is returned as requested.
+   */
+  @Override
+  public RevisedDataItemParameters onCreateDataItem(
+      ReadValueId itemToMonitor, Double requestedSamplingInterval, UInteger requestedQueueSize) {
+
+    return new RevisedDataItemParameters(
+        reviseSamplingInterval(requestedSamplingInterval), requestedQueueSize);
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Revises the sampling interval the same way as {@link #onCreateDataItem}, so an item whose
+   * interval a ModifyMonitoredItems changes is told the interval it is sampled at from then on.
+   */
+  @Override
+  public RevisedDataItemParameters onModifyDataItem(
+      ReadValueId itemToModify, Double requestedSamplingInterval, UInteger requestedQueueSize) {
+
+    return new RevisedDataItemParameters(
+        reviseSamplingInterval(requestedSamplingInterval), requestedQueueSize);
+  }
+
+  /**
+   * Revise a requested sampling interval for {@link #onCreateDataItem} and {@link
+   * #onModifyDataItem}.
+   *
+   * <p>The default returns the interval {@link #getSamplingManager()} samples at: rounded up to the
+   * next interval its {@link SamplingManagerConfig} supports, and never faster than requested (Part
+   * 4 §7.21). A subclass that samples its items some other way overrides this to return an interval
+   * its own sampler supports, for example the requested interval unchanged, which is what the
+   * client was told before this class revised intervals.
+   *
+   * @param requestedSamplingInterval the requested sampling interval, in milliseconds, after the
+   *     server's limits and the Node's MinimumSamplingInterval have been applied.
+   * @return the revised sampling interval, in milliseconds.
+   */
+  protected double reviseSamplingInterval(double requestedSamplingInterval) {
+    return getSamplingManager().getConfig().reviseSamplingInterval(requestedSamplingInterval);
+  }
+
+  @Override
+  public void onDataItemsCreated(List<DataItem> dataItems) {
+    getSamplingManager().onDataItemsCreated(dataItems);
+  }
+
+  @Override
+  public void onDataItemsModified(List<DataItem> dataItems) {
+    getSamplingManager().onDataItemsModified(dataItems);
+  }
+
+  @Override
+  public void onDataItemsDeleted(List<DataItem> dataItems) {
+    getSamplingManager().onDataItemsDeleted(dataItems);
+  }
+
+  @Override
+  public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {
+    getSamplingManager().onMonitoringModeChanged(monitoredItems);
   }
 
   @Override

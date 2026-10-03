@@ -10,7 +10,9 @@
 
 package org.eclipse.milo.opcua.sdk.server.subscriptions;
 
+import static java.util.Objects.requireNonNull;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,14 +32,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.RevisedDataItemParameters;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
+import org.eclipse.milo.opcua.sdk.server.DataItemListener;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.items.BaseMonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -93,6 +96,7 @@ class SubscriptionManagerReadAccessTest {
     when(server.getConfig()).thenReturn(config);
     when(server.getAccessController()).thenReturn(accessController);
     when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
+    when(server.getDataItemListener()).thenReturn(new DataItemListener() {});
     when(server.getStaticEncodingContext()).thenReturn(DefaultEncodingContext.INSTANCE);
     when(server.getMonitoredItemCount()).thenReturn(new AtomicLong());
 
@@ -136,7 +140,7 @@ class SubscriptionManagerReadAccessTest {
     CreateMonitoredItemsResponse response =
         manager.createMonitoredItems(context, createRequest(createItem()));
 
-    MonitoredItemCreateResult[] results = response.getResults();
+    MonitoredItemCreateResult[] results = requireNonNull(response.getResults());
     assertEquals(1, results.length);
     assertEquals(StatusCode.GOOD, results[0].getStatusCode());
 
@@ -163,7 +167,7 @@ class SubscriptionManagerReadAccessTest {
     CreateMonitoredItemsResponse response =
         manager.createMonitoredItems(context, createRequest(createItem()));
 
-    MonitoredItemCreateResult[] results = response.getResults();
+    MonitoredItemCreateResult[] results = requireNonNull(response.getResults());
     assertEquals(1, results.length);
     assertEquals(
         new StatusCode(StatusCodes.Bad_SecurityModeInsufficient), results[0].getStatusCode());
@@ -194,11 +198,88 @@ class SubscriptionManagerReadAccessTest {
     CreateMonitoredItemsResponse response =
         manager.createMonitoredItems(context, createRequest(request));
 
-    MonitoredItemCreateResult[] results = response.getResults();
+    MonitoredItemCreateResult[] results = requireNonNull(response.getResults());
     assertEquals(1, results.length);
     assertEquals(new StatusCode(StatusCodes.Bad_UserAccessDenied), results[0].getStatusCode());
 
     assertTrue(ownedMonitoredItems.isEmpty());
+  }
+
+  // A custom AccessController that answers nothing for an item must not fail the create. The item
+  // is created allowed, as before the create-time check was seeded, and is refreshed from there.
+  @Test
+  void aMissingAccessResultCreatesTheItemAllowed() throws Exception {
+    when(accessController.checkReadAccess(eq(session), anyList())).thenReturn(Map.of());
+
+    CreateMonitoredItemsResponse response =
+        manager.createMonitoredItems(context, createRequest(createItem()));
+
+    assertEquals(StatusCode.GOOD, requireNonNull(response.getResults())[0].getStatusCode());
+    MonitoredDataItem item =
+        assertInstanceOf(MonitoredDataItem.class, ownedMonitoredItems.values().iterator().next());
+    assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
+  }
+
+  /**
+   * Part 4 §5.13.2.1: an identity or endpoint change can revoke read access to every item of the
+   * Session at once. The re-check reaches every data item, whoever samples it, and a new denial is
+   * queued without waiting for a sample.
+   */
+  @Test
+  void refreshReadAccessAppliesTheCurrentAnswerToEveryDataItem() throws Exception {
+    MonitoredDataItem item = createAllowedItem();
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenReturn(Map.of(itemToMonitor, AccessResult.DENIED_USER_ACCESS));
+
+    manager.refreshReadAccess();
+
+    assertEquals(AccessResult.DENIED_USER_ACCESS, item.getReadAccessResult());
+    assertEquals(
+        List.of(StatusCodes.Bad_UserAccessDenied),
+        drain(item).stream().map(value -> value.statusCode().getValue()).toList());
+  }
+
+  // ActivateSession calls the refresh after committing the change, so a check that throws must
+  // neither fail the service nor change any item.
+  @Test
+  void refreshReadAccessWhoseCheckThrowsChangesNothing() throws Exception {
+    MonitoredDataItem item = createAllowedItem();
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenThrow(new IllegalStateException("attribute filter failed"));
+
+    assertDoesNotThrow(() -> manager.refreshReadAccess());
+
+    assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
+    assertTrue(drain(item).isEmpty());
+  }
+
+  // Two identity changes in quick succession each run a refresh. One whose check straddles the
+  // second change answers for the previous user, so it applies nothing and leaves the item to the
+  // refresh of the later change.
+  @Test
+  void refreshReadAccessOvertakenByAnotherChangeAppliesNothing() throws Exception {
+    MonitoredDataItem item = createAllowedItem();
+    var accessEpoch = new AtomicLong();
+    when(session.getAccessEpoch()).thenAnswer(invocation -> accessEpoch.get());
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenAnswer(
+            invocation -> {
+              accessEpoch.incrementAndGet();
+              return Map.of(itemToMonitor, AccessResult.DENIED_USER_ACCESS);
+            });
+
+    manager.refreshReadAccess();
+
+    assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
+  }
+
+  private MonitoredDataItem createAllowedItem() throws Exception {
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenReturn(Map.of(itemToMonitor, AccessResult.ALLOWED));
+    manager.createMonitoredItems(context, createRequest(createItem()));
+
+    return assertInstanceOf(
+        MonitoredDataItem.class, ownedMonitoredItems.values().iterator().next());
   }
 
   private static List<DataValue> drain(MonitoredDataItem item) {

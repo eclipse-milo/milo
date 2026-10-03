@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
@@ -189,6 +189,84 @@ class MonitoredDataItemTest {
     assertTrue(drain().isEmpty(), "nothing may be queued while Disabled");
   }
 
+  // A transfer to a Session with the same denial the item already enforced has nothing new to
+  // report, and the denial still queued for the client must not be dropped with the values.
+  @Test
+  void aTransferredDenialTheItemAlreadyEnforcedKeepsTheQueuedDenial() {
+    item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
+
+    item.setTransferredReadAccessResult(AccessResult.DENIED_USER_ACCESS);
+
+    assertEquals(List.of(StatusCodes.Bad_UserAccessDenied), statusCodes(drain()));
+  }
+
+  /**
+   * Part 4 §7.23: a Disabled item queues no Notifications. A sample that was in flight when
+   * monitoring was disabled can still be delivered; here it lands while the item is denied and
+   * would be replaced by the denial, which access restored before resuming would leave stale.
+   */
+  @Test
+  void aSampleDeliveredWhileDisabledQueuesNothing() {
+    item.setMonitoringMode(MonitoringMode.Disabled);
+    item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
+
+    item.setValue(new DataValue(new Variant(1)));
+
+    item.setReadAccessResult(AccessResult.ALLOWED);
+    item.setMonitoringMode(MonitoringMode.Reporting);
+
+    assertTrue(drain().isEmpty(), "nothing generated while Disabled reaches the client");
+  }
+
+  // A Node the AddressSpace no longer knows is no decision about access. An allowed item keeps the
+  // result it had and reports what its sampler delivers, typically the AddressSpace's own
+  // Bad_NodeIdUnknown.
+  @Test
+  void unknownNodeLeavesAnAllowedItemReportingWhatItsSamplerDelivers() {
+    item.setReadAccessResult(AccessResult.NODE_UNKNOWN);
+    item.setValue(new DataValue(new StatusCode(StatusCodes.Bad_NodeIdUnknown)));
+
+    assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
+    assertEquals(List.of(StatusCodes.Bad_NodeIdUnknown), statusCodes(drain()));
+  }
+
+  /**
+   * Part 4 §5.13.1.6: a MonitoredItem whose Node is deleted reports Bad_NodeIdUnknown. A denied
+   * item is not sampled, so it reports that itself, once, in place of the denial, and still
+   * withholds values, since no decision has allowed them.
+   */
+  @Test
+  void deniedItemWhoseNodeIsUnknownReportsNodeIdUnknownOnceAndWithholdsValues() {
+    item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
+    drain();
+
+    item.setReadAccessResult(AccessResult.NODE_UNKNOWN);
+    item.setValue(new DataValue(new Variant(1)));
+    item.setReadAccessResult(AccessResult.NODE_UNKNOWN);
+
+    assertEquals(
+        AccessResult.DENIED_USER_ACCESS,
+        item.getReadAccessResult(),
+        "no decision leaves the decision in place");
+    assertEquals(
+        List.of(StatusCodes.Bad_NodeIdUnknown),
+        statusCodes(drain()),
+        "reported once, and the value is withheld");
+  }
+
+  // The client was last told the Node was unknown, so when it comes back the next decision is
+  // reported even if it is the same denial as before.
+  @Test
+  void theDenialIsReportedAgainWhenTheNodeComesBack() {
+    item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
+    item.setReadAccessResult(AccessResult.NODE_UNKNOWN);
+    drain();
+
+    item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
+
+    assertEquals(List.of(StatusCodes.Bad_UserAccessDenied), statusCodes(drain()));
+  }
+
   @Test
   void changedDenialReasonIsReported() {
     item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
@@ -199,6 +277,10 @@ class MonitoredDataItemTest {
     List<DataValue> queued = drain();
     assertEquals(1, queued.size());
     assertEquals(StatusCodes.Bad_NotReadable, queued.get(0).statusCode().getValue());
+  }
+
+  private static List<Long> statusCodes(List<DataValue> values) {
+    return values.stream().map(value -> value.statusCode().getValue()).toList();
   }
 
   private List<DataValue> drain() {

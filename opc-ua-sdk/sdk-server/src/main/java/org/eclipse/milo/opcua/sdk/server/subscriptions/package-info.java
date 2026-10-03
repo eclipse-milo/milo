@@ -46,21 +46,30 @@
  * recent read access check, exposes it through {@link
  * org.eclipse.milo.opcua.sdk.server.items.DataItem#getReadAccessResult}, and replaces the values it
  * is given with the denial status while access is denied; this package seeds that result at create
- * time. Keeping it current is the server's responsibility, and the server chooses where that
- * happens: {@link org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel} refreshes it on every
- * sampling cycle, an AddressSpace that samples on its own can do the same through {@link
+ * time. It also re-checks every data item of a Session whose identity or endpoint changes, with
+ * {@link org.eclipse.milo.opcua.sdk.server.subscriptions.SubscriptionManager#refreshReadAccess}
+ * from ActivateSession, and TransferSubscriptions checks the items it moves for their new Session,
+ * whoever samples them. For every other change, keeping the result current is the server's
+ * responsibility, and the server chooses where that happens: the sampling framework in {@link
+ * org.eclipse.milo.opcua.sdk.server.sampling} refreshes it before every sample, an AddressSpace
+ * that samples on its own can do the same through {@link
  * org.eclipse.milo.opcua.sdk.server.items.DataItem#setReadAccessResult}, or a component of the
- * server's own can refresh every item it knows of on configuration, identity, or transfer events,
- * on any schedule that bounds how stale a result can be. That method is safe to call from any
- * thread alongside the sampler's {@code setValue} and is idempotent, and results apply in call
- * order, so a refresher with several triggers must order its checks per item. An item whose result
- * is never refreshed is stale, not unsafe: it keeps enforcing the result it was created with.
+ * server's own can refresh every item it knows of on configuration events, on any schedule that
+ * bounds how stale a result can be. That method is safe to call from any thread alongside the
+ * sampler's {@code setValue} and is idempotent, and results apply in call order, so a refresher
+ * with several triggers must order its checks per item. An item whose result is never refreshed is
+ * stale, not unsafe: it keeps enforcing the result it was created with.
  *
- * <p>A component that refreshes on its own schedule can learn of the events that change a result
- * between refreshes: {@link org.eclipse.milo.opcua.sdk.server.AddressSpace#onDataItemsTransferred}
- * when items move to another Session, {@link
- * org.eclipse.milo.opcua.sdk.server.SessionListener#onSessionIdentityChanged} when a Session's user
- * changes, and {@link org.eclipse.milo.opcua.sdk.server.Session#isClosed} to skip a Session that
- * has closed since it was last seen.
+ * <p>A component that refreshes on its own schedule can learn of every data item on the server from
+ * a {@link org.eclipse.milo.opcua.sdk.server.DataItemListener}, and of the events that change a
+ * result between refreshes: {@link
+ * org.eclipse.milo.opcua.sdk.server.DataItemListener#onDataItemsTransferred} when items move to
+ * another Session, {@link
+ * org.eclipse.milo.opcua.sdk.server.SessionListener#onSessionIdentityChanged} and {@link
+ * org.eclipse.milo.opcua.sdk.server.SessionListener#onSessionEndpointChanged} when a Session's user
+ * or security changes, a {@link org.eclipse.milo.opcua.sdk.server.access.ReadAccessListener} for
+ * every {@link org.eclipse.milo.opcua.sdk.server.access.AccessControlManager#invalidateReadAccess},
+ * and {@link org.eclipse.milo.opcua.sdk.server.Session#isClosed} to skip a Session that has closed
+ * since it was last seen.
  */
 package org.eclipse.milo.opcua.sdk.server.subscriptions;
