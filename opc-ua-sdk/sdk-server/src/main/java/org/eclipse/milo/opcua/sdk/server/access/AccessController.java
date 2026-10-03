@@ -29,6 +29,10 @@ public interface AccessController {
    * Check if the current Session has read access to the Nodes and Attributes identified by {@code
    * readValueIds}.
    *
+   * <p>A Node the AddressSpace does not know can get {@link AccessResult#NODE_UNKNOWN}, which is
+   * neither allowed nor denied. A caller that decides what to read branches on {@link
+   * AccessResult#isDenied()}, so such a Node is still read and reports {@code Bad_NodeIdUnknown}.
+   *
    * @param session the Session to check access for.
    * @param readValueIds the Nodes and Attributes to check access for.
    * @return a Map containing the {@link AccessResult} for each {@link ReadValueId}.
