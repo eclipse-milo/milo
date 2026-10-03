@@ -16,11 +16,14 @@ import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 /**
  * Server-wide listener for the lifecycle of data MonitoredItems.
  *
- * <p>The SDK notifies these listeners from the service calls that create, delete, transfer, or
- * change the MonitoringMode of data items: synchronously, on the service thread, and before the
- * owning {@link AddressSpace} hears about the same items through its own callbacks. Every data item
- * on the server passes through here, whichever AddressSpace owns it, so a component that keeps
- * per-item state current, such as one that refreshes read access results, needs no hook on
+ * <p>The SDK notifies these listeners when data items are created, deleted, transferred, or have
+ * their MonitoringMode changed: synchronously, on the thread that makes the change, and before the
+ * owning {@link AddressSpace} hears about the same items through its own callbacks. That is a
+ * service request thread for the Subscription and MonitoredItem services, the thread that closes a
+ * Session for the items it deletes, and the Subscription's publishing timer for the items of a
+ * Subscription whose lifetime expired, which runs while holding that Subscription's monitor. Every
+ * data item on the server passes through here, whichever AddressSpace owns it, so a component that
+ * keeps per-item state current, such as one that refreshes read access results, needs no hook on
  * individual AddressSpaces. Register with {@link OpcUaServer#addDataItemListener}.
  *
  * <p>Event items are not reported. Listeners should return quickly and must not throw; an exception

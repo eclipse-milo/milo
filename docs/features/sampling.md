@@ -359,7 +359,8 @@ groups and the default configuration without bucketing, so existing forwarding k
 each item is still sampled at the interval its AddressSpace reported. For a managed namespace with a
 lifecycle, delete the field and its construction, its lifecycle registration, and the four
 callback overrides that forwarded to it; the inherited manager, callbacks, and lifecycle take
-over. [Commit b44aee410][migration-commit] does exactly this for the six in-tree namespaces. If
+over. The commit in [#2089](https://github.com/eclipse-milo/milo/pull/2089) that drops the
+forwarding from the six in-tree namespaces does exactly this. If
 an override also did other work, keep that work and call the inherited callback. If it forwarded
 to a different sampler, pick one owner for those items rather than forwarding to both. A direct
 `AddressSpace` uses [explicit wiring](#explicit-manager-wiring).
@@ -394,6 +395,5 @@ server's [`DeviceNamespace`][device-namespace] exercises a custom group end to e
 
 [device-namespace]: ../../milo-examples/server-examples/src/main/java/org/eclipse/milo/examples/server/sampling/DeviceNamespace.java
 [device-group]: ../../milo-examples/server-examples/src/main/java/org/eclipse/milo/examples/server/sampling/DeviceSamplingGroup.java
-[migration-commit]: https://github.com/eclipse-milo/milo/commit/b44aee410387fc2d0865d5aa1627cc25068ec054
 [unit-tests]: ../../opc-ua-sdk/sdk-server/src/test/java/org/eclipse/milo/opcua/sdk/server/sampling
 [integration-test]: ../../opc-ua-sdk/integration-tests/src/test/java/org/eclipse/milo/opcua/sdk/server/sampling/SamplingFrameworkTest.java
