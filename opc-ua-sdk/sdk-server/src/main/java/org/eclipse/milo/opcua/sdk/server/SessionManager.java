@@ -384,7 +384,7 @@ public class SessionManager {
       session.setClientNonce(clientNonce);
       session.setClientAddress(context.clientAddress());
 
-      additionalHeader = createSessionAdditionalHeader(request, securityConfiguration, session);
+      additionalHeader = createSessionAdditionalHeader(request, session);
 
       // Enforce the session limit and register the new session atomically so that concurrent
       // CreateSession requests cannot exceed the maximum. Done after validation so that a request
@@ -446,8 +446,7 @@ public class SessionManager {
   }
 
   private @Nullable ExtensionObject createSessionAdditionalHeader(
-      CreateSessionRequest request, SecurityConfiguration securityConfiguration, Session session)
-      throws UaException {
+      CreateSessionRequest request, Session session) throws UaException {
 
     /*
      * Enhanced ECC and RSA-DH username-token policies need a server ephemeral key before
@@ -456,7 +455,7 @@ public class SessionManager {
      * EphemeralKeyType in the response AdditionalHeader.
      */
     return resolveUserTokenEphemeralKeyHeader(
-        request.getRequestHeader().getAdditionalHeader(), securityConfiguration, session);
+        request.getRequestHeader().getAdditionalHeader(), session);
   }
 
   /**
@@ -470,16 +469,12 @@ public class SessionManager {
    * the Milo client already accepts.
    *
    * @param additionalHeader the request AdditionalHeader, if any.
-   * @param securityConfiguration the security configuration used to select the signing key pair.
    * @param session the session that owns the negotiated key material.
    * @return the response AdditionalHeader, or {@code null} when no negotiation was requested.
    * @throws UaException if the header payload is malformed or key material cannot be created.
    */
   private @Nullable ExtensionObject resolveUserTokenEphemeralKeyHeader(
-      @Nullable ExtensionObject additionalHeader,
-      SecurityConfiguration securityConfiguration,
-      Session session)
-      throws UaException {
+      @Nullable ExtensionObject additionalHeader, Session session) throws UaException {
 
     EnhancedUserTokenAdditionalHeader.NegotiationRequest negotiationRequest =
         EnhancedUserTokenAdditionalHeader.decodeRequest(
@@ -487,7 +482,7 @@ public class SessionManager {
 
     if (negotiationRequest
         instanceof EnhancedUserTokenAdditionalHeader.NegotiationRequest.Supported supported) {
-      return issueUserTokenEphemeralKey(supported.securityPolicy(), securityConfiguration, session);
+      return issueUserTokenEphemeralKey(supported.securityPolicy(), session);
     } else if (negotiationRequest
         instanceof EnhancedUserTokenAdditionalHeader.NegotiationRequest.Unsupported unsupported) {
       logger.debug(
@@ -517,18 +512,16 @@ public class SessionManager {
    * an {@code ECDHKey} status code as described on {@link #resolveUserTokenEphemeralKeyHeader}.
    *
    * @param request the ActivateSession request whose AdditionalHeader may request a fresh key.
-   * @param securityConfiguration the security configuration the session is (now) bound to.
    * @param session the session being activated.
    * @return the response AdditionalHeader carrying the fresh signed key, an in-parameter status
    *     code, or {@code null} when no enhanced user-token key was requested.
    * @throws UaException if the header payload is malformed or key material cannot be created.
    */
   private @Nullable ExtensionObject activateSessionAdditionalHeader(
-      ActivateSessionRequest request, SecurityConfiguration securityConfiguration, Session session)
-      throws UaException {
+      ActivateSessionRequest request, Session session) throws UaException {
 
     return resolveUserTokenEphemeralKeyHeader(
-        request.getRequestHeader().getAdditionalHeader(), securityConfiguration, session);
+        request.getRequestHeader().getAdditionalHeader(), session);
   }
 
   /**
@@ -539,14 +532,12 @@ public class SessionManager {
    * the Part 6, 6.8.2 single-use property.
    *
    * @param securityPolicy the requested enhanced user-token security policy.
-   * @param securityConfiguration the security configuration used to select the signing key pair.
    * @param session the session that owns the key material and whose endpoint advertises the policy.
    * @return the encoded response AdditionalHeader carrying the signed {@link EphemeralKeyType}.
    * @throws UaException if the policy is unavailable on the endpoint or key material cannot be
    *     created.
    */
-  private ExtensionObject issueUserTokenEphemeralKey(
-      SecurityPolicy securityPolicy, SecurityConfiguration securityConfiguration, Session session)
+  private ExtensionObject issueUserTokenEphemeralKey(SecurityPolicy securityPolicy, Session session)
       throws UaException {
 
     if (!EnhancedUserTokenAdditionalHeader.hasUsernameTokenSecurityPolicy(
@@ -952,8 +943,7 @@ public class SessionManager {
 
           ByteString serverNonce = NonceUtil.generateNonce(32);
 
-          ExtensionObject additionalHeader =
-              activateSessionAdditionalHeader(request, securityConfiguration, session);
+          ExtensionObject additionalHeader = activateSessionAdditionalHeader(request, session);
 
           // The header can install a new key; keep the remaining commit operations non-throwing.
           session.setClientAddress(context.clientAddress());
@@ -1027,8 +1017,7 @@ public class SessionManager {
 
               ByteString serverNonce = NonceUtil.generateNonce(32);
 
-              ExtensionObject additionalHeader =
-                  activateSessionAdditionalHeader(request, newSecurityConfiguration, session);
+              ExtensionObject additionalHeader = activateSessionAdditionalHeader(request, session);
 
               // The header can install a new key; keep the remaining commit operations
               // non-throwing.
@@ -1095,8 +1084,7 @@ public class SessionManager {
 
       ByteString serverNonce = NonceUtil.generateNonce(32);
 
-      ExtensionObject additionalHeader =
-          activateSessionAdditionalHeader(request, session.getSecurityConfiguration(), session);
+      ExtensionObject additionalHeader = activateSessionAdditionalHeader(request, session);
 
       // Move the session from created to active atomically with respect to the limit check in
       // createSession, so a concurrent CreateSession cannot evict a session that is activating.
