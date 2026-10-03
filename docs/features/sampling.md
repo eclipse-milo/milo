@@ -174,7 +174,7 @@ A custom policy implements one method, `check(OpcUaServer, List<DataItem>)`, ret
 for each item it has an answer for. Resolve each item's Session at call time, key any cache of
 your own by Session, and treat an omitted result as "keep the previous decision", not as a
 denial. Return the results and let the group apply them; the group refuses to apply a result
-from a check that started before the item left or rejoined.
+from a check that started before the item left or rejoined, or moved to another Session.
 
 ### Custom sampling group
 
@@ -324,7 +324,7 @@ results current. The SDK provides the observations; the ordering is yours.
 | `OpcUaServer.addDataItemListener()` | Every data item created, deleted, mode-changed, or transferred on the server. Synchronous, before the AddressSpace's own callback. No modified-item callback. |
 | `AccessControlManager.addReadAccessListener()` | A scope whose cached answers were just dropped. Synchronous, on the invalidating thread. |
 | `SessionManager.addSessionListener()` | Identity and endpoint changes and Session lifecycle. Asynchronous; pending callbacks can be skipped at shutdown. |
-| `AddressSpace.onDataItemsTransferred()` | Your own items that moved to another Session, already pointing at it. |
+| `AddressSpace.onDataItemsTransferred()` | Your own items that moved to another Session, already pointing at it and already checked for it. |
 
 Register before items exist, or seed the coordinator with the items that already do. Keep the
 synchronous listeners short: record what changed and enqueue the work.

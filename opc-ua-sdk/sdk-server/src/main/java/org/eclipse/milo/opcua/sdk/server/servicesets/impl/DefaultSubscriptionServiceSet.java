@@ -15,13 +15,16 @@ import static org.eclipse.milo.opcua.stack.core.util.FutureUtils.failedUaFuture;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.access.ReadAccessScope;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity.AnonymousIdentity;
+import org.eclipse.milo.opcua.sdk.server.items.BaseMonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
 import org.eclipse.milo.opcua.sdk.server.servicesets.SubscriptionServiceSet;
@@ -42,6 +45,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ModifySubscriptionRequ
 import org.eclipse.milo.opcua.stack.core.types.structured.ModifySubscriptionResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.PublishResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.RepublishRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.RepublishResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.SetPublishingModeRequest;
@@ -250,6 +254,12 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
           UInteger[] availableSequenceNumbers;
           List<DataItem> transferredDataItems;
 
+          // The items' read access results were checked for the old Session. Check them for the
+          // new one before anything is sent to it, so an initial value below, or a value from a
+          // sampler that samples its own items, is gated by an answer for the Session that
+          // receives it (Part 4 §5.13.2.1).
+          Map<ReadValueId, AccessResult> readAccessResults = checkReadAccess(session, subscription);
+
           synchronized (subscription) {
             otherSession
                 .getSubscriptionManager()
@@ -268,6 +278,14 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
                     .map(item -> (DataItem) item)
                     .toList();
 
+            for (DataItem item : transferredDataItems) {
+              AccessResult result = readAccessResults.get(item.getReadValueId());
+
+              if (result != null) {
+                item.setReadAccessResult(result);
+              }
+            }
+
             availableSequenceNumbers = subscription.getAvailableSequenceNumbers();
 
             if (request.getSendInitialValues()) {
@@ -282,9 +300,9 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
           // the AddressSpace see the transfer complete. A failing callback must not fail a
           // transfer that has already happened.
           if (!transferredDataItems.isEmpty()) {
-            // The items now answer to another Session, so whatever was decided for their Nodes
-            // under this Session, if anything, is not what the transferred items were checked
-            // against. Say so before the listeners re-check them.
+            // The items now answer to another Session, so whatever was cached for their Nodes
+            // under this Session, if anything, may predate the transfer. Say so before the
+            // listeners hear about it.
             List<NodeId> transferredNodeIds =
                 transferredDataItems.stream()
                     .map(item -> item.getReadValueId().getNodeId())
@@ -330,6 +348,38 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
             new DiagnosticInfo[0]);
 
     return CompletableFuture.completedFuture(response);
+  }
+
+  /**
+   * Check the read access of {@code subscription}'s data items for {@code session}, the Session it
+   * is being transferred to. A check that throws is logged and answers nothing, which leaves each
+   * item's result as it was until something refreshes it.
+   */
+  private Map<ReadValueId, AccessResult> checkReadAccess(
+      Session session, Subscription subscription) {
+
+    List<ReadValueId> readValueIds =
+        subscription.getMonitoredItems().values().stream()
+            .filter(item -> item instanceof DataItem)
+            .map(BaseMonitoredItem::getReadValueId)
+            .distinct()
+            .toList();
+
+    if (readValueIds.isEmpty()) {
+      return Map.of();
+    }
+
+    try {
+      return server.getAccessController().checkReadAccess(session, readValueIds);
+    } catch (Throwable t) {
+      logger.warn(
+          "Read access check failed for Subscription {} transferred to Session {}",
+          subscription.getId(),
+          session.getSessionId(),
+          t);
+
+      return Map.of();
+    }
   }
 
   private static boolean sessionsHaveSameUser(Session s1, Session s2) {

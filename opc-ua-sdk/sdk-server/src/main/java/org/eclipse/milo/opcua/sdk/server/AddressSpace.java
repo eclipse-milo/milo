@@ -262,9 +262,10 @@ public interface AddressSpace {
    * another Session by TransferSubscriptions (Part 4 §5.14.7).
    *
    * <p>Each item's {@link DataItem#getSession()} already returns the new Session when this is
-   * called. The read access result an item carries was checked for the previous Session, so a
-   * component that keeps results current on its own schedule can use this callback to check the
-   * items for their new Session without waiting for its next refresh. Sampling is unaffected.
+   * called, and each item already carries the result of a read access check for that Session,
+   * applied by the SDK before anything was sent to it, unless that check failed. A component that
+   * keeps results current on its own schedule learns here that the items answer to another Session.
+   * Sampling is unaffected.
    *
    * <p>This is called outside the Subscription's lock, so a further transfer of the same
    * Subscription, or a scheduled refresh, can run at the same time. A component that checks read

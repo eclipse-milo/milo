@@ -58,8 +58,9 @@ public interface DataItemListener {
   /**
    * Data items have been transferred to another Session by TransferSubscriptions (Part 4 §5.14.7).
    *
-   * <p>Each item's {@link DataItem#getSession()} already returns {@code newSession}. The read
-   * access result an item carries was checked for {@code oldSession}.
+   * <p>Each item's {@link DataItem#getSession()} already returns {@code newSession}, and each item
+   * already carries the result of a read access check for {@code newSession}, unless that check
+   * failed.
    *
    * @param dataItems the {@link DataItem}s that were transferred.
    * @param oldSession the Session the items belonged to before the transfer.

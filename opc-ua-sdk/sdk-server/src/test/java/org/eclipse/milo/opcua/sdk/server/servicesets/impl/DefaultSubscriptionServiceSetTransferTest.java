@@ -36,6 +36,8 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.SessionManager;
 import org.eclipse.milo.opcua.sdk.server.access.AccessControlManager;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.access.ReadAccessScope;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SubscriptionDiagnostics;
@@ -44,13 +46,16 @@ import org.eclipse.milo.opcua.sdk.server.items.BaseMonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredEventItem;
+import org.eclipse.milo.opcua.sdk.server.sampling.SamplingTestItems;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.SubscriptionManager;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
@@ -73,6 +78,7 @@ class DefaultSubscriptionServiceSetTransferTest {
 
   private final OpcUaServer server = mock(OpcUaServer.class);
   private final AccessControlManager accessControlManager = mock(AccessControlManager.class);
+  private final AccessController accessController = mock(AccessController.class);
   private final AddressSpaceManager addressSpaceManager = mock(AddressSpaceManager.class);
   private final Session newSession = mock(Session.class);
   private final Session oldSession = mock(Session.class);
@@ -84,6 +90,7 @@ class DefaultSubscriptionServiceSetTransferTest {
   @BeforeEach
   void setUp() throws Exception {
     when(server.getAccessControlManager()).thenReturn(accessControlManager);
+    when(server.getAccessController()).thenReturn(accessController);
     SessionManager sessionManager = mock(SessionManager.class);
     when(sessionManager.getSession(eq(context), any())).thenReturn(newSession);
 
@@ -182,6 +189,40 @@ class DefaultSubscriptionServiceSetTransferTest {
         Optional.of(Set.of(dataItem.getReadValueId().getNodeId())), scope.getValue().nodeIds());
   }
 
+  /**
+   * Part 4 §5.13.2.1: the last value a transfer re-sends as an initial value was sampled for the
+   * old Session. The items are checked for the new Session first, so an item the new Session may
+   * not read reports the denial instead of that value.
+   */
+  @Test
+  void transferChecksTheItemsForTheNewSessionBeforeResendingTheLastValue() throws Exception {
+    MonitoredDataItem dataItem = publishedDataItem(uint(1), 42);
+    monitoredItems.put(dataItem.getId(), dataItem);
+    when(accessController.checkReadAccess(eq(newSession), anyList()))
+        .thenReturn(Map.of(dataItem.getReadValueId(), AccessResult.DENIED_SECURITY_MODE));
+
+    serviceSet.onTransferSubscriptions(context, transferRequest(true));
+
+    assertEquals(
+        List.of(new StatusCode(StatusCodes.Bad_SecurityModeInsufficient)),
+        SamplingTestItems.drain(dataItem).stream().map(DataValue::statusCode).toList());
+  }
+
+  // The control for the test above: a new Session that may read the item gets the last value.
+  @Test
+  void transferResendsTheLastValueWhenTheNewSessionMayReadIt() throws Exception {
+    MonitoredDataItem dataItem = publishedDataItem(uint(1), 42);
+    monitoredItems.put(dataItem.getId(), dataItem);
+    when(accessController.checkReadAccess(eq(newSession), anyList()))
+        .thenReturn(Map.of(dataItem.getReadValueId(), AccessResult.ALLOWED));
+
+    serviceSet.onTransferSubscriptions(context, transferRequest(true));
+
+    List<DataValue> sent = SamplingTestItems.drain(dataItem);
+    assertEquals(1, sent.size());
+    assertEquals(42, sent.get(0).value().value());
+  }
+
   // A transfer the server refuses moves nothing, so there is nothing to report.
   @Test
   void refusedTransferReportsNothing() throws Exception {
@@ -226,6 +267,15 @@ class DefaultSubscriptionServiceSetTransferTest {
         true);
   }
 
+  /** A data item whose last value, {@code value}, was already published to the old Session. */
+  private MonitoredDataItem publishedDataItem(UInteger id, int value) throws Exception {
+    MonitoredDataItem item = dataItem(id);
+    item.installFilter(MonitoredDataItem.DEFAULT_FILTER);
+    item.setValue(new DataValue(new Variant(value)));
+    SamplingTestItems.drain(item);
+    return item;
+  }
+
   private MonitoredEventItem eventItem(UInteger id) {
     return new MonitoredEventItem(
         server,
@@ -242,9 +292,14 @@ class DefaultSubscriptionServiceSetTransferTest {
   }
 
   private static TransferSubscriptionsRequest transferRequest() {
+    return transferRequest(false);
+  }
+
+  private static TransferSubscriptionsRequest transferRequest(boolean sendInitialValues) {
     RequestHeader header =
         new RequestHeader(NodeId.NULL_VALUE, DateTime.now(), uint(1), uint(0), null, uint(0), null);
 
-    return new TransferSubscriptionsRequest(header, new UInteger[] {SUBSCRIPTION_ID}, false);
+    return new TransferSubscriptionsRequest(
+        header, new UInteger[] {SUBSCRIPTION_ID}, sendInitialValues);
   }
 }

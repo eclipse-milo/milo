@@ -105,7 +105,9 @@ inline cannot recurse.
 The token on each membership entry is what makes refresh results safe. A check that started
 before an item left the group, or left and came back, finds a different token and applies
 nothing. That protects the handoff when an item moves between groups without waiting for the old
-group's network I/O.
+group's network I/O. The group also records each item's Session before the check and applies
+nothing to an item that a TransferSubscriptions moved meanwhile; the transfer applies the new
+Session's answer itself, and the item is read again next cycle.
 
 ## Read access
 
@@ -163,7 +165,8 @@ value past a denial. The SDK core owns the spec obligation; the framework owns f
 Access could have been refreshed on its own schedule. Making it the first step of every turn
 means a value is always gated by the decision of the cycle that read it, there is no window
 between a check and the read it authorizes, and the group needs one serialization mechanism
-rather than two. It also means the per-cycle policy costs one check per Session per cycle, which
+rather than two. The one event that changes an item's Session between the two, a
+TransferSubscriptions, checks the item for its new Session and applies that answer itself. It also means the per-cycle policy costs one check per Session per cycle, which
 is why the cached policy exists.
 
 ### A failed check keeps the last result

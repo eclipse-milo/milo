@@ -381,6 +381,32 @@ class SamplingGroupTest {
     assertEquals(List.of(List.of(a, b), List.of(a)), group.changes, "the next cycle sees [a]");
   }
 
+  /**
+   * A TransferSubscriptions that moves an item while its check is in flight applies the new
+   * Session's answer itself. The answer checked for the old Session must not land over it, and the
+   * item is not read this turn under a Session nobody checked it for.
+   */
+  @Test
+  void aCheckOvertakenByATransferIsNotAppliedAndTheMovedItemIsNotSampled() {
+    Session newSession = mock(Session.class);
+    policy.results.put(a, AccessResult.ALLOWED);
+    policy.beforeRefresh =
+        () -> {
+          a.setSession(newSession);
+          a.setReadAccessResult(AccessResult.DENIED_SECURITY_MODE);
+        };
+    group.addItems(List.of(a, b));
+    group.startup();
+
+    runCycle();
+
+    assertEquals(
+        AccessResult.DENIED_SECURITY_MODE,
+        a.getReadAccessResult(),
+        "the answer for the new Session stands");
+    assertEquals(List.of(List.of(b)), group.samples, "the moved item is not read this turn");
+  }
+
   // Applying a result can throw, for example from a DataItem implementation outside the SDK. The
   // turn must still be released and the next cycle scheduled, or the group stops for good.
   @Test
