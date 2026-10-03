@@ -343,8 +343,9 @@ server.getAccessControlManager().addReadAccessListener(scope -> coordinator.mark
 A refresh task snapshots the live items with their Sessions, checks them with
 `server.getAccessController().checkReadAccess(session, readValueIds)` or through
 `server.getAccessControlManager().getReadAccessCache().getOrCheck(session, readValueIds)`, and applies each result with
-`item.setReadAccessResult()` only if the item is still tracked, still on that Session, and no
-newer refresh has been requested for it. `setReadAccessResult()` is thread-safe but applies calls
+`item.setReadAccessResult()` only if the item is still tracked, still on that Session, the
+Session's `getAccessEpoch()` is what it was before the check, and no newer refresh has been
+requested for it. `setReadAccessResult()` is thread-safe but applies calls
 in arrival order and cannot tell an old allowance from a new one, so the coordinator serializes
 or versions its checks. The SDK re-checks a Session's items itself when its identity or
 endpoint changes and checks transferred items for their new Session; re-enabled items need a

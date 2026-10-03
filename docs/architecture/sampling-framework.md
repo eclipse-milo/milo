@@ -105,9 +105,10 @@ inline cannot recurse.
 The token on each membership entry is what makes refresh results safe. A check that started
 before an item left the group, or left and came back, finds a different token and applies
 nothing. That protects the handoff when an item moves between groups without waiting for the old
-group's network I/O. The group also records each item's Session before the check and applies
-nothing to an item that a TransferSubscriptions moved meanwhile; the transfer applies the new
-Session's answer itself, and the item is read again next cycle.
+group's network I/O. The group also records each item's Session, and that Session's access
+epoch, before the check, and applies nothing to an item that a TransferSubscriptions moved
+meanwhile or whose Session's identity or endpoint changed meanwhile. The transfer and
+ActivateSession apply a current answer themselves, and the item is read again next cycle.
 
 ## Read access
 

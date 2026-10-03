@@ -178,10 +178,14 @@ public class SubscriptionManager {
    * previous user or channel whoever samples them (Part 4 §5.13.2.1). It is called from
    * ActivateSession after the change is committed, so it never throws: a failure is logged and
    * leaves the items' results as they were. An item that a TransferSubscriptions moved to another
-   * Session meanwhile is skipped, since the transfer applies the answer for its new Session itself.
+   * Session meanwhile is skipped, since the transfer applies the answer for its new Session itself,
+   * and so is every item if the Session's identity or endpoint changed again during the check,
+   * since that change runs a refresh of its own.
    */
   public void refreshReadAccess() {
     try {
+      long accessEpoch = session.getAccessEpoch();
+
       List<DataItem> dataItems =
           subscriptions.values().stream()
               .flatMap(subscription -> subscription.getMonitoredItems().values().stream())
@@ -198,6 +202,10 @@ public class SubscriptionManager {
 
       Map<ReadValueId, AccessResult> results =
           server.getAccessController().checkReadAccess(session, readValueIds);
+
+      if (session.getAccessEpoch() != accessEpoch) {
+        return;
+      }
 
       for (DataItem item : dataItems) {
         AccessResult result = results.get(item.getReadValueId());

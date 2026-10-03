@@ -62,8 +62,9 @@ import org.slf4j.LoggerFactory;
  * them, while a {@code sample} may still be in progress for them, so a subclass that keeps per-item
  * state guards it. A {@code sample} that completes after its items were removed, or after the group
  * was shut down, is harmless: every value passes through the item's read access gate, and a read
- * access result from a check that started before an item left the group, left and rejoined it, or
- * moved to another Session, is never applied to it.
+ * access result from a check that started before an item left the group, left and rejoined it,
+ * moved to another Session, or saw its Session's identity or endpoint change, is never applied to
+ * it.
  *
  * <p>An exception from {@code sample}, {@code onItemsChanged}, the refresh, or applying its results
  * is logged and does not stop the group; the turn is released and the next cycle is scheduled all
@@ -634,17 +635,17 @@ public abstract class SamplingGroup {
 
   /**
    * Check the read access of each of {@code toRefresh}, apply the results to the items that are
-   * still in the group with the token they were checked under and still on the Session they were
-   * checked for, and return the ones whose Session may read them.
+   * still in the group with the token they were checked under and still on the Session, and at the
+   * access epoch, they were checked for, and return the ones whose Session may read them.
    */
   private List<DataItem> refreshReadAccess(Map<DataItem, Long> toRefresh) {
     List<DataItem> checked = List.copyOf(toRefresh.keySet());
 
     // Taken before the check, which resolves each item's Session itself. A transfer that moves an
-    // item meanwhile applies the new Session's answer on its own, so this check's answer must not
-    // land over it, and the item is not read this turn.
-    var sessions = new HashMap<DataItem, Session>(checked.size());
-    checked.forEach(item -> sessions.put(item, item.getSession()));
+    // item meanwhile, or an identity or endpoint change of its Session, applies a current answer
+    // on its own, so this check's answer must not land over it, and the item is not read this turn.
+    var checkedFor = new HashMap<DataItem, CheckedFor>(checked.size());
+    checked.forEach(item -> checkedFor.put(item, CheckedFor.of(item)));
 
     Map<DataItem, AccessResult> results;
     try {
@@ -658,15 +659,14 @@ public abstract class SamplingGroup {
 
     // Applied under the lock and only to members whose token and Session are unchanged, so a
     // result from a check that started before an item left the group, even if it has since come
-    // back, before it moved to another Session, or before shutdown, never lands over a newer one.
+    // back, before its Session changed, or before shutdown, never lands over a newer one.
     synchronized (lock) {
       if (!running) {
         return readable;
       }
 
       for (DataItem item : checked) {
-        if (!toRefresh.get(item).equals(items.get(item))
-            || item.getSession() != sessions.get(item)) {
+        if (!toRefresh.get(item).equals(items.get(item)) || !checkedFor.get(item).isCurrent(item)) {
           continue;
         }
 
@@ -685,6 +685,22 @@ public abstract class SamplingGroup {
     }
 
     return readable;
+  }
+
+  /** The Session an item was checked for, and that Session's access epoch at the time. */
+  private record CheckedFor(Session session, long accessEpoch) {
+
+    static CheckedFor of(DataItem item) {
+      Session session = item.getSession();
+
+      return new CheckedFor(session, session.getAccessEpoch());
+    }
+
+    boolean isCurrent(DataItem item) {
+      Session current = item.getSession();
+
+      return current == session && current.getAccessEpoch() == accessEpoch;
+    }
   }
 
   // endregion

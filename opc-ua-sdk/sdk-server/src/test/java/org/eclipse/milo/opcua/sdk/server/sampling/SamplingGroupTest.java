@@ -33,6 +33,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
@@ -432,6 +433,34 @@ class SamplingGroupTest {
         a.getReadAccessResult(),
         "the answer for the new Session stands");
     assertEquals(List.of(List.of(b)), group.samples, "the moved item is not read this turn");
+  }
+
+  // An identity or endpoint change of an item's Session while its check is in flight makes the
+  // SDK re-check the item itself. The answer for the Session as it was must not land over that,
+  // and the item is not read this turn on an answer for a user it no longer has.
+  @Test
+  void aCheckOvertakenByAnIdentityChangeIsNotAppliedAndTheItemIsNotSampled() {
+    var accessEpoch = new AtomicLong();
+    Session changing = mock(Session.class);
+    when(changing.getAccessEpoch()).thenAnswer(invocation -> accessEpoch.get());
+    MonitoredDataItem item = SamplingTestItems.item(server, changing, "changing");
+
+    policy.results.put(item, AccessResult.ALLOWED);
+    policy.beforeRefresh =
+        () -> {
+          accessEpoch.incrementAndGet();
+          item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
+        };
+    group.addItems(List.of(item, b));
+    group.startup();
+
+    runCycle();
+
+    assertEquals(
+        AccessResult.DENIED_USER_ACCESS,
+        item.getReadAccessResult(),
+        "the answer for the new identity stands");
+    assertEquals(List.of(List.of(b)), group.samples, "the item is not read this turn");
   }
 
   // Applying a result can throw, for example from a DataItem implementation outside the SDK. The

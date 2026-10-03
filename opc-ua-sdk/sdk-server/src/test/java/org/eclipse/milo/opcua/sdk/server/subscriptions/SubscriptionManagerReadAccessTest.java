@@ -253,6 +253,26 @@ class SubscriptionManagerReadAccessTest {
     assertTrue(drain(item).isEmpty());
   }
 
+  // Two identity changes in quick succession each run a refresh. One whose check straddles the
+  // second change answers for the previous user, so it applies nothing and leaves the item to the
+  // refresh of the later change.
+  @Test
+  void refreshReadAccessOvertakenByAnotherChangeAppliesNothing() throws Exception {
+    MonitoredDataItem item = createAllowedItem();
+    var accessEpoch = new AtomicLong();
+    when(session.getAccessEpoch()).thenAnswer(invocation -> accessEpoch.get());
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenAnswer(
+            invocation -> {
+              accessEpoch.incrementAndGet();
+              return Map.of(itemToMonitor, AccessResult.DENIED_USER_ACCESS);
+            });
+
+    manager.refreshReadAccess();
+
+    assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
+  }
+
   private MonitoredDataItem createAllowedItem() throws Exception {
     when(accessController.checkReadAccess(eq(session), anyList()))
         .thenReturn(Map.of(itemToMonitor, AccessResult.ALLOWED));

@@ -15,6 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -35,6 +36,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.ServerDiagnosticsSummary;
+import org.eclipse.milo.opcua.sdk.server.identity.DefaultAnonymousIdentity;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -42,6 +44,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.structured.AnonymousIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
@@ -127,6 +130,23 @@ class SessionTest {
 
     assertTrue(session.isClosed());
     assertEquals(1, server.getDiagnosticsSummary().getSessionTimeoutCount().sum());
+  }
+
+  // A component that checks access for a Session discards answers that straddle a change of what
+  // they are made from. Both the identity and the endpoint feed them, so each moves the epoch.
+  @Test
+  void identityAndEndpointChangesEachMoveTheAccessEpoch() {
+    Session session = newSession(Duration.ofMinutes(1));
+    long initial = session.getAccessEpoch();
+
+    session.setIdentity(new DefaultAnonymousIdentity(), new AnonymousIdentityToken("anonymous"));
+    long afterIdentity = session.getAccessEpoch();
+
+    session.setEndpoint(endpointDescription());
+    long afterEndpoint = session.getAccessEpoch();
+
+    assertNotEquals(initial, afterIdentity, "an identity change moves the epoch");
+    assertNotEquals(afterIdentity, afterEndpoint, "an endpoint change moves the epoch");
   }
 
   private Session newSession(Duration sessionTimeout) {

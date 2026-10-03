@@ -72,7 +72,9 @@ public interface DataItem extends MonitoredItem {
    * in the order the calls arrive, and the item does not know which Session or which check a result
    * came from. A refresher with more than one trigger, for example a schedule and {@link
    * org.eclipse.milo.opcua.sdk.server.AddressSpace#onDataItemsTransferred}, must order its own
-   * checks per item so that the result of an older check never lands after a newer one.
+   * checks per item so that the result of an older check never lands after a newer one. {@link
+   * org.eclipse.milo.opcua.sdk.server.Session#getAccessEpoch()} tells it when a check straddled a
+   * change of the Session's identity or endpoint.
    *
    * <p>{@link MonitoredDataItem}, the item the SDK creates for every data MonitoredItem, is the
    * implementation that enforces this. The default implementation does nothing, so an
