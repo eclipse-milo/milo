@@ -248,7 +248,11 @@ such failure mode and puts no third-party type in the public API.
 
 The framework does not time out or cancel device I/O, does not purge notifications already
 queued when a denial arrives, does not sample event MonitoredItems, and does not use virtual
-threads or per-group executors on the Java 17 baseline.
+threads or per-group executors on the Java 17 baseline. The one purge is outside the framework:
+a TransferSubscriptions drops the values queued on an item the new Session may not read, since
+they were checked for the old Session. NotificationMessages already sent and kept for Republish
+are not purged even then; they hold values the same user was allowed to read, which a transfer
+requires.
 
 ## Reading the implementation
 

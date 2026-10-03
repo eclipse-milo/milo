@@ -223,6 +223,26 @@ class DefaultSubscriptionServiceSetTransferTest {
     assertEquals(42, sent.get(0).value().value());
   }
 
+  // Values still queued at transfer time were sampled and checked for the old Session. An item the
+  // new Session may not read, for example over a channel that does not meet the Node's
+  // AccessRestrictions, drops them, and the client gets the denial in their place.
+  @Test
+  void transferToASessionThatMayNotReadTheItemDropsItsQueuedValues() throws Exception {
+    MonitoredDataItem dataItem = dataItem(uint(1), uint(10));
+    dataItem.installFilter(MonitoredDataItem.DEFAULT_FILTER);
+    dataItem.setValue(new DataValue(new Variant(1)));
+    dataItem.setValue(new DataValue(new Variant(2)));
+    monitoredItems.put(dataItem.getId(), dataItem);
+    when(accessController.checkReadAccess(eq(newSession), anyList()))
+        .thenReturn(Map.of(dataItem.getReadValueId(), AccessResult.DENIED_SECURITY_MODE));
+
+    serviceSet.onTransferSubscriptions(context, transferRequest(false));
+
+    assertEquals(
+        List.of(new StatusCode(StatusCodes.Bad_SecurityModeInsufficient)),
+        SamplingTestItems.drain(dataItem).stream().map(DataValue::statusCode).toList());
+  }
+
   // A transfer the server refuses moves nothing, so there is nothing to report.
   @Test
   void refusedTransferReportsNothing() throws Exception {
@@ -253,6 +273,10 @@ class DefaultSubscriptionServiceSetTransferTest {
   }
 
   private MonitoredDataItem dataItem(UInteger id) {
+    return dataItem(id, uint(1));
+  }
+
+  private MonitoredDataItem dataItem(UInteger id, UInteger queueSize) {
     return new MonitoredDataItem(
         server,
         oldSession,
@@ -263,7 +287,7 @@ class DefaultSubscriptionServiceSetTransferTest {
         TimestampsToReturn.Both,
         id,
         100.0,
-        uint(1),
+        queueSize,
         true);
   }
 

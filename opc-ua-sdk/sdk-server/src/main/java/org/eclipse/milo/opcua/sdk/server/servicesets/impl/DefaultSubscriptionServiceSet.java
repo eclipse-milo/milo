@@ -281,7 +281,14 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
             for (DataItem item : transferredDataItems) {
               AccessResult result = readAccessResults.get(item.getReadValueId());
 
-              if (result != null) {
+              if (result == null) {
+                continue;
+              }
+
+              if (item instanceof MonitoredDataItem dataItem) {
+                // A new denial also drops the values queued for the old Session.
+                dataItem.setTransferredReadAccessResult(result);
+              } else {
                 item.setReadAccessResult(result);
               }
             }

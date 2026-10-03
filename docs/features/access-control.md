@@ -200,7 +200,9 @@ The client sees an ordinary DataChangeNotification whose DataValue has `Bad_User
 or `Bad_NotReadable` as its status and no value. A change to a denial queues that status at
 once, without waiting for a sample. A Disabled item queues nothing until monitoring resumes.
 Values queued before the decision changed are not purged, so a client can receive a last good
-value ahead of the denial.
+value ahead of the denial. The exception is a TransferSubscriptions to a Session that may not
+read the item: the values queued for the previous Session are dropped and the denial is queued
+in their place. NotificationMessages kept for Republish are not purged.
 
 The stored result is a snapshot. It does not re-check permissions on every `setValue()`; some
 component has to refresh it. For items sampled by the framework, the group does so before every
