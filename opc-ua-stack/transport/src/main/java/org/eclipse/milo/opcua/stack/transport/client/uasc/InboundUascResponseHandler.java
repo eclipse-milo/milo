@@ -36,8 +36,8 @@ public abstract class InboundUascResponseHandler extends SimpleChannelInboundHan
       } else {
         ServiceFault serviceFault;
 
-        if (responseMessage instanceof ServiceFault) {
-          serviceFault = (ServiceFault) responseMessage;
+        if (responseMessage instanceof ServiceFault fault) {
+          serviceFault = fault;
         } else {
           serviceFault = new ServiceFault(responseHeader);
         }
