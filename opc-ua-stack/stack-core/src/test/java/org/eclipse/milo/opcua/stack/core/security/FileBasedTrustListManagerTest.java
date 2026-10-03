@@ -144,6 +144,27 @@ class FileBasedTrustListManagerTest {
     }
   }
 
+  // Hidden files hold operating-system metadata, such as the .DS_Store that Finder writes, or
+  // temporary copies, such as the one written while a CRL bundle is replaced. They are not part of
+  // a trust list even when their contents decode.
+  @ParameterizedTest
+  @ValueSource(strings = {"trusted", "issuer"})
+  void hiddenFilesAreNotRead(String list) throws Exception {
+    Material visible = material("Visible");
+    Material hidden = material("Hidden");
+    Path certs = Files.createDirectories(directory.resolve(list).resolve("certs"));
+    Path crls = Files.createDirectories(directory.resolve(list).resolve("crl"));
+    Files.write(certs.resolve("visible.der"), visible.certificate().getEncoded());
+    Files.write(certs.resolve(".hidden.der"), hidden.certificate().getEncoded());
+    Files.write(crls.resolve("visible.crl"), visible.crl().getEncoded());
+    Files.write(crls.resolve(".crl-1.tmp"), hidden.crl().getEncoded());
+
+    try (var manager = FileBasedTrustListManager.createAndInitialize(directory)) {
+      assertEquals(List.of(visible.certificate()), certificates(manager, list));
+      assertEquals(List.of(visible.crl()), crls(manager, list));
+    }
+  }
+
   private static List<X509Certificate> certificates(
       FileBasedTrustListManager manager, String list) {
     return list.equals("trusted")

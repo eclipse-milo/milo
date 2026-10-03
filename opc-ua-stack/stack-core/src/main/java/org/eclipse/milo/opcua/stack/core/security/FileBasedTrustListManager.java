@@ -61,6 +61,11 @@ import org.slf4j.LoggerFactory;
  * <p>Every change is published as one immutable {@link TrustListSnapshot}. API updates write the
  * affected files and publish all four lists together; a directory reload triggered by the watcher
  * replaces only the list for that directory.
+ *
+ * <p>A reload decodes every regular file in a directory, whatever its extension, and logs and skips
+ * files that fail to decode. Hidden files, whose names start with {@code .}, and subdirectories are
+ * not read, so files such as the {@code .DS_Store} that macOS Finder creates neither appear in the
+ * trust list nor produce warnings.
  */
 public class FileBasedTrustListManager implements TrustListManager, Closeable {
 
@@ -361,8 +366,16 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
   private static <T> List<T> readAll(Path directory, Function<Path, Stream<T>> decode)
       throws IOException {
 
-    try (var files = Files.list(directory)) {
-      return files.flatMap(decode).toList();
+    return listFiles(directory).stream().flatMap(decode).toList();
+  }
+
+  /** List the regular files in {@code directory} whose names do not start with {@code .}. */
+  private static List<Path> listFiles(Path directory) throws IOException {
+    try (Stream<Path> files = Files.list(directory)) {
+      return files
+          .filter(Files::isRegularFile)
+          .filter(path -> !path.getFileName().toString().startsWith("."))
+          .toList();
     }
   }
 
@@ -372,7 +385,8 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
         return Optional.of(CertificateUtil.decodeCertificate(inputStream));
       }
     } catch (Throwable t) {
-      LOGGER.warn("Error decoding certificate: {}", path, t);
+      // Log without the stack trace; this repeats on every reload of the directory.
+      LOGGER.warn("Error decoding certificate file {}: {}", path, t.getMessage());
 
       return Optional.empty();
     }
@@ -382,7 +396,8 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
     try (FileInputStream inputStream = new FileInputStream(path.toFile())) {
       return Optional.of(CertificateUtil.decodeCrls(inputStream));
     } catch (UaException | IOException e) {
-      LOGGER.warn("Error decoding CRL file: {}", path, e);
+      // Log without the stack trace; this repeats on every reload of the directory.
+      LOGGER.warn("Error decoding CRL file {}: {}", path, e.getMessage());
 
       return Optional.empty();
     }
@@ -406,8 +421,8 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
   }
 
   private static void deleteCertificatesFromDir(Set<X509Certificate> certificates, Path directory) {
-    try (var files = Files.list(directory)) {
-      for (Path file : files.toList()) {
+    try {
+      for (Path file : listFiles(directory)) {
         if (decodeCertificateFile(file).filter(certificates::contains).isPresent()) {
           try {
             Files.delete(file);
@@ -440,8 +455,8 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
   }
 
   private static void deleteCrlsFromDir(Set<X509CRL> removed, Path directory) {
-    try (var files = Files.list(directory)) {
-      for (Path file : files.toList()) {
+    try {
+      for (Path file : listFiles(directory)) {
         List<X509CRL> contents = decodeCrlFile(file).orElse(List.of());
         List<X509CRL> retained = contents.stream().filter(crl -> !removed.contains(crl)).toList();
         if (retained.size() == contents.size()) {
