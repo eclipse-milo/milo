@@ -13,12 +13,15 @@ package org.eclipse.milo.opcua.sdk.server;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -44,8 +47,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * A {@link ManagedAddressSpace} with a lifecycle samples its data items without any sampling code
- * of its own: the base class forwards the callbacks to a SamplingManager that starts with the
- * registration and stops before it is undone.
+ * of its own: the base class forwards the callbacks to a SamplingManager that starts after the
+ * registration and the subclass's lifecycles and stops before them.
  */
 class ManagedAddressSpaceSamplingTest {
 
@@ -117,6 +120,74 @@ class ManagedAddressSpaceSamplingTest {
 
     RevisedDataItemParameters modified = addressSpace.onModifyDataItem(readValueId, 0.0, uint(5));
     assertEquals(100.0, modified.revisedSamplingInterval(), "a zero request becomes the floor");
+  }
+
+  /**
+   * A custom SamplingGroup can use a resource, such as a device connection, that a lifecycle the
+   * subclass adds opens and closes. Sampling starts after that lifecycle and stops before it, so no
+   * cycle runs while the resource is not open.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("addressSpaces")
+  void samplingRunsOnlyWhileTheSubclassLifecyclesAreStarted(
+      String name, Function<OpcUaServer, ManagedAddressSpace> factory) {
+
+    ManagedAddressSpace addressSpace = factory.apply(server);
+    var samplingRunningSeen = new ArrayList<Boolean>();
+    lifecycleManagerOf(addressSpace)
+        .addLifecycle(
+            new Lifecycle() {
+              @Override
+              public void startup() {
+                samplingRunningSeen.add(addressSpace.getSamplingManager().isRunning());
+              }
+
+              @Override
+              public void shutdown() {
+                samplingRunningSeen.add(addressSpace.getSamplingManager().isRunning());
+              }
+            });
+
+    ((Lifecycle) addressSpace).startup();
+    assertTrue(addressSpace.getSamplingManager().isRunning());
+    ((Lifecycle) addressSpace).shutdown();
+
+    assertEquals(
+        List.of(false, false),
+        samplingRunningSeen,
+        "sampling was not running when the subclass lifecycle started or when it stopped");
+  }
+
+  // A startup that fails is not followed by a shutdown, so a failure to start sampling, here from
+  // a subclass's configuration hook, must undo the registration that already happened.
+  @Test
+  void aSamplingManagerThatFailsToStartLeavesNothingRegistered() {
+    AddressSpaceManager addressSpaceManager = mock(AddressSpaceManager.class);
+    when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
+
+    var addressSpace =
+        new ManagedNamespaceWithLifecycle(server, "urn:test:namespace") {
+          @Override
+          protected SamplingManagerConfig samplingManagerConfig() {
+            throw new IllegalStateException("invalid driver configuration");
+          }
+        };
+
+    assertThrows(IllegalStateException.class, addressSpace::startup);
+
+    verify(addressSpaceManager).register(addressSpace.getNodeManager());
+    verify(addressSpaceManager).unregister(addressSpace.getNodeManager());
+    verify(addressSpaceManager).unregister(addressSpace);
+  }
+
+  private static LifecycleManager lifecycleManagerOf(ManagedAddressSpace addressSpace) {
+    if (addressSpace instanceof ManagedAddressSpaceWithLifecycle a) {
+      return a.getLifecycleManager();
+    } else if (addressSpace instanceof ManagedAddressSpaceFragmentWithLifecycle f) {
+      return f.getLifecycleManager();
+    } else {
+      return ((ManagedNamespaceWithLifecycle) addressSpace).getLifecycleManager();
+    }
   }
 
   private static Stream<Arguments> addressSpaces() {

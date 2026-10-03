@@ -70,8 +70,10 @@ invariants, and the reasons behind them.
 
 `ManagedAddressSpace` creates its manager on first use and forwards the four data-item
 callbacks to it. `ManagedNamespaceWithLifecycle`, `ManagedAddressSpaceWithLifecycle`, and
-`ManagedAddressSpaceFragmentWithLifecycle` start the manager with their registration and stop
-it before unregistering. A managed namespace needs no sampling code at all.
+`ManagedAddressSpaceFragmentWithLifecycle` start the manager after their registration and every
+lifecycle the subclass adds, and stop it before any of them, so a custom group can use a
+connection that one of those lifecycles opens and closes. A managed namespace needs no sampling
+code at all.
 
 The default `AddressSpaceSamplingGroup` reads each Session's items with one
 `AddressSpace.read()` per Session, split at `MaxNodesPerRead`, through the Node filter chain,

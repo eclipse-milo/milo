@@ -139,9 +139,9 @@ public abstract class ManagedAddressSpace implements AddressSpace {
    * #samplingManagerConfig()}, and the default {@code onDataItems*} and {@code
    * onMonitoringModeChanged} callbacks forward to it. {@link ManagedAddressSpaceWithLifecycle},
    * {@link ManagedAddressSpaceFragmentWithLifecycle}, and {@link ManagedNamespaceWithLifecycle}
-   * start it with their registration and stop it before unregistering; a {@code
-   * ManagedAddressSpace} without one of those lifecycles must start and stop it itself, since items
-   * that arrive before it starts are kept but not sampled.
+   * start it after their registration and every lifecycle the subclass adds, and stop it before any
+   * of them; a {@code ManagedAddressSpace} without one of those lifecycles must start and stop it
+   * itself, since items that arrive before it starts are kept but not sampled.
    *
    * <p>Configure this manager through the two hooks rather than wiring another {@link
    * SamplingManager} beside it: {@link #onCreateDataItem} and {@link #onModifyDataItem} revise
@@ -165,6 +165,43 @@ public abstract class ManagedAddressSpace implements AddressSpace {
     }
 
     return manager;
+  }
+
+  /**
+   * Start {@code lifecycleManager}, then {@link #getSamplingManager()}, so sampling begins after
+   * every lifecycle the subclass added, and a {@link SamplingGroup} can use what they started. If
+   * sampling fails to start, {@code lifecycleManager} is shut down again before the failure
+   * propagates, so nothing stays registered.
+   */
+  final void startupWithSampling(LifecycleManager lifecycleManager) {
+    lifecycleManager.startup();
+
+    try {
+      getSamplingManager().startup();
+    } catch (Throwable t) {
+      try {
+        lifecycleManager.shutdown();
+      } catch (Throwable cleanupFailure) {
+        t.addSuppressed(cleanupFailure);
+      }
+      throw t;
+    }
+  }
+
+  /**
+   * Stop {@link #getSamplingManager()}, if it was started, then {@code lifecycleManager}, so no
+   * sampling cycle runs on what the subclass's lifecycles release.
+   */
+  final void shutdownWithSampling(LifecycleManager lifecycleManager) {
+    try {
+      SamplingManager manager = samplingManager;
+
+      if (manager != null && manager.isRunning()) {
+        manager.shutdown();
+      }
+    } finally {
+      lifecycleManager.shutdown();
+    }
   }
 
   /**
