@@ -205,6 +205,21 @@ class SubscriptionManagerReadAccessTest {
     assertTrue(ownedMonitoredItems.isEmpty());
   }
 
+  // A custom AccessController that answers nothing for an item must not fail the create. The item
+  // is created allowed, as before the create-time check was seeded, and is refreshed from there.
+  @Test
+  void aMissingAccessResultCreatesTheItemAllowed() throws Exception {
+    when(accessController.checkReadAccess(eq(session), anyList())).thenReturn(Map.of());
+
+    CreateMonitoredItemsResponse response =
+        manager.createMonitoredItems(context, createRequest(createItem()));
+
+    assertEquals(StatusCode.GOOD, requireNonNull(response.getResults())[0].getStatusCode());
+    MonitoredDataItem item =
+        assertInstanceOf(MonitoredDataItem.class, ownedMonitoredItems.values().iterator().next());
+    assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
+  }
+
   /**
    * Part 4 §5.13.2.1: an identity or endpoint change can revoke read access to every item of the
    * Session at once. The re-check reaches every data item, whoever samples it, and a new denial is

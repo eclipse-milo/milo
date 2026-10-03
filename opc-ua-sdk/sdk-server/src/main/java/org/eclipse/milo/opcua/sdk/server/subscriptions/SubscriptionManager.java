@@ -421,8 +421,11 @@ public class SubscriptionManager {
         header, results.toArray(new MonitoredItemCreateResult[0]), new DiagnosticInfo[0]);
   }
 
-  /** How a group of create requests is handled: by its access result and by item kind. */
-  private record CreateGroup(AccessResult accessResult, boolean eventItem) {}
+  /**
+   * How a group of create requests is handled: by its access result, null if the controller
+   * returned none, and by item kind.
+   */
+  private record CreateGroup(@Nullable AccessResult accessResult, boolean eventItem) {}
 
   private static boolean isEventItemRequest(MonitoredItemCreateRequest request) {
     return AttributeId.EventNotifier.uid().equals(request.getItemToMonitor().getAttributeId());
@@ -442,7 +445,7 @@ public class SubscriptionManager {
       Subscription subscription,
       TimestampsToReturn timestamps,
       List<MonitoredItemCreateRequest> requests,
-      AccessResult readAccessResult) {
+      @Nullable AccessResult readAccessResult) {
 
     // Split requests by filter type to enable targeted attribute reading.
     // Only Percent Deadband requests on Value attributes need the expensive TypeDefinition +
@@ -506,9 +509,10 @@ public class SubscriptionManager {
         BaseMonitoredItem<?> monitoredItem =
             createMonitoredItem(request, subscription, timestamps, attributesResponse);
 
-        if (monitoredItem instanceof MonitoredDataItem dataItem) {
-          // Seed the item with the create-time check so a denial is queued before anything
-          // samples it. Whatever samples it re-checks on every sampling cycle from here on.
+        // Seed the item with the create-time check so a denial is queued before anything
+        // samples it. A controller that answered nothing leaves the item allowed, as before
+        // the check was seeded; whatever samples it re-checks from here on.
+        if (monitoredItem instanceof MonitoredDataItem dataItem && readAccessResult != null) {
           dataItem.setReadAccessResult(readAccessResult);
         }
 
