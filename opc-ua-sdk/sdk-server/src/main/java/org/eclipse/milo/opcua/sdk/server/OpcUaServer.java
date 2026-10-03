@@ -791,11 +791,13 @@ public class OpcUaServer extends AbstractServiceHandler {
   /**
    * Get the {@link AccessController} the service implementations authorize requests with.
    *
-   * <p>A shortcut for {@code getAccessControlManager().getAccessController()}.
+   * <p>A shortcut for {@code getAccessControlManager().getAccessController()}. It is final so that
+   * every check, including the read access cache's, uses the one controller; install a custom
+   * controller with {@link OpcUaServerConfigBuilder#setAccessControllerFactory} instead.
    *
    * @return this server's {@link AccessController}.
    */
-  public AccessController getAccessController() {
+  public final AccessController getAccessController() {
     return accessControlManager.getAccessController();
   }
 
