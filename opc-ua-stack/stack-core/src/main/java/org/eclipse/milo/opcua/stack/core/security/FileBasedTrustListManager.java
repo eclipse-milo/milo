@@ -385,8 +385,9 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
         return Optional.of(CertificateUtil.decodeCertificate(inputStream));
       }
     } catch (Throwable t) {
-      // Log without the stack trace; this repeats on every reload of the directory.
-      LOGGER.warn("Error decoding certificate file {}: {}", path, t.getMessage());
+      // This repeats on every reload of the directory, so the stack trace is logged at DEBUG.
+      LOGGER.warn("Error decoding certificate file {}: {}", path, t.toString());
+      LOGGER.debug("Error decoding certificate file {}", path, t);
 
       return Optional.empty();
     }
@@ -396,8 +397,9 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
     try (FileInputStream inputStream = new FileInputStream(path.toFile())) {
       return Optional.of(CertificateUtil.decodeCrls(inputStream));
     } catch (UaException | IOException e) {
-      // Log without the stack trace; this repeats on every reload of the directory.
-      LOGGER.warn("Error decoding CRL file {}: {}", path, e.getMessage());
+      // This repeats on every reload of the directory, so the stack trace is logged at DEBUG.
+      LOGGER.warn("Error decoding CRL file {}: {}", path, e.toString());
+      LOGGER.debug("Error decoding CRL file {}", path, e);
 
       return Optional.empty();
     }

@@ -94,8 +94,9 @@ public class FileBasedCertificateQuarantine implements CertificateQuarantine {
         return Optional.of(CertificateUtil.decodeCertificate(inputStream));
       }
     } catch (Throwable t) {
-      // Log without the stack trace; this repeats every time the directory is listed.
-      LOGGER.warn("Error decoding certificate file {}: {}", f, t.getMessage());
+      // This repeats every time the directory is listed, so the stack trace is logged at DEBUG.
+      LOGGER.warn("Error decoding certificate file {}: {}", f, t.toString());
+      LOGGER.debug("Error decoding certificate file {}", f, t);
 
       return Optional.empty();
     }
