@@ -98,9 +98,11 @@ public abstract class SamplingGroup {
 
   private @Nullable ScheduledFuture<?> nextCycle;
   private @Nullable ScheduledFuture<?> initialSampleTimer;
+  private @Nullable ScheduledFuture<?> overrunWatchdog;
   private long initialSampleWindowStartNanos;
 
   private volatile boolean running = false;
+  private boolean stopped = false;
   private volatile boolean overrunReported = false;
   private volatile int requestCount = 0;
 
@@ -339,7 +341,7 @@ public abstract class SamplingGroup {
 
   final void startup() {
     synchronized (lock) {
-      if (running) {
+      if (running || stopped) {
         return;
       }
       running = true;
@@ -355,15 +357,17 @@ public abstract class SamplingGroup {
   /**
    * Stop the group without waiting for a turn in progress. The caller may hold locks a sample
    * needs, so this never blocks on sampling; a turn in progress applies no result and samples
-   * nothing further once the membership is cleared, and its stage is ignored when it completes.
+   * nothing further once the membership is cleared, and its stage is ignored when it completes. A
+   * group that never started is stopped too, and its items are reported removed all the same.
    */
   final void shutdown() {
     List<DataItem> removed;
 
     synchronized (lock) {
-      if (!running) {
+      if (stopped) {
         return;
       }
+      stopped = true;
       running = false;
 
       if (nextCycle != null) {
@@ -371,6 +375,11 @@ public abstract class SamplingGroup {
         nextCycle = null;
       }
       cancelInitialSampleTimer();
+
+      if (overrunWatchdog != null) {
+        overrunWatchdog.cancel(false);
+        overrunWatchdog = null;
+      }
 
       cycleDue = false;
       initialSampleDue = false;
@@ -453,7 +462,7 @@ public abstract class SamplingGroup {
     long startNanos = System.nanoTime();
 
     // Armed before the work, so a refresh or a synchronous read that blocks is reported too.
-    ScheduledFuture<?> watchdog = scheduleOverrunWatchdog();
+    ScheduledFuture<?> watchdog = armOverrunWatchdog();
 
     CompletionStage<@Nullable Void> stage;
     try {
@@ -464,7 +473,7 @@ public abstract class SamplingGroup {
 
     stage.whenComplete(
         (ignored, failure) -> {
-          watchdog.cancel(false);
+          disarmOverrunWatchdog(watchdog);
 
           if (failure != null) {
             logger.warn("{} failed for the {} ms group", what, intervalMillis, failure);
@@ -536,6 +545,35 @@ public abstract class SamplingGroup {
     }
   }
 
+  /**
+   * Arm the overrun watchdog for a turn, unless the group has stopped, and keep it where shutdown
+   * can cancel it, since a stage that never completes never would.
+   */
+  private @Nullable ScheduledFuture<?> armOverrunWatchdog() {
+    synchronized (lock) {
+      if (!running) {
+        return null;
+      }
+
+      overrunWatchdog = scheduleOverrunWatchdog();
+
+      return overrunWatchdog;
+    }
+  }
+
+  private void disarmOverrunWatchdog(@Nullable ScheduledFuture<?> watchdog) {
+    if (watchdog != null) {
+      watchdog.cancel(false);
+
+      synchronized (lock) {
+        if (overrunWatchdog == watchdog) {
+          overrunWatchdog = null;
+        }
+      }
+    }
+  }
+
+  /** Caller holds the lock. */
   private ScheduledFuture<?> scheduleOverrunWatchdog() {
     long limitMillis = intervalMillis * overrunWarningMultiple;
 

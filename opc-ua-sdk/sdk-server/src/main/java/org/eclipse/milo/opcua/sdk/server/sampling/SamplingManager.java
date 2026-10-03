@@ -102,8 +102,19 @@ public final class SamplingManager extends AbstractLifecycle {
 
   @Override
   protected void onStartup() {
-    synchronized (lock) {
-      groups.values().forEach(SamplingGroup::startup);
+    try {
+      synchronized (lock) {
+        groups.values().forEach(SamplingGroup::startup);
+      }
+    } catch (Throwable t) {
+      // A startup that fails is not followed by a shutdown, so stop the groups that started, and
+      // the one that failed, here.
+      try {
+        onShutdown();
+      } catch (Throwable cleanupFailure) {
+        t.addSuppressed(cleanupFailure);
+      }
+      throw t;
     }
   }
 

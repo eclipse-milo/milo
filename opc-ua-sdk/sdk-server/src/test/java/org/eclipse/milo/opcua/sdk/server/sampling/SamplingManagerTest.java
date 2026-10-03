@@ -13,8 +13,13 @@ package org.eclipse.milo.opcua.sdk.server.sampling;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -24,6 +29,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
@@ -206,6 +213,29 @@ class SamplingManagerTest {
     assertTrue(group.isRunning());
     scheduler.run(delay -> delay <= 100); // the initial sample
     assertEquals(List.of(List.of(item)), group.samples);
+  }
+
+  // A startup that fails is not followed by a shutdown. When the scheduler refuses one group's
+  // timer, the group that already started must not keep sampling with nothing left to stop it.
+  @Test
+  void aStartupThatFailsStopsTheGroupsThatStarted() {
+    ScheduledExecutorService timers = spy(scheduler.executor());
+    doThrow(new RejectedExecutionException("scheduler unavailable"))
+        .when(timers)
+        .schedule(any(Runnable.class), eq(200L), eq(TimeUnit.MILLISECONDS));
+    when(server.getScheduledExecutorService()).thenReturn(timers);
+
+    SamplingManager unstarted = manager(SamplingManagerConfig.defaults());
+    MonitoredDataItem first = item("a", 100.0);
+    MonitoredDataItem second = item("b", 200.0);
+    unstarted.onDataItemsCreated(List.of(first, second));
+
+    assertThrows(RejectedExecutionException.class, unstarted::startup);
+
+    assertFalse(groups.get(100L).isRunning(), "the group that started is stopped again");
+    assertEquals(List.of(List.of(first)), groups.get(100L).removed);
+    assertEquals(List.of(List.of(second)), groups.get(200L).removed);
+    assertEquals(List.of(), unstarted.getGroups());
   }
 
   @Test

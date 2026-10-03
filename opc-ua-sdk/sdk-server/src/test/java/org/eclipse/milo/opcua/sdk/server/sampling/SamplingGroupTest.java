@@ -225,6 +225,33 @@ class SamplingGroupTest {
     assertFalse(group.isRunning());
   }
 
+  // A group created while its manager shuts down is stopped before it ever started. The subclass
+  // still hears that its items are gone, so it can release what onItemsAdded acquired for them.
+  @Test
+  void shutdownOfAGroupThatNeverStartedReportsItsItemsRemoved() {
+    group.addItems(List.of(a, b));
+
+    group.shutdown();
+
+    assertEquals(List.of(List.of(a, b)), group.removed);
+    assertEquals(List.of(), scheduler.pendingDelays(), "nothing is left scheduled");
+  }
+
+  // Only a completing stage disarms the watchdog, so shutting down a group whose turn never
+  // completes must cancel it, or it stays scheduled, holding the group, until its deadline.
+  @Test
+  void shutdownCancelsTheWatchdogOfATurnThatNeverCompletes() {
+    group.sampler = items -> new CompletableFuture<@Nullable Void>();
+    group.addItems(List.of(a));
+    group.startup();
+    runCycle();
+    assertEquals(1, pendingWatchdogs());
+
+    group.shutdown();
+
+    assertEquals(List.of(), scheduler.pendingDelays(), "nothing is left scheduled");
+  }
+
   /**
    * Overlapping checks for the same item would let an older result land after a newer one, which is
    * what PR #2076's sequence numbers existed for. The group avoids it by taking turns: an initial
