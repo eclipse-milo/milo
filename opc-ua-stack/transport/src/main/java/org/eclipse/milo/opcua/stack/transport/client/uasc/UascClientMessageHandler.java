@@ -234,8 +234,8 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
 
   @Override
   public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
-    if (evt instanceof CloseSecureChannelRequest) {
-      sendCloseSecureChannelRequest(ctx, (CloseSecureChannelRequest) evt);
+    if (evt instanceof CloseSecureChannelRequest request) {
+      sendCloseSecureChannelRequest(ctx, request);
     }
   }
 
@@ -347,9 +347,9 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
               UascResponse.failure(
                   decodedMessage.getRequestId(), new UaServiceFaultException(serviceFault));
           out.add(response);
-        } else if (message instanceof UaResponseMessageType) {
+        } else if (message instanceof UaResponseMessageType responseMessage) {
           UascResponse response =
-              UascResponse.success(decodedMessage.getRequestId(), (UaResponseMessageType) message);
+              UascResponse.success(decodedMessage.getRequestId(), responseMessage);
           out.add(response);
         } else {
           UascResponse response =
@@ -468,8 +468,8 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
           handshakeFuture.complete(secureChannel);
         } else {
           ServiceFault serviceFault =
-              (responseMessage instanceof ServiceFault)
-                  ? (ServiceFault) responseMessage
+              (responseMessage instanceof ServiceFault fault)
+                  ? fault
                   : new ServiceFault(responseMessage.getResponseHeader());
 
           failHandshake(new UaServiceFaultException(serviceFault));
