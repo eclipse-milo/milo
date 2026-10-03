@@ -29,6 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
@@ -200,9 +201,61 @@ class ReadAccessCacheTest {
     assertEquals(Optional.empty(), cache.get(session, a), "nothing overtaken is cached");
   }
 
+  /**
+   * An invalidation that arrives while a miss is checked covers the hits the lookup already made,
+   * too: here access to a, a hit, is revoked while b is checked. Returning the hit would authorize
+   * one more sample of a after its invalidation, so the whole lookup is made again.
+   */
+  @Test
+  void anInvalidationDuringACheckAlsoDiscardsTheEarlierHits() {
+    cache.getOrCheck(session, List.of(a));
+
+    var checks = new AtomicInteger();
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenAnswer(
+            invocation -> {
+              if (checks.getAndIncrement() == 0) {
+                cache.invalidate(ReadAccessScope.node(a.getNodeId()));
+              }
+              List<ReadValueId> readValueIds = invocation.getArgument(1);
+              return readValueIds.stream()
+                  .collect(
+                      Collectors.toMap(
+                          id -> id,
+                          id ->
+                              id.equals(a)
+                                  ? AccessResult.DENIED_USER_ACCESS
+                                  : AccessResult.ALLOWED));
+            });
+
+    Map<ReadValueId, AccessResult> results = cache.getOrCheck(session, List.of(a, b));
+
+    assertEquals(
+        AccessResult.DENIED_USER_ACCESS,
+        results.get(a),
+        "a is checked again rather than answered from before its invalidation");
+    assertEquals(AccessResult.ALLOWED, results.get(b));
+  }
+
+  // An invalidation of another Session's answers says nothing about this Session's, so a check it
+  // overlaps is made once and stored. A Session closing elsewhere must not defeat the cache.
+  @Test
+  void anInvalidationOfAnotherSessionDoesNotOvertakeACheck() {
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenAnswer(
+            invocation -> {
+              cache.invalidate(ReadAccessScope.session(otherSession));
+              return allowAll(invocation.getArgument(1));
+            });
+
+    cache.getOrCheck(session, List.of(a));
+
+    verify(accessController, times(1)).checkReadAccess(eq(session), anyList());
+    assertEquals(Optional.of(AccessResult.ALLOWED), cache.get(session, a));
+  }
+
   private static Map<ReadValueId, AccessResult> allowAll(List<ReadValueId> readValueIds) {
-    return readValueIds.stream()
-        .collect(java.util.stream.Collectors.toMap(id -> id, id -> AccessResult.ALLOWED));
+    return readValueIds.stream().collect(Collectors.toMap(id -> id, id -> AccessResult.ALLOWED));
   }
 
   private static ReadValueId readValueId(NodeId nodeId) {

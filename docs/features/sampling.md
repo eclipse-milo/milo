@@ -165,8 +165,9 @@ What an invalidation does and does not do:
 - It drops cache entries and tells `ReadAccessListener`s. It does not change any item's stored
   result, wake a group, cancel a device request in flight, or purge queued notifications. The
   next cycle picks up the new answer.
-- A check that an invalidation overtakes is made again, up to three times, and an answer that
-  keeps being overtaken is used once without being cached.
+- A lookup that an invalidation of its Session, or of every Session, overtakes is made again,
+  hits included, up to three times, and answers that keep being overtaken are used once without
+  being cached. An invalidation of another Session does not overtake it.
 - A check that throws, returns no answer, or returns `AccessResult.NODE_UNKNOWN` leaves the
   item's last result in place. A retained grant keeps delivering until a later refresh sees the
   revocation; a retained denial keeps withholding. A denied item whose Node is unknown is not

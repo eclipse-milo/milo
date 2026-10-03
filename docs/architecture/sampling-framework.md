@@ -117,10 +117,11 @@ Session's answer itself, and the item is read again next cycle.
 A custom policy returns whatever map it likes, and the group applies it.
 
 The cache is server-wide, has no time-to-live, and keeps grants and denials alike until
-`AccessControlManager.invalidateReadAccess(scope)` drops them or the Session closes. Invalidation bumps a
-generation under the cache's write lock; a fill stores its answers only if the generation it
-read before checking is still current, and otherwise checks again, up to three times, before
-using the last answer uncached. After dropping entries the server tells every
+`AccessControlManager.invalidateReadAccess(scope)` drops them or the Session closes. Invalidation
+bumps a generation under the cache's write lock, the Session's own for a scope that names one and
+a shared one otherwise. A lookup uses its hits and stores its answers only if neither generation
+it read before starting has moved, and otherwise looks up again, up to three times, before using
+the last answers uncached; an invalidation of another Session does not disturb it. After dropping entries the server tells every
 `ReadAccessListener` on the calling thread. The SDK invalidates for identity and endpoint
 changes, Subscription transfers, and Session close, and for the first three also re-checks the
 affected items itself; the application invalidates for everything it controls.
