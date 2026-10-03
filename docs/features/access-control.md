@@ -60,11 +60,13 @@ describe the Node itself (Part 3 §5.6.2).
 | `UserRolePermissions` | Role-keyed permissions matched against the Session's role ids for Browse, Call, AddReferences, DeleteNodes, DeleteReferences, reading RolePermissions, and writing RolePermissions or Historizing. |
 | `RoleMapper` | Configured on the server. Maps identity, client application URI, and endpoint to role ids. `Session.getRoleIds()` asks it on every call. |
 
-For each check the controller reads seven attributes per distinct Node: NodeClass,
+For each check the controller reads up to seven attributes per distinct Node: NodeClass,
 AccessRestrictions, UserWriteMask, AccessLevel, UserAccessLevel, UserExecutable, and
-UserRolePermissions. A filter that supplies any of them is part of authorization. It must be
-quick and thread-safe, and it must not call `checkReadAccess()` itself, because the controller
-is reading that very attribute to make its decision.
+UserRolePermissions. A read check reads only those it decides from: NodeClass and
+AccessRestrictions, plus AccessLevel and UserAccessLevel for a Value read and
+UserRolePermissions for a RolePermissions read. A filter that supplies any of them is part of
+authorization. It must be quick and thread-safe, and it must not call `checkReadAccess()`
+itself, because the controller is reading that very attribute to make its decision.
 
 Ordinary Read and Write are checked in the service layer and only then handed to
 `AddressSpace.read()` or `write()`, which do not check again. The sampling framework follows the

@@ -55,7 +55,8 @@ public interface ReadAccessPolicy {
 
   /**
    * A policy that checks every item on every call: one {@code AccessController.checkReadAccess} per
-   * Session, which for the default controller reads seven attributes per distinct Node.
+   * Session, which for the default controller and Value items reads four attributes per distinct
+   * Node.
    *
    * <p>This is the default. It costs what the Read service costs and needs no invalidation.
    *

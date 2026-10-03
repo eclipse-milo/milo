@@ -14,14 +14,18 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.WriteMask;
+import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
+import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
 import org.eclipse.milo.opcua.sdk.server.RoleMapper;
+import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.access.DefaultAccessController.AccessControlAttributes;
 import org.eclipse.milo.opcua.sdk.server.access.DefaultAccessController.AccessControlContext;
@@ -36,11 +40,13 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AddReferencesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteNodesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteReferencesItem;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.PermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
@@ -59,7 +65,8 @@ class DefaultAccessControllerTest {
 
   @BeforeEach
   void setup() {
-    Mockito.when(context.readAccessControlAttributes(Mockito.anyList())).thenReturn(attributesMap);
+    Mockito.when(context.readAccessControlAttributes(Mockito.anyList(), Mockito.any()))
+        .thenReturn(attributesMap);
   }
 
   /**
@@ -1267,6 +1274,69 @@ class DefaultAccessControllerTest {
 
     assertEquals(AccessResult.DENIED_USER_ACCESS, directResult);
     assertEquals(directResult, copiedResult);
+  }
+
+  /**
+   * A read check runs for every sampling cycle on the default policy, so a Value read asks the
+   * AddressSpace only for the attributes it decides from, and still decides from them: here
+   * AccessLevel allows the read and UserAccessLevel denies it.
+   */
+  @Test
+  void checkReadAccess_Value_ReadsOnlyTheAttributesItDecidesFrom() {
+    OpcUaServer server = Mockito.mock(OpcUaServer.class);
+    AddressSpaceManager addressSpaceManager = Mockito.mock(AddressSpaceManager.class);
+    Mockito.when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
+
+    Session session = Mockito.mock(Session.class);
+    Mockito.when(session.getRoleIds()).thenReturn(Optional.empty());
+    Mockito.when(session.getEndpoint())
+        .thenReturn(
+            new EndpointDescription(
+                null, null, null, MessageSecurityMode.None, null, null, null, null));
+
+    Map<AttributeId, Variant> attributeValues =
+        Map.of(
+            AttributeId.NodeClass, new Variant(NodeClass.Variable),
+            AttributeId.AccessLevel, new Variant(AccessLevel.toValue(AccessLevel.READ_ONLY)),
+            AttributeId.UserAccessLevel, new Variant(AccessLevel.toValue(AccessLevel.NONE)));
+
+    var attributesRead = new ArrayList<AttributeId>();
+    Mockito.when(
+            addressSpaceManager.read(
+                Mockito.any(),
+                Mockito.anyDouble(),
+                Mockito.eq(TimestampsToReturn.Neither),
+                Mockito.anyList()))
+        .thenAnswer(
+            invocation -> {
+              List<ReadValueId> readValueIds = invocation.getArgument(3);
+              return readValueIds.stream()
+                  .map(
+                      readValueId -> {
+                        AttributeId attributeId =
+                            AttributeId.from(readValueId.getAttributeId()).orElseThrow();
+                        attributesRead.add(attributeId);
+                        return new DataValue(
+                            attributeValues.getOrDefault(attributeId, Variant.NULL_VALUE));
+                      })
+                  .toList();
+            });
+
+    var readValueId = new ReadValueId(new NodeId(1, "foo"), AttributeId.Value.uid(), null, null);
+
+    AccessResult result =
+        new DefaultAccessController(server)
+            .checkReadAccess(session, List.of(readValueId))
+            .get(readValueId);
+
+    assertEquals(AccessResult.DENIED_USER_ACCESS, result);
+    assertEquals(
+        List.of(
+            AttributeId.NodeClass,
+            AttributeId.AccessRestrictions,
+            AttributeId.AccessLevel,
+            AttributeId.UserAccessLevel),
+        attributesRead);
   }
 
   private static RolePermissionType[] rolePermissions(PermissionType.Field field) {

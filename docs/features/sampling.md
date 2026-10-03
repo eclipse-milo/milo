@@ -132,8 +132,8 @@ arrives; a busy group or a slow read can delay it further. The overrun warning o
 | `ReadAccessPolicy.cached()` | Answers from the server's `ReadAccessCache` and checks only the misses. | An `invalidateReadAccess` call for every change that can alter an answer. |
 | Your own `ReadAccessPolicy` | Applies whatever your `check()` returns. | Session isolation, freshness, and your own cache's invalidation. |
 
-The per-cycle policy costs what a Read costs: for the default controller, seven attribute reads
-per distinct Node per Session per cycle. Choose the cached policy when that cost matters and
+The per-cycle policy costs what a Read costs: for the default controller and Value items, four
+attribute reads per distinct Node per Session per cycle. Choose the cached policy when that cost matters and
 your namespace knows every event that changes an answer:
 
 ```java
