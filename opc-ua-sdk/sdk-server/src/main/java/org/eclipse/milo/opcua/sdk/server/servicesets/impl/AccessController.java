@@ -108,6 +108,9 @@ public interface AccessController {
     /** Access is denied due to an invalid attribute id. */
     AccessResult DENIED_ATTRIBUTE_ID_INVALID = new Denied(StatusCodes.Bad_AttributeIdInvalid);
 
+    /** Access is denied because the Node's AccessLevel does not allow reading. */
+    AccessResult DENIED_NOT_READABLE = new Denied(StatusCodes.Bad_NotReadable);
+
     /** Access is denied due to insufficient user access rights. */
     AccessResult DENIED_USER_ACCESS = new Denied(StatusCodes.Bad_UserAccessDenied);
 

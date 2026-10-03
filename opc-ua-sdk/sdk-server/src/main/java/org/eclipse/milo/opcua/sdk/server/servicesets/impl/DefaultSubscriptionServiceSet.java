@@ -21,6 +21,7 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity.AnonymousIdentity;
+import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
 import org.eclipse.milo.opcua.sdk.server.servicesets.SubscriptionServiceSet;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
@@ -48,8 +49,12 @@ import org.eclipse.milo.opcua.stack.core.types.structured.TransferSubscriptionsR
 import org.eclipse.milo.opcua.stack.core.types.structured.TransferSubscriptionsResponse;
 import org.eclipse.milo.opcua.stack.core.util.Lists;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
+
+  private static final Logger logger = LoggerFactory.getLogger(DefaultSubscriptionServiceSet.class);
 
   private final OpcUaServer server;
 
@@ -241,6 +246,7 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
           }
 
           UInteger[] availableSequenceNumbers;
+          List<DataItem> transferredDataItems;
 
           synchronized (subscription) {
             otherSession
@@ -254,6 +260,12 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
 
             subscription.getMonitoredItems().values().forEach(item -> item.setSession(session));
 
+            transferredDataItems =
+                subscription.getMonitoredItems().values().stream()
+                    .filter(item -> item instanceof DataItem)
+                    .map(item -> (DataItem) item)
+                    .toList();
+
             availableSequenceNumbers = subscription.getAvailableSequenceNumbers();
 
             if (request.getSendInitialValues()) {
@@ -261,6 +273,16 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
                   .filter(item -> item instanceof MonitoredDataItem)
                   .map(item -> (MonitoredDataItem) item)
                   .forEach(MonitoredDataItem::maybeSendLastValue);
+            }
+          }
+
+          // Every item carries its new Session now, so the AddressSpace sees the transfer
+          // complete. A failing callback must not fail a transfer that has already happened.
+          if (!transferredDataItems.isEmpty()) {
+            try {
+              server.getAddressSpaceManager().onDataItemsTransferred(transferredDataItems);
+            } catch (Throwable t) {
+              logger.error("Uncaught Throwable in onDataItemsTransferred", t);
             }
           }
 

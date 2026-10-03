@@ -450,6 +450,20 @@ public class Session {
   }
 
   /**
+   * Whether this Session has been closed.
+   *
+   * <p>True once any close path has run: client CloseSession, timeout, server-side removal, or
+   * server shutdown. A component that holds a Session it learned of from a {@link SessionListener}
+   * can use this to skip a Session that has closed since, as the close notification may not have
+   * reached it yet.
+   *
+   * @return {@code true} if this Session has been closed.
+   */
+  public boolean isClosed() {
+    return closed.get();
+  }
+
+  /**
    * Close this Session and release the resources owned by it.
    *
    * <p>This method may be reached concurrently from protocol handling, timeout handling, explicit

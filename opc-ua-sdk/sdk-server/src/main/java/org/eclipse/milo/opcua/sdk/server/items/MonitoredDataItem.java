@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.sdk.server.util.DataChangeMonitoringFilter;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -45,6 +46,7 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
   private volatile DataValue lastValue = null;
   private volatile DataChangeFilter filter = null;
   private volatile @Nullable Range euRange = null;
+  private volatile AccessResult readAccessResult = AccessResult.ALLOWED;
 
   public MonitoredDataItem(
       OpcUaServer server,
@@ -114,8 +116,42 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
     this.euRange = euRange;
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>A denial is also queued by the first call after monitoring resumes from {@link
+   * MonitoringMode#Disabled}, since nothing has been reported since. Once access is allowed again,
+   * the denial is no longer the last value for {@link #maybeSendLastValue()}.
+   */
+  @Override
+  public synchronized void setReadAccessResult(AccessResult accessResult) {
+    AccessResult previous = readAccessResult;
+    readAccessResult = accessResult;
+
+    if (accessResult instanceof AccessResult.Denied denied) {
+      // Queue the denial when it is new, or when nothing has been reported since the item was
+      // created or monitoring resumed. Part 4 §7.23: a Disabled item queues no Notifications.
+      boolean unreported = lastValue == null;
+      if ((!denied.equals(previous) || unreported)
+          && getMonitoringMode() != MonitoringMode.Disabled) {
+        setValue(new DataValue(denied.statusCode()));
+      }
+    } else if (previous instanceof AccessResult.Denied) {
+      lastValue = null;
+    }
+  }
+
+  @Override
+  public AccessResult getReadAccessResult() {
+    return readAccessResult;
+  }
+
   @Override
   public synchronized void setValue(DataValue value) {
+    if (readAccessResult instanceof AccessResult.Denied denied) {
+      value = new DataValue(denied.statusCode());
+    }
+
     boolean valuePassesFilter =
         DataChangeMonitoringFilter.filter(lastValue, value, filter, euRange);
 
@@ -179,6 +215,8 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
   @Override
   public synchronized void setMonitoringMode(MonitoringMode monitoringMode) {
     if (monitoringMode == MonitoringMode.Disabled) {
+      // Nothing has been reported since; the first refresh after resuming reports the current
+      // denial, if there is one, rather than a result cached while Disabled.
       lastValue = null;
     }
 
