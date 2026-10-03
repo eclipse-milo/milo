@@ -805,9 +805,12 @@ public class OpcUaServer extends AbstractServiceHandler {
    * Get the {@link AccessControlManager}: the controller, the read access cache, and read access
    * invalidation.
    *
+   * <p>It is final for the same reason as {@link #getAccessController()}: the services, the cache,
+   * and invalidation must all reach the one manager the server created.
+   *
    * @return this server's {@link AccessControlManager}.
    */
-  public AccessControlManager getAccessControlManager() {
+  public final AccessControlManager getAccessControlManager() {
     return accessControlManager;
   }
 
