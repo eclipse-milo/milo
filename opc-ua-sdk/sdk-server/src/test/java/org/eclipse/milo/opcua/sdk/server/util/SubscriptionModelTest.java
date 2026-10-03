@@ -31,6 +31,7 @@ import org.eclipse.milo.opcua.sdk.server.access.AccessController;
 import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
 import org.eclipse.milo.opcua.sdk.server.sampling.ManualScheduler;
+import org.eclipse.milo.opcua.sdk.server.sampling.SamplingGroupInfo;
 import org.eclipse.milo.opcua.sdk.server.sampling.SamplingTestItems;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
@@ -91,5 +92,23 @@ class SubscriptionModelTest {
     model.shutdown();
     assertFalse(model.getSamplingManager().isRunning());
     assertTrue(model.getDataItems().isEmpty());
+  }
+
+  // An AddressSpace that still forwards here reports the interval its own onCreateDataItem
+  // returned, which knows nothing of buckets. Part 4 §7.21: the revised interval is the one the
+  // item is sampled at, so the model samples at that interval, as it did before it was an adapter.
+  @Test
+  void samplesEachItemAtTheIntervalItsAddressSpaceReported() {
+    MonitoredDataItem reportedAs120 = SamplingTestItems.item(server, session, "a", 120.0);
+    MonitoredDataItem reportedAs0 = SamplingTestItems.item(server, session, "b", 0.0);
+
+    model.onDataItemsCreated(List.of(reportedAs120, reportedAs0));
+
+    assertEquals(
+        List.of(1L, 120L),
+        model.getSamplingManager().getGroups().stream()
+            .map(SamplingGroupInfo::intervalMillis)
+            .toList(),
+        "120 ms stays 120 ms rather than the 150 ms bucket, and 0 polls at the 1 ms floor");
   }
 }

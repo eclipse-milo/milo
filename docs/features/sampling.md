@@ -344,7 +344,8 @@ a refresher alongside a framework group for the same items.
 ## Migrating from SubscriptionModel
 
 `SubscriptionModel` is deprecated and is now an adapter over a `SamplingManager` with default
-groups and configuration, so existing forwarding keeps working. For a managed namespace with a
+groups and the default configuration without bucketing, so existing forwarding keeps working and
+each item is still sampled at the interval its AddressSpace reported. For a managed namespace with a
 lifecycle, delete the field and its construction, its lifecycle registration, and the four
 callback overrides that forwarded to it; the inherited manager, callbacks, and lifecycle take
 over. [Commit b44aee410][migration-commit] does exactly this for the six in-tree namespaces. If
@@ -352,9 +353,11 @@ an override also did other work, keep that work and call the inherited callback.
 to a different sampler, pick one owner for those items rather than forwarding to both. A direct
 `AddressSpace` uses [explicit wiring](#explicit-manager-wiring).
 
-What changes: a requested interval is revised up to the next supported one and reported to the
-client, so a request of 0 becomes 50 ms by default where `SubscriptionModel` polled at 1 ms; new
-items get a debounced initial sample; a membership change no longer rebuilds every schedule; a
+What changes for a managed namespace, whether or not it deletes the forwarding: a requested
+interval is revised up to the next supported one and reported to the client, so a request of 0
+becomes 50 ms by default where `SubscriptionModel` polled at 1 ms. A direct `AddressSpace` that
+keeps forwarding keeps its intervals, since its own `onCreateDataItem()` still decides them. For
+both: new items get a debounced initial sample; a membership change no longer rebuilds every schedule; a
 sampling exception no longer stops the schedule; reads are split at `MaxNodesPerRead`; callbacks
 before startup wait instead of throwing; and callbacks after shutdown are ignored.
 

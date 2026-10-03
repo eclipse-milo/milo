@@ -19,6 +19,7 @@ import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.sampling.AddressSpaceSamplingGroup;
 import org.eclipse.milo.opcua.sdk.server.sampling.SamplingManager;
+import org.eclipse.milo.opcua.sdk.server.sampling.SamplingManagerConfig;
 
 /**
  * Samples data MonitoredItems on behalf of an {@link AddressSpace} by reading them from it at each
@@ -29,9 +30,11 @@ import org.eclipse.milo.opcua.sdk.server.sampling.SamplingManager;
  * onMonitoringModeChanged} callbacks to an instance of this class and adds it to its lifecycle.
  *
  * <p>This is an adapter over a {@link SamplingManager} with {@link AddressSpaceSamplingGroup}s and
- * the default {@link org.eclipse.milo.opcua.sdk.server.sampling.SamplingManagerConfig}: every
- * sampling cycle refreshes each item's read access result for its current Session and then reads
- * the items the Session may read, as the framework does for any group.
+ * the default {@link SamplingManagerConfig} without bucketing: every sampling cycle refreshes each
+ * item's read access result for its current Session and then reads the items the Session may read,
+ * as the framework does for any group. Each item is sampled at its own sampling interval rounded up
+ * to a whole millisecond, as before this class became an adapter, because that is the interval the
+ * AddressSpace reported to the client.
  *
  * @deprecated {@link ManagedAddressSpace} forwards the four callbacks to a {@link SamplingManager}
  *     of its own, so a subclass that used this class need only delete its forwarding. An
@@ -45,10 +48,13 @@ public class SubscriptionModel extends AbstractLifecycle {
   private final SamplingManager samplingManager;
 
   public SubscriptionModel(OpcUaServer server, AddressSpace addressSpace) {
+    // An AddressSpace that forwards here revises intervals with its own onCreateDataItem, which
+    // knows nothing of buckets, so bucketing would sample at an interval the client was not told.
     samplingManager =
         new SamplingManager(
             server,
-            (s, intervalMillis) -> new AddressSpaceSamplingGroup(s, addressSpace, intervalMillis));
+            (s, intervalMillis) -> new AddressSpaceSamplingGroup(s, addressSpace, intervalMillis),
+            SamplingManagerConfig.defaults().withBucketMillis(0));
   }
 
   @Override
