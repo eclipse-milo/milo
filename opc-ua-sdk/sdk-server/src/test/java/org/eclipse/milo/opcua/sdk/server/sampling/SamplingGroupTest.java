@@ -45,6 +45,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -196,7 +197,7 @@ class SamplingGroupTest {
   // delivers asynchronously is never asked to sample again while the last request is in flight.
   @Test
   void theNextCycleWaitsForTheSampleStage() {
-    var stage = new CompletableFuture<Void>();
+    var stage = new CompletableFuture<@Nullable Void>();
     group.sampler = items -> stage;
     group.addItems(List.of(a));
     group.startup();
@@ -283,7 +284,7 @@ class SamplingGroupTest {
    */
   @Test
   void aCycleWaitsForAnOpenInitialSampleStageAndTheOtherWayRound() {
-    var initialStage = new CompletableFuture<Void>();
+    var initialStage = new CompletableFuture<@Nullable Void>();
     group.sampler = items -> initialStage;
     group.startup();
     group.addItems(List.of(a));
@@ -294,7 +295,7 @@ class SamplingGroupTest {
     runCycle();
     assertEquals(1, group.samples.size(), "the cycle waits for the initial sample's stage");
 
-    var cycleStage = new CompletableFuture<Void>();
+    var cycleStage = new CompletableFuture<@Nullable Void>();
     group.sampler = items -> cycleStage;
     initialStage.complete(null);
     assertEquals(1, group.samples.size(), "the handoff goes through the scheduler, not inline");
@@ -316,7 +317,7 @@ class SamplingGroupTest {
   // otherwise a steady stream of new items could keep the existing ones from being sampled.
   @Test
   void aDueCycleGoesBeforeADueInitialSample() {
-    var initialStage = new CompletableFuture<Void>();
+    var initialStage = new CompletableFuture<@Nullable Void>();
     group.sampler = items -> initialStage;
     group.startup();
     group.addItems(List.of(a));
@@ -360,7 +361,7 @@ class SamplingGroupTest {
   // requests would keep a membership that no longer exists.
   @Test
   void anEmptyDeferredInitialSampleLeavesTheChangeFlagForTheNextCycle() {
-    var cycleStage = new CompletableFuture<Void>();
+    var cycleStage = new CompletableFuture<@Nullable Void>();
     group.sampler = items -> cycleStage;
     group.addItems(List.of(a, b));
     group.startup();
@@ -558,7 +559,7 @@ class SamplingGroupTest {
     final List<List<DataItem>> removed = new CopyOnWriteArrayList<>();
     final List<String> events;
 
-    volatile Function<List<DataItem>, CompletionStage<Void>> sampler =
+    volatile Function<List<DataItem>, CompletionStage<@Nullable Void>> sampler =
         items -> CompletableFuture.completedFuture(null);
     volatile ThrowingConsumer<List<DataItem>> onItemsAddedHook = items -> {};
 
@@ -568,7 +569,7 @@ class SamplingGroupTest {
     }
 
     @Override
-    protected CompletionStage<Void> sample(List<DataItem> items) {
+    protected CompletionStage<@Nullable Void> sample(List<DataItem> items) {
       samples.add(List.copyOf(items));
       events.add("sample");
       return sampler.apply(items);

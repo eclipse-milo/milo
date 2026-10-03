@@ -27,6 +27,7 @@ import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +62,7 @@ public class AddressSpaceSamplingGroup extends SamplingGroup {
   }
 
   @Override
-  protected CompletionStage<Void> sample(List<DataItem> items) {
+  protected CompletionStage<@Nullable Void> sample(List<DataItem> items) {
     int maxNodesPerRead = getServer().getConfig().getLimits().getMaxNodesPerRead().intValue();
     if (maxNodesPerRead <= 0) {
       maxNodesPerRead = Integer.MAX_VALUE;

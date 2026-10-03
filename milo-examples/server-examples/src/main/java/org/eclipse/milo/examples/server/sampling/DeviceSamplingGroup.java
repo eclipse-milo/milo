@@ -30,6 +30,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,7 @@ import org.slf4j.LoggerFactory;
  * register Node or a Node the device knows nothing about, are read through the AddressSpace
  * instead, so the device path never has to answer for them.
  */
+@NullMarked
 public final class DeviceSamplingGroup extends SamplingGroup {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -85,7 +87,7 @@ public final class DeviceSamplingGroup extends SamplingGroup {
   }
 
   @Override
-  protected CompletionStage<Void> sample(List<DataItem> items) {
+  protected @Nullable CompletionStage<@Nullable Void> sample(List<DataItem> items) {
     var deviceItems = new ArrayList<DataItem>();
     var otherItems = new ArrayList<DataItem>();
 

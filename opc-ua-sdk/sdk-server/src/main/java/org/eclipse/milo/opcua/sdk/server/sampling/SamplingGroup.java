@@ -71,7 +71,8 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class SamplingGroup {
 
-  private static final CompletionStage<Void> DONE = CompletableFuture.completedFuture(null);
+  private static final CompletionStage<@Nullable Void> DONE =
+      CompletableFuture.completedFuture(null);
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -138,7 +139,7 @@ public abstract class SamplingGroup {
    * @param items the items to sample, never empty.
    * @return a stage that completes when every item has been delivered or failed.
    */
-  protected abstract @Nullable CompletionStage<Void> sample(List<DataItem> items);
+  protected abstract @Nullable CompletionStage<@Nullable Void> sample(List<DataItem> items);
 
   /**
    * The item set changed since the last call. Called on the executor before the next {@code
@@ -443,14 +444,16 @@ public abstract class SamplingGroup {
    * Caller holds the turn.
    */
   private void runTurn(
-      String what, Supplier<CompletionStage<Void>> work, @Nullable Runnable afterCompletion) {
+      String what,
+      Supplier<CompletionStage<@Nullable Void>> work,
+      @Nullable Runnable afterCompletion) {
 
     long startNanos = System.nanoTime();
 
     // Armed before the work, so a refresh or a synchronous read that blocks is reported too.
     ScheduledFuture<?> watchdog = scheduleOverrunWatchdog();
 
-    CompletionStage<Void> stage;
+    CompletionStage<@Nullable Void> stage;
     try {
       stage = work.get();
     } catch (Throwable t) {
@@ -558,7 +561,7 @@ public abstract class SamplingGroup {
    * Run the refresh-and-sample step for {@code toSample}, telling the subclass about a changed item
    * set first. Caller holds the turn.
    */
-  private CompletionStage<Void> refreshAndSample(
+  private CompletionStage<@Nullable Void> refreshAndSample(
       List<DataItem> allItems, boolean changed, Map<DataItem, Long> toSample) {
 
     if (changed) {
@@ -581,7 +584,7 @@ public abstract class SamplingGroup {
     }
 
     try {
-      CompletionStage<Void> stage = sample(readable);
+      CompletionStage<@Nullable Void> stage = sample(readable);
 
       return stage != null ? stage : DONE;
     } catch (Throwable t) {

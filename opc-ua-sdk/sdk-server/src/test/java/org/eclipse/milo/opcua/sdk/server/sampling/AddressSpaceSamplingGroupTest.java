@@ -41,6 +41,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -103,7 +104,7 @@ class AddressSpaceSamplingGroupTest {
                   .toList();
             });
 
-    CompletionStage<Void> stage = group.sample(List.of(a, b, c));
+    CompletionStage<@Nullable Void> stage = group.sample(List.of(a, b, c));
     stage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     verify(addressSpace)
@@ -172,7 +173,7 @@ class AddressSpaceSamplingGroupTest {
             anyList()))
         .thenReturn(List.of(new DataValue(new Variant(7))));
 
-    CompletionStage<Void> stage = group.sample(List.of(a, c));
+    CompletionStage<@Nullable Void> stage = group.sample(List.of(a, c));
     stage.toCompletableFuture().get(5, TimeUnit.SECONDS);
 
     verify(addressSpace, times(2)).read(any(), eq(0d), any(), anyList());

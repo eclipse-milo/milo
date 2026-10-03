@@ -200,7 +200,7 @@ public final class DeviceSamplingGroup extends SamplingGroup {
   }
 
   @Override
-  protected CompletionStage<Void> sample(List<DataItem> items) {
+  protected CompletionStage<@Nullable Void> sample(List<DataItem> items) {
     return device
         .read(registers)
         .handle(
