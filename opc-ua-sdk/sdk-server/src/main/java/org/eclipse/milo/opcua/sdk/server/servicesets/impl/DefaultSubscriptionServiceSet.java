@@ -288,10 +288,11 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
 
             subscription.getMonitoredItems().values().forEach(item -> item.setSession(session));
 
-            // A change of the new Session that commits from here on finds the Subscription and
-            // refreshes it after this block. One that committed during the check may have run its
-            // refresh before the Subscription was added, so the answers below are for the Session
-            // as it was, and the Session is refreshed again after this block.
+            // A change of the new Session that commits from here on finds the Subscription, and its
+            // refresh reads the items only after this block releases the Subscription's lock. One
+            // that committed during the check may have run its refresh before the Subscription was
+            // added, so the answers below are for the Session as it was, and the items are checked
+            // again after this block.
             overtaken = session.getAccessEpoch() != accessEpoch;
 
             transferredDataItems =
@@ -325,11 +326,7 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
           if (overtaken) {
             // Outside the block, so the AccessController is not called under the Subscription's
             // lock. The initial values wait for answers for the Session as it is.
-            session.getSubscriptionManager().refreshReadAccess();
-
-            if (request.getSendInitialValues()) {
-              sendInitialValues(subscription);
-            }
+            recheckReadAccess(session, subscription, request.getSendInitialValues());
           }
 
           // Every item carries its new Session now, so the server's DataItemListeners and then
@@ -416,6 +413,53 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
           t);
 
       return Optional.empty();
+    }
+  }
+
+  /**
+   * Check {@code subscription}'s data items again for {@code session}, after an identity or
+   * endpoint change of the Session overtook the check made before the transfer, and apply each
+   * answer to an item still on the Session at the access epoch read before this check.
+   *
+   * <p>An initial value is sent, if requested, only for an item that got a decision here. An item
+   * whose check failed, answered no decision, or was overtaken again keeps the answer for the
+   * Session as it was, and nothing sampled for that Session is sent on it; the refresh of a change
+   * that overtook this check applies the answer for that change.
+   */
+  private void recheckReadAccess(
+      Session session, Subscription subscription, boolean sendInitialValues) {
+
+    long accessEpoch = session.getAccessEpoch();
+    Map<ReadValueId, AccessResult> results =
+        checkReadAccess(session, subscription).orElse(Map.of());
+
+    for (BaseMonitoredItem<?> item : subscription.getMonitoredItems().values()) {
+      AccessResult result = results.get(item.getReadValueId());
+
+      if (result == null || !result.isDecision()) {
+        continue;
+      }
+
+      if (item instanceof MonitoredDataItem dataItem) {
+        boolean applied;
+
+        // Under the item's lock, like the refresh this stands in for, so the answer of a change
+        // that overtook this check is never replaced. A new denial also drops the values queued
+        // for the Session as it was.
+        synchronized (dataItem) {
+          applied = dataItem.getSession() == session && session.getAccessEpoch() == accessEpoch;
+
+          if (applied) {
+            dataItem.setReadAccessResultAfterSessionChange(result);
+          }
+        }
+
+        if (applied && sendInitialValues) {
+          dataItem.maybeSendLastValue();
+        }
+      } else if (item instanceof DataItem dataItem) {
+        dataItem.setReadAccessResult(result, session, accessEpoch);
+      }
     }
   }
 
