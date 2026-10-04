@@ -1208,6 +1208,10 @@ public class SessionManager {
       }
     }
 
+    if (tokenPolicies == null) {
+      return new AnonymousIdentityToken(null);
+    }
+
     String policyId =
         Stream.of(tokenPolicies)
             .filter(p -> p != null && p.getTokenType() == UserTokenType.Anonymous)
