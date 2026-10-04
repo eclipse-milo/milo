@@ -10,8 +10,10 @@
 package org.eclipse.milo.opcua.sdk.server;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -19,6 +21,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaMonitoredItem;
@@ -45,6 +48,7 @@ import org.junit.jupiter.api.Test;
 public class WikiServerBatchingTest extends AbstractClientServerTest {
   private BatchNamespace namespace;
   private final AtomicBoolean unavailable = new AtomicBoolean();
+  private final AtomicReference<NodeId> omittedNode = new AtomicReference<>();
   private final List<List<NodeId>> requests = new CopyOnWriteArrayList<>();
 
   @Override
@@ -55,10 +59,13 @@ public class WikiServerBatchingTest extends AbstractClientServerTest {
             ids -> {
               requests.add(List.copyOf(ids));
               if (unavailable.get()) throw new IllegalStateException("fixture device offline");
+              NodeId omitted = omittedNode.get();
               return ids.stream()
+                  .filter(id -> !id.equals(omitted))
                   .collect(
                       Collectors.toMap(
-                          Function.identity(), id -> new DataValue(new Variant(42.0))));
+                          Function.identity(),
+                          id -> new DataValue(new Variant(omitted == null ? 42.0 : 43.0))));
             });
     namespace.startup();
   }
@@ -69,25 +76,28 @@ public class WikiServerBatchingTest extends AbstractClientServerTest {
   }
 
   @Test
-  void oneDeviceBatchFeedsThreeItemsAndReportsDeviceFailure() throws Exception {
+  void oneDeviceBatchFeedsThreeItemsAndReportsMissingOrFailedReads() throws Exception {
     var subscription = new OpcUaSubscription(client);
     subscription.setPublishingInterval(100.0);
     subscription.create();
     try {
-      var values = new LinkedBlockingQueue<DataValue>();
+      var values = new HashMap<NodeId, LinkedBlockingQueue<DataValue>>();
       for (NodeId id : namespace.ids) {
+        var queue = new LinkedBlockingQueue<DataValue>();
+        values.put(id, queue);
         var item = OpcUaMonitoredItem.newDataItem(id);
         item.setSamplingInterval(200.0);
-        item.setDataValueListener((ignored, value) -> values.add(value));
+        item.setDataValueListener((ignored, value) -> queue.add(value));
         subscription.addMonitoredItem(item);
       }
       subscription.synchronizeMonitoredItems();
       for (var item : subscription.getMonitoredItems()) {
         assertTrue(item.getCreateResult().orElseThrow().isGood());
       }
-      for (int i = 0; i < 3; i++) {
-        DataValue value = values.poll(5, TimeUnit.SECONDS);
-        assertTrue(value != null && value.statusCode().isGood());
+      for (NodeId id : namespace.ids) {
+        DataValue value = values.get(id).poll(5, TimeUnit.SECONDS);
+        assertNotNull(value, "initial value for " + id);
+        assertTrue(value.statusCode().isGood());
         assertEquals(42.0, value.value().value());
       }
       var groups = namespace.getSamplingManager().getGroups();
@@ -97,10 +107,24 @@ public class WikiServerBatchingTest extends AbstractClientServerTest {
       assertTrue(requests.stream().anyMatch(ids -> ids.size() == 3));
       // Each adapter invocation receives the complete current sample, without duplicate nodes.
       assertTrue(requests.stream().allMatch(ids -> ids.size() == ids.stream().distinct().count()));
+      // A partial response must fail only the missing item and still deliver the other values.
+      NodeId omitted = namespace.ids.get(0);
+      omittedNode.set(omitted);
+      for (NodeId id : namespace.ids) {
+        DataValue value = values.get(id).poll(5, TimeUnit.SECONDS);
+        assertNotNull(value, "partial batch value for " + id);
+        if (id.equals(omitted)) {
+          assertEquals(StatusCodes.Bad_NoData, value.statusCode().getValue());
+          assertTrue(value.value().isNull());
+        } else {
+          assertTrue(value.statusCode().isGood(), "unaffected item remains Good: " + id);
+          assertEquals(43.0, value.value().value());
+        }
+      }
       unavailable.set(true);
-      for (int i = 0; i < 3; i++) {
-        DataValue failure = values.poll(5, TimeUnit.SECONDS);
-        assertTrue(failure != null);
+      for (NodeId id : namespace.ids) {
+        DataValue failure = values.get(id).poll(5, TimeUnit.SECONDS);
+        assertNotNull(failure, "failed batch value for " + id);
         assertEquals(StatusCodes.Bad_CommunicationError, failure.statusCode().getValue());
         assertTrue(failure.value().isNull());
       }

@@ -18,11 +18,15 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Base64;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
@@ -31,6 +35,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.json.OpcUaDefaultJsonEncoding;
 import org.eclipse.milo.opcua.stack.core.encoding.json.OpcUaJsonDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.json.OpcUaJsonEncoder;
+import org.eclipse.milo.opcua.stack.core.encoding.xml.OpcUaDefaultXmlEncoding;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -41,6 +46,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Imports the preceding 1.1.7 process's files without sharing its class loader. */
 public class JsonMigrationTest {
@@ -70,11 +77,20 @@ public class JsonMigrationTest {
     ByteString bytes = assertInstanceOf(ByteString.class, convert("bytes").value().value());
     assertFalse(bytes.isNull());
     assertEquals(0, bytes.bytesOrEmpty().length);
-    assertEquals(
-        new Range(0.0, 100.0),
-        assertInstanceOf(ExtensionObject.class, convert("range").value().value()).decode(context));
+    for (String name : new String[] {"range", "range-binary", "range-xml"}) {
+      assertEquals(
+          new Range(0.0, 100.0),
+          assertInstanceOf(ExtensionObject.class, convert(name).value().value()).decode(context));
+      var envelope =
+          JsonParser.parseString(Files.readString(exchange.resolve(name + ".current.json")))
+              .getAsJsonObject()
+              .getAsJsonObject("Value");
+      assertEquals("i=884", envelope.get("UaTypeId").getAsString());
+      assertEquals(100.0, envelope.get("High").getAsDouble());
+      assertFalse(envelope.has("UaBody"));
+    }
 
-    // Successful trial decoding cannot identify the input version: bare Variants still decode.
+    // This scalar built-in Variant is compatible; that does not identify the input version.
     assertEquals(
         42,
         new OpcUaJsonDecoder(context, Files.readString(exchange.resolve("variant.legacy.json")))
@@ -103,6 +119,77 @@ public class JsonMigrationTest {
       assertFalse(buffer.isReadable());
     } finally {
       buffer.release();
+    }
+  }
+
+  // Values read over OPC TCP normally contain Binary ExtensionObjects. The legacy JSON envelope
+  // uses an encoding id, so 1.2 must reject it before decoding the structure body.
+  @ParameterizedTest
+  @ValueSource(strings = {"range-binary", "range-xml"})
+  void legacyOpaqueExtensionObjectFailsWhileReadingItsEnvelope(String name) throws Exception {
+    String input = Files.readString(exchange.resolve(name + ".variant.legacy.json"));
+    var envelope = JsonParser.parseString(input).getAsJsonObject().getAsJsonObject("Value");
+    assertEquals(
+        name.equals("range-xml") ? "i=885" : "i=886", envelope.get("UaTypeId").getAsString());
+    UaSerializationException failure =
+        assertThrows(
+            UaSerializationException.class,
+            () -> new OpcUaJsonDecoder(context, input).decodeVariant(null));
+    assertEquals(StatusCodes.Bad_DecodingError, failure.getStatusCode().getValue());
+    assertTrue(failure.getMessage().contains("ExtensionObject encoding is unresolved"));
+  }
+
+  // The XML migration has two independent changes: type identity and a UTF-8 base64 body.
+  @Test
+  void legacyXmlBodyNeedsBase64AfterItsEnvelopeIdentityIsCorrected() throws Exception {
+    JsonObject variant =
+        JsonParser.parseString(Files.readString(exchange.resolve("range-xml.variant.legacy.json")))
+            .getAsJsonObject();
+    JsonObject envelope = variant.getAsJsonObject("Value");
+    assertEquals("i=885", envelope.get("UaTypeId").getAsString());
+    assertEquals(2, envelope.get("UaEncoding").getAsInt());
+    String xml = envelope.get("UaBody").getAsString();
+    assertTrue(xml.contains("<"));
+    envelope.addProperty("UaTypeId", "i=884");
+    UaSerializationException failure =
+        assertThrows(
+            UaSerializationException.class,
+            () -> new OpcUaJsonDecoder(context, variant.toString()).decodeVariant(null));
+    assertEquals(StatusCodes.Bad_DecodingError, failure.getStatusCode().getValue());
+    assertFalse(failure.getMessage().contains("encoding is unresolved"));
+    assertInstanceOf(IllegalArgumentException.class, failure.getCause());
+
+    envelope.addProperty(
+        "UaBody", Base64.getEncoder().encodeToString(xml.getBytes(StandardCharsets.UTF_8)));
+    ExtensionObject repaired =
+        assertInstanceOf(
+            ExtensionObject.class,
+            new OpcUaJsonDecoder(context, variant.toString()).decodeVariant(null).value());
+    assertEquals(new Range(0.0, 100.0), repaired.decode(context));
+
+    ExtensionObject.Xml current =
+        assertInstanceOf(
+            ExtensionObject.Xml.class,
+            ExtensionObject.encode(
+                context, new Range(0.0, 100.0), OpcUaDefaultXmlEncoding.getInstance()));
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encodeVariant(null, new Variant(current));
+      String json = encoder.getOutputString();
+      JsonObject encoded = JsonParser.parseString(json).getAsJsonObject().getAsJsonObject("Value");
+      assertEquals("i=884", encoded.get("UaTypeId").getAsString());
+      assertEquals(2, encoded.get("UaEncoding").getAsInt());
+      assertEquals(
+          current.getBody().getFragment(),
+          new String(
+              Base64.getDecoder().decode(encoded.get("UaBody").getAsString()),
+              StandardCharsets.UTF_8));
+      assertEquals(
+          new Range(0.0, 100.0),
+          assertInstanceOf(
+                  ExtensionObject.class,
+                  new OpcUaJsonDecoder(context, json).decodeVariant(null).value())
+              .decode(context));
+      Files.writeString(exchange.resolve("range-xml.variant.current.json"), json);
     }
   }
 

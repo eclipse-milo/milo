@@ -10,17 +10,22 @@
 
 package org.eclipse.milo.opcua.sdk.client;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import java.io.StringWriter;
+import java.lang.reflect.Array;
 import java.time.Instant;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
@@ -35,8 +40,10 @@ import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaDefaultBinaryEncod
 import org.eclipse.milo.opcua.stack.core.encoding.json.OpcUaDefaultJsonEncoding;
 import org.eclipse.milo.opcua.stack.core.encoding.json.OpcUaJsonDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.json.OpcUaJsonEncoder;
+import org.eclipse.milo.opcua.stack.core.encoding.json.OpcUaJsonEncoder.Encoding;
 import org.eclipse.milo.opcua.stack.core.encoding.xml.OpcUaDefaultXmlEncoding;
 import org.eclipse.milo.opcua.stack.core.encoding.xml.OpcUaXmlDecoder;
+import org.eclipse.milo.opcua.stack.core.encoding.xml.OpcUaXmlEncoder;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeEncoding;
 import org.eclipse.milo.opcua.stack.core.types.DataTypeManager;
 import org.eclipse.milo.opcua.stack.core.types.DefaultDataTypeManager;
@@ -51,9 +58,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
+import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
+import org.eclipse.milo.opcua.stack.core.types.structured.LogRecord;
 import org.eclipse.milo.opcua.stack.core.types.structured.Range;
+import org.eclipse.milo.opcua.stack.core.types.structured.ServerStatusDataType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -149,7 +162,8 @@ public class WikiEncodingGuidesTest {
   @ValueSource(
       strings = {
         "{\"UaType\":6,\"Value\":1,\"Value\":42}",
-        "{\"UaType\":11,\"UaType\":6,\"Value\":42}"
+        "{\"UaType\":11,\"UaType\":6,\"Value\":42}",
+        "{\"UaType\":11,\"Type\":6,\"Value\":42}"
       })
   void duplicateTopLevelDataValueTypeUsesLastOccurrence(String json) {
     var decoder = new OpcUaJsonDecoder(new DefaultEncodingContext(), json);
@@ -266,6 +280,31 @@ public class WikiEncodingGuidesTest {
   }
 
   @Test
+  void streamedTimestampsAndLocalizedTextUseTheirLastOccurrence() {
+    var context = new DefaultEncodingContext();
+    String first = "2026-01-01T00:00:00Z";
+    String last = "2026-01-02T00:00:00Z";
+    String input =
+        "{\"UaType\":6,\"Value\":42,\"SourceTimestamp\":\""
+            + first
+            + "\",\"SourceTimestamp\":\""
+            + last
+            + "\",\"ServerTimestamp\":\""
+            + first
+            + "\",\"ServerTimestamp\":\""
+            + last
+            + "\"}";
+    DataValue decoded = new OpcUaJsonDecoder(context, input).decodeDataValue(null);
+    assertEquals(new DateTime(Instant.parse(last)), decoded.sourceTime());
+    assertEquals(decoded.sourceTime(), decoded.serverTime());
+    assertEquals(42, decoded.value().value());
+    LocalizedText text =
+        new OpcUaJsonDecoder(context, "{\"Text\":\"before\",\"Text\":\"after\"}")
+            .decodeLocalizedText(null);
+    assertEquals("after", text.getText());
+  }
+
+  @Test
   void unknownNamespaceUrisRemainRawNamespaceZeroStrings() {
     var context = new DefaultEncodingContext();
     String id = "nsu=urn:unknown;i=5";
@@ -376,6 +415,7 @@ public class WikiEncodingGuidesTest {
           new OpcUaBinaryDecoder(context).setBuffer(buffer).decodeMatrix(null, OpcUaDataType.Int32);
       assertArrayEquals(new int[] {0, 2}, restored.getDimensions());
       assertEquals(0, assertInstanceOf(Integer[].class, restored.getElements()).length);
+      assertNull(binaryVariant(context, new Variant(Matrix.ofNull())).value());
       buffer.clear();
       new OpcUaBinaryEncoder(context).setBuffer(buffer).encodeMatrix(null, Matrix.ofNull());
       assertTrue(
@@ -383,6 +423,32 @@ public class WikiEncodingGuidesTest {
               .setBuffer(buffer)
               .decodeMatrix(null, OpcUaDataType.Int32)
               .isNull());
+    } finally {
+      buffer.release();
+    }
+  }
+
+  // Variant normalization does not make a negative dimension valid in a Matrix field.
+  @Test
+  void negativeMatrixDimensionLosesShapeInVariantButFailsFieldDecoding() {
+    var context = new DefaultEncodingContext();
+    var matrix = new Matrix(new Integer[0], new int[] {-1, 2}, OpcUaDataType.Int32);
+    assertEquals(
+        0,
+        assertInstanceOf(Integer[].class, binaryVariant(context, new Variant(matrix)).value())
+            .length);
+    ByteBuf buffer = Unpooled.buffer();
+    try {
+      new OpcUaBinaryEncoder(context).setBuffer(buffer).encodeMatrix(null, matrix);
+      UaSerializationException failure =
+          assertThrows(
+              UaSerializationException.class,
+              () ->
+                  new OpcUaBinaryDecoder(context)
+                      .setBuffer(buffer)
+                      .decodeMatrix(null, OpcUaDataType.Int32));
+      assertEquals(StatusCodes.Bad_DecodingError, failure.getStatusCode().getValue());
+      assertTrue(failure.getMessage().contains("matrix dimension must not be negative"));
     } finally {
       buffer.release();
     }
@@ -433,6 +499,8 @@ public class WikiEncodingGuidesTest {
 
   @Test
   void unsignedOverloadsAndVariantJavaTypesHaveDifferentSemantics() {
+    assertEquals(255, ubyte((byte) -1).intValue());
+    assertEquals(65535, ushort((short) -1).intValue());
     assertEquals(4294967295L, uint(-1).longValue());
     assertThrows(NumberFormatException.class, () -> uint(-1L));
     assertEquals(OpcUaDataType.SByte, new Variant(new byte[] {1}).getDataType().orElseThrow());
@@ -442,6 +510,174 @@ public class WikiEncodingGuidesTest {
     assertThrows(IllegalArgumentException.class, () -> Variant.of(new Variant(1)));
   }
 
+  // Persisting an OPC TCP value as JSON must not make callers assume the same Java array class.
+  @ParameterizedTest
+  @MethodSource("arrayRepresentations")
+  void variantAndMatrixArraysUseDecoderSpecificJavaClasses(
+      Object values, Class<?> jsonArrayClass, OpcUaDataType type) throws Exception {
+    var context = new DefaultEncodingContext();
+    Variant binaryArray = binaryVariant(context, new Variant(values));
+    Variant jsonArray = jsonVariant(context, new Variant(values));
+    assertEquals(values.getClass(), binaryArray.value().getClass());
+    assertEquals(jsonArrayClass, jsonArray.value().getClass());
+    assertEquals(type, jsonArray.getDataType().orElseThrow());
+    assertArrayValues(values, binaryArray.value());
+    assertArrayValues(values, jsonArray.value());
+
+    Matrix original = new Matrix(values, new int[] {1, 2}, type);
+    Matrix binaryMatrix =
+        assertInstanceOf(Matrix.class, binaryVariant(context, new Variant(original)).value());
+    Matrix jsonMatrix =
+        assertInstanceOf(Matrix.class, jsonVariant(context, new Variant(original)).value());
+    assertEquals(values.getClass().getComponentType(), binaryMatrix.getElementType().orElseThrow());
+    assertEquals(jsonArrayClass.getComponentType(), jsonMatrix.getElementType().orElseThrow());
+    assertEquals(type, jsonMatrix.getDataType().orElseThrow());
+    assertArrayEquals(new int[] {1, 2}, binaryMatrix.getDimensions());
+    assertArrayEquals(new int[] {1, 2}, jsonMatrix.getDimensions());
+    assertArrayValues(values, binaryMatrix.getElements());
+    assertArrayValues(values, jsonMatrix.getElements());
+  }
+
+  static Stream<Arguments> arrayRepresentations() {
+    return Stream.of(
+        Arguments.of(new Boolean[] {true, false}, boolean[].class, OpcUaDataType.Boolean),
+        Arguments.of(new Byte[] {-1, 2}, byte[].class, OpcUaDataType.SByte),
+        Arguments.of(new Short[] {-1, 2}, short[].class, OpcUaDataType.Int16),
+        Arguments.of(new Integer[] {-1, 2}, int[].class, OpcUaDataType.Int32),
+        Arguments.of(new Long[] {-1L, 2L}, long[].class, OpcUaDataType.Int64),
+        Arguments.of(new Float[] {-1.25f, 2.5f}, float[].class, OpcUaDataType.Float),
+        Arguments.of(new Double[] {-1.25, 2.5}, double[].class, OpcUaDataType.Double),
+        Arguments.of(
+            new UInteger[] {uint(0), uint(4_000_000_000L)},
+            UInteger[].class,
+            OpcUaDataType.UInt32));
+  }
+
+  // The matching-mode control proves that a mode error does not come from a bad optional value.
+  @ParameterizedTest
+  @EnumSource(Encoding.class)
+  void optionalStructureRejectsMismatchedJsonMode(Encoding encoding) throws Exception {
+    var context = new DefaultEncodingContext();
+    var original =
+        new LogRecord(
+            new DateTime(Instant.parse("2026-01-01T00:00:00Z")),
+            ushort(100),
+            null,
+            null,
+            "source",
+            LocalizedText.english("event"),
+            null,
+            null);
+    String json;
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.setEncoding(encoding);
+      encoder.encodeStruct(null, original, new LogRecord.Codec());
+      json = encoder.getOutputString();
+    }
+    assertEquals(encoding == Encoding.COMPACT, json.contains("\"EncodingMask\":4"));
+    var matching = new OpcUaJsonDecoder(context, json);
+    matching.setEncoding(encoding);
+    assertEquals(original, matching.decodeStruct(null, new LogRecord.Codec()));
+    var mismatched = new OpcUaJsonDecoder(context, json);
+    mismatched.setEncoding(encoding == Encoding.COMPACT ? Encoding.VERBOSE : Encoding.COMPACT);
+    UaSerializationException failure =
+        assertThrows(
+            UaSerializationException.class,
+            () -> mismatched.decodeStruct(null, new LogRecord.Codec()));
+    assertEquals(StatusCodes.Bad_DecodingError, failure.getStatusCode().getValue());
+    assertTrue(failure.getMessage().contains("Unexpected structure field"));
+  }
+
+  // Enum-bearing structures require matching modes even when they have no optional fields.
+  @ParameterizedTest
+  @EnumSource(Encoding.class)
+  void enumStructureUsesNumericOrNamedValueAndRejectsMismatchedMode(Encoding encoding)
+      throws Exception {
+    var context = new DefaultEncodingContext();
+    DateTime time = new DateTime(Instant.parse("2026-01-01T00:00:00Z"));
+    var original =
+        new ServerStatusDataType(
+            time,
+            time,
+            ServerState.Failed,
+            new BuildInfo("urn:wiki", "Milo", "Fixture", "1.2", "1", time),
+            uint(10),
+            LocalizedText.english("test"));
+    String json;
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.setEncoding(encoding);
+      encoder.encodeStruct(null, original, new ServerStatusDataType.Codec());
+      json = encoder.getOutputString();
+    }
+    assertTrue(
+        json.contains(encoding == Encoding.COMPACT ? "\"State\":1" : "\"State\":\"Failed_1\""));
+    var matching = new OpcUaJsonDecoder(context, json);
+    matching.setEncoding(encoding);
+    assertEquals(original, matching.decodeStruct(null, new ServerStatusDataType.Codec()));
+    var mismatched = new OpcUaJsonDecoder(context, json);
+    mismatched.setEncoding(encoding == Encoding.COMPACT ? Encoding.VERBOSE : Encoding.COMPACT);
+    UaSerializationException failure =
+        assertThrows(
+            UaSerializationException.class,
+            () -> mismatched.decodeStruct(null, new ServerStatusDataType.Codec()));
+    assertEquals(StatusCodes.Bad_DecodingError, failure.getStatusCode().getValue());
+  }
+
+  @Test
+  void jsonNullElementsRoundTripOnlyForNullableElementTypes() throws Exception {
+    var context = new DefaultEncodingContext();
+    assertArrayEquals(
+        new String[] {"a", null},
+        assertInstanceOf(
+            String[].class, jsonVariant(context, new Variant(new String[] {"a", null})).value()));
+    ByteString[] bytes =
+        assertInstanceOf(
+            ByteString[].class,
+            jsonVariant(
+                    context, new Variant(new ByteString[] {ByteString.of(new byte[] {1}), null}))
+                .value());
+    assertArrayEquals(new byte[] {1}, bytes[0].bytesOrEmpty());
+    assertEquals(ByteString.NULL_VALUE, bytes[1]);
+    UaSerializationException failure =
+        assertThrows(
+            UaSerializationException.class,
+            () -> jsonVariant(context, new Variant(new Integer[] {1, null})));
+    assertEquals(StatusCodes.Bad_DecodingError, failure.getStatusCode().getValue());
+  }
+
+  // Reusing an application-owned output Writer requires knowing which encoder closes it.
+  @Test
+  void jsonEncoderClosesItsWriterButXmlEncoderLeavesItOwnedByTheCaller() throws Exception {
+    class TrackedWriter extends StringWriter {
+      boolean closed;
+
+      @Override
+      public void close() {
+        closed = true;
+      }
+    }
+    var context = new DefaultEncodingContext();
+    var json = new TrackedWriter();
+    try (var encoder = new OpcUaJsonEncoder(context, json)) {
+      encoder.encodeInt32(null, 42);
+    }
+    assertTrue(json.closed);
+    assertEquals(42, new OpcUaJsonDecoder(context, json.toString()).decodeInt32(null));
+
+    var xml = new TrackedWriter();
+    try (var encoder = new OpcUaXmlEncoder(context, xml)) {
+      // A named field supplies the document element; a null field writes only character data.
+      encoder.encodeInt32("Int32", 42);
+    }
+    assertFalse(xml.closed);
+    try (var decoder = new OpcUaXmlDecoder(context, xml.toString())) {
+      assertEquals(42, decoder.decodeInt32(null));
+    } finally {
+      xml.close();
+    }
+    assertTrue(xml.closed);
+  }
+
   private static EncodingContext withLimits(EncodingLimits limits) {
     return new DefaultEncodingContext() {
       @Override
@@ -449,6 +685,32 @@ public class WikiEncodingGuidesTest {
         return limits;
       }
     };
+  }
+
+  private static Variant binaryVariant(EncodingContext context, Variant value) {
+    ByteBuf buffer = Unpooled.buffer();
+    try {
+      new OpcUaBinaryEncoder(context).setBuffer(buffer).encodeVariant(null, value);
+      Variant decoded = new OpcUaBinaryDecoder(context).setBuffer(buffer).decodeVariant(null);
+      assertFalse(buffer.isReadable());
+      return decoded;
+    } finally {
+      buffer.release();
+    }
+  }
+
+  private static Variant jsonVariant(EncodingContext context, Variant value) throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encodeVariant(null, value);
+      return new OpcUaJsonDecoder(context, encoder.getOutputString()).decodeVariant(null);
+    }
+  }
+
+  private static void assertArrayValues(Object expected, Object actual) {
+    assertEquals(Array.getLength(expected), Array.getLength(actual));
+    for (int i = 0; i < Array.getLength(expected); i++) {
+      assertEquals(Array.get(expected, i), Array.get(actual, i), "element " + i);
+    }
   }
 
   private static String json(EncodingContext context, DataValue value) throws Exception {
