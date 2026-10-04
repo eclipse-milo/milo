@@ -16,6 +16,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.milo</groupId>
+      <artifactId>milo-encoding-xml</artifactId>
+      <version>1.1.7</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-sdk-client</artifactId>
       <version>1.1.7</version>
     </dependency>

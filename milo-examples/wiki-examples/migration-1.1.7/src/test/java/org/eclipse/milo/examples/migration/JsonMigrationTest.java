@@ -11,12 +11,14 @@
 package org.eclipse.milo.examples.migration;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.gson.JsonParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.nio.file.Files;
@@ -30,6 +32,7 @@ import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryEncoder;
 import org.eclipse.milo.opcua.stack.core.encoding.json.OpcUaDefaultJsonEncoding;
 import org.eclipse.milo.opcua.stack.core.encoding.json.OpcUaJsonDecoder;
 import org.eclipse.milo.opcua.stack.core.encoding.json.OpcUaJsonEncoder;
+import org.eclipse.milo.opcua.stack.core.encoding.xml.OpcUaDefaultXmlEncoding;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -65,6 +68,16 @@ public class JsonMigrationTest {
                         new Matrix(
                             new Integer[] {1, 2, 3, 4}, new int[] {2, 2}, OpcUaDataType.Int32))),
             "bytes", DataValue.valueOnly(new Variant(ByteString.NULL_VALUE)),
+            "range-binary",
+                DataValue.valueOnly(
+                    new Variant(ExtensionObject.encode(context, new Range(0.0, 100.0)))),
+            "range-xml",
+                DataValue.valueOnly(
+                    new Variant(
+                        ExtensionObject.encode(
+                            context,
+                            new Range(0.0, 100.0),
+                            OpcUaDefaultXmlEncoding.getInstance()))),
             "range",
                 DataValue.valueOnly(
                     new Variant(
@@ -80,6 +93,37 @@ public class JsonMigrationTest {
       }
       Files.writeString(exchange.resolve(entry.getKey() + ".legacy.json"), json);
       DataValue decoded = new OpcUaJsonDecoder(context, json).decodeDataValue(null);
+      if (entry.getKey().equals("range-binary") || entry.getKey().equals("range-xml")) {
+        // Persist a real bare 1.1.7 Variant, so the 1.2 process tests the envelope independently
+        // from the old nested DataValue layout.
+        try (var encoder = new OpcUaJsonEncoder(context)) {
+          encoder.encodeVariant(null, entry.getValue().value());
+          String variant = encoder.getOutputString();
+          var envelope = JsonParser.parseString(variant).getAsJsonObject().getAsJsonObject("Value");
+          boolean xml = entry.getKey().equals("range-xml");
+          assertEquals(xml ? "i=885" : "i=886", envelope.get("UaTypeId").getAsString());
+          assertEquals(xml ? 2 : 1, envelope.get("UaEncoding").getAsInt());
+          if (xml) {
+            var original =
+                assertInstanceOf(ExtensionObject.Xml.class, entry.getValue().value().value());
+            assertEquals(original.getBody().getFragment(), envelope.get("UaBody").getAsString());
+            assertTrue(envelope.get("UaBody").getAsString().contains("<"));
+          }
+          assertEquals(
+              new Range(0.0, 100.0),
+              assertInstanceOf(
+                      ExtensionObject.class,
+                      new OpcUaJsonDecoder(context, variant).decodeVariant(null).value())
+                  .decode(context));
+          Files.writeString(exchange.resolve(entry.getKey() + ".variant.legacy.json"), variant);
+        }
+      }
+      if (entry.getKey().equals("matrix")) {
+        Matrix matrix = assertInstanceOf(Matrix.class, decoded.value().value());
+        assertArrayEquals(new int[] {2, 2}, matrix.getDimensions());
+        assertArrayEquals(
+            new int[] {1, 2, 3, 4}, assertInstanceOf(int[].class, matrix.getElements()));
+      }
       if (entry.getKey().equals("bytes")) {
         // The old serializer already collapses null ByteString to empty; conversion cannot infer
         // null.
