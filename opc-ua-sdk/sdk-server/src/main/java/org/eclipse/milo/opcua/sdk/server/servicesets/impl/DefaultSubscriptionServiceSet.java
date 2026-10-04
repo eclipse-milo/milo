@@ -300,7 +300,7 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
 
               if (item instanceof MonitoredDataItem dataItem) {
                 // A new denial also drops the values queued for the old Session.
-                dataItem.setTransferredReadAccessResult(result);
+                dataItem.setReadAccessResultAfterSessionChange(result);
               } else {
                 item.setReadAccessResult(result);
               }

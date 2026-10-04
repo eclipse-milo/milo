@@ -200,9 +200,12 @@ The client sees an ordinary DataChangeNotification whose DataValue has `Bad_User
 or `Bad_NotReadable` as its status and no value. A change to a denial queues that status at
 once, without waiting for a sample. A Disabled item queues nothing until monitoring resumes.
 Values queued before the decision changed are not purged, so a client can receive a last good
-value ahead of the denial. The exception is a TransferSubscriptions to a Session that may not
-read the item: the values queued for the previous Session are dropped and the denial is queued
-in their place. NotificationMessages kept for Republish are not purged.
+value ahead of the denial. The exception is a change to the Session itself: a
+TransferSubscriptions to a Session that may not read the item, or an ActivateSession that
+changes the Session's user identity or endpoint so that it may no longer read the item. The
+values queued before the change are dropped and the denial is queued in their place.
+NotificationMessages kept for Republish are not purged; they were already sent to the Session's
+client.
 
 The stored result is a snapshot. It does not re-check permissions on every `setValue()`; some
 component has to refresh it. For items sampled by the framework, the group does so before every
@@ -261,7 +264,7 @@ the cache, which policy to choose, and how stale a stored result can be.
 | Any request reports `Bad_SecurityModeInsufficient` | `AccessRestrictions` against the Session's endpoint security mode. |
 | Setting `RolePermissions` changed nothing | Ordinary UaNodes do not derive effective attributes from it; supply `UserAccessLevel` or `UserRolePermissions` from a filter. |
 | A permission change has no effect on subscribed clients | Was `invalidateReadAccess` called after the change, with a scope that covers the Node and Session? On the per-cycle policy, has a cycle run since? |
-| An old value arrives before the denial | Values queued before the decision changed are not purged. |
+| An old value arrives before the denial | Values queued before the decision changed are not purged, except on a transfer or an identity or endpoint change. |
 
 ## Testing
 

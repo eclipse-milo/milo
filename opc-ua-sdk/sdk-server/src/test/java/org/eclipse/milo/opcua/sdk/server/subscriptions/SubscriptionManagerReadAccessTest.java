@@ -239,6 +239,33 @@ class SubscriptionManagerReadAccessTest {
         drain(item).stream().map(value -> value.statusCode().getValue()).toList());
   }
 
+  // Values queued before an identity or endpoint change were sampled and checked for the previous
+  // user or channel. An item the Session may no longer read drops them, and the client gets the
+  // denial in their place, as it does after a transfer to a Session that may not read the item.
+  @Test
+  void refreshReadAccessWithANewDenialDropsTheValuesQueuedBeforeTheChange() throws Exception {
+    MonitoredDataItem item = createAllowedItemWithQueuedValues(1, 2);
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenReturn(Map.of(itemToMonitor, AccessResult.DENIED_USER_ACCESS));
+
+    manager.refreshReadAccess();
+
+    assertEquals(
+        List.of(StatusCodes.Bad_UserAccessDenied),
+        drain(item).stream().map(value -> value.statusCode().getValue()).toList());
+  }
+
+  // The control for the test above: a client reactivating on a new channel keeps the values it
+  // may still read. Only a new denial drops them.
+  @Test
+  void refreshReadAccessThatStillAllowsKeepsTheQueuedValues() throws Exception {
+    MonitoredDataItem item = createAllowedItemWithQueuedValues(1, 2);
+
+    manager.refreshReadAccess();
+
+    assertEquals(List.of(1, 2), drain(item).stream().map(value -> value.value().value()).toList());
+  }
+
   // ActivateSession calls the refresh after committing the change, so a check that throws must
   // neither fail the service nor change any item.
   @Test
@@ -280,6 +307,18 @@ class SubscriptionManagerReadAccessTest {
 
     return assertInstanceOf(
         MonitoredDataItem.class, ownedMonitoredItems.values().iterator().next());
+  }
+
+  private MonitoredDataItem createAllowedItemWithQueuedValues(int... values) throws Exception {
+    when(addressSpaceManager.onCreateDataItem(eq(itemToMonitor), any(), any()))
+        .thenReturn(new RevisedDataItemParameters(100.0, uint(10)));
+    MonitoredDataItem item = createAllowedItem();
+
+    for (int value : values) {
+      item.setValue(new DataValue(new Variant(value)));
+    }
+
+    return item;
   }
 
   private static List<DataValue> drain(MonitoredDataItem item) {

@@ -165,17 +165,18 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
   }
 
   /**
-   * Apply the result of a read access check for the Session a TransferSubscriptions just moved this
-   * item to.
+   * Apply the result of a read access check made because the Session this item reports to changed:
+   * a TransferSubscriptions moved the item to another Session, or an ActivateSession changed its
+   * Session's user identity or endpoint.
    *
    * <p>This is {@link #setReadAccessResult}, except that a denial this item did not already enforce
    * also drops the values queued for the client. They were sampled and checked for the previous
-   * Session, and the new one may not read them, for example because its channel does not meet the
-   * Node's AccessRestrictions. The denial is queued in their place.
+   * Session, user, or channel, and the client may no longer read them, for example because the new
+   * channel does not meet the Node's AccessRestrictions. The denial is queued in their place.
    *
-   * @param accessResult the result of the check for the new Session.
+   * @param accessResult the result of the check for the changed Session.
    */
-  public synchronized void setTransferredReadAccessResult(AccessResult accessResult) {
+  public synchronized void setReadAccessResultAfterSessionChange(AccessResult accessResult) {
     if (accessResult instanceof AccessResult.Denied
         && !(readAccessResult instanceof AccessResult.Denied)) {
       queue.clear();

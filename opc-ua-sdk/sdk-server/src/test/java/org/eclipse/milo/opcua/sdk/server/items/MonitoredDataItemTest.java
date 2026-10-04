@@ -189,13 +189,13 @@ class MonitoredDataItemTest {
     assertTrue(drain().isEmpty(), "nothing may be queued while Disabled");
   }
 
-  // A transfer to a Session with the same denial the item already enforced has nothing new to
+  // A Session change that brings the same denial the item already enforced has nothing new to
   // report, and the denial still queued for the client must not be dropped with the values.
   @Test
-  void aTransferredDenialTheItemAlreadyEnforcedKeepsTheQueuedDenial() {
+  void aSessionChangeDenialTheItemAlreadyEnforcedKeepsTheQueuedDenial() {
     item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
 
-    item.setTransferredReadAccessResult(AccessResult.DENIED_USER_ACCESS);
+    item.setReadAccessResultAfterSessionChange(AccessResult.DENIED_USER_ACCESS);
 
     assertEquals(List.of(StatusCodes.Bad_UserAccessDenied), statusCodes(drain()));
   }

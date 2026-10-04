@@ -175,7 +175,9 @@ public class SubscriptionManager {
    *
    * <p>The server calls this when the Session's identity or endpoint changes, the two events that
    * can change every answer for a Session at once, so the items stop enforcing answers for the
-   * previous user or channel whoever samples them (Part 4 §5.13.2.1). It is called from
+   * previous user or channel whoever samples them (Part 4 §5.13.2.1). A {@link MonitoredDataItem}
+   * the Session may no longer read also drops the values queued for the previous user or channel,
+   * through {@link MonitoredDataItem#setReadAccessResultAfterSessionChange}. It is called from
    * ActivateSession after the change is committed, so it never throws: a failure is logged and
    * leaves the items' results as they were. An item that a TransferSubscriptions moved to another
    * Session meanwhile is skipped, since the transfer applies the answer for its new Session itself,
@@ -210,7 +212,14 @@ public class SubscriptionManager {
       for (DataItem item : dataItems) {
         AccessResult result = results.get(item.getReadValueId());
 
-        if (result != null && item.getSession() == session) {
+        if (result == null || item.getSession() != session) {
+          continue;
+        }
+
+        if (item instanceof MonitoredDataItem dataItem) {
+          // A new denial also drops the values queued for the previous user or channel.
+          dataItem.setReadAccessResultAfterSessionChange(result);
+        } else {
           item.setReadAccessResult(result);
         }
       }
