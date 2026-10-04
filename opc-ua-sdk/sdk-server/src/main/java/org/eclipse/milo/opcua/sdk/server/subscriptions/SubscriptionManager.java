@@ -169,6 +169,76 @@ public class SubscriptionManager {
     return new ArrayList<>(subscriptions.values());
   }
 
+  /**
+   * Check the read access of every data item in this Session's Subscriptions now, and apply each
+   * result to its item.
+   *
+   * <p>The server calls this when the Session's identity or endpoint changes, the two events that
+   * can change every answer for a Session at once, so the items stop enforcing answers for the
+   * previous user or channel whoever samples them (Part 4 §5.13.2.1). A {@link MonitoredDataItem}
+   * the Session may no longer read also drops the values queued for the previous user or channel,
+   * through {@link MonitoredDataItem#setReadAccessResultAfterSessionChange}. It is called from
+   * ActivateSession after the change is committed, so it never throws: a failure is logged and
+   * leaves the items' results as they were. An item that a TransferSubscriptions moved to another
+   * Session meanwhile is skipped, since the transfer applies the answer for its new Session itself,
+   * and so is any item this refresh reaches after the Session's identity or endpoint changed again,
+   * since that change runs a refresh of its own. An answer from this refresh never lands on an item
+   * after that later refresh's answer.
+   */
+  public void refreshReadAccess() {
+    try {
+      long accessEpoch = session.getAccessEpoch();
+
+      List<DataItem> dataItems =
+          subscriptions.values().stream()
+              .flatMap(subscription -> subscription.getMonitoredItems().values().stream())
+              .filter(item -> item instanceof DataItem)
+              .map(item -> (DataItem) item)
+              .toList();
+
+      if (dataItems.isEmpty()) {
+        return;
+      }
+
+      List<ReadValueId> readValueIds =
+          dataItems.stream().map(MonitoredItem::getReadValueId).distinct().toList();
+
+      Map<ReadValueId, AccessResult> results =
+          server.getAccessController().checkReadAccess(session, readValueIds);
+
+      for (DataItem item : dataItems) {
+        AccessResult result = results.get(item.getReadValueId());
+
+        if (result == null) {
+          continue;
+        }
+
+        if (item instanceof MonitoredDataItem dataItem) {
+          // MonitoredDataItem applies results under its own lock, so a later change's refresh,
+          // which bumps the epoch before it applies, either lands after this result or stops it.
+          // A new denial also drops the values queued for the previous user or channel.
+          synchronized (dataItem) {
+            if (isCheckedFor(dataItem, accessEpoch)) {
+              dataItem.setReadAccessResultAfterSessionChange(result);
+            }
+          }
+        } else {
+          item.setReadAccessResult(result, session, accessEpoch);
+        }
+      }
+    } catch (Throwable t) {
+      logger.warn("Read access refresh failed for Session {}", session.getSessionId(), t);
+    }
+  }
+
+  /**
+   * Whether a refresh that checked at {@code accessEpoch} still answers for {@code item}: the item
+   * is still on this Session, and the Session's identity and endpoint have not changed since.
+   */
+  private boolean isCheckedFor(DataItem item, long accessEpoch) {
+    return item.getSession() == session && session.getAccessEpoch() == accessEpoch;
+  }
+
   public CompletableFuture<CreateSubscriptionResponse> createSubscription(
       CreateSubscriptionRequest request) {
     if (subscriptions.size()

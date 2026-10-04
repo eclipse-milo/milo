@@ -164,6 +164,39 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
     }
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>The comparison and the update happen under this item's lock. The SDK's identity or endpoint
+   * refresh applies its results under the same lock, after bumping the epoch.
+   */
+  @Override
+  public synchronized boolean setReadAccessResult(
+      AccessResult accessResult, Session session, long accessEpoch) {
+
+    return DataItem.super.setReadAccessResult(accessResult, session, accessEpoch);
+  }
+
+  /**
+   * Apply the result of a read access check made because an ActivateSession changed the user
+   * identity or endpoint of the Session this item reports to.
+   *
+   * <p>This is {@link #setReadAccessResult}, except that a denial this item did not already enforce
+   * also drops the values queued for the client. They were sampled and checked for the previous
+   * user or channel, and the client may no longer read them, for example because the new channel
+   * does not meet the Node's AccessRestrictions. The denial is queued in their place.
+   *
+   * @param accessResult the result of the check for the changed Session.
+   */
+  public synchronized void setReadAccessResultAfterSessionChange(AccessResult accessResult) {
+    if (accessResult instanceof AccessResult.Denied
+        && !(readAccessResult instanceof AccessResult.Denied)) {
+      queue.clear();
+    }
+
+    setReadAccessResult(accessResult);
+  }
+
   @Override
   public AccessResult getReadAccessResult() {
     return readAccessResult;

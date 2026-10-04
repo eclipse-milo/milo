@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.server.subscriptions;
 
 import static java.util.Objects.requireNonNull;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -215,6 +216,138 @@ class SubscriptionManagerReadAccessTest {
     MonitoredDataItem item =
         assertInstanceOf(MonitoredDataItem.class, ownedMonitoredItems.values().iterator().next());
     assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
+  }
+
+  /**
+   * Part 4 §5.13.2.1: an identity or endpoint change can revoke read access to every item of the
+   * Session at once. The re-check reaches every data item, whoever samples it, and a new denial is
+   * queued without waiting for a sample.
+   */
+  @Test
+  void refreshReadAccessAppliesTheCurrentAnswerToEveryDataItem() throws Exception {
+    MonitoredDataItem item = createAllowedItem();
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenReturn(Map.of(itemToMonitor, AccessResult.DENIED_USER_ACCESS));
+
+    manager.refreshReadAccess();
+
+    assertEquals(AccessResult.DENIED_USER_ACCESS, item.getReadAccessResult());
+    assertEquals(
+        List.of(StatusCodes.Bad_UserAccessDenied),
+        drain(item).stream().map(value -> value.statusCode().getValue()).toList());
+  }
+
+  // Values queued before an identity or endpoint change were sampled and checked for the previous
+  // user or channel. An item the Session may no longer read drops them, and the client gets the
+  // denial in their place, as it does after a transfer to a Session that may not read the item.
+  @Test
+  void refreshReadAccessWithANewDenialDropsTheValuesQueuedBeforeTheChange() throws Exception {
+    MonitoredDataItem item = createAllowedItemWithQueuedValues(1, 2);
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenReturn(Map.of(itemToMonitor, AccessResult.DENIED_USER_ACCESS));
+
+    manager.refreshReadAccess();
+
+    assertEquals(
+        List.of(StatusCodes.Bad_UserAccessDenied),
+        drain(item).stream().map(value -> value.statusCode().getValue()).toList());
+  }
+
+  // The control for the test above: a client reactivating on a new channel keeps the values it
+  // may still read. Only a new denial drops them.
+  @Test
+  void refreshReadAccessThatStillAllowsKeepsTheQueuedValues() throws Exception {
+    MonitoredDataItem item = createAllowedItemWithQueuedValues(1, 2);
+
+    manager.refreshReadAccess();
+
+    assertEquals(List.of(1, 2), drain(item).stream().map(value -> value.value().value()).toList());
+  }
+
+  // ActivateSession calls the refresh after committing the change, so a check that throws must
+  // neither fail the service nor change any item.
+  @Test
+  void refreshReadAccessWhoseCheckThrowsChangesNothing() throws Exception {
+    MonitoredDataItem item = createAllowedItem();
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenThrow(new IllegalStateException("attribute filter failed"));
+
+    assertDoesNotThrow(() -> manager.refreshReadAccess());
+
+    assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
+    assertTrue(drain(item).isEmpty());
+  }
+
+  // Two identity changes in quick succession each run a refresh. One whose check straddles the
+  // second change answers for the previous user, so it applies nothing and leaves the item to the
+  // refresh of the later change.
+  @Test
+  void refreshReadAccessOvertakenByAnotherChangeAppliesNothing() throws Exception {
+    MonitoredDataItem item = createAllowedItem();
+    var accessEpoch = new AtomicLong();
+    when(session.getAccessEpoch()).thenAnswer(invocation -> accessEpoch.get());
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenAnswer(
+            invocation -> {
+              accessEpoch.incrementAndGet();
+              return Map.of(itemToMonitor, AccessResult.DENIED_USER_ACCESS);
+            });
+
+    manager.refreshReadAccess();
+
+    assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
+  }
+
+  // Two ActivateSession requests can overlap. When the later one changes the identity and applies
+  // its answer while this refresh is still applying its own, this refresh's answer is for the
+  // previous identity, so it must neither replace the later answer nor drop the value queued under
+  // it.
+  @Test
+  void refreshReadAccessOvertakenWhileApplyingKeepsTheLaterAnswerAndItsValues() throws Exception {
+    MonitoredDataItem item = createAllowedItemWithQueuedValues();
+    var accessEpoch = new AtomicLong();
+    when(session.getAccessEpoch()).thenAnswer(invocation -> accessEpoch.get());
+
+    // Looking up this refresh's answer stands in for the moment the later ActivateSession commits
+    // its identity and applies its own answer, under which a value is then queued.
+    var staleAnswers =
+        new HashMap<ReadValueId, AccessResult>(
+            Map.of(itemToMonitor, AccessResult.DENIED_USER_ACCESS)) {
+          @Override
+          public AccessResult get(Object key) {
+            accessEpoch.incrementAndGet();
+            item.setReadAccessResultAfterSessionChange(AccessResult.ALLOWED);
+            item.setValue(new DataValue(new Variant(42)));
+            return super.get(key);
+          }
+        };
+    when(accessController.checkReadAccess(eq(session), anyList())).thenReturn(staleAnswers);
+
+    manager.refreshReadAccess();
+
+    assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
+    assertEquals(List.of(42), drain(item).stream().map(value -> value.value().value()).toList());
+  }
+
+  private MonitoredDataItem createAllowedItem() throws Exception {
+    when(accessController.checkReadAccess(eq(session), anyList()))
+        .thenReturn(Map.of(itemToMonitor, AccessResult.ALLOWED));
+    manager.createMonitoredItems(context, createRequest(createItem()));
+
+    return assertInstanceOf(
+        MonitoredDataItem.class, ownedMonitoredItems.values().iterator().next());
+  }
+
+  private MonitoredDataItem createAllowedItemWithQueuedValues(int... values) throws Exception {
+    when(addressSpaceManager.onCreateDataItem(eq(itemToMonitor), any(), any()))
+        .thenReturn(new RevisedDataItemParameters(100.0, uint(10)));
+    MonitoredDataItem item = createAllowedItem();
+
+    for (int value : values) {
+      item.setValue(new DataValue(new Variant(value)));
+    }
+
+    return item;
   }
 
   private static List<DataValue> drain(MonitoredDataItem item) {

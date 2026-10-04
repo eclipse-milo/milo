@@ -959,8 +959,10 @@ public class SessionManager {
                   new DiagnosticInfo[0]);
 
           // The user behind the Session changed, so its read access answers did too. Drop them
-          // before anyone hears about the change and asks again.
+          // before anyone hears about the change and asks again, and re-check the Session's items
+          // before the response, so none keeps enforcing the previous user's answer.
           server.getAccessControlManager().invalidateReadAccess(ReadAccessScope.session(session));
+          session.getSubscriptionManager().refreshReadAccess();
 
           fireSessionIdentityChanged(session);
 
@@ -1035,10 +1037,11 @@ public class SessionManager {
               activated = true;
 
               // The security mode and endpoint behind the Session changed, and both feed its read
-              // access answers, so drop them.
+              // access answers, so drop them and re-check the Session's items.
               server
                   .getAccessControlManager()
                   .invalidateReadAccess(ReadAccessScope.session(session));
+              session.getSubscriptionManager().refreshReadAccess();
 
               fireSessionEndpointChanged(session);
 

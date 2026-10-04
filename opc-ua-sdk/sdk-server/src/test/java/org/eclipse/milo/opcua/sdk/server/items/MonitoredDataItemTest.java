@@ -12,8 +12,10 @@ package org.eclipse.milo.opcua.sdk.server.items;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -187,6 +189,54 @@ class MonitoredDataItemTest {
 
     assertEquals(AccessResult.DENIED_NOT_READABLE, item.getReadAccessResult());
     assertTrue(drain().isEmpty(), "nothing may be queued while Disabled");
+  }
+
+  // A refresher passes the Session and access epoch it read before its check. While both still
+  // describe the item, the result is applied like any other.
+  @Test
+  void aResultCheckedForTheItemsSessionAtItsCurrentEpochIsApplied() {
+    Session session = item.getSession();
+
+    assertTrue(item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS, session, 0L));
+
+    assertEquals(AccessResult.DENIED_USER_ACCESS, item.getReadAccessResult());
+    assertEquals(List.of(StatusCodes.Bad_UserAccessDenied), statusCodes(drain()));
+  }
+
+  // An identity or endpoint change since the check bumps the epoch and applies its own answer, so
+  // the result checked for the Session as it was must not replace it.
+  @Test
+  void aResultCheckedBeforeTheSessionsIdentityOrEndpointChangedIsNotApplied() {
+    Session session = item.getSession();
+    when(session.getAccessEpoch()).thenReturn(1L);
+
+    assertFalse(item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS, session, 0L));
+
+    assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
+    assertTrue(drain().isEmpty());
+  }
+
+  // A TransferSubscriptions since the check moved the item and applied the answer for its new
+  // Session, so the result checked for the old Session must not replace it.
+  @Test
+  void aResultCheckedForTheSessionTheItemWasTransferredFromIsNotApplied() {
+    Session oldSession = item.getSession();
+    item.setSession(mock(Session.class));
+
+    assertFalse(item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS, oldSession, 0L));
+
+    assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
+  }
+
+  // A Session change that brings the same denial the item already enforced has nothing new to
+  // report, and the denial still queued for the client must not be dropped with the values.
+  @Test
+  void aSessionChangeDenialTheItemAlreadyEnforcedKeepsTheQueuedDenial() {
+    item.setReadAccessResult(AccessResult.DENIED_USER_ACCESS);
+
+    item.setReadAccessResultAfterSessionChange(AccessResult.DENIED_USER_ACCESS);
+
+    assertEquals(List.of(StatusCodes.Bad_UserAccessDenied), statusCodes(drain()));
   }
 
   /**
