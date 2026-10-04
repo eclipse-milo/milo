@@ -108,7 +108,10 @@ nothing. That protects the handoff when an item moves between groups without wai
 group's network I/O. The group also records each item's Session, and that Session's access
 epoch, before the check, and applies nothing to an item that a TransferSubscriptions moved
 meanwhile or whose Session's identity or endpoint changed meanwhile. The transfer and
-ActivateSession apply a current answer themselves, and the item is read again next cycle.
+ActivateSession apply a current answer themselves, and the item is read again next cycle. The
+group makes that last check and applies its answer under a `MonitoredDataItem`'s lock, which the
+transfer and the identity or endpoint refresh also apply under after moving the item or bumping
+the epoch, so an answer for the Session as it was never replaces theirs.
 
 ## Read access
 

@@ -33,6 +33,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
@@ -461,6 +462,84 @@ class SamplingGroupTest {
         item.getReadAccessResult(),
         "the answer for the new identity stands");
     assertEquals(List.of(List.of(b)), group.samples, "the item is not read this turn");
+  }
+
+  // The change can also land after the group has seen the item's Session unchanged but before it
+  // applies its answer. The change's own refresh then applies the answer for the new identity,
+  // which the group's answer, checked for the previous identity, must not replace, and the item
+  // must not be read on that older answer.
+  @Test
+  void anIdentityChangeAppliedJustBeforeTheGroupsAnswerKeepsItsAnswer() {
+    var accessEpoch = new AtomicLong();
+    Session changing = mock(Session.class);
+    when(changing.getAccessEpoch()).thenAnswer(invocation -> accessEpoch.get());
+    MonitoredDataItem item = SamplingTestItems.item(server, changing, "changing");
+
+    // Looking up the group's answer for the item stands in for the moment the change commits and
+    // its refresh applies a denial for the new identity.
+    var changed = new AtomicBoolean();
+    group.configure(
+        SamplingManagerConfig.defaults()
+            .withReadAccessPolicy(
+                (s, items) ->
+                    new HashMap<DataItem, AccessResult>(
+                        Map.of(item, AccessResult.ALLOWED, b, AccessResult.ALLOWED)) {
+                      @Override
+                      public AccessResult get(Object key) {
+                        if (key == item && changed.compareAndSet(false, true)) {
+                          accessEpoch.incrementAndGet();
+                          item.setReadAccessResultAfterSessionChange(
+                              AccessResult.DENIED_USER_ACCESS);
+                        }
+                        return super.get(key);
+                      }
+                    }));
+    group.addItems(List.of(item, b));
+    group.startup();
+
+    runCycle();
+
+    assertEquals(
+        AccessResult.DENIED_USER_ACCESS,
+        item.getReadAccessResult(),
+        "the answer for the new identity stands");
+    assertEquals(List.of(List.of(b)), group.samples, "the item is not read on the older answer");
+  }
+
+  // The same gap for a TransferSubscriptions: the transfer moves the item and applies the answer
+  // for its new Session after the group has seen the old Session on it, but before the group
+  // applies the answer checked for the old Session.
+  @Test
+  void aTransferAppliedJustBeforeTheGroupsAnswerKeepsItsAnswer() {
+    Session newSession = mock(Session.class);
+
+    var transferred = new AtomicBoolean();
+    group.configure(
+        SamplingManagerConfig.defaults()
+            .withReadAccessPolicy(
+                (s, items) ->
+                    new HashMap<DataItem, AccessResult>(
+                        Map.of(a, AccessResult.ALLOWED, b, AccessResult.ALLOWED)) {
+                      @Override
+                      public AccessResult get(Object key) {
+                        if (key == a && transferred.compareAndSet(false, true)) {
+                          a.setSession(newSession);
+                          a.setReadAccessResultAfterSessionChange(
+                              AccessResult.DENIED_SECURITY_MODE);
+                        }
+                        return super.get(key);
+                      }
+                    }));
+    group.addItems(List.of(a, b));
+    group.startup();
+
+    runCycle();
+
+    assertEquals(
+        AccessResult.DENIED_SECURITY_MODE,
+        a.getReadAccessResult(),
+        "the answer for the new Session stands");
+    assertEquals(List.of(List.of(b)), group.samples, "the moved item is not read this turn");
   }
 
   // Applying a result can throw, for example from a DataItem implementation outside the SDK. The

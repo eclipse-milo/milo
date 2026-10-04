@@ -28,6 +28,7 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
+import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
@@ -666,25 +667,52 @@ public abstract class SamplingGroup {
       }
 
       for (DataItem item : checked) {
-        if (!toRefresh.get(item).equals(items.get(item)) || !checkedFor.get(item).isCurrent(item)) {
+        if (!toRefresh.get(item).equals(items.get(item))) {
           continue;
         }
 
         AccessResult result = results.get(item);
+        boolean mayRead;
 
-        if (result != null) {
-          item.setReadAccessResult(result);
+        if (item instanceof MonitoredDataItem dataItem) {
+          // MonitoredDataItem applies results under its own lock. A transfer or an identity or
+          // endpoint change moves the item or bumps the epoch before it applies its answer under
+          // that lock, so checking and applying under it too means the answer for the Session as
+          // it was either lands first and is replaced, or is not applied at all.
+          synchronized (dataItem) {
+            mayRead = applyIfCurrent(dataItem, result, checkedFor.get(item));
+          }
+        } else {
+          mayRead = applyIfCurrent(item, result, checkedFor.get(item));
         }
 
-        AccessResult current = item.getReadAccessResult();
-
-        if (current == null || !current.isDenied()) {
+        if (mayRead) {
           readable.add(item);
         }
       }
     }
 
     return readable;
+  }
+
+  /**
+   * Apply {@code result} to {@code item} if it was checked for the item's current Session at that
+   * Session's current access epoch, and say whether the item may be read this turn.
+   */
+  private static boolean applyIfCurrent(
+      DataItem item, @Nullable AccessResult result, CheckedFor checkedFor) {
+
+    if (!checkedFor.isCurrent(item)) {
+      return false;
+    }
+
+    if (result != null) {
+      item.setReadAccessResult(result);
+    }
+
+    AccessResult current = item.getReadAccessResult();
+
+    return current == null || !current.isDenied();
   }
 
   /** The Session an item was checked for, and that Session's access epoch at the time. */
