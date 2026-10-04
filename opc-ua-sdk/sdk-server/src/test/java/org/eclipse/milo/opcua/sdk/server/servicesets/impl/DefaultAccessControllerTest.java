@@ -1073,9 +1073,8 @@ class DefaultAccessControllerTest {
             null, null, null, null, null, rolePermissions(PermissionType.Field.Browse)));
 
     Mockito.when(context.getRoleIds())
-        .thenReturn(
-            directConfig.getRoleMapper().map(mapper -> mapper.getRoleIds(identity)),
-            copiedConfig.getRoleMapper().map(mapper -> mapper.getRoleIds(identity)));
+        .thenReturn(directConfig.getRoleMapper().map(mapper -> mapper.getRoleIds(identity)))
+        .thenReturn(copiedConfig.getRoleMapper().map(mapper -> mapper.getRoleIds(identity)));
 
     AccessResult directResult =
         DefaultAccessController.checkBrowseAccess(context, List.of(nodeId)).get(nodeId);
