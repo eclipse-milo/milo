@@ -36,6 +36,8 @@ import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ObjectTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.VariableTypeTree;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController;
+import org.eclipse.milo.opcua.sdk.server.access.DefaultAccessController;
 import org.eclipse.milo.opcua.sdk.server.conditions.ConditionManager;
 import org.eclipse.milo.opcua.sdk.server.conditions.DefaultConditionManager;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.ServerDiagnosticsSummary;
@@ -67,8 +69,6 @@ import org.eclipse.milo.opcua.sdk.server.servicesets.Service;
 import org.eclipse.milo.opcua.sdk.server.servicesets.SessionServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.SubscriptionServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.ViewServiceSet;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultAccessController;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.sdk.server.typetree.DataTypeTreeBuilder;
 import org.eclipse.milo.opcua.sdk.server.typetree.ObjectTypeTreeBuilder;
@@ -371,7 +371,11 @@ public class OpcUaServer extends AbstractServiceHandler {
     serverNamespace = new ServerNamespace(this);
     serverNamespace.startup();
 
-    accessController = new DefaultAccessController(this);
+    accessController =
+        config
+            .getAccessControllerFactory()
+            .map(factory -> factory.apply(this))
+            .orElseGet(() -> new DefaultAccessController(this));
   }
 
   /**
@@ -783,7 +787,17 @@ public class OpcUaServer extends AbstractServiceHandler {
     return config;
   }
 
-  public AccessController getAccessController() {
+  /**
+   * Get the {@link AccessController} the service implementations authorize requests with.
+   *
+   * <p>It is a {@link DefaultAccessController} unless the configuration supplied a factory through
+   * {@link OpcUaServerConfigBuilder#setAccessControllerFactory}. It is final so that every check
+   * uses the one controller the server created; install a custom controller through the factory
+   * rather than by overriding.
+   *
+   * @return this server's {@link AccessController}.
+   */
+  public final AccessController getAccessController() {
     return accessController;
   }
 

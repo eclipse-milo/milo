@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.eclipse.milo.opcua.sdk.server.servicesets.impl;
+package org.eclipse.milo.opcua.sdk.server.access;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -20,10 +20,10 @@ import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.WriteMask;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
 import org.eclipse.milo.opcua.sdk.server.RoleMapper;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
+import org.eclipse.milo.opcua.sdk.server.access.DefaultAccessController.AccessControlAttributes;
+import org.eclipse.milo.opcua.sdk.server.access.DefaultAccessController.AccessControlContext;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultAccessController.AccessControlAttributes;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultAccessController.AccessControlContext;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
