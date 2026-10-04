@@ -693,6 +693,29 @@ public class SessionManager {
     }
   }
 
+  /** Queue a session-identity-changed notification unless shutdown has already started. */
+  private void fireSessionIdentityChanged(Session session) {
+    if (!isShutdownRequested()) {
+      sessionListenerTaskQueue.execute(
+          () -> {
+            if (!isShutdownRequested()) {
+              notifySessionIdentityChanged(session);
+            }
+          });
+    }
+  }
+
+  private void fireSessionEndpointChanged(Session session) {
+    if (!isShutdownRequested()) {
+      sessionListenerTaskQueue.execute(
+          () -> {
+            if (!isShutdownRequested()) {
+              notifySessionEndpointChanged(session);
+            }
+          });
+    }
+  }
+
   /** Queue a session-closed notification unless shutdown has already started. */
   private void fireSessionClosed(Session session) {
     if (!isShutdownRequested()) {
@@ -715,6 +738,34 @@ public class SessionManager {
             }
 
             listener.onSessionCreated(session);
+          }
+        });
+  }
+
+  /** Notify listeners until shutdown starts or the listener snapshot is exhausted. */
+  private void notifySessionIdentityChanged(Session session) {
+    withSessionListenerCallback(
+        () -> {
+          for (SessionListener listener : sessionListeners) {
+            if (isShutdownRequested()) {
+              break;
+            }
+
+            listener.onSessionIdentityChanged(session);
+          }
+        });
+  }
+
+  /** Notify listeners until shutdown starts or the listener snapshot is exhausted. */
+  private void notifySessionEndpointChanged(Session session) {
+    withSessionListenerCallback(
+        () -> {
+          for (SessionListener listener : sessionListeners) {
+            if (isShutdownRequested()) {
+              break;
+            }
+
+            listener.onSessionEndpointChanged(session);
           }
         });
   }
@@ -899,11 +950,16 @@ public class SessionManager {
           session.setLastNonce(serverNonce);
           session.setLocaleIds(request.getLocaleIds());
 
-          return new ActivateSessionResponse(
-              createResponseHeader(request, StatusCode.GOOD, additionalHeader),
-              serverNonce,
-              results,
-              new DiagnosticInfo[0]);
+          var response =
+              new ActivateSessionResponse(
+                  createResponseHeader(request, StatusCode.GOOD, additionalHeader),
+                  serverNonce,
+                  results,
+                  new DiagnosticInfo[0]);
+
+          fireSessionIdentityChanged(session);
+
+          return response;
         } else {
           /*
            * Reactivation signatures are bound to the SecureChannel carrying this request. Verify
@@ -972,6 +1028,8 @@ public class SessionManager {
               session.setLocaleIds(request.getLocaleIds());
 
               activated = true;
+
+              fireSessionEndpointChanged(session);
 
               return new ActivateSessionResponse(
                   createResponseHeader(request, StatusCode.GOOD, additionalHeader),
