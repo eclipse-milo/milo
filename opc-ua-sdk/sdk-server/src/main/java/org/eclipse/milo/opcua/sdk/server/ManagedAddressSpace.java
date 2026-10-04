@@ -57,8 +57,8 @@ import org.slf4j.LoggerFactory;
  * the four data item callbacks forward to by default; see {@link #getSamplingManager()}. The
  * sampling interval of a created or modified item is revised to the one that manager samples at, so
  * the client is told the interval in effect. A subclass that samples some other way overrides the
- * four callbacks instead, and {@link #reviseSamplingInterval} if its sampler supports other
- * intervals.
+ * four callbacks instead, and {@link #reviseSamplingInterval} to select intervals per item if its
+ * sampler supports other intervals.
  */
 public abstract class ManagedAddressSpace implements AddressSpace {
 
@@ -240,7 +240,7 @@ public abstract class ManagedAddressSpace implements AddressSpace {
       ReadValueId itemToMonitor, Double requestedSamplingInterval, UInteger requestedQueueSize) {
 
     return new RevisedDataItemParameters(
-        reviseSamplingInterval(requestedSamplingInterval), requestedQueueSize);
+        reviseSamplingInterval(itemToMonitor, requestedSamplingInterval), requestedQueueSize);
   }
 
   /**
@@ -254,7 +254,7 @@ public abstract class ManagedAddressSpace implements AddressSpace {
       ReadValueId itemToModify, Double requestedSamplingInterval, UInteger requestedQueueSize) {
 
     return new RevisedDataItemParameters(
-        reviseSamplingInterval(requestedSamplingInterval), requestedQueueSize);
+        reviseSamplingInterval(itemToModify, requestedSamplingInterval), requestedQueueSize);
   }
 
   /**
@@ -264,14 +264,22 @@ public abstract class ManagedAddressSpace implements AddressSpace {
    * <p>The default returns the interval {@link #getSamplingManager()} samples at: rounded up to the
    * next interval its {@link SamplingManagerConfig} supports, and never faster than requested (Part
    * 4 §7.21). A subclass that samples its items some other way overrides this to return an interval
-   * its own sampler supports, for example the requested interval unchanged, which is what the
-   * client was told before this class revised intervals.
+   * its own sampler supports for the given Node and Attribute.
    *
+   * <p>A subclass that returns zero for report-by-exception must also route that item to its own
+   * push implementation through the data-item callbacks. The sampling manager only supports
+   * periodic sampling. To preserve a client's zero request for a Variable's Value, set the
+   * Variable's MinimumSamplingInterval to zero and configure the server's minimum to allow zero.
+   * With the Variable's default MinimumSamplingInterval of -1, a zero request becomes the
+   * Subscription's publishing interval before this hook is called.
+   *
+   * @param itemToMonitor the Node, Attribute, index range, and data encoding being monitored.
    * @param requestedSamplingInterval the requested sampling interval, in milliseconds, after the
    *     server's limits and the Node's MinimumSamplingInterval have been applied.
    * @return the revised sampling interval, in milliseconds.
    */
-  protected double reviseSamplingInterval(double requestedSamplingInterval) {
+  protected double reviseSamplingInterval(
+      ReadValueId itemToMonitor, double requestedSamplingInterval) {
     return getSamplingManager().getConfig().reviseSamplingInterval(requestedSamplingInterval);
   }
 

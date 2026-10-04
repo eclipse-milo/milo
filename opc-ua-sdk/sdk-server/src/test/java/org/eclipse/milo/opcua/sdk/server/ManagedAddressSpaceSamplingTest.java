@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.server;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -122,23 +123,48 @@ class ManagedAddressSpaceSamplingTest {
     assertEquals(100.0, modified.revisedSamplingInterval(), "a zero request becomes the floor");
   }
 
-  // A subclass that samples its own items keeps the intervals it had, and tells the client so, by
-  // overriding the one revision hook rather than both service callbacks.
-  @Test
-  void aSubclassWithItsOwnSamplerRevisesBothCallbacksThroughOneHook() {
+  // Both callbacks must preserve item context so a namespace can select report-by-exception
+  // for one Node's Value while retaining periodic sampling for other items and positive requests.
+  @ParameterizedTest(name = "{0} {1} at {2} ms revises to {3} ms")
+  @MethodSource("itemRevisions")
+  void aSubclassRevisesBothCallbacksUsingTheMonitoredItem(
+      String nodeName, AttributeId attributeId, double requested, double expected) {
+    var revisedItems = new ArrayList<ReadValueId>();
     ManagedAddressSpace addressSpace =
         new ManagedAddressSpaceWithLifecycle(server) {
           @Override
-          protected double reviseSamplingInterval(double requestedSamplingInterval) {
-            return requestedSamplingInterval;
+          protected double reviseSamplingInterval(
+              ReadValueId itemToMonitor, double requestedSamplingInterval) {
+            revisedItems.add(itemToMonitor);
+
+            if (itemToMonitor.getNodeId().equals(new NodeId(2, "push"))
+                && itemToMonitor.getAttributeId().equals(AttributeId.Value.uid())
+                && requestedSamplingInterval == 0.0) {
+              return 0.0;
+            }
+
+            return super.reviseSamplingInterval(itemToMonitor, requestedSamplingInterval);
           }
         };
-    var readValueId = new ReadValueId(new NodeId(2, "v"), AttributeId.Value.uid(), null, null);
+    var readValueId = new ReadValueId(new NodeId(2, nodeName), attributeId.uid(), null, null);
 
     assertEquals(
-        10.0, addressSpace.onCreateDataItem(readValueId, 10.0, uint(5)).revisedSamplingInterval());
+        expected,
+        addressSpace.onCreateDataItem(readValueId, requested, uint(5)).revisedSamplingInterval());
     assertEquals(
-        75.0, addressSpace.onModifyDataItem(readValueId, 75.0, uint(5)).revisedSamplingInterval());
+        expected,
+        addressSpace.onModifyDataItem(readValueId, requested, uint(5)).revisedSamplingInterval());
+    assertEquals(2, revisedItems.size());
+    assertSame(readValueId, revisedItems.get(0), "create passes the complete item context");
+    assertSame(readValueId, revisedItems.get(1), "modify passes the complete item context");
+  }
+
+  private static Stream<Arguments> itemRevisions() {
+    return Stream.of(
+        Arguments.of("push", AttributeId.Value, 0.0, 0.0),
+        Arguments.of("polled", AttributeId.Value, 0.0, 25.0),
+        Arguments.of("push", AttributeId.DisplayName, 0.0, 25.0),
+        Arguments.of("push", AttributeId.Value, 10.0, 25.0));
   }
 
   /**

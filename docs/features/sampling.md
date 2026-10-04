@@ -321,10 +321,46 @@ A server can keep an existing device scheduler or a push-based source that calls
 `DataItem.setValue()` itself. Override the managed data-item callbacks so the inherited manager
 does not also sample those items. `ManagedAddressSpace` still revises requested intervals to the
 inherited manager's buckets in `onCreateDataItem()` and `onModifyDataItem()`, so override
-`reviseSamplingInterval()` too if your sampler supports other intervals; whatever it returns is
-what the items carry and the client is told. Then give one component the job of keeping the
-items' stored read access results current. The SDK provides the observations; the ordering is
-yours.
+`reviseSamplingInterval(ReadValueId, double)` too if your sampler supports other intervals. The
+hook receives the monitored Node, Attribute, index range, and data encoding, so it can select an
+interval per item. Whatever it returns is what the item carries and the client is told.
+
+For example, a namespace with push-backed Variables can preserve zero for their Values and use
+the default sampling intervals for other requests:
+
+```java
+@Override
+protected double reviseSamplingInterval(
+    ReadValueId itemToMonitor, double requestedSamplingInterval) {
+
+  boolean pushBackedValue =
+      AttributeId.Value.uid().equals(itemToMonitor.getAttributeId())
+          && pushBackedNodes.contains(itemToMonitor.getNodeId());
+
+  if (pushBackedValue && requestedSamplingInterval == 0.0) {
+    return 0.0;
+  }
+
+  return super.reviseSamplingInterval(itemToMonitor, requestedSamplingInterval);
+}
+```
+
+Here, `pushBackedNodes` is the application's set of Nodes with push sources. Set those Variables'
+`MinimumSamplingInterval` to `0.0` and ensure the server's minimum supported sample rate allows
+zero. The hook receives the interval after those limits have been applied. A Variable's default
+`MinimumSamplingInterval` of `-1.0` makes a zero request become the Subscription's publishing
+interval before it reaches the hook.
+
+This override selects intervals; the data-item callbacks must also route items whose
+`getSamplingInterval()` is zero to the push implementation. `SamplingManager` only supports
+periodic sampling. With this override, positive requests for the same Node still use the manager,
+so one Node can have items on both paths. When modification moves an item from push delivery to
+periodic sampling, register it with `SamplingManager.onDataItemsCreated()`; `onDataItemsModified()`
+only updates items the manager already owns. When moving an item to push delivery, remove it from
+the manager with `onDataItemsDeleted()` and register it with the push implementation.
+
+Give one component the job of keeping the push items' stored read access results current, including
+when the source reports no changes. The SDK provides the observations; the ordering is yours.
 
 | Hook | What it tells you |
 | --- | --- |
