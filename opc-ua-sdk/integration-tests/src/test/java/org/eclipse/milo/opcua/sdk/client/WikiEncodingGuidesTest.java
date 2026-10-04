@@ -428,6 +428,43 @@ public class WikiEncodingGuidesTest {
     }
   }
 
+  // The Binary field path does not reject the same invalid shape as the Variant path.
+  @Test
+  void binaryMatrixFieldSilentlyDropsElementsWhenADimensionIsZero() {
+    var context = new DefaultEncodingContext();
+    var matrix = new Matrix(new Integer[] {1, 2, 3, 4}, new int[] {4, 0}, OpcUaDataType.Int32);
+    ByteBuf buffer = Unpooled.buffer();
+    try {
+      new OpcUaBinaryEncoder(context).setBuffer(buffer).encodeMatrix(null, matrix);
+      Matrix restored =
+          new OpcUaBinaryDecoder(context).setBuffer(buffer).decodeMatrix(null, OpcUaDataType.Int32);
+      assertArrayEquals(new int[] {4, 0}, restored.getDimensions());
+      assertEquals(0, assertInstanceOf(Integer[].class, restored.getElements()).length);
+      assertEquals(
+          0, buffer.readableBytes(), "the original elements were omitted, not left unread");
+    } finally {
+      buffer.release();
+    }
+  }
+
+  // XML has no empty Matrix field form that preserves a zero or negative dimension.
+  @ParameterizedTest
+  @ValueSource(ints = {0, -1})
+  void xmlMatrixFieldNormalizesAnEmptyShapeToNull(int dimension) throws Exception {
+    var context = new DefaultEncodingContext();
+    var matrix = new Matrix(new Integer[0], new int[] {dimension, 2}, OpcUaDataType.Int32);
+    String xml;
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      encoder.encodeMatrix("Matrix", matrix);
+      xml = encoder.getOutputString();
+    }
+    assertTrue(xml.contains("xsi:nil=\"true\""));
+    assertFalse(xml.contains("Dimensions"));
+    try (var decoder = new OpcUaXmlDecoder(context, xml)) {
+      assertTrue(decoder.decodeMatrix(null, OpcUaDataType.Int32).isNull());
+    }
+  }
+
   // Variant normalization does not make a negative dimension valid in a Matrix field.
   @Test
   void negativeMatrixDimensionLosesShapeInVariantButFailsFieldDecoding() {
@@ -643,6 +680,11 @@ public class WikiEncodingGuidesTest {
             UaSerializationException.class,
             () -> jsonVariant(context, new Variant(new Integer[] {1, null})));
     assertEquals(StatusCodes.Bad_DecodingError, failure.getStatusCode().getValue());
+    UaSerializationException booleanFailure =
+        assertThrows(
+            UaSerializationException.class,
+            () -> jsonVariant(context, new Variant(new Boolean[] {true, null})));
+    assertEquals(StatusCodes.Bad_DecodingError, booleanFailure.getStatusCode().getValue());
   }
 
   // Reusing an application-owned output Writer requires knowing which encoder closes it.
