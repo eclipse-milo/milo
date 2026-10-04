@@ -50,8 +50,9 @@
  * {@link org.eclipse.milo.opcua.sdk.server.subscriptions.SubscriptionManager#refreshReadAccess}
  * from ActivateSession, and TransferSubscriptions checks the items it moves for their new Session,
  * whoever samples them. For every other change, keeping the result current is the server's
- * responsibility, and the server chooses where that happens: an AddressSpace that samples on its
- * own can refresh it on its own cycle through {@link
+ * responsibility, and the server chooses where that happens: the sampling framework in {@link
+ * org.eclipse.milo.opcua.sdk.server.sampling} refreshes it before every sample, an AddressSpace
+ * that samples on its own can do the same through {@link
  * org.eclipse.milo.opcua.sdk.server.items.DataItem#setReadAccessResult}, or a component of the
  * server's own can refresh every item it knows of on configuration events, on any schedule that
  * bounds how stale a result can be. That method is safe to call from any thread alongside the

@@ -21,15 +21,15 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The server's authorization subsystem: the {@link AccessController} that decides, the {@link
- * ReadAccessCache} that remembers read decisions for components that re-check them, and the
- * invalidation that forgets them and tells every {@link ReadAccessListener}.
+ * ReadAccessCache} that remembers read decisions for samplers, and the invalidation that forgets
+ * them and tells every {@link ReadAccessListener}.
  *
  * <p>{@link OpcUaServer} owns one instance, available from {@link
  * OpcUaServer#getAccessControlManager()}. The controller comes from the configuration's {@link
  * org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig#getAccessControllerFactory() factory}, or is
  * a {@link DefaultAccessController} when none is configured. The service implementations ask the
- * controller directly; components that refresh read access results on their own go through the
- * cache.
+ * controller directly; samplers on the cached policy, and components that refresh read access
+ * results on their own, go through the cache.
  *
  * <p>Call {@link #invalidateReadAccess(ReadAccessScope)} after committing a change that can alter a
  * read access answer: a role mapping, a per-Session attribute filter, a Node removed and re-added
@@ -94,9 +94,10 @@ public final class AccessControlManager {
   /**
    * Get the server-wide cache of read access decisions.
    *
-   * <p>Components that refresh read access results on their own share it. Drop entries through
-   * {@link #invalidateReadAccess(ReadAccessScope)}, not on the cache directly, so listeners hear
-   * about it too.
+   * <p>Samplers on the {@link org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessPolicy#cached()}
+   * policy and components that refresh read access results on their own share it. Drop entries
+   * through {@link #invalidateReadAccess(ReadAccessScope)}, not on the cache directly, so listeners
+   * hear about it too.
    *
    * @return the {@link ReadAccessCache}.
    */

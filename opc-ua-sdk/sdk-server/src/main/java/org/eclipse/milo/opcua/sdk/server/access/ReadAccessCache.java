@@ -28,15 +28,18 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
  * Server-wide cache of read access decisions, keyed by Session, Node, and Attribute.
  *
  * <p>The server owns one instance, available from {@link
- * AccessControlManager#getReadAccessCache()}. A component that refreshes read access results on a
- * schedule looks its items up here through {@link #getOrCheck} and pays a map lookup for a hit; a
- * miss is answered by the server's {@code AccessController} and stored.
+ * AccessControlManager#getReadAccessCache()}. A sampler on the {@link
+ * org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessPolicy#cached()} policy looks its items up
+ * here on every cycle and pays a map lookup for a hit; a miss is answered by the server's {@code
+ * AccessController} and stored. A component outside the sampling framework that refreshes read
+ * access results on its own can share the same entries through {@link #getOrCheck}.
  *
  * <p>Entries stay until something drops them: {@link AccessControlManager#invalidateReadAccess} for
  * a change the application or the SDK knows about, and the close of a Session for its entries. A
  * cached answer is as current as the last invalidation, so an application on the cached policy must
  * call {@code invalidateReadAccess} when its security configuration changes; an application that
- * cannot tell when that happens should ask the controller instead.
+ * cannot tell when that happens should stay on {@link
+ * org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessPolicy#perCycle()}.
  *
  * <p>The key holds the Session object, not the user it represents, so a Subscription transferred to
  * another Session, or a user who reconnects, starts from a miss. {@link AccessResult#NODE_UNKNOWN}
