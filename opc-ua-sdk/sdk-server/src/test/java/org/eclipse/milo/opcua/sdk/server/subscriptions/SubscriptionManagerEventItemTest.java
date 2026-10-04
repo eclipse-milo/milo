@@ -33,6 +33,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.RevisedEventItemParameters;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
+import org.eclipse.milo.opcua.sdk.server.DataItemListener;
 import org.eclipse.milo.opcua.sdk.server.EventNotifier;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
@@ -123,6 +124,7 @@ class SubscriptionManagerEventItemTest {
     when(server.getConfig()).thenReturn(config);
     when(server.getAccessController()).thenReturn(accessController);
     when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
+    when(server.getDataItemListener()).thenReturn(new DataItemListener() {});
     when(server.getEventNotifier()).thenReturn(eventNotifier);
     when(server.getStaticEncodingContext()).thenReturn(DefaultEncodingContext.INSTANCE);
     when(server.getMonitoredItemCount()).thenReturn(new AtomicLong());

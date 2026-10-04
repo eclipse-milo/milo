@@ -329,9 +329,13 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
             recheckReadAccess(session, subscription, request.getSendInitialValues());
           }
 
+          // Every item carries its new Session now, so the server's DataItemListeners and then
+          // the AddressSpace see the transfer complete. A failing callback must not fail a
+          // transfer that has already happened.
           if (!transferredDataItems.isEmpty()) {
             // The items now answer to another Session, so whatever was cached for their Nodes
-            // under this Session, if anything, may predate the transfer.
+            // under this Session, if anything, may predate the transfer. Say so before the
+            // listeners hear about it.
             List<NodeId> transferredNodeIds =
                 transferredDataItems.stream()
                     .map(item -> item.getReadValueId().getNodeId())
@@ -342,6 +346,16 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
                 .getAccessControlManager()
                 .invalidateReadAccess(
                     ReadAccessScope.nodes(transferredNodeIds).forSession(session));
+
+            server
+                .getDataItemListener()
+                .onDataItemsTransferred(transferredDataItems, otherSession, session);
+
+            try {
+              server.getAddressSpaceManager().onDataItemsTransferred(transferredDataItems);
+            } catch (Throwable t) {
+              logger.error("Uncaught Throwable in onDataItemsTransferred", t);
+            }
           }
 
           subscription.getSubscriptionDiagnostics().getTransferRequestCount().increment();

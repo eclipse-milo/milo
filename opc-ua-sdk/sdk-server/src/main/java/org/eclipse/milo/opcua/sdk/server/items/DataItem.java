@@ -54,7 +54,8 @@ public interface DataItem extends MonitoredItem {
    * item, the SDK re-checks it when its Session's identity or endpoint changes and when a
    * TransferSubscriptions moves it to another Session. For every other change, whatever samples the
    * item may do so on its own cycle, or the server may keep it current from a component of its own,
-   * on any schedule that bounds how stale a result can be, using {@link
+   * on any schedule that bounds how stale a result can be, using the server's {@link
+   * org.eclipse.milo.opcua.sdk.server.DataItemListener} and {@link
    * org.eclipse.milo.opcua.sdk.server.access.AccessControlManager#invalidateReadAccess} to learn
    * when. An item whose result is never refreshed is stale, not unsafe: it keeps enforcing the
    * result it was created with.
@@ -69,10 +70,12 @@ public interface DataItem extends MonitoredItem {
    * <p>This method is safe to call from any thread, concurrently with {@link #setValue(DataValue)},
    * and is idempotent: repeating a call with the same result has no further effect. Results apply
    * in the order the calls arrive, and the item does not know which Session or which check a result
-   * came from. A refresher with more than one trigger must order its own checks per item so that
-   * the result of an older check never lands after a newer one. To keep a result checked before a
-   * TransferSubscriptions or an identity or endpoint change from replacing the one the SDK applies
-   * for it, apply it with {@link #setReadAccessResult(AccessResult, Session, long)} instead.
+   * came from. A refresher with more than one trigger, for example a schedule and {@link
+   * org.eclipse.milo.opcua.sdk.server.AddressSpace#onDataItemsTransferred}, must order its own
+   * checks per item so that the result of an older check never lands after a newer one. To keep a
+   * result checked before a TransferSubscriptions or an identity or endpoint change from replacing
+   * the one the SDK applies for it, apply it with {@link #setReadAccessResult(AccessResult,
+   * Session, long)} instead.
    *
    * <p>{@link MonitoredDataItem}, the item the SDK creates for every data MonitoredItem, is the
    * implementation that enforces this. The default implementation does nothing, so an

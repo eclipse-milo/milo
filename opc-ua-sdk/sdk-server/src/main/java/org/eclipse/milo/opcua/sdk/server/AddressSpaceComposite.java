@@ -486,6 +486,21 @@ public class AddressSpaceComposite implements AddressSpaceFragment {
   }
 
   @Override
+  public void onDataItemsTransferred(List<DataItem> dataItems) {
+    Map<AddressSpace, List<DataItem>> byAddressSpace =
+        dataItems.stream()
+            .collect(
+                groupingBy(
+                    item ->
+                        getAddressSpace(
+                            asx ->
+                                asx.getFilter()
+                                    .filterOnDataItemsTransferred(server, item.getReadValueId()))));
+
+    byAddressSpace.forEach(AddressSpace::onDataItemsTransferred);
+  }
+
+  @Override
   public void onEventItemsCreated(List<EventItem> eventItems) {
     Map<AddressSpace, List<EventItem>> byAddressSpace =
         eventItems.stream()
@@ -736,6 +751,12 @@ public class AddressSpaceComposite implements AddressSpaceFragment {
     public boolean filterOnDataItemsDeleted(OpcUaServer server, ReadValueId readValueId) {
       return addressSpaces.stream()
           .anyMatch(asx -> asx.getFilter().filterOnDataItemsDeleted(server, readValueId));
+    }
+
+    @Override
+    public boolean filterOnDataItemsTransferred(OpcUaServer server, ReadValueId readValueId) {
+      return addressSpaces.stream()
+          .anyMatch(asx -> asx.getFilter().filterOnDataItemsTransferred(server, readValueId));
     }
 
     @Override

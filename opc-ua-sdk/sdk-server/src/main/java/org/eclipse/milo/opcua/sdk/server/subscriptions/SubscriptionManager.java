@@ -335,7 +335,7 @@ public class SubscriptionManager {
 
         byMonitoredItemType(
             deletedItems,
-            dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
+            this::notifyDataItemsDeleted,
             eventItems -> {
               unregisterEventItems(eventItems);
               server.getAddressSpaceManager().onEventItemsDeleted(eventItems);
@@ -581,7 +581,7 @@ public class SubscriptionManager {
 
     byMonitoredItemType(
         monitoredItems,
-        dataItems -> server.getAddressSpaceManager().onDataItemsCreated(dataItems),
+        this::notifyDataItemsCreated,
         eventItems -> {
           registerEventItems(eventItems);
           server.getAddressSpaceManager().onEventItemsCreated(eventItems);
@@ -1433,7 +1433,7 @@ public class SubscriptionManager {
 
     byMonitoredItemType(
         deletedItems,
-        dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
+        this::notifyDataItemsDeleted,
         eventItems -> {
           unregisterEventItems(eventItems);
           server.getAddressSpaceManager().onEventItemsDeleted(eventItems);
@@ -1503,8 +1503,16 @@ public class SubscriptionManager {
     }
 
     /*
-     * Notify AddressSpace of the items whose MonitoringMode has been modified.
+     * Notify the server's DataItemListeners and then the AddressSpaces of the items whose
+     * MonitoringMode has been modified.
      */
+
+    List<DataItem> modifiedDataItems =
+        modified.stream().filter(DataItem.class::isInstance).map(DataItem.class::cast).toList();
+
+    if (!modifiedDataItems.isEmpty()) {
+      server.getDataItemListener().onMonitoringModeChanged(modifiedDataItems);
+    }
 
     server.getAddressSpaceManager().onMonitoringModeChanged(modified);
 
@@ -1691,7 +1699,7 @@ public class SubscriptionManager {
 
         byMonitoredItemType(
             deletedItems,
-            dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
+            this::notifyDataItemsDeleted,
             eventItems -> {
               unregisterEventItems(eventItems);
               server.getAddressSpaceManager().onEventItemsDeleted(eventItems);
@@ -1783,7 +1791,7 @@ public class SubscriptionManager {
 
             byMonitoredItemType(
                 monitoredItems.values(),
-                dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
+                this::notifyDataItemsDeleted,
                 eventItems -> {
                   unregisterEventItems(eventItems);
                   server.getAddressSpaceManager().onEventItemsDeleted(eventItems);
@@ -1817,6 +1825,24 @@ public class SubscriptionManager {
   /** Unregister {@code eventItems} from the Server's EventNotifier. */
   private void unregisterEventItems(List<EventItem> eventItems) {
     eventItems.forEach(item -> server.getEventNotifier().unregister(item));
+  }
+
+  /**
+   * Notify the server's {@link org.eclipse.milo.opcua.sdk.server.DataItemListener}s and then the
+   * owning AddressSpaces that {@code dataItems} were created.
+   */
+  private void notifyDataItemsCreated(List<DataItem> dataItems) {
+    server.getDataItemListener().onDataItemsCreated(dataItems);
+    server.getAddressSpaceManager().onDataItemsCreated(dataItems);
+  }
+
+  /**
+   * Notify the server's {@link org.eclipse.milo.opcua.sdk.server.DataItemListener}s and then the
+   * owning AddressSpaces that {@code dataItems} were deleted.
+   */
+  private void notifyDataItemsDeleted(List<DataItem> dataItems) {
+    server.getDataItemListener().onDataItemsDeleted(dataItems);
+    server.getAddressSpaceManager().onDataItemsDeleted(dataItems);
   }
 
   /**

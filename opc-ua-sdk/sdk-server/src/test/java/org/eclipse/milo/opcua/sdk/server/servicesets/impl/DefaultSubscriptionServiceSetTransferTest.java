@@ -18,12 +18,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +34,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
+import org.eclipse.milo.opcua.sdk.server.DataItemListener;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.SessionManager;
@@ -42,6 +46,7 @@ import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SubscriptionDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.identity.DefaultUsernameIdentity;
 import org.eclipse.milo.opcua.sdk.server.items.BaseMonitoredItem;
+import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredEventItem;
 import org.eclipse.milo.opcua.sdk.server.sampling.SamplingTestItems;
@@ -65,6 +70,7 @@ import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 /** How TransferSubscriptions reports transferred DataItems to the AddressSpace. */
 class DefaultSubscriptionServiceSetTransferTest {
@@ -93,6 +99,7 @@ class DefaultSubscriptionServiceSetTransferTest {
 
     when(server.getSessionManager()).thenReturn(sessionManager);
     when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
+    when(server.getDataItemListener()).thenReturn(new DataItemListener() {});
     when(server.getSubscriptions()).thenReturn(Map.of(SUBSCRIPTION_ID, subscription));
 
     for (Session session : List.of(newSession, oldSession)) {
@@ -109,6 +116,63 @@ class DefaultSubscriptionServiceSetTransferTest {
         .thenReturn(mock(SubscriptionDiagnostics.class, RETURNS_DEEP_STUBS));
 
     serviceSet = new DefaultSubscriptionServiceSet(server);
+  }
+
+  /**
+   * A component that refreshes read access results from transfer events needs the items to carry
+   * the new Session by the time it hears about the transfer, and must hear about it exactly once.
+   * Event items have no read access result to refresh and are left out.
+   */
+  @Test
+  void transferReportsTheDataItemsOnceWithTheNewSessionOnThem() throws Exception {
+    MonitoredDataItem dataItem = dataItem(uint(1));
+    MonitoredEventItem eventItem = eventItem(uint(2));
+    monitoredItems.put(dataItem.getId(), dataItem);
+    monitoredItems.put(eventItem.getId(), eventItem);
+
+    var deliveries = new ArrayList<List<DataItem>>();
+    var sessionsAtDelivery = new ArrayList<Session>();
+    doAnswer(
+            invocation -> {
+              List<DataItem> items = invocation.getArgument(0);
+              deliveries.add(List.copyOf(items));
+              items.forEach(item -> sessionsAtDelivery.add(item.getSession()));
+              return null;
+            })
+        .when(addressSpaceManager)
+        .onDataItemsTransferred(anyList());
+
+    TransferSubscriptionsResponse response =
+        serviceSet.onTransferSubscriptions(context, transferRequest());
+
+    assertEquals(StatusCode.GOOD, requireNonNull(response.getResults())[0].getStatusCode());
+    assertEquals(1, deliveries.size(), "the AddressSpace hears about a transfer once");
+    assertEquals(List.of(dataItem), deliveries.get(0), "only data items are reported");
+    assertEquals(
+        List.of(newSession),
+        sessionsAtDelivery,
+        "the items carry the new Session when the AddressSpace hears about the transfer");
+  }
+
+  /**
+   * The server's DataItemListeners hear about the transfer with both Sessions, before the owning
+   * AddressSpace does, so a server-level refresher can re-check the items for the new Session
+   * without a hook on the AddressSpace.
+   */
+  @Test
+  void transferNotifiesDataItemListenersWithBothSessionsBeforeTheAddressSpace() throws Exception {
+    MonitoredDataItem dataItem = dataItem(uint(1));
+    monitoredItems.put(dataItem.getId(), dataItem);
+    monitoredItems.put(uint(2), eventItem(uint(2)));
+
+    DataItemListener listener = mock(DataItemListener.class);
+    when(server.getDataItemListener()).thenReturn(listener);
+
+    serviceSet.onTransferSubscriptions(context, transferRequest());
+
+    InOrder inOrder = inOrder(listener, addressSpaceManager);
+    inOrder.verify(listener).onDataItemsTransferred(List.of(dataItem), oldSession, newSession);
+    inOrder.verify(addressSpaceManager).onDataItemsTransferred(List.of(dataItem));
   }
 
   // The transferred items were checked for the old Session. The cache is keyed by Session, so
@@ -259,9 +323,39 @@ class DefaultSubscriptionServiceSetTransferTest {
     assertEquals(oldSession, dataItem.getSession());
     verify(subscription, never()).setSubscriptionManager(any());
     verify(newSession.getSubscriptionManager(), never()).addSubscription(any());
+    verify(addressSpaceManager, never()).onDataItemsTransferred(anyList());
     assertEquals(
         List.of(1),
         SamplingTestItems.drain(dataItem).stream().map(value -> value.value().value()).toList());
+  }
+
+  // A transfer the server refuses moves nothing, so there is nothing to report.
+  @Test
+  void refusedTransferReportsNothing() throws Exception {
+    when(oldSession.getIdentity()).thenReturn(new DefaultUsernameIdentity("someone-else"));
+    monitoredItems.put(uint(1), dataItem(uint(1)));
+
+    TransferSubscriptionsResponse response =
+        serviceSet.onTransferSubscriptions(context, transferRequest());
+
+    assertEquals(
+        new StatusCode(StatusCodes.Bad_UserAccessDenied),
+        requireNonNull(response.getResults())[0].getStatusCode());
+    verify(addressSpaceManager, never()).onDataItemsTransferred(anyList());
+    verify(server, never()).getDataItemListener();
+    verify(accessControlManager, never()).invalidateReadAccess(any(ReadAccessScope.class));
+  }
+
+  // Like the other data item callbacks, this one is never delivered with an empty list.
+  @Test
+  void transferOfOnlyEventItemsReportsNothing() throws Exception {
+    monitoredItems.put(uint(2), eventItem(uint(2)));
+
+    TransferSubscriptionsResponse response =
+        serviceSet.onTransferSubscriptions(context, transferRequest());
+
+    assertEquals(StatusCode.GOOD, requireNonNull(response.getResults())[0].getStatusCode());
+    verify(addressSpaceManager, never()).onDataItemsTransferred(anyList());
   }
 
   private MonitoredDataItem dataItem(UInteger id) {

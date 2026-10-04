@@ -62,8 +62,11 @@
  * SDK applied for it. An item whose result is never refreshed is stale, not unsafe: it keeps
  * enforcing the result it was created with.
  *
- * <p>A component that refreshes on its own schedule can learn of the events that change a result
- * between refreshes: {@link
+ * <p>A component that refreshes on its own schedule can learn of every data item on the server from
+ * a {@link org.eclipse.milo.opcua.sdk.server.DataItemListener}, and of the events that change a
+ * result between refreshes: {@link
+ * org.eclipse.milo.opcua.sdk.server.DataItemListener#onDataItemsTransferred} when items move to
+ * another Session, {@link
  * org.eclipse.milo.opcua.sdk.server.SessionListener#onSessionIdentityChanged} and {@link
  * org.eclipse.milo.opcua.sdk.server.SessionListener#onSessionEndpointChanged} when a Session's user
  * or security changes, a {@link org.eclipse.milo.opcua.sdk.server.access.ReadAccessListener} for
