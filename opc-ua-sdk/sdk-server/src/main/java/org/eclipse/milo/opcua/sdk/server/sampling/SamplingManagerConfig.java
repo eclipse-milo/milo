@@ -176,9 +176,10 @@ public record SamplingManagerConfig(
    * The revised sampling interval to report for a requested one: the interval the framework will
    * actually sample at, from {@link #groupIntervalMillis(double)}.
    *
-   * <p>An AddressSpace that wires a {@link SamplingManager} returns this from {@code
+   * <p>{@link org.eclipse.milo.opcua.sdk.server.ManagedAddressSpace} returns this from {@code
    * onCreateDataItem} and {@code onModifyDataItem}, so that the client is told the interval its
-   * item is sampled at (Part 4 §7.21).
+   * item is sampled at (Part 4 §7.21). An AddressSpace that wires a {@link SamplingManager} itself
+   * should do the same.
    *
    * @param requestedSamplingInterval the requested sampling interval, after the server's limits and
    *     the Node's MinimumSamplingInterval have been applied.

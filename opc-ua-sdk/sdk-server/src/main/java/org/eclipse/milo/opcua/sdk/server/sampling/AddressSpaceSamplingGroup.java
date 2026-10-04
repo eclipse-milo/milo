@@ -36,7 +36,9 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Each cycle reads the items of each Session with one Read per Session, split into requests of
  * at most the server's {@code MaxNodesPerRead}, and delivers each value with the timestamps the
- * item asked for. A Read that throws is logged and the other Sessions are still read.
+ * item asked for. A Read that throws is logged and the other Sessions are still read. This is the
+ * group every {@link org.eclipse.milo.opcua.sdk.server.ManagedAddressSpace} uses unless it provides
+ * its own factory.
  */
 public class AddressSpaceSamplingGroup extends SamplingGroup {
 

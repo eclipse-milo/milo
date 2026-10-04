@@ -32,7 +32,8 @@ import org.slf4j.LoggerFactory;
  * SamplingGroup} per interval, created by the {@link SamplingGroupFactory} it was given, moves an
  * item between groups when a ModifyMonitoredItems changes its interval, parks an item whose
  * MonitoringMode is Disabled outside every group until it is enabled again, and shuts a group down
- * when its last item leaves.
+ * when its last item leaves. {@link org.eclipse.milo.opcua.sdk.server.ManagedAddressSpace} does
+ * this wiring for its subclasses.
  *
  * <pre>{@code
  * SamplingManager samplingManager =

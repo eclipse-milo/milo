@@ -62,6 +62,16 @@
  * monitor. Application managers that use the default batch and cleanup primitives need a single
  * writer.
  *
+ * <h2>Monitored-item sampling</h2>
+ *
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.ManagedAddressSpace} revises sampling intervals for
+ * each monitored Node and Attribute through one hook shared by creation and modification. The
+ * default revision matches its sampling manager's periodic intervals. A custom implementation may
+ * select other intervals per item, but must also route those items to the component that delivers
+ * values at the reported interval. In particular, report-by-exception items with a revised interval
+ * of zero belong to a push implementation outside the sampling manager. That component also owns
+ * keeping their read-access results current.
+ *
  * <h2>Session response preparation</h2>
  *
  * <p>A Session owns a timeout as soon as it is constructed. Failed CreateSession preparation must
