@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.sdk.server.util.DataChangeMonitoringFilter;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -42,9 +43,15 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
   public static final DataChangeFilter DEFAULT_FILTER =
       new DataChangeFilter(DataChangeTrigger.StatusValue, uint(DeadbandType.None.getValue()), 0.0);
 
+  private static final StatusCode NODE_ID_UNKNOWN = new StatusCode(StatusCodes.Bad_NodeIdUnknown);
+
   private volatile DataValue lastValue = null;
   private volatile DataChangeFilter filter = null;
   private volatile @Nullable Range euRange = null;
+  private volatile AccessResult readAccessResult = AccessResult.ALLOWED;
+
+  // Whether a check since the last decision, a denial, found the Node unknown. Guarded by this.
+  private boolean nodeUnknown = false;
 
   public MonitoredDataItem(
       OpcUaServer server,
@@ -114,8 +121,70 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
     this.euRange = euRange;
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>A denial is also queued by the first call after monitoring resumes from {@link
+   * MonitoringMode#Disabled}, since nothing has been reported since. Once access is allowed again,
+   * the denial is no longer the last value for {@link #maybeSendLastValue()}.
+   */
+  @Override
+  public synchronized void setReadAccessResult(AccessResult accessResult) {
+    if (!accessResult.isDecision()) {
+      // A denied item is not sampled, so nothing else reports that its Node has gone (Part 4
+      // §5.13.1.6). Report it in place of the denial, which keeps withholding values.
+      if (readAccessResult instanceof AccessResult.Denied) {
+        boolean unreported = !nodeUnknown || lastValue == null;
+        nodeUnknown = true;
+
+        if (unreported && getMonitoringMode() != MonitoringMode.Disabled) {
+          setValue(new DataValue(NODE_ID_UNKNOWN));
+        }
+      }
+      return;
+    }
+
+    boolean wasNodeUnknown = nodeUnknown;
+    nodeUnknown = false;
+
+    AccessResult previous = readAccessResult;
+    readAccessResult = accessResult;
+
+    if (accessResult instanceof AccessResult.Denied denied) {
+      // Queue the denial when it is new, or when nothing has been reported since the item was
+      // created, monitoring resumed, or its Node was reported unknown. Part 4 §7.23: a Disabled
+      // item queues no Notifications.
+      boolean unreported = lastValue == null || wasNodeUnknown;
+      if ((!denied.equals(previous) || unreported)
+          && getMonitoringMode() != MonitoringMode.Disabled) {
+        setValue(new DataValue(denied.statusCode()));
+      }
+    } else if (previous instanceof AccessResult.Denied) {
+      lastValue = null;
+    }
+  }
+
+  @Override
+  public AccessResult getReadAccessResult() {
+    return readAccessResult;
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>A value set while the item is {@link MonitoringMode#Disabled}, such as a sample that was in
+   * flight when monitoring was disabled, is dropped (Part 4 §7.23).
+   */
   @Override
   public synchronized void setValue(DataValue value) {
+    if (getMonitoringMode() == MonitoringMode.Disabled) {
+      return;
+    }
+
+    if (readAccessResult instanceof AccessResult.Denied denied) {
+      value = new DataValue(nodeUnknown ? NODE_ID_UNKNOWN : denied.statusCode());
+    }
+
     boolean valuePassesFilter =
         DataChangeMonitoringFilter.filter(lastValue, value, filter, euRange);
 
@@ -179,6 +248,8 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
   @Override
   public synchronized void setMonitoringMode(MonitoringMode monitoringMode) {
     if (monitoringMode == MonitoringMode.Disabled) {
+      // Nothing has been reported since; the first refresh after resuming reports the current
+      // denial, if there is one, rather than a result cached while Disabled.
       lastValue = null;
     }
 

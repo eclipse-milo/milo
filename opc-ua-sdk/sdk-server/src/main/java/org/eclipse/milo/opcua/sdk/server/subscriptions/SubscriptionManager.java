@@ -347,19 +347,29 @@ public class SubscriptionManager {
                 session,
                 itemsToCreate.stream().map(MonitoredItemCreateRequest::getItemToMonitor).toList());
 
+    // Part 4 §5.13.2.1: a data item the user is denied read access to is still created, and the
+    // denial is reported in the Publish response instead. Other denials, such as an unmet
+    // AccessRestriction, fail the item here, and so does any denial of an event item, which has
+    // no sampled value to carry the denial.
     List<MonitoredItemCreateResult> results =
         GroupMapCollate.groupMapCollate(
             itemsToCreate,
-            createRequest -> accessResults.get(createRequest.getItemToMonitor()),
-            accessResult ->
+            createRequest ->
+                new CreateGroup(
+                    accessResults.get(createRequest.getItemToMonitor()),
+                    isEventItemRequest(createRequest)),
+            createGroup ->
                 group -> {
-                  if (accessResult instanceof AccessResult.Denied denied) {
+                  AccessResult accessResult = createGroup.accessResult();
+
+                  if (accessResult instanceof AccessResult.Denied denied
+                      && (createGroup.eventItem() || !isReadAccessDenial(denied))) {
                     var result =
                         new MonitoredItemCreateResult(
                             denied.statusCode(), uint(0), 0.0, uint(0), null);
                     return Collections.nCopies(group.size(), result);
                   } else {
-                    return createMonitoredItems(subscription, timestamps, group);
+                    return createMonitoredItems(subscription, timestamps, group, accessResult);
                   }
                 });
 
@@ -369,10 +379,31 @@ public class SubscriptionManager {
         header, results.toArray(new MonitoredItemCreateResult[0]), new DiagnosticInfo[0]);
   }
 
+  /**
+   * How a group of create requests is handled: by its access result, null if the controller
+   * returned none, and by item kind.
+   */
+  private record CreateGroup(@Nullable AccessResult accessResult, boolean eventItem) {}
+
+  private static boolean isEventItemRequest(MonitoredItemCreateRequest request) {
+    return AttributeId.EventNotifier.uid().equals(request.getItemToMonitor().getAttributeId());
+  }
+
+  /**
+   * Whether {@code denied} is one of the read-access denials that Part 4 §5.13.2.1 says must be
+   * reported in the Publish response rather than fail CreateMonitoredItems.
+   */
+  private static boolean isReadAccessDenial(AccessResult.Denied denied) {
+    long code = denied.statusCode().getValue();
+
+    return code == StatusCodes.Bad_UserAccessDenied || code == StatusCodes.Bad_NotReadable;
+  }
+
   private List<MonitoredItemCreateResult> createMonitoredItems(
       Subscription subscription,
       TimestampsToReturn timestamps,
-      List<MonitoredItemCreateRequest> requests) {
+      List<MonitoredItemCreateRequest> requests,
+      @Nullable AccessResult readAccessResult) {
 
     // Split requests by filter type to enable targeted attribute reading.
     // Only Percent Deadband requests on Value attributes need the expensive TypeDefinition +
@@ -435,6 +466,13 @@ public class SubscriptionManager {
 
         BaseMonitoredItem<?> monitoredItem =
             createMonitoredItem(request, subscription, timestamps, attributesResponse);
+
+        // Seed the item with the create-time check so a denial is queued before anything
+        // samples it. A controller that answered nothing leaves the item allowed, as before
+        // the check was seeded; whatever samples it re-checks from here on.
+        if (monitoredItem instanceof MonitoredDataItem dataItem && readAccessResult != null) {
+          dataItem.setReadAccessResult(readAccessResult);
+        }
 
         // getFilterResult() can throw while encoding the filter result, so it must be
         // called before the item is added to monitoredItems; otherwise a failure would
