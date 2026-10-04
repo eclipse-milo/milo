@@ -21,13 +21,16 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.server.DiagnosticsContext;
+import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.Lifecycle;
 import org.eclipse.milo.opcua.sdk.server.ManagedNamespaceWithLifecycle;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
@@ -57,6 +60,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadRawModifiedDetails;
+import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -70,7 +74,13 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
 
   @Override
   protected TestServer createTestServer() throws Exception {
-    TestServer fixture = TestServer.create();
+    TestServer fixture =
+        TestServer.create(
+            config -> {
+              int port = config.build().getEndpoints().iterator().next().getBindPort();
+              // Keep the builder's empty path so the service installation must normalize it to /.
+              config.setEndpoints(Set.of(EndpointConfig.newBuilder().setBindPort(port).build()));
+            });
     history = installHistoryProvider(fixture.getServer());
     return fixture;
   }
@@ -91,9 +101,10 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
     assertEquals(0, history.cursorCount());
   }
 
-  // A page budget is an intentional early stop; its finally block must issue a release request.
+  // An empty endpoint path must route explicit release to the override, not consume another page.
   @Test
-  void earlyStopReleasesItsContinuationPoint() throws Exception {
+  void earlyStopOnAnEndpointWithoutAPathReleasesItsContinuationPoint() throws Exception {
+    assertEquals("", server.getConfig().getEndpoints().iterator().next().getPath());
     int releases = history.releaseCount;
     assertEquals(2, readRawHistory(client, history.namespace.historyNode, START, END, 1).size());
     assertEquals(releases + 1, history.releaseCount);
@@ -158,39 +169,100 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
     assertEquals(0, history.cursorCount());
   }
 
-  // Exhaustion must leave existing cursors usable and explicit release must recover capacity.
+  // Part 4 §7.9: a new request reclaims prior points from its own Session when capacity is needed.
   @Test
-  void ninthCursorIsRejectedAndReleasingEightRestoresCapacity() throws Exception {
-    var details = new ReadRawModifiedDetails(false, START, END, uint(2), false);
+  void newRequestReclaimsTheSessionsOldestCursor() throws Exception {
     var first = historyRequest(ByteString.NULL_VALUE);
     List<HistoryReadValueId> open = new ArrayList<>();
     for (int i = 0; i < 8; i++) {
-      HistoryReadResult result =
-          requireNonNull(
-              client
-                  .historyRead(details, TimestampsToReturn.Both, false, List.of(first))
-                  .getResults())[0];
+      HistoryReadResult result = readHistory(client, false, List.of(first))[0];
       assertTrue(result.getStatusCode().isGood());
       assertFalse(result.getContinuationPoint().isNullOrEmpty());
       open.add(historyRequest(result.getContinuationPoint()));
     }
     assertEquals(8, history.cursorCount());
-    HistoryReadResult ninth =
-        requireNonNull(
-            client
-                .historyRead(details, TimestampsToReturn.Both, false, List.of(first))
-                .getResults())[0];
-    assertEquals(StatusCodes.Bad_NoContinuationPoints, ninth.getStatusCode().value());
-    for (HistoryReadValueId cursor : open) {
-      HistoryReadResult released =
-          requireNonNull(
-              client
-                  .historyRead(details, TimestampsToReturn.Both, true, List.of(cursor))
-                  .getResults())[0];
+
+    HistoryReadResult replacement = readHistory(client, false, List.of(first))[0];
+    assertTrue(replacement.getStatusCode().isGood());
+    assertFalse(replacement.getContinuationPoint().isNullOrEmpty());
+    assertEquals(8, history.cursorCount());
+    HistoryReadResult reclaimed = readHistory(client, false, List.of(open.get(0)))[0];
+    assertEquals(StatusCodes.Bad_ContinuationPointInvalid, reclaimed.getStatusCode().value());
+    // The next-oldest token survives and can finish while the registry is at capacity.
+    HistoryReadResult retained = readHistory(client, false, List.of(open.get(1)))[0];
+    assertTrue(retained.getStatusCode().isGood());
+    assertTrue(retained.getContinuationPoint().isNullOrEmpty());
+    assertEquals(7, history.cursorCount());
+
+    List<HistoryReadValueId> remaining = new ArrayList<>(open.subList(2, open.size()));
+    remaining.add(historyRequest(replacement.getContinuationPoint()));
+    for (HistoryReadResult released : readHistory(client, true, remaining)) {
       assertTrue(released.getStatusCode().isGood());
     }
     assertEquals(0, history.cursorCount());
-    assertEquals(3, readRawHistory(client, history.namespace.historyNode, START, END, 10).size());
+  }
+
+  // Part 4 §7.9: saturation within one response must not invalidate its newly returned points.
+  @Test
+  void oneRequestKeepsItsNewCursorsAndRejectsExcessOperations() throws Exception {
+    var first = historyRequest(ByteString.NULL_VALUE);
+    HistoryReadResult[] results = readHistory(client, false, Collections.nCopies(9, first));
+    assertEquals(9, results.length);
+    assertEquals(StatusCodes.Bad_NoContinuationPoints, results[8].getStatusCode().value());
+    assertEquals(8, history.cursorCount());
+    for (int i = 0; i < 8; i++) {
+      assertTrue(results[i].getStatusCode().isGood());
+      assertFalse(results[i].getContinuationPoint().isNullOrEmpty());
+      HistoryReadResult completed =
+          readHistory(client, false, List.of(historyRequest(results[i].getContinuationPoint())))[0];
+      assertTrue(completed.getStatusCode().isGood());
+      assertTrue(completed.getContinuationPoint().isNullOrEmpty());
+    }
+    assertEquals(0, history.cursorCount());
+  }
+
+  // A global memory bound must not reclaim another Session's tokens; explicit release restores
+  // room.
+  @Test
+  void anotherSessionCannotReclaimTheOwnersCursorsAtTheGlobalLimit() throws Exception {
+    var first = historyRequest(ByteString.NULL_VALUE);
+    HistoryReadResult[] owned = readHistory(client, false, Collections.nCopies(8, first));
+    List<HistoryReadValueId> open = new ArrayList<>();
+    for (HistoryReadResult result : owned) {
+      assertTrue(result.getStatusCode().isGood());
+      assertFalse(result.getContinuationPoint().isNullOrEmpty());
+      open.add(historyRequest(result.getContinuationPoint()));
+    }
+    OpcUaClient other = TestClient.create(server, config -> {});
+    try {
+      other.connectAsync().get(10, TimeUnit.SECONDS);
+      HistoryReadResult denied = readHistory(other, false, List.of(first))[0];
+      assertEquals(StatusCodes.Bad_NoContinuationPoints, denied.getStatusCode().value());
+      assertEquals(8, history.cursorCount());
+      assertTrue(readHistory(client, true, List.of(open.get(0)))[0].getStatusCode().isGood());
+
+      HistoryReadResult admitted = readHistory(other, false, List.of(first))[0];
+      assertTrue(admitted.getStatusCode().isGood());
+      assertFalse(admitted.getContinuationPoint().isNullOrEmpty());
+      assertEquals(8, history.cursorCount());
+      HistoryReadResult completed =
+          readHistory(other, false, List.of(historyRequest(admitted.getContinuationPoint())))[0];
+      assertTrue(completed.getStatusCode().isGood());
+      assertTrue(completed.getContinuationPoint().isNullOrEmpty());
+      for (HistoryReadResult released : readHistory(client, true, open.subList(1, open.size()))) {
+        assertTrue(released.getStatusCode().isGood());
+      }
+      assertEquals(0, history.cursorCount());
+    } finally {
+      other.disconnectAsync().get(10, TimeUnit.SECONDS);
+    }
+  }
+
+  private HistoryReadResult[] readHistory(
+      OpcUaClient requester, boolean release, List<HistoryReadValueId> nodes) throws UaException {
+    var details = new ReadRawModifiedDetails(false, START, END, uint(2), false);
+    return requireNonNull(
+        requester.historyRead(details, TimestampsToReturn.Both, release, nodes).getResults());
   }
 
   // The release interception must not bypass service limits or stop diagnostic accounting.
@@ -386,7 +458,7 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
     var history = new RawHistoryService(server);
     server.addLifecycleParticipant(history.namespace);
     server.getConfig().getEndpoints().stream()
-        .map(endpoint -> endpoint.getPath())
+        .map(endpoint -> EndpointUtil.getPath(endpoint.getEndpointUrl()))
         .filter(path -> !path.endsWith("/discovery"))
         .distinct()
         .forEach(path -> server.addServiceSet(path, history));
@@ -473,7 +545,7 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
                 new Variant(30),
                 StatusCode.GOOD,
                 new DateTime(Instant.parse("2026-01-01T00:00:02Z"))));
-    private final Map<ByteString, Cursor> cursors = new HashMap<>();
+    private final Map<ByteString, Cursor> cursors = new LinkedHashMap<>();
     private final SessionListener listener =
         new SessionListener() {
           @Override
@@ -507,6 +579,16 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
         TimestampsToReturn timestamps,
         List<HistoryReadValueId> nodes) {
       Session session = context.getSession().orElseThrow();
+      List<ByteString> requestedPoints =
+          nodes.stream().map(HistoryReadValueId::getContinuationPoint).toList();
+      // Only prior-request points are reclaimable. Protect continuations supplied in this request.
+      Iterator<ByteString> reclaimable =
+          cursors.entrySet().stream()
+              .filter(entry -> entry.getValue().sessionId().equals(session.getSessionId()))
+              .map(Map.Entry::getKey)
+              .filter(point -> !requestedPoints.contains(point))
+              .toList()
+              .iterator();
       List<HistoryReadResult> results = new ArrayList<>();
       for (HistoryReadValueId node : nodes) {
         if (!node.getNodeId().equals(historyNode)) {
@@ -556,13 +638,16 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
           cursors.remove(supplied);
           offset = saved.offset();
         }
-        if (cursors.size() >= 8) {
-          results.add(error(StatusCodes.Bad_NoContinuationPoints));
-          continue;
-        }
         int end = Math.min(offset + 2, stored.size());
         ByteString next = ByteString.NULL_VALUE;
         if (end < stored.size()) {
+          while (cursors.size() >= 8 && reclaimable.hasNext()) {
+            cursors.remove(reclaimable.next());
+          }
+          if (cursors.size() >= 8) {
+            results.add(error(StatusCodes.Bad_NoContinuationPoints));
+            continue;
+          }
           next =
               ByteString.of(
                   UUID.randomUUID().toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
