@@ -36,8 +36,8 @@ import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ObjectTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.VariableTypeTree;
+import org.eclipse.milo.opcua.sdk.server.access.AccessControlManager;
 import org.eclipse.milo.opcua.sdk.server.access.AccessController;
-import org.eclipse.milo.opcua.sdk.server.access.DefaultAccessController;
 import org.eclipse.milo.opcua.sdk.server.conditions.ConditionManager;
 import org.eclipse.milo.opcua.sdk.server.conditions.DefaultConditionManager;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.ServerDiagnosticsSummary;
@@ -227,7 +227,7 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final OpcUaNamespace opcUaNamespace;
   private final ServerNamespace serverNamespace;
 
-  private final AccessController accessController;
+  private final AccessControlManager accessControlManager;
 
   private final OpcUaServerConfig config;
   private final OpcServerTransportFactory transportFactory;
@@ -365,17 +365,13 @@ public class OpcUaServer extends AbstractServiceHandler {
 
     sessionManager = new SessionManager(this, config.getExecutor());
 
+    accessControlManager = new AccessControlManager(this);
+
     opcUaNamespace = new OpcUaNamespace(this);
     opcUaNamespace.startup();
 
     serverNamespace = new ServerNamespace(this);
     serverNamespace.startup();
-
-    accessController =
-        config
-            .getAccessControllerFactory()
-            .map(factory -> factory.apply(this))
-            .orElseGet(() -> new DefaultAccessController(this));
   }
 
   /**
@@ -790,15 +786,27 @@ public class OpcUaServer extends AbstractServiceHandler {
   /**
    * Get the {@link AccessController} the service implementations authorize requests with.
    *
-   * <p>It is a {@link DefaultAccessController} unless the configuration supplied a factory through
-   * {@link OpcUaServerConfigBuilder#setAccessControllerFactory}. It is final so that every check
-   * uses the one controller the server created; install a custom controller through the factory
-   * rather than by overriding.
+   * <p>A shortcut for {@code getAccessControlManager().getAccessController()}. It is final so that
+   * every check, including the read access cache's, uses the one controller; install a custom
+   * controller with {@link OpcUaServerConfigBuilder#setAccessControllerFactory} instead.
    *
    * @return this server's {@link AccessController}.
    */
   public final AccessController getAccessController() {
-    return accessController;
+    return accessControlManager.getAccessController();
+  }
+
+  /**
+   * Get the {@link AccessControlManager}: the controller, the read access cache, and read access
+   * invalidation.
+   *
+   * <p>It is final for the same reason as {@link #getAccessController()}: the services, the cache,
+   * and invalidation must all reach the one manager the server created.
+   *
+   * @return this server's {@link AccessControlManager}.
+   */
+  public final AccessControlManager getAccessControlManager() {
+    return accessControlManager;
   }
 
   public ServerApplicationContext getApplicationContext() {
