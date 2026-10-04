@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.server.subscriptions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Queue;
@@ -143,6 +144,43 @@ public class MonitoredItemReadAccessTest extends AbstractClientServerTest {
     DataValue first = values.poll(5, TimeUnit.SECONDS);
     assertNotNull(first, "the denial must be delivered as a notification");
     assertEquals(StatusCodes.Bad_NotReadable, first.statusCode().getValue());
+  }
+
+  /**
+   * Part 4 §5.13.2.1: access rights that change after CreateMonitoredItems are reflected in the
+   * Publish response, and data flows again once read access is restored.
+   */
+  @Test
+  void revokingAndRestoringReadAccessIsReportedThroughTheSubscription() throws Exception {
+    var values = new LinkedBlockingQueue<DataValue>();
+
+    OpcUaMonitoredItem item = monitor("Revocable", values);
+
+    assertEquals(StatusCode.GOOD, item.getCreateResult().orElseThrow());
+
+    DataValue initial = values.poll(5, TimeUnit.SECONDS);
+    assertNotNull(initial);
+    assertEquals(StatusCode.GOOD, initial.statusCode());
+    assertEquals(INITIAL_VALUE, initial.value().value());
+
+    revocable.setUserAccessLevel(AccessLevel.toValue(AccessLevel.WRITE_ONLY));
+
+    DataValue denied = values.poll(5, TimeUnit.SECONDS);
+    assertNotNull(denied, "removing read access must produce a notification");
+    assertEquals(StatusCodes.Bad_UserAccessDenied, denied.statusCode().getValue());
+
+    revocable.setValue(new DataValue(new Variant(INITIAL_VALUE + 1)));
+
+    assertNull(
+        values.poll(1, TimeUnit.SECONDS),
+        "a value change must not be reported while read access is denied");
+
+    revocable.setUserAccessLevel(AccessLevel.toValue(AccessLevel.READ_WRITE));
+
+    DataValue restored = values.poll(5, TimeUnit.SECONDS);
+    assertNotNull(restored, "restoring read access must resume data");
+    assertEquals(StatusCode.GOOD, restored.statusCode());
+    assertEquals(INITIAL_VALUE + 1, restored.value().value());
   }
 
   /**
