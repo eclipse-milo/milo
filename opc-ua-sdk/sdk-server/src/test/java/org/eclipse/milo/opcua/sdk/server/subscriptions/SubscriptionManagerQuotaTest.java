@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.subscriptions;
 
+import static java.util.Objects.requireNonNull;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,13 +29,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.RevisedEventItemParameters;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
+import org.eclipse.milo.opcua.sdk.server.DataItemListener;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.items.BaseMonitoredItem;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -110,6 +112,7 @@ class SubscriptionManagerQuotaTest {
     when(server.getConfig()).thenReturn(config);
     when(server.getAccessController()).thenReturn(accessController);
     when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
+    when(server.getDataItemListener()).thenReturn(new DataItemListener() {});
     when(server.getStaticEncodingContext()).thenReturn(DefaultEncodingContext.INSTANCE);
     when(server.getMonitoredItemCount()).thenReturn(globalMonitoredItemCount);
 
@@ -159,7 +162,7 @@ class SubscriptionManagerQuotaTest {
         manager.createMonitoredItems(
             context, createRequest(createItem(validEventFilter()), createItem(invalidFilter)));
 
-    MonitoredItemCreateResult[] results = response.getResults();
+    MonitoredItemCreateResult[] results = requireNonNull(response.getResults());
     assertEquals(2, results.length);
     assertEquals(StatusCode.GOOD, results[0].getStatusCode());
     assertEquals(
@@ -175,7 +178,7 @@ class SubscriptionManagerQuotaTest {
     CreateMonitoredItemsResponse response =
         manager.createMonitoredItems(context, createRequest(createItem(null)));
 
-    MonitoredItemCreateResult[] results = response.getResults();
+    MonitoredItemCreateResult[] results = requireNonNull(response.getResults());
     assertEquals(1, results.length);
     assertEquals(
         new StatusCode(StatusCodes.Bad_MonitoredItemFilterInvalid), results[0].getStatusCode());
@@ -201,7 +204,7 @@ class SubscriptionManagerQuotaTest {
     CreateMonitoredItemsResponse response =
         manager.createMonitoredItems(context, createRequest(createItem(validFilter)));
 
-    MonitoredItemCreateResult[] results = response.getResults();
+    MonitoredItemCreateResult[] results = requireNonNull(response.getResults());
     assertEquals(1, results.length);
     assertEquals(new StatusCode(StatusCodes.Bad_InternalError), results[0].getStatusCode());
 

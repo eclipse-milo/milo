@@ -14,7 +14,6 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -23,9 +22,7 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.items.BaseMonitoredItem;
-import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
-import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.Out;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionType;
@@ -40,7 +37,6 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilters;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
-import org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -72,16 +68,12 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private final SubscriptionModel subscriptionModel;
-
   private final OpcUaServer server;
 
   public OpcUaNamespace(OpcUaServer server) {
     super(server, Namespaces.OPC_UA);
 
     this.server = server;
-
-    subscriptionModel = new SubscriptionModel(server, this);
 
     getLifecycleManager()
         .addStartupTask(
@@ -97,28 +89,6 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
                   .map(UaVariableNode.class::cast)
                   .forEach(n -> n.setMinimumSamplingInterval(MIN_SAMPLING_INTERVAL));
             });
-
-    getLifecycleManager().addLifecycle(subscriptionModel);
-  }
-
-  @Override
-  public void onDataItemsCreated(List<DataItem> dataItems) {
-    subscriptionModel.onDataItemsCreated(dataItems);
-  }
-
-  @Override
-  public void onDataItemsModified(List<DataItem> dataItems) {
-    subscriptionModel.onDataItemsModified(dataItems);
-  }
-
-  @Override
-  public void onDataItemsDeleted(List<DataItem> dataItems) {
-    subscriptionModel.onDataItemsDeleted(dataItems);
-  }
-
-  @Override
-  public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {
-    subscriptionModel.onMonitoringModeChanged(monitoredItems);
   }
 
   private void loadNodes() {

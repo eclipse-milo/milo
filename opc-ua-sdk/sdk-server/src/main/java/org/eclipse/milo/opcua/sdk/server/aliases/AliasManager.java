@@ -31,8 +31,6 @@ import org.eclipse.milo.opcua.sdk.server.ManagedAddressSpaceFragmentWithLifecycl
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.SimpleAddressSpaceFilter;
-import org.eclipse.milo.opcua.sdk.server.items.DataItem;
-import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.model.objects.AliasNameCategoryType;
@@ -45,7 +43,6 @@ import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.BrowsePath;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationResult;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.NodeInstantiator;
-import org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -1016,7 +1013,7 @@ public final class AliasManager extends AbstractLifecycle {
    * in the {@code AliasFor} hierarchy. Everything else is reported per entry, and a failed entry
    * does not affect any other entry. {@code LastChange} is bumped once per affected category after
    * all entries are processed. Each entry locates its alias by scanning the category's directly
-   * organized members (see {@link AliasLimits#maxOperationsPerCall}), so a call costs O(entries
+   * organized members (see {@link AliasLimits#maxOperationsPerCall()}), so a call costs O(entries
    * &times; category size) under the manager lock.
    *
    * <p>Unlike the programmatic {@link #addAlias} — where a non-local {@link ExpandedNodeId} with a
@@ -1213,8 +1210,8 @@ public final class AliasManager extends AbstractLifecycle {
    * absent {@code TargetServers} array. Per-entry failures affect only their own entry, and {@code
    * LastChange} is bumped once per affected category after all entries are processed. Each entry
    * locates its aliases by scanning the category's directly organized members (see {@link
-   * AliasLimits#maxOperationsPerCall}), so a call costs O(entries &times; category size) under the
-   * manager lock.
+   * AliasLimits#maxOperationsPerCall()}), so a call costs O(entries &times; category size) under
+   * the manager lock.
    *
    * <p>Called by the network-facing Method handler after authorization; the {@link
    * AliasAuthorizationPolicy} is not consulted here.
@@ -1924,21 +1921,17 @@ public final class AliasManager extends AbstractLifecycle {
    * organizing categories' new versions are prepared (persisted) <em>before</em> deletion, so a
    * failed save aborts the deletion and a deletion that throws partway through still gets its
    * {@code LastChange} bumps published.
-   *
-   * @return {@code true} if the alias was targetless and deleted.
    */
-  private boolean deleteIfTargetless(UaNode aliasNode) throws UaException {
+  private void deleteIfTargetless(UaNode aliasNode) throws UaException {
     NodeId aliasNodeId = aliasNode.getNodeId();
 
     if (!collectRemainingTargets(aliasNodeId).isEmpty()) {
-      return false;
+      return;
     }
 
     versionManager.prepare(getOrganizingCategories(aliasNodeId));
 
     deleteAliasNode(aliasNode);
-
-    return true;
   }
 
   private void deleteAliasNode(UaNode aliasNode) {
@@ -2105,8 +2098,8 @@ public final class AliasManager extends AbstractLifecycle {
    * regardless of NodeId namespace.
    *
    * <p>Startup registers the fragment and its NodeManager with the server's AddressSpaceManager;
-   * shutdown unregisters both. A SubscriptionModel provides sampling for MonitoredItems created on
-   * hosted Nodes.
+   * shutdown unregisters both. The base class's SamplingManager provides sampling for
+   * MonitoredItems created on hosted Nodes.
    *
    * <p>The fragment registers itself <em>first</em> in the composite: service routing picks the
    * first registered AddressSpace whose filter matches, and hosted Nodes have NodeIds allocated in
@@ -2119,14 +2112,8 @@ public final class AliasManager extends AbstractLifecycle {
     private final AddressSpaceFilter filter =
         SimpleAddressSpaceFilter.create(getNodeManager()::containsNode);
 
-    private final SubscriptionModel subscriptionModel;
-
     AliasFragment(OpcUaServer server) {
       super(server);
-
-      subscriptionModel = new SubscriptionModel(server, this);
-
-      getLifecycleManager().addLifecycle(subscriptionModel);
     }
 
     @Override
@@ -2137,26 +2124,6 @@ public final class AliasManager extends AbstractLifecycle {
     @Override
     protected void registerWithComposite(AddressSpaceComposite composite) {
       composite.registerFirst(this);
-    }
-
-    @Override
-    public void onDataItemsCreated(List<DataItem> dataItems) {
-      subscriptionModel.onDataItemsCreated(dataItems);
-    }
-
-    @Override
-    public void onDataItemsModified(List<DataItem> dataItems) {
-      subscriptionModel.onDataItemsModified(dataItems);
-    }
-
-    @Override
-    public void onDataItemsDeleted(List<DataItem> dataItems) {
-      subscriptionModel.onDataItemsDeleted(dataItems);
-    }
-
-    @Override
-    public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {
-      subscriptionModel.onMonitoringModeChanged(monitoredItems);
     }
   }
 }

@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.sdk.server.util.DataChangeMonitoringFilter;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -42,9 +43,15 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
   public static final DataChangeFilter DEFAULT_FILTER =
       new DataChangeFilter(DataChangeTrigger.StatusValue, uint(DeadbandType.None.getValue()), 0.0);
 
+  private static final StatusCode NODE_ID_UNKNOWN = new StatusCode(StatusCodes.Bad_NodeIdUnknown);
+
   private volatile DataValue lastValue = null;
   private volatile DataChangeFilter filter = null;
   private volatile @Nullable Range euRange = null;
+  private volatile AccessResult readAccessResult = AccessResult.ALLOWED;
+
+  // Whether a check since the last decision, a denial, found the Node unknown. Guarded by this.
+  private boolean nodeUnknown = false;
 
   public MonitoredDataItem(
       OpcUaServer server,
@@ -114,8 +121,105 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
     this.euRange = euRange;
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>A denial is also queued by the first call after monitoring resumes from {@link
+   * MonitoringMode#Disabled}, since nothing has been reported since. Once access is allowed again,
+   * the denial is no longer the last value for {@link #maybeSendLastValue()}.
+   */
+  @Override
+  public synchronized void setReadAccessResult(AccessResult accessResult) {
+    if (!accessResult.isDecision()) {
+      // A denied item is not sampled, so nothing else reports that its Node has gone (Part 4
+      // §5.13.1.6). Report it in place of the denial, which keeps withholding values.
+      if (readAccessResult instanceof AccessResult.Denied) {
+        boolean unreported = !nodeUnknown || lastValue == null;
+        nodeUnknown = true;
+
+        if (unreported && getMonitoringMode() != MonitoringMode.Disabled) {
+          setValue(new DataValue(NODE_ID_UNKNOWN));
+        }
+      }
+      return;
+    }
+
+    boolean wasNodeUnknown = nodeUnknown;
+    nodeUnknown = false;
+
+    AccessResult previous = readAccessResult;
+    readAccessResult = accessResult;
+
+    if (accessResult instanceof AccessResult.Denied denied) {
+      // Queue the denial when it is new, or when nothing has been reported since the item was
+      // created, monitoring resumed, or its Node was reported unknown. Part 4 §7.23: a Disabled
+      // item queues no Notifications.
+      boolean unreported = lastValue == null || wasNodeUnknown;
+      if ((!denied.equals(previous) || unreported)
+          && getMonitoringMode() != MonitoringMode.Disabled) {
+        setValue(new DataValue(denied.statusCode()));
+      }
+    } else if (previous instanceof AccessResult.Denied) {
+      lastValue = null;
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>The comparison and the update happen under this item's lock. The SDK's TransferSubscriptions
+   * and identity or endpoint refresh apply their results under the same lock, after moving the item
+   * or bumping the epoch.
+   */
+  @Override
+  public synchronized boolean setReadAccessResult(
+      AccessResult accessResult, Session session, long accessEpoch) {
+
+    return DataItem.super.setReadAccessResult(accessResult, session, accessEpoch);
+  }
+
+  /**
+   * Apply the result of a read access check made because the Session this item reports to changed:
+   * a TransferSubscriptions moved the item to another Session, or an ActivateSession changed its
+   * Session's user identity or endpoint.
+   *
+   * <p>This is {@link #setReadAccessResult}, except that a denial this item did not already enforce
+   * also drops the values queued for the client. They were sampled and checked for the previous
+   * Session, user, or channel, and the client may no longer read them, for example because the new
+   * channel does not meet the Node's AccessRestrictions. The denial is queued in their place.
+   *
+   * @param accessResult the result of the check for the changed Session.
+   */
+  public synchronized void setReadAccessResultAfterSessionChange(AccessResult accessResult) {
+    if (accessResult instanceof AccessResult.Denied
+        && !(readAccessResult instanceof AccessResult.Denied)) {
+      queue.clear();
+    }
+
+    setReadAccessResult(accessResult);
+  }
+
+  @Override
+  public AccessResult getReadAccessResult() {
+    return readAccessResult;
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>A value set while the item is {@link MonitoringMode#Disabled}, such as a sample that was in
+   * flight when monitoring was disabled, is dropped (Part 4 §7.23).
+   */
   @Override
   public synchronized void setValue(DataValue value) {
+    if (getMonitoringMode() == MonitoringMode.Disabled) {
+      return;
+    }
+
+    if (readAccessResult instanceof AccessResult.Denied denied) {
+      value = new DataValue(nodeUnknown ? NODE_ID_UNKNOWN : denied.statusCode());
+    }
+
     boolean valuePassesFilter =
         DataChangeMonitoringFilter.filter(lastValue, value, filter, euRange);
 
@@ -179,6 +283,8 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
   @Override
   public synchronized void setMonitoringMode(MonitoringMode monitoringMode) {
     if (monitoringMode == MonitoringMode.Disabled) {
+      // Nothing has been reported since; the first refresh after resuming reports the current
+      // denial, if there is one, rather than a result cached while Disabled.
       lastValue = null;
     }
 

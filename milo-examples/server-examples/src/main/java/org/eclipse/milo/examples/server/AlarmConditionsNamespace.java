@@ -15,7 +15,6 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
@@ -29,12 +28,9 @@ import org.eclipse.milo.opcua.sdk.server.conditions.ConditionMethodInterceptor;
 import org.eclipse.milo.opcua.sdk.server.conditions.ExclusiveLevelAlarm;
 import org.eclipse.milo.opcua.sdk.server.conditions.OffNormalAlarm;
 import org.eclipse.milo.opcua.sdk.server.conditions.SystemOffNormalAlarm;
-import org.eclipse.milo.opcua.sdk.server.items.DataItem;
-import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler.InvocationContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
-import org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -68,8 +64,6 @@ public class AlarmConditionsNamespace extends ManagedNamespaceWithLifecycle {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private final SubscriptionModel subscriptionModel;
-
   private UaVariableNode temperatureNode;
   private UaVariableNode motorStateNode;
 
@@ -86,10 +80,6 @@ public class AlarmConditionsNamespace extends ManagedNamespaceWithLifecycle {
 
   AlarmConditionsNamespace(OpcUaServer server) {
     super(server, NAMESPACE_URI);
-
-    subscriptionModel = new SubscriptionModel(server, this);
-
-    getLifecycleManager().addLifecycle(subscriptionModel);
 
     getLifecycleManager().addStartupTask(this::createAndAddNodes);
 
@@ -331,25 +321,5 @@ public class AlarmConditionsNamespace extends ManagedNamespaceWithLifecycle {
             Reference.Direction.INVERSE));
 
     return node;
-  }
-
-  @Override
-  public void onDataItemsCreated(List<DataItem> dataItems) {
-    subscriptionModel.onDataItemsCreated(dataItems);
-  }
-
-  @Override
-  public void onDataItemsModified(List<DataItem> dataItems) {
-    subscriptionModel.onDataItemsModified(dataItems);
-  }
-
-  @Override
-  public void onDataItemsDeleted(List<DataItem> dataItems) {
-    subscriptionModel.onDataItemsDeleted(dataItems);
-  }
-
-  @Override
-  public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {
-    subscriptionModel.onMonitoringModeChanged(monitoredItems);
   }
 }

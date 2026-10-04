@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.subscriptions;
 
+import static java.util.Objects.requireNonNull;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,16 +33,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.RevisedEventItemParameters;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
+import org.eclipse.milo.opcua.sdk.server.DataItemListener;
 import org.eclipse.milo.opcua.sdk.server.EventNotifier;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.items.BaseMonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredEventItem;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -122,6 +124,7 @@ class SubscriptionManagerEventItemTest {
     when(server.getConfig()).thenReturn(config);
     when(server.getAccessController()).thenReturn(accessController);
     when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
+    when(server.getDataItemListener()).thenReturn(new DataItemListener() {});
     when(server.getEventNotifier()).thenReturn(eventNotifier);
     when(server.getStaticEncodingContext()).thenReturn(DefaultEncodingContext.INSTANCE);
     when(server.getMonitoredItemCount()).thenReturn(new AtomicLong());
@@ -162,15 +165,16 @@ class SubscriptionManagerEventItemTest {
     CreateMonitoredItemsResponse response =
         manager.createMonitoredItems(context, createRequest(createItem(badOperandEventFilter())));
 
-    MonitoredItemCreateResult result = response.getResults()[0];
+    MonitoredItemCreateResult result = requireNonNull(response.getResults())[0];
     assertEquals(StatusCode.GOOD, result.getStatusCode());
 
     EventFilterResult filterResult =
         (EventFilterResult) result.getFilterResult().decode(DefaultEncodingContext.INSTANCE);
     ContentFilterElementResult elementResult =
-        filterResult.getWhereClauseResult().getElementResults()[0];
+        requireNonNull(filterResult.getWhereClauseResult().getElementResults())[0];
     assertEquals(
-        StatusCodes.Bad_FilterOperandInvalid, elementResult.getOperandStatusCodes()[0].value());
+        StatusCodes.Bad_FilterOperandInvalid,
+        requireNonNull(elementResult.getOperandStatusCodes())[0].value());
 
     MonitoredEventItem item =
         assertInstanceOf(
@@ -190,7 +194,7 @@ class SubscriptionManagerEventItemTest {
   void monitoringModeTogglesRegistrationOfItemWithRejectedFilterOperand() throws Exception {
     CreateMonitoredItemsResponse response =
         manager.createMonitoredItems(context, createRequest(createItem(badOperandEventFilter())));
-    UInteger itemId = response.getResults()[0].getMonitoredItemId();
+    UInteger itemId = requireNonNull(response.getResults())[0].getMonitoredItemId();
     MonitoredEventItem item =
         assertInstanceOf(MonitoredEventItem.class, ownedMonitoredItems.get(itemId));
 

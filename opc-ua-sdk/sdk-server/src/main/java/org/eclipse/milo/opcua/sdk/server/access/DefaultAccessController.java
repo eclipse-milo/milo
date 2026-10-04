@@ -8,9 +8,10 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.eclipse.milo.opcua.sdk.server.servicesets.impl;
+package org.eclipse.milo.opcua.sdk.server.access;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import org.eclipse.milo.opcua.sdk.server.AddressSpace;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
@@ -46,6 +48,19 @@ import org.jspecify.annotations.Nullable;
 
 public class DefaultAccessController implements AccessController {
 
+  /** Every attribute a check can decide from, in {@link AccessControlAttributes} order. */
+  private static final List<AttributeId> ACCESS_ATTRIBUTE_ORDER =
+      List.of(
+          AttributeId.NodeClass,
+          AttributeId.AccessRestrictions,
+          AttributeId.UserWriteMask,
+          AttributeId.AccessLevel,
+          AttributeId.UserAccessLevel,
+          AttributeId.UserExecutable,
+          AttributeId.UserRolePermissions);
+
+  private static final Set<AttributeId> ACCESS_ATTRIBUTES = EnumSet.copyOf(ACCESS_ATTRIBUTE_ORDER);
+
   private final OpcUaServer server;
 
   public DefaultAccessController(OpcUaServer server) {
@@ -54,6 +69,14 @@ public class DefaultAccessController implements AccessController {
 
   // region Read
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>A Node the AddressSpace does not know gets {@link AccessResult#NODE_UNKNOWN}, which is no
+   * decision rather than a denial: Read proceeds and the AddressSpace answers {@code
+   * Bad_NodeIdUnknown} as before, and a caller that re-checks items whose Node may since have been
+   * removed leaves their last result in place. An invalid attribute id is still denied first.
+   */
   @Override
   public Map<ReadValueId, AccessResult> checkReadAccess(
       Session session, List<ReadValueId> readValueIds) {
@@ -69,18 +92,21 @@ public class DefaultAccessController implements AccessController {
 
     List<NodeId> nodeIds = readValueIds.stream().map(ReadValueId::getNodeId).toList();
 
-    Map<NodeId, AccessControlAttributes> attributes = context.readAccessControlAttributes(nodeIds);
+    Map<NodeId, AccessControlAttributes> attributes =
+        context.readAccessControlAttributes(nodeIds, readAccessAttributes(readValueIds));
 
     for (PendingResult<ReadValueId> p : pending) {
       if (!AttributeId.isValid(p.value.getAttributeId())) {
         p.result = AccessResult.DENIED_ATTRIBUTE_ID_INVALID;
+      } else if (attributes.get(p.value.getNodeId()).nodeUnknown()) {
+        p.result = AccessResult.NODE_UNKNOWN;
       }
     }
 
     checkAccessRestrictions(context, pending, attributes, ReadValueId::getNodeId);
 
     for (PendingResult<ReadValueId> p : pending) {
-      if (p.result.isDenied()) {
+      if (!p.result.isAllowed()) {
         continue;
       }
 
@@ -88,13 +114,15 @@ public class DefaultAccessController implements AccessController {
       UInteger attributeId = p.value.getAttributeId();
 
       if (AttributeId.Value.uid().equals(attributeId)) {
+        UByte accessLevel = attributes.get(nodeId).accessLevel();
         UByte userAccessLevel = attributes.get(nodeId).userAccessLevel();
 
-        if (userAccessLevel != null) {
-          Set<AccessLevel> accessLevels = AccessLevel.fromValue(userAccessLevel);
-          if (!accessLevels.contains(AccessLevel.CurrentRead)) {
-            p.result = AccessResult.DENIED_USER_ACCESS;
-          }
+        if (accessLevel != null
+            && !AccessLevel.fromValue(accessLevel).contains(AccessLevel.CurrentRead)) {
+          p.result = AccessResult.DENIED_NOT_READABLE;
+        } else if (userAccessLevel != null
+            && !AccessLevel.fromValue(userAccessLevel).contains(AccessLevel.CurrentRead)) {
+          p.result = AccessResult.DENIED_USER_ACCESS;
         }
       } else if (AttributeId.RolePermissions.uid().equals(attributeId)) {
         List<NodeId> roleIds = context.getRoleIds().orElse(null);
@@ -115,10 +143,41 @@ public class DefaultAccessController implements AccessController {
     return pending.stream().collect(Collectors.toMap(p -> p.value, p -> p.result, (a, b) -> b));
   }
 
+  /**
+   * The attributes a read check of {@code readValueIds} decides from: AccessRestrictions always,
+   * AccessLevel and UserAccessLevel for a Value read, and UserRolePermissions for a RolePermissions
+   * read. A read check runs for every sampling cycle on the default policy, so it reads nothing
+   * more.
+   */
+  private static Set<AttributeId> readAccessAttributes(List<ReadValueId> readValueIds) {
+    Set<AttributeId> attributeIds = EnumSet.of(AttributeId.AccessRestrictions);
+
+    for (ReadValueId readValueId : readValueIds) {
+      UInteger attributeId = readValueId.getAttributeId();
+
+      if (AttributeId.Value.uid().equals(attributeId)) {
+        attributeIds.add(AttributeId.AccessLevel);
+        attributeIds.add(AttributeId.UserAccessLevel);
+      } else if (AttributeId.RolePermissions.uid().equals(attributeId)) {
+        attributeIds.add(AttributeId.UserRolePermissions);
+      }
+    }
+
+    return attributeIds;
+  }
+
   // endregion
 
   // region Write
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>A Value write is checked the way a Value read is: the Node's {@code AccessLevel} first,
+   * which denies with {@code Bad_NotWritable} when it lacks CurrentWrite, and then the Session's
+   * {@code UserAccessLevel}, which denies with {@code Bad_UserAccessDenied}. Other attributes are
+   * checked against {@code UserWriteMask}.
+   */
   @Override
   public Map<WriteValue, AccessResult> checkWriteAccess(
       Session session, List<WriteValue> writeValues) {
@@ -134,7 +193,8 @@ public class DefaultAccessController implements AccessController {
 
     List<NodeId> nodeIds = writeValues.stream().map(WriteValue::getNodeId).toList();
 
-    Map<NodeId, AccessControlAttributes> attributes = context.readAccessControlAttributes(nodeIds);
+    Map<NodeId, AccessControlAttributes> attributes =
+        context.readAccessControlAttributes(nodeIds, ACCESS_ATTRIBUTES);
 
     for (PendingResult<WriteValue> p : pending) {
       if (!AttributeId.isValid(p.value.getAttributeId())) {
@@ -153,13 +213,15 @@ public class DefaultAccessController implements AccessController {
       UInteger attributeId = p.value.getAttributeId();
 
       if (AttributeId.Value.uid().equals(attributeId)) {
+        UByte accessLevel = attributes.get(nodeId).accessLevel();
         UByte userAccessLevel = attributes.get(nodeId).userAccessLevel();
 
-        if (userAccessLevel != null) {
-          Set<AccessLevel> accessLevels = AccessLevel.fromValue(userAccessLevel);
-          if (!accessLevels.contains(AccessLevel.CurrentWrite)) {
-            p.result = AccessResult.DENIED_USER_ACCESS;
-          }
+        if (accessLevel != null
+            && !AccessLevel.fromValue(accessLevel).contains(AccessLevel.CurrentWrite)) {
+          p.result = AccessResult.DENIED_NOT_WRITABLE;
+        } else if (userAccessLevel != null
+            && !AccessLevel.fromValue(userAccessLevel).contains(AccessLevel.CurrentWrite)) {
+          p.result = AccessResult.DENIED_USER_ACCESS;
         }
       } else {
         UInteger userWriteMask = attributes.get(nodeId).userWriteMask();
@@ -235,7 +297,8 @@ public class DefaultAccessController implements AccessController {
       AccessControlContext context, List<NodeId> nodeIds) {
     List<PendingResult<NodeId>> pending = nodeIds.stream().map(PendingResult::new).toList();
 
-    Map<NodeId, AccessControlAttributes> attributes = context.readAccessControlAttributes(nodeIds);
+    Map<NodeId, AccessControlAttributes> attributes =
+        context.readAccessControlAttributes(nodeIds, ACCESS_ATTRIBUTES);
 
     checkBrowseAccessRestrictions(context, pending, attributes, Function.identity());
 
@@ -289,7 +352,8 @@ public class DefaultAccessController implements AccessController {
       nodeIds.add(request.getMethodId());
     }
 
-    Map<NodeId, AccessControlAttributes> attributes = context.readAccessControlAttributes(nodeIds);
+    Map<NodeId, AccessControlAttributes> attributes =
+        context.readAccessControlAttributes(nodeIds, ACCESS_ATTRIBUTES);
 
     checkAccessRestrictions(context, pending, attributes, Function.identity());
 
@@ -371,7 +435,8 @@ public class DefaultAccessController implements AccessController {
     List<NodeId> nodeIds =
         referencesToAdd.stream().map(AddReferencesItem::getSourceNodeId).toList();
 
-    Map<NodeId, AccessControlAttributes> attributes = context.readAccessControlAttributes(nodeIds);
+    Map<NodeId, AccessControlAttributes> attributes =
+        context.readAccessControlAttributes(nodeIds, ACCESS_ATTRIBUTES);
 
     checkAccessRestrictions(context, pending, attributes, AddReferencesItem::getSourceNodeId);
 
@@ -416,7 +481,8 @@ public class DefaultAccessController implements AccessController {
 
     List<NodeId> nodeIds = nodesToDelete.stream().map(DeleteNodesItem::getNodeId).toList();
 
-    Map<NodeId, AccessControlAttributes> attributes = context.readAccessControlAttributes(nodeIds);
+    Map<NodeId, AccessControlAttributes> attributes =
+        context.readAccessControlAttributes(nodeIds, ACCESS_ATTRIBUTES);
 
     checkAccessRestrictions(context, pending, attributes, DeleteNodesItem::getNodeId);
 
@@ -464,7 +530,8 @@ public class DefaultAccessController implements AccessController {
     List<NodeId> nodeIds =
         referencesToDelete.stream().map(DeleteReferencesItem::getSourceNodeId).toList();
 
-    Map<NodeId, AccessControlAttributes> attributes = context.readAccessControlAttributes(nodeIds);
+    Map<NodeId, AccessControlAttributes> attributes =
+        context.readAccessControlAttributes(nodeIds, ACCESS_ATTRIBUTES);
 
     checkAccessRestrictions(context, pending, attributes, DeleteReferencesItem::getSourceNodeId);
 
@@ -571,16 +638,51 @@ public class DefaultAccessController implements AccessController {
 
     MessageSecurityMode getSecurityMode();
 
-    Map<NodeId, AccessControlAttributes> readAccessControlAttributes(List<NodeId> nodeIds);
+    /**
+     * Read {@code attributeIds} of each of {@code nodeIds}. NodeClass is always read, since it is
+     * how a Node the AddressSpace does not know is told apart; an attribute not read is null.
+     */
+    Map<NodeId, AccessControlAttributes> readAccessControlAttributes(
+        List<NodeId> nodeIds, Set<AttributeId> attributeIds);
   }
 
+  /**
+   * The attributes an access decision is made from, as the AddressSpace answered them.
+   *
+   * @param nodeUnknown {@code true} if the AddressSpace answered {@code Bad_NodeIdUnknown} for the
+   *     Node, so that none of the other attributes could be read.
+   */
   record AccessControlAttributes(
       @Nullable NodeClass nodeClass,
       @Nullable AccessRestrictionType accessRestrictions,
       @Nullable UInteger userWriteMask,
+      @Nullable UByte accessLevel,
       @Nullable UByte userAccessLevel,
       @Nullable Boolean userExecutable,
-      RolePermissionType @Nullable [] userRolePermissions) {}
+      RolePermissionType @Nullable [] userRolePermissions,
+      boolean nodeUnknown) {
+
+    /** Attributes of a Node the AddressSpace knows. */
+    AccessControlAttributes(
+        @Nullable NodeClass nodeClass,
+        @Nullable AccessRestrictionType accessRestrictions,
+        @Nullable UInteger userWriteMask,
+        @Nullable UByte accessLevel,
+        @Nullable UByte userAccessLevel,
+        @Nullable Boolean userExecutable,
+        RolePermissionType @Nullable [] userRolePermissions) {
+
+      this(
+          nodeClass,
+          accessRestrictions,
+          userWriteMask,
+          accessLevel,
+          userAccessLevel,
+          userExecutable,
+          userRolePermissions,
+          false);
+    }
+  }
 
   static class DefaultAccessControlContext implements AccessControlContext {
 
@@ -603,23 +705,22 @@ public class DefaultAccessController implements AccessController {
     }
 
     @Override
-    public Map<NodeId, AccessControlAttributes> readAccessControlAttributes(List<NodeId> nodeIds) {
-      List<ReadValueId> readValueIds =
-          nodeIds.stream()
-              .distinct()
-              .flatMap(
-                  id -> {
-                    List<ReadValueId> attributes =
-                        List.of(
-                            new ReadValueId(id, AttributeId.NodeClass.uid(), null, null),
-                            new ReadValueId(id, AttributeId.AccessRestrictions.uid(), null, null),
-                            new ReadValueId(id, AttributeId.UserWriteMask.uid(), null, null),
-                            new ReadValueId(id, AttributeId.UserAccessLevel.uid(), null, null),
-                            new ReadValueId(id, AttributeId.UserExecutable.uid(), null, null),
-                            new ReadValueId(id, AttributeId.UserRolePermissions.uid(), null, null));
+    public Map<NodeId, AccessControlAttributes> readAccessControlAttributes(
+        List<NodeId> nodeIds, Set<AttributeId> attributeIds) {
 
-                    return attributes.stream();
-                  })
+      List<AttributeId> toRead =
+          ACCESS_ATTRIBUTE_ORDER.stream()
+              .filter(id -> id == AttributeId.NodeClass || attributeIds.contains(id))
+              .toList();
+
+      List<NodeId> distinctNodeIds = nodeIds.stream().distinct().toList();
+
+      List<ReadValueId> readValueIds =
+          distinctNodeIds.stream()
+              .flatMap(
+                  id ->
+                      toRead.stream()
+                          .map(attributeId -> new ReadValueId(id, attributeId.uid(), null, null)))
               .toList();
 
       List<DataValue> values =
@@ -633,55 +734,85 @@ public class DefaultAccessController implements AccessController {
 
       var attributesMap = new HashMap<NodeId, AccessControlAttributes>();
 
-      for (int i = 0; i < readValueIds.size(); i += 6) {
-        NodeId nodeId = readValueIds.get(i).getNodeId();
-
-        Object v0 = values.get(i).value().value();
-        Object v1 = values.get(i + 1).value().value();
-        Object v2 = values.get(i + 2).value().value();
-        Object v3 = values.get(i + 3).value().value();
-        Object v4 = values.get(i + 4).value().value();
-        Object v5 = values.get(i + 5).value().value();
-
-        NodeClass nodeClass = null;
-        AccessRestrictionType accessRestrictions = null;
-        UInteger userWriteMask = null;
-        UByte userAccessLevel = null;
-        Boolean userExecutable = null;
-        RolePermissionType[] userRolePermissions = null;
-
-        if (v0 instanceof NodeClass nc) {
-          nodeClass = nc;
-        }
-        if (v1 instanceof AccessRestrictionType art) {
-          accessRestrictions = art;
-        }
-        if (v2 instanceof UInteger um) {
-          userWriteMask = um;
-        }
-        if (v3 instanceof UByte ub) {
-          userAccessLevel = ub;
-        }
-        if (v4 instanceof Boolean b) {
-          userExecutable = b;
-        }
-        if (v5 instanceof RolePermissionType[] rpt) {
-          userRolePermissions = rpt;
-        }
-
-        var attributes =
-            new AccessControlAttributes(
-                nodeClass,
-                accessRestrictions,
-                userWriteMask,
-                userAccessLevel,
-                userExecutable,
-                userRolePermissions);
-
-        attributesMap.put(nodeId, attributes);
+      for (int i = 0; i < distinctNodeIds.size(); i++) {
+        attributesMap.put(distinctNodeIds.get(i), attributes(toRead, values, i * toRead.size()));
       }
 
       return attributesMap;
+    }
+
+    /**
+     * The attributes in {@code values} from {@code offset} on, which answer {@code attributeIds} in
+     * order.
+     */
+    private static AccessControlAttributes attributes(
+        List<AttributeId> attributeIds, List<DataValue> values, int offset) {
+
+      NodeClass nodeClass = null;
+      AccessRestrictionType accessRestrictions = null;
+      UInteger userWriteMask = null;
+      UByte accessLevel = null;
+      UByte userAccessLevel = null;
+      Boolean userExecutable = null;
+      RolePermissionType[] userRolePermissions = null;
+      boolean nodeUnknown = false;
+
+      for (int j = 0; j < attributeIds.size(); j++) {
+        DataValue value = values.get(offset + j);
+        Object v = value.value().value();
+
+        switch (attributeIds.get(j)) {
+          case NodeClass -> {
+            if (v instanceof NodeClass nc) {
+              nodeClass = nc;
+            }
+            // NodeClass is mandatory on every Node, so Bad_NodeIdUnknown here means the
+            // AddressSpace does not know the Node at all.
+            nodeUnknown = value.statusCode().getValue() == StatusCodes.Bad_NodeIdUnknown;
+          }
+          case AccessRestrictions -> {
+            if (v instanceof AccessRestrictionType art) {
+              accessRestrictions = art;
+            }
+          }
+          case UserWriteMask -> {
+            if (v instanceof UInteger um) {
+              userWriteMask = um;
+            }
+          }
+          case AccessLevel -> {
+            if (v instanceof UByte al) {
+              accessLevel = al;
+            }
+          }
+          case UserAccessLevel -> {
+            if (v instanceof UByte ual) {
+              userAccessLevel = ual;
+            }
+          }
+          case UserExecutable -> {
+            if (v instanceof Boolean b) {
+              userExecutable = b;
+            }
+          }
+          case UserRolePermissions -> {
+            if (v instanceof RolePermissionType[] rpt) {
+              userRolePermissions = rpt;
+            }
+          }
+          default -> {}
+        }
+      }
+
+      return new AccessControlAttributes(
+          nodeClass,
+          accessRestrictions,
+          userWriteMask,
+          accessLevel,
+          userAccessLevel,
+          userExecutable,
+          userRolePermissions,
+          nodeUnknown);
     }
   }
 }

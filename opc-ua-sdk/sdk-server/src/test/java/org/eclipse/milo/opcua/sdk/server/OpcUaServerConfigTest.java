@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnosticsAccessMode;
 import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTarget;
@@ -41,6 +43,8 @@ public class OpcUaServerConfigTest {
     OpcUaServerConfigLimits limits = new OpcUaServerConfigLimits() {};
     CertificateManager certificateManager = mock(CertificateManager.class);
     RoleMapper roleMapper = identity -> List.of();
+    Function<OpcUaServer, AccessController> accessControllerFactory =
+        server -> mock(AccessController.class);
     var sessionSecurityDiagnosticsAccessMode = SessionSecurityDiagnosticsAccessMode.LEGACY;
     SecurityKeysListener securityKeysListener = keyset -> {};
     ExecutorService executor = mock(ExecutorService.class);
@@ -64,6 +68,7 @@ public class OpcUaServerConfigTest {
             .setLimits(limits)
             .setCertificateManager(certificateManager)
             .setRoleMapper(roleMapper)
+            .setAccessControllerFactory(accessControllerFactory)
             .setSessionSecurityDiagnosticsAccessMode(sessionSecurityDiagnosticsAccessMode)
             .setSecurityKeysListener(securityKeysListener)
             .setExecutor(executor)
@@ -85,6 +90,9 @@ public class OpcUaServerConfigTest {
     assertSame(original.getLimits(), copy.getLimits());
     assertSame(original.getCertificateManager(), copy.getCertificateManager());
     assertSame(original.getRoleMapper().orElseThrow(), copy.getRoleMapper().orElseThrow());
+    assertSame(
+        original.getAccessControllerFactory().orElseThrow(),
+        copy.getAccessControllerFactory().orElseThrow());
     assertSame(
         original.getSessionSecurityDiagnosticsAccessMode(),
         copy.getSessionSecurityDiagnosticsAccessMode());

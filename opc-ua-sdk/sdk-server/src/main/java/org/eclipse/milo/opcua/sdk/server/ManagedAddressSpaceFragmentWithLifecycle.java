@@ -20,7 +20,10 @@ package org.eclipse.milo.opcua.sdk.server;
  * obtained from {@link #getLifecycleManager()}.
  *
  * <p>Shutdown runs in reverse registration order, so subclass lifecycles are stopped before this
- * base class unregisters the fragment and its {@link UaNodeManager}.
+ * base class unregisters the fragment and its {@link UaNodeManager}. The {@link
+ * #getSamplingManager() SamplingManager} starts after every lifecycle, the registration and the
+ * subclass's own, and stops before any of them, so a sampling group can use what the subclass's
+ * lifecycles start. If it fails to start, the lifecycles are shut down again.
  */
 public abstract class ManagedAddressSpaceFragmentWithLifecycle extends ManagedAddressSpaceFragment
     implements Lifecycle {
@@ -112,12 +115,12 @@ public abstract class ManagedAddressSpaceFragmentWithLifecycle extends ManagedAd
 
   @Override
   public final void startup() {
-    lifecycleManager.startup();
+    startupWithSampling(lifecycleManager);
   }
 
   @Override
   public final void shutdown() {
-    lifecycleManager.shutdown();
+    shutdownWithSampling(lifecycleManager);
   }
 
   /**
