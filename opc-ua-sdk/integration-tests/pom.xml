@@ -30,6 +30,13 @@
 
   <dependencies>
     <dependency>
+      <!-- Execute the Wiki's linked source example bodies against deterministic local services. -->
+      <groupId>org.eclipse.milo</groupId>
+      <artifactId>milo-client-examples</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>milo-sdk-client</artifactId>
       <version>${project.version}</version>
