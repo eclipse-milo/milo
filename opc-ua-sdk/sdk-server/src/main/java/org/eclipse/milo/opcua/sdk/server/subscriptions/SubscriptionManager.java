@@ -181,8 +181,9 @@ public class SubscriptionManager {
    * ActivateSession after the change is committed, so it never throws: a failure is logged and
    * leaves the items' results as they were. An item that a TransferSubscriptions moved to another
    * Session meanwhile is skipped, since the transfer applies the answer for its new Session itself,
-   * and so is every item if the Session's identity or endpoint changed again during the check,
-   * since that change runs a refresh of its own.
+   * and so is any item this refresh reaches after the Session's identity or endpoint changed again,
+   * since that change runs a refresh of its own. An answer from this refresh never lands on an item
+   * after that later refresh's answer.
    */
   public void refreshReadAccess() {
     try {
@@ -205,27 +206,37 @@ public class SubscriptionManager {
       Map<ReadValueId, AccessResult> results =
           server.getAccessController().checkReadAccess(session, readValueIds);
 
-      if (session.getAccessEpoch() != accessEpoch) {
-        return;
-      }
-
       for (DataItem item : dataItems) {
         AccessResult result = results.get(item.getReadValueId());
 
-        if (result == null || item.getSession() != session) {
+        if (result == null) {
           continue;
         }
 
         if (item instanceof MonitoredDataItem dataItem) {
+          // MonitoredDataItem applies results under its own lock, so a later change's refresh,
+          // which bumps the epoch before it applies, either lands after this result or stops it.
           // A new denial also drops the values queued for the previous user or channel.
-          dataItem.setReadAccessResultAfterSessionChange(result);
-        } else {
+          synchronized (dataItem) {
+            if (isCheckedFor(dataItem, accessEpoch)) {
+              dataItem.setReadAccessResultAfterSessionChange(result);
+            }
+          }
+        } else if (isCheckedFor(item, accessEpoch)) {
           item.setReadAccessResult(result);
         }
       }
     } catch (Throwable t) {
       logger.warn("Read access refresh failed for Session {}", session.getSessionId(), t);
     }
+  }
+
+  /**
+   * Whether a refresh that checked at {@code accessEpoch} still answers for {@code item}: the item
+   * is still on this Session, and the Session's identity and endpoint have not changed since.
+   */
+  private boolean isCheckedFor(DataItem item, long accessEpoch) {
+    return item.getSession() == session && session.getAccessEpoch() == accessEpoch;
   }
 
   public CompletableFuture<CreateSubscriptionResponse> createSubscription(

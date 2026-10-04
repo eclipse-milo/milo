@@ -300,6 +300,37 @@ class SubscriptionManagerReadAccessTest {
     assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
   }
 
+  // Two ActivateSession requests can overlap. When the later one changes the identity and applies
+  // its answer while this refresh is still applying its own, this refresh's answer is for the
+  // previous identity, so it must neither replace the later answer nor drop the value queued under
+  // it.
+  @Test
+  void refreshReadAccessOvertakenWhileApplyingKeepsTheLaterAnswerAndItsValues() throws Exception {
+    MonitoredDataItem item = createAllowedItemWithQueuedValues();
+    var accessEpoch = new AtomicLong();
+    when(session.getAccessEpoch()).thenAnswer(invocation -> accessEpoch.get());
+
+    // Looking up this refresh's answer stands in for the moment the later ActivateSession commits
+    // its identity and applies its own answer, under which a value is then queued.
+    var staleAnswers =
+        new HashMap<ReadValueId, AccessResult>(
+            Map.of(itemToMonitor, AccessResult.DENIED_USER_ACCESS)) {
+          @Override
+          public AccessResult get(Object key) {
+            accessEpoch.incrementAndGet();
+            item.setReadAccessResultAfterSessionChange(AccessResult.ALLOWED);
+            item.setValue(new DataValue(new Variant(42)));
+            return super.get(key);
+          }
+        };
+    when(accessController.checkReadAccess(eq(session), anyList())).thenReturn(staleAnswers);
+
+    manager.refreshReadAccess();
+
+    assertEquals(AccessResult.ALLOWED, item.getReadAccessResult());
+    assertEquals(List.of(42), drain(item).stream().map(value -> value.value().value()).toList());
+  }
+
   private MonitoredDataItem createAllowedItem() throws Exception {
     when(accessController.checkReadAccess(eq(session), anyList()))
         .thenReturn(Map.of(itemToMonitor, AccessResult.ALLOWED));
