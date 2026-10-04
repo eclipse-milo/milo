@@ -265,6 +265,7 @@ class SamplingManagerTest {
     ExecutorService pool = Executors.newCachedThreadPool();
     try {
       when(server.getExecutorService()).thenReturn(pool);
+      startManagerWithoutTheInitialSampleAtTheCycleInterval();
       MonitoredDataItem a = item("a", 100.0);
       MonitoredDataItem b = item("b", 100.0);
       policy.results.put(a, AccessResult.ALLOWED);
@@ -321,6 +322,7 @@ class SamplingManagerTest {
     ExecutorService pool = Executors.newCachedThreadPool();
     try {
       when(server.getExecutorService()).thenReturn(pool);
+      startManagerWithoutTheInitialSampleAtTheCycleInterval();
       MonitoredDataItem a = item("a", 100.0);
       MonitoredDataItem b = item("b", 100.0);
       policy.results.put(a, AccessResult.ALLOWED);
@@ -365,6 +367,17 @@ class SamplingManagerTest {
     } finally {
       pool.shutdownNow();
     }
+  }
+
+  /**
+   * Replace the manager with one whose initial samples wait 50 ms, not the 100 ms of the cycle, so
+   * a test can run the cycle's timer alone. The cycle then takes the turn and cancels the initial
+   * sample. With both run at once, the initial sample could take the turn first, and the cycle
+   * would sample again after it.
+   */
+  private void startManagerWithoutTheInitialSampleAtTheCycleInterval() {
+    manager = manager(SamplingManagerConfig.defaults().withInitialSampleDelayMillis(50));
+    manager.startup();
   }
 
   private static void waitUntil(BooleanSupplier condition) throws InterruptedException {
