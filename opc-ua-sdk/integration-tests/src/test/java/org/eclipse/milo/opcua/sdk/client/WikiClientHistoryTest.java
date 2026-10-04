@@ -101,6 +101,50 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
     assertEquals(0, history.cursorCount());
   }
 
+  // Part 4 §5.11.3.2: servers ignore dataEncoding, including on continuation and empty reads.
+  @Test
+  void historyReadIgnoresTheUnusedDataEncoding() throws Exception {
+    var encoding = new QualifiedName(0, "UnusedEncoding");
+    var request =
+        new HistoryReadValueId(
+            history.namespace.historyNode, null, encoding, ByteString.NULL_VALUE);
+    HistoryReadResult first = readHistory(client, false, List.of(request))[0];
+    assertTrue(first.getStatusCode().isGood());
+    assertFalse(first.getContinuationPoint().isNullOrEmpty());
+    HistoryData firstPage =
+        (HistoryData) first.getHistoryData().decode(client.getStaticEncodingContext());
+    assertEquals(
+        List.of(10, 20),
+        Arrays.stream(requireNonNull(firstPage.getDataValues()))
+            .map(value -> value.value().value())
+            .toList());
+
+    var next =
+        new HistoryReadValueId(
+            history.namespace.historyNode, null, encoding, first.getContinuationPoint());
+    HistoryReadResult last = readHistory(client, false, List.of(next))[0];
+    assertTrue(last.getStatusCode().isGood());
+    assertTrue(last.getContinuationPoint().isNullOrEmpty());
+    HistoryData lastPage =
+        (HistoryData) last.getHistoryData().decode(client.getStaticEncodingContext());
+    assertEquals(1, requireNonNull(lastPage.getDataValues()).length);
+    assertEquals(30, lastPage.getDataValues()[0].value().value());
+    assertEquals(0, history.cursorCount());
+
+    var emptyInterval =
+        new ReadRawModifiedDetails(
+            false, END, new DateTime(Instant.parse("2026-01-01T00:02:00Z")), uint(2), false);
+    HistoryReadResult empty =
+        requireNonNull(
+            client
+                .historyRead(emptyInterval, TimestampsToReturn.Both, false, List.of(request))
+                .getResults())[0];
+    assertEquals(StatusCodes.Good_NoData, empty.getStatusCode().value());
+    assertTrue(empty.getHistoryData() == null || empty.getHistoryData().isNull());
+    assertTrue(empty.getContinuationPoint().isNullOrEmpty());
+    assertEquals(0, history.cursorCount());
+  }
+
   // An empty endpoint path must route explicit release to the override, not consume another page.
   @Test
   void earlyStopOnAnEndpointWithoutAPathReleasesItsContinuationPoint() throws Exception {
@@ -530,7 +574,7 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
 
   /**
    * Fixed in-memory raw history with at most eight Session-bound cursors. The fixture accepts one
-   * query shape and has no database, automatic expiry, or history authorization policy.
+   * query shape and has no database or history authorization policy.
    */
   static final class RawHistoryNamespace extends ManagedNamespaceWithLifecycle {
     final NodeId historyNode = newNodeId("wiki-history");
@@ -603,7 +647,6 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
             && empty.getNumValuesPerNode().equals(uint(2))
             && timestamps == TimestampsToReturn.Both
             && (node.getIndexRange() == null || node.getIndexRange().isEmpty())
-            && node.getDataEncoding().isNull()
             && node.getContinuationPoint().isNullOrEmpty()) {
           results.add(
               new HistoryReadResult(
@@ -617,8 +660,7 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
             || !raw.getEndTime().equals(END)
             || !raw.getNumValuesPerNode().equals(uint(2))
             || timestamps != TimestampsToReturn.Both
-            || (node.getIndexRange() != null && !node.getIndexRange().isEmpty())
-            || !node.getDataEncoding().isNull()) {
+            || (node.getIndexRange() != null && !node.getIndexRange().isEmpty())) {
           results.add(error(StatusCodes.Bad_HistoryOperationUnsupported));
           continue;
         }

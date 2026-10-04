@@ -12,11 +12,13 @@ package org.eclipse.milo.opcua.sdk.client;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ulong;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -57,7 +59,10 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ServerState;
 import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
 import org.eclipse.milo.opcua.stack.core.types.structured.LogRecord;
@@ -660,31 +665,114 @@ public class WikiEncodingGuidesTest {
     assertEquals(StatusCodes.Bad_DecodingError, failure.getStatusCode().getValue());
   }
 
-  @Test
-  void jsonNullElementsRoundTripOnlyForNullableElementTypes() throws Exception {
+  @ParameterizedTest
+  @EnumSource(Encoding.class)
+  void jsonStringAndByteStringNullElementsKeepTheirPositions(Encoding encoding) throws Exception {
     var context = new DefaultEncodingContext();
+    String stringsJson =
+        encodeJsonVariant(context, new Variant(new String[] {"a", null}), encoding);
+    assertEquals("{\"UaType\":12,\"Value\":[\"a\",null]}", stringsJson);
     assertArrayEquals(
         new String[] {"a", null},
         assertInstanceOf(
-            String[].class, jsonVariant(context, new Variant(new String[] {"a", null})).value()));
+            String[].class, decodeJsonVariant(context, stringsJson, encoding).value()));
+    String bytesJson =
+        encodeJsonVariant(
+            context, new Variant(new ByteString[] {ByteString.of(new byte[] {1}), null}), encoding);
+    assertEquals("{\"UaType\":15,\"Value\":[\"AQ==\",null]}", bytesJson);
     ByteString[] bytes =
         assertInstanceOf(
-            ByteString[].class,
-            jsonVariant(
-                    context, new Variant(new ByteString[] {ByteString.of(new byte[] {1}), null}))
-                .value());
+            ByteString[].class, decodeJsonVariant(context, bytesJson, encoding).value());
+    assertEquals(2, bytes.length);
     assertArrayEquals(new byte[] {1}, bytes[0].bytesOrEmpty());
     assertEquals(ByteString.NULL_VALUE, bytes[1]);
-    UaSerializationException failure =
-        assertThrows(
-            UaSerializationException.class,
-            () -> jsonVariant(context, new Variant(new Integer[] {1, null})));
-    assertEquals(StatusCodes.Bad_DecodingError, failure.getStatusCode().getValue());
-    UaSerializationException booleanFailure =
-        assertThrows(
-            UaSerializationException.class,
-            () -> jsonVariant(context, new Variant(new Boolean[] {true, null})));
-    assertEquals(StatusCodes.Bad_DecodingError, booleanFailure.getStatusCode().getValue());
+  }
+
+  // Null numeric elements fail at different stages; callers must validate before persisting JSON.
+  @ParameterizedTest(name = "{0} {1}")
+  @MethodSource("jsonBooleanAndNumericNullArrays")
+  void jsonBooleanAndNumericNullElementsFailAtTheirDocumentedStage(
+      Encoding encoding, OpcUaDataType type, Object[] values, String expectedJson)
+      throws Exception {
+    var context = new DefaultEncodingContext();
+    Object control = Array.newInstance(values.getClass().getComponentType(), 1);
+    Array.set(control, 0, values[0]);
+    String controlJson = encodeJsonVariant(context, new Variant(control), encoding);
+    assertArrayValues(control, decodeJsonVariant(context, controlJson, encoding).value());
+
+    if (expectedJson == null) {
+      assertThrows(
+          NullPointerException.class,
+          () -> encodeJsonVariant(context, new Variant(values), encoding),
+          type + " rejects null during encoding");
+    } else {
+      String json = encodeJsonVariant(context, new Variant(values), encoding);
+      assertEquals(expectedJson, json);
+      UaSerializationException failure =
+          assertThrows(
+              UaSerializationException.class,
+              () -> decodeJsonVariant(context, json, encoding),
+              type + " writes null but rejects it during decoding");
+      assertEquals(StatusCodes.Bad_DecodingError, failure.getStatusCode().getValue());
+    }
+  }
+
+  static Stream<Arguments> jsonBooleanAndNumericNullArrays() {
+    return Stream.of(Encoding.values())
+        .flatMap(
+            encoding ->
+                Stream.of(
+                    Arguments.of(
+                        encoding,
+                        OpcUaDataType.Boolean,
+                        new Boolean[] {true, null},
+                        "{\"UaType\":1,\"Value\":[true,null]}"),
+                    Arguments.of(
+                        encoding,
+                        OpcUaDataType.SByte,
+                        new Byte[] {1, null},
+                        "{\"UaType\":2,\"Value\":[1,null]}"),
+                    Arguments.of(encoding, OpcUaDataType.Byte, new UByte[] {ubyte(1), null}, null),
+                    Arguments.of(
+                        encoding,
+                        OpcUaDataType.Int16,
+                        new Short[] {1, null},
+                        "{\"UaType\":4,\"Value\":[1,null]}"),
+                    Arguments.of(
+                        encoding, OpcUaDataType.UInt16, new UShort[] {ushort(1), null}, null),
+                    Arguments.of(
+                        encoding,
+                        OpcUaDataType.Int32,
+                        new Integer[] {1, null},
+                        "{\"UaType\":6,\"Value\":[1,null]}"),
+                    Arguments.of(
+                        encoding, OpcUaDataType.UInt32, new UInteger[] {uint(1), null}, null),
+                    Arguments.of(encoding, OpcUaDataType.Int64, new Long[] {1L, null}, null),
+                    Arguments.of(
+                        encoding, OpcUaDataType.UInt64, new ULong[] {ulong(1), null}, null),
+                    Arguments.of(encoding, OpcUaDataType.Float, new Float[] {1.0f, null}, null),
+                    Arguments.of(encoding, OpcUaDataType.Double, new Double[] {1.0, null}, null)));
+  }
+
+  // A Java null DateTime becomes a real timestamp, unlike the OPC UA null DateTime sentinel.
+  @ParameterizedTest
+  @EnumSource(Encoding.class)
+  void jsonNullDateTimeElementBecomesYearOneWhileNullSentinelSurvives(Encoding encoding)
+      throws Exception {
+    var context = new DefaultEncodingContext();
+    String json =
+        encodeJsonVariant(
+            context, new Variant(new DateTime[] {DateTime.NULL_VALUE, null}), encoding);
+    assertEquals(
+        "{\"UaType\":13,\"Value\":[\"1601-01-01T00:00:00Z\",\"0001-01-01T00:00:00Z\"]}", json);
+    DateTime[] decoded =
+        assertInstanceOf(DateTime[].class, decodeJsonVariant(context, json, encoding).value());
+    assertEquals(2, decoded.length);
+    assertEquals(DateTime.NULL_VALUE, decoded[0]);
+    assertTrue(decoded[0].isNull());
+    assertNotNull(decoded[1]);
+    assertFalse(decoded[1].isNull());
+    assertEquals(Instant.parse("0001-01-01T00:00:00Z"), decoded[1].getJavaInstant());
   }
 
   // Reusing an application-owned output Writer requires knowing which encoder closes it.
@@ -746,6 +834,22 @@ public class WikiEncodingGuidesTest {
       encoder.encodeVariant(null, value);
       return new OpcUaJsonDecoder(context, encoder.getOutputString()).decodeVariant(null);
     }
+  }
+
+  private static String encodeJsonVariant(EncodingContext context, Variant value, Encoding encoding)
+      throws Exception {
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.setEncoding(encoding);
+      encoder.encodeVariant(null, value);
+      return encoder.getOutputString();
+    }
+  }
+
+  private static Variant decodeJsonVariant(
+      EncodingContext context, String json, Encoding encoding) {
+    var decoder = new OpcUaJsonDecoder(context, json);
+    decoder.setEncoding(encoding);
+    return decoder.decodeVariant(null);
   }
 
   private static void assertArrayValues(Object expected, Object actual) {
