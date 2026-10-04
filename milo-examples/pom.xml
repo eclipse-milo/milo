@@ -28,6 +28,7 @@
   <modules>
     <module>client-examples</module>
     <module>server-examples</module>
+    <module>wiki-examples</module>
   </modules>
 
   <build>
