@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
 import org.eclipse.milo.opcua.sdk.server.DataItemListener;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
@@ -221,6 +222,47 @@ class DefaultSubscriptionServiceSetTransferTest {
     List<DataValue> sent = SamplingTestItems.drain(dataItem);
     assertEquals(1, sent.size());
     assertEquals(42, sent.get(0).value().value());
+    verify(newSession.getSubscriptionManager(), never()).refreshReadAccess();
+  }
+
+  /**
+   * An identity or endpoint change of the new Session that commits while the transfer checks its
+   * items may refresh the new Session before the Subscription is added to it, and the transfer's
+   * answers are for the Session as it was. The transfer refreshes the new Session again after the
+   * move, and the initial values wait for that refresh.
+   */
+  @Test
+  void transferOvertakenByAChangeOfTheNewSessionRefreshesItBeforeSendingInitialValues()
+      throws Exception {
+    MonitoredDataItem dataItem = publishedDataItem(uint(1), 42);
+    monitoredItems.put(dataItem.getId(), dataItem);
+
+    var accessEpoch = new AtomicLong();
+    when(newSession.getAccessEpoch()).thenAnswer(invocation -> accessEpoch.get());
+    when(accessController.checkReadAccess(eq(newSession), anyList()))
+        .thenAnswer(
+            invocation -> {
+              // The change commits during the check, which answers for the Session as it was.
+              accessEpoch.incrementAndGet();
+              return Map.of(dataItem.getReadValueId(), AccessResult.ALLOWED);
+            });
+    // The refresh answers for the Session as it is now.
+    SubscriptionManager newSubscriptionManager = newSession.getSubscriptionManager();
+    doAnswer(
+            invocation -> {
+              dataItem.setReadAccessResultAfterSessionChange(AccessResult.DENIED_USER_ACCESS);
+              return null;
+            })
+        .when(newSubscriptionManager)
+        .refreshReadAccess();
+
+    serviceSet.onTransferSubscriptions(context, transferRequest(true));
+
+    verify(newSubscriptionManager).refreshReadAccess();
+    assertEquals(
+        List.of(new StatusCode(StatusCodes.Bad_UserAccessDenied)),
+        SamplingTestItems.drain(dataItem).stream().map(DataValue::statusCode).toList(),
+        "the last value checked for the Session as it was is not sent");
   }
 
   // Values still queued at transfer time were sampled and checked for the old Session. An item the

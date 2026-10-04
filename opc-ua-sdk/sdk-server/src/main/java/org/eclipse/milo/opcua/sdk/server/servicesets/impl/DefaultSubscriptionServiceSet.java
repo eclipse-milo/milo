@@ -254,11 +254,14 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
 
           UInteger[] availableSequenceNumbers;
           List<DataItem> transferredDataItems;
+          boolean overtaken;
 
           // The items' read access results were checked for the old Session. Check them for the
           // new one before anything is sent to it, so an initial value below, or a value from a
           // sampler that samples its own items, is gated by an answer for the Session that
-          // receives it (Part 4 §5.13.2.1).
+          // receives it (Part 4 §5.13.2.1). The new Session's access epoch is read first, so an
+          // identity or endpoint change that commits during the check can be detected below.
+          long accessEpoch = session.getAccessEpoch();
           Optional<Map<ReadValueId, AccessResult>> checked = checkReadAccess(session, subscription);
 
           if (checked.isEmpty()) {
@@ -285,6 +288,12 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
 
             subscription.getMonitoredItems().values().forEach(item -> item.setSession(session));
 
+            // A change of the new Session that commits from here on finds the Subscription and
+            // refreshes it after this block. One that committed during the check may have run its
+            // refresh before the Subscription was added, so the answers below are for the Session
+            // as it was, and the Session is refreshed again after this block.
+            overtaken = session.getAccessEpoch() != accessEpoch;
+
             transferredDataItems =
                 subscription.getMonitoredItems().values().stream()
                     .filter(item -> item instanceof DataItem)
@@ -308,11 +317,18 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
 
             availableSequenceNumbers = subscription.getAvailableSequenceNumbers();
 
+            if (request.getSendInitialValues() && !overtaken) {
+              sendInitialValues(subscription);
+            }
+          }
+
+          if (overtaken) {
+            // Outside the block, so the AccessController is not called under the Subscription's
+            // lock. The initial values wait for answers for the Session as it is.
+            session.getSubscriptionManager().refreshReadAccess();
+
             if (request.getSendInitialValues()) {
-              subscription.getMonitoredItems().values().stream()
-                  .filter(item -> item instanceof MonitoredDataItem)
-                  .map(item -> (MonitoredDataItem) item)
-                  .forEach(MonitoredDataItem::maybeSendLastValue);
+              sendInitialValues(subscription);
             }
           }
 
@@ -401,6 +417,13 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
 
       return Optional.empty();
     }
+  }
+
+  private static void sendInitialValues(Subscription subscription) {
+    subscription.getMonitoredItems().values().stream()
+        .filter(item -> item instanceof MonitoredDataItem)
+        .map(item -> (MonitoredDataItem) item)
+        .forEach(MonitoredDataItem::maybeSendLastValue);
   }
 
   private static boolean sessionsHaveSameUser(Session s1, Session s2) {
