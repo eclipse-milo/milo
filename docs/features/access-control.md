@@ -218,9 +218,10 @@ attributes, a filter's policy, or an identity change through ActivateSession. Th
 the changes it makes itself. For an identity or endpoint change it drops the Session's cached
 answers and re-checks every data MonitoredItem of the Session before ActivateSession returns;
 for a Subscription transfer it checks the transferred items for their new Session before
-anything is sent to it; for a Session close it drops the Session's cached answers. These
-re-checks apply to every item, whoever samples it. For everything the application controls,
-commit the change first and then invalidate:
+anything is sent to it, and refuses the transfer with `Bad_InternalError` if that check throws;
+for a Session close it drops the Session's cached answers. These re-checks apply to every item,
+whoever samples it. For everything the application controls, commit the change first and then
+invalidate:
 
 ```java
 node.setUserAccessLevel(AccessLevel.toValue(AccessLevel.NONE));

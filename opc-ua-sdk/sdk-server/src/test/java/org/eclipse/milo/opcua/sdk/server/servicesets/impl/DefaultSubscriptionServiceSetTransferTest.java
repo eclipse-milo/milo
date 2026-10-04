@@ -243,6 +243,33 @@ class DefaultSubscriptionServiceSetTransferTest {
         SamplingTestItems.drain(dataItem).stream().map(DataValue::statusCode).toList());
   }
 
+  // A check that throws leaves the items with answers for the old Session only. The transfer is
+  // refused before anything moves, so the new Session gets nothing that was checked for the old
+  // one, and the Subscription and its queued values stay with the old Session.
+  @Test
+  void transferWhoseReadAccessCheckThrowsIsRefusedAndMovesNothing() throws Exception {
+    MonitoredDataItem dataItem = dataItem(uint(1), uint(10));
+    dataItem.installFilter(MonitoredDataItem.DEFAULT_FILTER);
+    dataItem.setValue(new DataValue(new Variant(1)));
+    monitoredItems.put(dataItem.getId(), dataItem);
+    when(accessController.checkReadAccess(eq(newSession), anyList()))
+        .thenThrow(new IllegalStateException("controller failed"));
+
+    TransferSubscriptionsResponse response =
+        serviceSet.onTransferSubscriptions(context, transferRequest(true));
+
+    assertEquals(
+        new StatusCode(StatusCodes.Bad_InternalError),
+        requireNonNull(response.getResults())[0].getStatusCode());
+    assertEquals(oldSession, dataItem.getSession());
+    verify(subscription, never()).setSubscriptionManager(any());
+    verify(newSession.getSubscriptionManager(), never()).addSubscription(any());
+    verify(addressSpaceManager, never()).onDataItemsTransferred(anyList());
+    assertEquals(
+        List.of(1),
+        SamplingTestItems.drain(dataItem).stream().map(value -> value.value().value()).toList());
+  }
+
   // A transfer the server refuses moves nothing, so there is nothing to report.
   @Test
   void refusedTransferReportsNothing() throws Exception {

@@ -129,6 +129,8 @@ affected items itself; the application invalidates for everything it controls.
 
 A result that is not a decision never changes an item's decision. A check that throws, a Session
 whose check failed, and `AccessResult.NODE_UNKNOWN` all leave the item's last result in place.
+TransferSubscriptions is the exception: the last results answered for the old Session, so a
+transfer whose check throws is refused with `Bad_InternalError` and the Subscription stays put.
 An item whose last result is a denial is not read, so on `NODE_UNKNOWN` it reports
 `Bad_NodeIdUnknown` once in place of the denial, still with no value, until a decision arrives.
 The

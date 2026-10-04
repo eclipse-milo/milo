@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
@@ -258,7 +259,19 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
           // new one before anything is sent to it, so an initial value below, or a value from a
           // sampler that samples its own items, is gated by an answer for the Session that
           // receives it (Part 4 §5.13.2.1).
-          Map<ReadValueId, AccessResult> readAccessResults = checkReadAccess(session, subscription);
+          Optional<Map<ReadValueId, AccessResult>> checked = checkReadAccess(session, subscription);
+
+          if (checked.isEmpty()) {
+            // Without an answer for the new Session, the items would keep enforcing the answers
+            // for the old one and send the new one values checked for the old one. Refuse this
+            // transfer before anything moves; the client can retry it or recreate the
+            // Subscription.
+            results.add(
+                new TransferResult(new StatusCode(StatusCodes.Bad_InternalError), new UInteger[0]));
+            continue;
+          }
+
+          Map<ReadValueId, AccessResult> readAccessResults = checked.get();
 
           synchronized (subscription) {
             otherSession
@@ -359,10 +372,11 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
 
   /**
    * Check the read access of {@code subscription}'s data items for {@code session}, the Session it
-   * is being transferred to. A check that throws is logged and answers nothing, which leaves each
-   * item's result as it was until something refreshes it.
+   * is being transferred to.
+   *
+   * @return the results, or empty if the check threw, which is logged.
    */
-  private Map<ReadValueId, AccessResult> checkReadAccess(
+  private Optional<Map<ReadValueId, AccessResult>> checkReadAccess(
       Session session, Subscription subscription) {
 
     List<ReadValueId> readValueIds =
@@ -373,11 +387,11 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
             .toList();
 
     if (readValueIds.isEmpty()) {
-      return Map.of();
+      return Optional.of(Map.of());
     }
 
     try {
-      return server.getAccessController().checkReadAccess(session, readValueIds);
+      return Optional.of(server.getAccessController().checkReadAccess(session, readValueIds));
     } catch (Throwable t) {
       logger.warn(
           "Read access check failed for Subscription {} transferred to Session {}",
@@ -385,7 +399,7 @@ public class DefaultSubscriptionServiceSet implements SubscriptionServiceSet {
           session.getSessionId(),
           t);
 
-      return Map.of();
+      return Optional.empty();
     }
   }
 
