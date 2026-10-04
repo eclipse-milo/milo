@@ -29,7 +29,7 @@ built-in file writer (`WiresharkKeyLogWriter`) that produces key log files Wires
 consume directly. The listener is generic — applications can implement
 `SecurityKeysListener` to route keys anywhere (logging framework, remote service, etc.),
 but the common case is writing to a file and loading it into Wireshark via
-**Edit > Preferences > Protocols > OPC UA > Key log file**.
+the `opcua.debug_file` preference ("OPCUA debug file" in 4.4.19). Also set `opcua.tcp.port` to the server listening port; Decode As alone does not establish traffic direction for key selection.
 
 Both the client and server SDK support the feature. Each side sees its own key derivation
 event, so a key log file from either the client or the server is sufficient for
@@ -144,9 +144,9 @@ writer.close();
 
 1. Capture OPC UA traffic (e.g., with tcpdump or Wireshark itself).
 2. Open the capture in Wireshark 4.4+.
-3. Go to **Edit > Preferences > Protocols > OPC UA**.
-4. Set **Key log file** to the path of the key log file.
-5. Encrypted OPC UA messages are now decrypted in the packet list.
+3. In TShark 4.4.19, set `opcua.debug_file` to the key file and `opcua.tcp.port` to the server listening port.
+4. Verify that service requests and their matching responses decrypt and have the expected statuses. OpenSecureChannel frames remain encrypted.
+5. Treat other analyzer versions and security policies as requiring their own validation. See the Wiki diagnostics guide for the executed capture procedure.
 
 A key log file from either the client or the server is sufficient — both contain the same
 symmetric key material for both directions.

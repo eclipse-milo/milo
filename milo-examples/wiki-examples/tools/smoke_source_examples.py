@@ -19,6 +19,11 @@ from pathlib import Path
 
 CASES = {
     "ReadExample": {"StartTime=": 1, "State=Running": 1, "CurrentTime=": 1},
+    "BrowseNodeExample": {"Node=Objects": 1, "Node=Server": 1},
+    "TranslateBrowsePathExample": {"Status=StatusCode[name=Good": 1, "TargetId=": 1},
+    "ReadNodeExample": {"ServerArray=": 1, "NamespaceArray=": 1, "ServerStatus.State=Running": 1},
+    "MethodExample2": {"Input arguments:": 1, "Output arguments:": 1, "Output values:": 1, "4.0": 1},
+    "ReverseConnectSharedListenerExample": {"State=Running": 2, "CurrentTime=": 2},
     "BrowseExample": {"Node=Objects": 1, "Node=Server": 1},
     "WriteExample": {"Wrote '": 10},
     "SubscriptionDataExample": {"subscription onDataReceived:": 2,
@@ -48,9 +53,13 @@ def main():
     classpath = str(module / "target/classes") + ":" + args.classpath.read_text().strip()
     results = []
     for name in args.example or CASES:
-        port = 4840 if name == "KeyLogExample" else 12686
-        with socket.socket() as probe:
-            probe.bind(("127.0.0.1", port))
+        ports = ([4840] if name == "KeyLogExample" else
+                 [12686, 12687, 48060] if name == "ReverseConnectSharedListenerExample" else
+                 [12686, 48060] if name == "ReverseConnectExample" else [12686])
+        for port in ports:
+            with socket.socket() as probe:
+                probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                probe.bind(("127.0.0.1", port))
         with tempfile.TemporaryDirectory(prefix="milo-wiki-example-") as temp:
             command = ["mise", "exec", "--", "java", "-ea", "-Djava.io.tmpdir=" + temp,
                        "-cp", classpath, "org.eclipse.milo.examples.client." + name]
@@ -66,13 +75,14 @@ def main():
             checks = {text: output.count(text) >= count for text, count in CASES[name].items()}
             checks["no logged ERROR"] = re.search(r"\bERROR\b", output) is None
             checks["process exited normally"] = code == 0 and not timed_out
-            with socket.socket() as probe:
-                probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                try:
-                    probe.bind(("127.0.0.1", port))
-                    checks["listening port released"] = True
-                except OSError:
-                    checks["listening port released"] = False
+            for port in ports:
+                with socket.socket() as probe:
+                    probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    try:
+                        probe.bind(("127.0.0.1", port))
+                        checks[f"listening port {port} released"] = True
+                    except OSError:
+                        checks[f"listening port {port} released"] = False
             if name == "KeyLogExample":
                 # Key lines contain only record labels and generated session material.
                 output = re.sub(r"(?m)^.*(?:CLIENT_IV|SERVER_IV|CLIENT_KEY|SERVER_KEY|"

@@ -19,6 +19,7 @@ import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.gds.testing.FakeGdsNamespace.MethodAccess;
+import org.eclipse.milo.opcua.sdk.client.methods.UaMethodException;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -61,16 +62,20 @@ class WikiFeatureGdsTest extends AbstractGdsClientTest {
     var file = gds.getApplicationGroupTrustList();
     file.setTrustList(
         new TrustListDataType(
-            uint(TrustListMasks.All.getValue()),
+            uint(TrustListMasks.TrustedCertificates.getValue()),
             new ByteString[] {ByteString.of(testServer.getClientCertificate().getEncoded())},
             new ByteString[0],
             new ByteString[0],
             new ByteString[0]));
     var trust = new MemoryTrustListManager();
+    trust.addTrustedCertificate(gds.getCaCertificate());
+    trust.addIssuerCertificate(gds.getCaCertificate());
     pullTrustList(client, applicationId, gds.defaultApplicationGroupId(), trust);
     assertEquals(1, trust.getSnapshot().trustedCertificates().size());
     assertEquals(
         testServer.getClientCertificate(), trust.getSnapshot().trustedCertificates().get(0));
+    assertEquals(
+        java.util.List.of(gds.getCaCertificate()), trust.getSnapshot().issuerCertificates());
     assertEquals(0, file.openHandles());
     file.setBody(new byte[] {1, 2, 3});
     UaException malformed =
@@ -78,7 +83,11 @@ class WikiFeatureGdsTest extends AbstractGdsClientTest {
             UaException.class,
             () -> pullTrustList(client, applicationId, gds.defaultApplicationGroupId(), trust));
     assertEquals(StatusCodes.Bad_DecodingError, malformed.getStatusCode().value());
-    assertEquals(1, trust.getSnapshot().trustedCertificates().size());
+    assertEquals(
+        java.util.List.of(testServer.getClientCertificate()),
+        trust.getSnapshot().trustedCertificates());
+    assertEquals(
+        java.util.List.of(gds.getCaCertificate()), trust.getSnapshot().issuerCertificates());
     assertEquals(0, file.openHandles());
   }
 
@@ -88,20 +97,6 @@ class WikiFeatureGdsTest extends AbstractGdsClientTest {
     gds.setPollsBeforeIssued(1);
     NodeId applicationId = findOrRegister(client, clientRecord());
     KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
-    NodeId requestId =
-        gdsClient.startSigningRequest(
-            applicationId,
-            gds.defaultApplicationGroupId(),
-            NodeIds.RsaSha256ApplicationCertificateType,
-            csr(keyPair, APPLICATION_URI));
-    UaException pending =
-        assertThrows(UaException.class, () -> gdsClient.finishRequest(applicationId, requestId));
-    assertEquals(StatusCodes.Bad_NothingToDo, pending.getStatusCode().value());
-    GdsClient.FinishRequestResult issued = gdsClient.finishRequest(applicationId, requestId);
-    X509Certificate certificate =
-        CertificateUtil.decodeCertificate(issued.certificate().bytesOrEmpty());
-    GdsClient.verifyIssuedCertificate(certificate, keyPair.getPublic(), APPLICATION_URI);
-    certificate.verify(gds.getCaCertificate().getPublicKey());
     var trust = new MemoryTrustListManager();
     var quarantine = new MemoryCertificateQuarantine();
     var group =
@@ -110,10 +105,16 @@ class WikiFeatureGdsTest extends AbstractGdsClientTest {
             new MemoryCertificateStore(),
             quarantine,
             new DefaultClientCertificateValidator(trust, quarantine));
-    group.updateCertificate(
-        NodeIds.RsaSha256ApplicationCertificateType,
-        keyPair,
-        new X509Certificate[] {certificate, gds.getCaCertificate()});
+    X509Certificate certificate =
+        requestAndInstall(
+            gdsClient,
+            applicationId,
+            gds.defaultApplicationGroupId(),
+            keyPair,
+            APPLICATION_URI,
+            csr(keyPair, APPLICATION_URI),
+            gds.getCaCertificate(),
+            group);
     assertEquals(1, group.getCertificateIdentities().size());
     assertEquals(certificate, group.getCertificateIdentities().get(0).certificate());
     KeyPair installedKeyPair = group.getCertificateIdentities().get(0).keyPair();
@@ -123,6 +124,42 @@ class WikiFeatureGdsTest extends AbstractGdsClientTest {
     assertEquals(1, gds.getStartSigningRequestCallCount());
     assertEquals(2, gds.getFinishRequestCallCount());
   }
+
+  // snippet:gds_signing:start
+  static X509Certificate requestAndInstall(
+      GdsClient gds,
+      NodeId applicationId,
+      NodeId groupId,
+      KeyPair keyPair,
+      String applicationUri,
+      ByteString csr,
+      X509Certificate issuingCa,
+      DefaultCertificateGroup group)
+      throws Exception {
+    NodeId requestType =
+        gds.resolveCertificateTypeId(groupId, NodeIds.RsaSha256ApplicationCertificateType);
+    NodeId requestId = gds.startSigningRequest(applicationId, groupId, requestType, csr);
+    GdsClient.FinishRequestResult issued;
+    try {
+      issued = gds.finishRequest(applicationId, requestId);
+    } catch (UaMethodException pending) {
+      if (pending.getStatusCode().value() != StatusCodes.Bad_NothingToDo) throw pending;
+      // This bounded local example retries once. Production polling needs scheduling/persistence.
+      issued = gds.finishRequest(applicationId, requestId);
+    }
+    X509Certificate certificate =
+        CertificateUtil.decodeCertificate(issued.certificate().bytesOrEmpty());
+    GdsClient.verifyIssuedCertificate(certificate, keyPair.getPublic(), applicationUri);
+    certificate.checkValidity();
+    certificate.verify(issuingCa.getPublicKey());
+    group.updateCertificate(
+        NodeIds.RsaSha256ApplicationCertificateType,
+        keyPair,
+        new X509Certificate[] {certificate, issuingCa});
+    return certificate;
+  }
+
+  // snippet:gds_signing:end
 
   // snippet:gds_registration:start
   static NodeId findOrRegister(OpcUaClient client, ApplicationRecordDataType record)

@@ -51,6 +51,9 @@ public class WikiServerLifecycleTest {
     server.addLifecycleParticipant(namespace);
     try {
       server.startup().get(10, TimeUnit.SECONDS);
+      if (server.getBoundEndpoints().isEmpty()) {
+        throw new IllegalStateException("server has no bound endpoint");
+      }
       // Application work runs here while the server owns the namespace lifecycle.
     } finally {
       server.shutdown().get(10, TimeUnit.SECONDS);

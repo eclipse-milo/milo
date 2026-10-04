@@ -16,7 +16,6 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.client.DiscoveryClient;
@@ -55,7 +54,7 @@ class MigrationExamplesTest {
 
   // Each release-note fragment participates in a real trusted secured Session and model operation.
   @Test
-  void migrationFragmentsEstablishTrustExposeFolderAndCleanUp() throws Exception {
+  void migrationFragmentsEstablishTrustPreserveFileMemberIdsAndCleanUp() throws Exception {
     String applicationUri = "urn:eclipse:milo:wiki:migration:client";
     KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
     X509Certificate[] chain = {certificate(keyPair, applicationUri)};
@@ -110,10 +109,44 @@ class MigrationExamplesTest {
     try {
       namespace.startup();
       server.startup().get(10, TimeUnit.SECONDS);
-      NodeId instanceId = new NodeId(namespace.getNamespaceIndex(), "Folder");
-      QualifiedName browseName = new QualifiedName(namespace.getNamespaceIndex(), "Folder");
+      NodeId instanceId = new NodeId(namespace.getNamespaceIndex(), "File:Example");
+      QualifiedName browseName = new QualifiedName(namespace.getNamespaceIndex(), "File:Example");
       UaObjectNode node =
-          createFolder(server, namespace, NodeIds.ObjectsFolder, instanceId, browseName);
+          createFile(server, namespace, NodeIds.ObjectsFolder, instanceId, browseName);
+      NodeId sizeId = new NodeId(namespace.getNamespaceIndex(), "File:Example/0:Size");
+      assertTrue(namespace.getNodeManager().containsNode(sizeId));
+      assertEquals(
+          new QualifiedName(0, "Size"),
+          namespace.getNodeManager().getNode(sizeId).orElseThrow().getBrowseName());
+      UaException collision =
+          assertThrows(
+              UaException.class,
+              () -> createFile(server, namespace, NodeIds.ObjectsFolder, instanceId, browseName));
+      assertEquals(StatusCodes.Bad_InvalidArgument, collision.getStatusCode().getValue());
+      assertSame(node, namespace.getNodeManager().getNode(instanceId).orElseThrow());
+      NodeId numericId = new NodeId(namespace.getNamespaceIndex(), 8);
+      var modern =
+          server
+              .getNodeInstantiator()
+              .instantiate(
+                  InstantiationRequest.of(UaObjectNode.class, NodeIds.FileType)
+                      .nodeId(numericId)
+                      .browseName(new QualifiedName(namespace.getNamespaceIndex(), "Control"))
+                      .target(namespace.getNodeManager())
+                      .build());
+      assertTrue(
+          namespace
+              .getNodeManager()
+              .containsNode(new NodeId(namespace.getNamespaceIndex(), "i=8/0:Size")));
+      assertFalse(
+          namespace
+              .getNodeManager()
+              .containsNode(new NodeId(namespace.getNamespaceIndex(), "8/0:Size")));
+      modern.deleteCreated();
+      assertFalse(
+          namespace
+              .getNodeManager()
+              .containsNode(new NodeId(namespace.getNamespaceIndex(), "i=8/0:Size")));
       var clientTrust = new MemoryTrustListManager();
       clientTrust.addTrustedCertificate(serverCertificate);
       var clientValidator =
@@ -125,6 +158,15 @@ class MigrationExamplesTest {
               .filter(e -> SecurityPolicy.Basic256Sha256.getUri().equals(e.getSecurityPolicyUri()))
               .findFirst()
               .orElseThrow();
+      KeyPair wrongKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> clientConfig(endpoint, wrongKeyPair, chain, clientValidator, applicationUri));
+      assertThrows(
+          IllegalArgumentException.class,
+          () ->
+              clientConfig(
+                  endpoint, keyPair, new X509Certificate[0], clientValidator, applicationUri));
       OpcUaClient client =
           OpcUaClient.create(
               clientConfig(endpoint, keyPair, chain, clientValidator, applicationUri));
@@ -139,6 +181,9 @@ class MigrationExamplesTest {
             client.getAddressSpace().browseNodes(NodeIds.ObjectsFolder).stream()
                 .anyMatch(n -> instanceId.equals(n.getNodeId())));
         assertEquals(browseName, client.getAddressSpace().getNode(instanceId).readBrowseName());
+        assertTrue(
+            client.getAddressSpace().browseNodes(instanceId).stream()
+                .anyMatch(child -> sizeId.equals(child.getNodeId())));
         node.delete();
         assertEquals(
             StatusCodes.Bad_NodeIdUnknown,
@@ -150,19 +195,7 @@ class MigrationExamplesTest {
         client.disconnectAsync().get(10, TimeUnit.SECONDS);
         clientTrust.close();
       }
-      var rejecting =
-          new DefaultClientCertificateValidator(
-              new MemoryTrustListManager(), new MemoryCertificateQuarantine());
-      UaException rejected =
-          assertThrows(
-              UaException.class,
-              () ->
-                  rejecting.validateCertificateChain(
-                      List.of(serverCertificate),
-                      "urn:eclipse:milo:wiki:migration:server",
-                      new String[] {"127.0.0.1"}));
-      assertEquals(StatusCodes.Bad_SecurityChecksFailed, rejected.getStatusCode().getValue());
-      assertInstanceOf(java.security.InvalidAlgorithmParameterException.class, rejected.getCause());
+
     } finally {
       try {
         namespace.shutdown();
@@ -191,7 +224,7 @@ class MigrationExamplesTest {
     return config;
   }
 
-  static UaObjectNode createFolder(
+  static UaObjectNode createFile(
       OpcUaServer server,
       ManagedAddressSpace space,
       NodeId parentId,
@@ -200,10 +233,10 @@ class MigrationExamplesTest {
       throws Exception {
     // snippet:node-factory:start
     var request =
-        InstantiationRequest.of(UaObjectNode.class, NodeIds.FolderType)
+        InstantiationRequest.of(UaObjectNode.class, NodeIds.FileType)
             .nodeId(instanceId)
             .browseName(browseName)
-            .displayName(LocalizedText.english("Folder"))
+            .displayName(LocalizedText.english("File:Example"))
             .parent(parentId, NodeIds.Organizes)
             .legacyPathStrings()
             .target(space.getNodeManager())

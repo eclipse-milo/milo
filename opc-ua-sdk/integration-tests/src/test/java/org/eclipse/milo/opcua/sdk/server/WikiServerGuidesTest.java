@@ -10,19 +10,23 @@
 
 package org.eclipse.milo.opcua.sdk.server;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.sdk.client.DiscoveryClient;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaMonitoredItem;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
@@ -61,12 +65,16 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
+import org.eclipse.milo.opcua.stack.core.types.structured.BrowseDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EventFilter;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.ViewDescription;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
@@ -94,6 +102,12 @@ public class WikiServerGuidesTest extends AbstractClientServerTest {
         client.readValue(0, TimestampsToReturn.Both, namespace.temperature.getNodeId());
     assertTrue(value.statusCode().isGood());
     assertEquals(21.5, value.value().value());
+    assertTrue(
+        browse(NodeIds.ObjectsFolder, NodeIds.Organizes).stream()
+            .anyMatch(r -> r.getNodeId().equalTo(namespace.temperature.getNodeId())));
+    assertTrue(
+        browse(namespace.temperature.getNodeId(), NodeIds.HasTypeDefinition).stream()
+            .anyMatch(r -> r.getNodeId().equalTo(NodeIds.BaseDataVariableType)));
     assertEquals(
         StatusCodes.Bad_NodeIdUnknown,
         client
@@ -116,20 +130,40 @@ public class WikiServerGuidesTest extends AbstractClientServerTest {
                     AttributeFilterContext ctx, AttributeId attributeId, Object value)
                     throws UaException {
                   if (attributeId == AttributeId.Value) {
-                    double setpoint = (Double) ((DataValue) value).value().value();
+                    if (!(((DataValue) value).value().value() instanceof Double setpoint)) {
+                      throw new UaException(StatusCodes.Bad_TypeMismatch);
+                    }
                     if (!Double.isFinite(setpoint) || setpoint < 0.0 || setpoint > 100.0) {
                       throw new UaException(StatusCodes.Bad_OutOfRange);
                     }
                   }
-                  ctx.setAttribute(attributeId, value);
+                  ctx.writeAttribute(attributeId, value);
                 }
               });
       // wiki:data-filter:end
+      var forwardedWrites = new AtomicInteger();
+      node.getFilterChain()
+          .addLast(
+              new AttributeFilter() {
+                @Override
+                public void writeAttribute(
+                    AttributeFilterContext ctx, AttributeId attributeId, Object value)
+                    throws UaException {
+                  if (attributeId == AttributeId.Value) {
+                    forwardedWrites.incrementAndGet();
+                    if (Double.valueOf(37.0).equals(((DataValue) value).value().value())) {
+                      throw new UaException(StatusCodes.Bad_WriteNotSupported);
+                    }
+                  }
+                  ctx.writeAttribute(attributeId, value);
+                }
+              });
       assertTrue(
           client
               .writeValues(List.of(node.getNodeId()), List.of(new DataValue(new Variant(35.0))))
               .get(0)
               .isGood());
+      assertEquals(1, forwardedWrites.get(), "the next write filter must run");
       assertEquals(
           StatusCodes.Bad_OutOfRange,
           client
@@ -144,6 +178,26 @@ public class WikiServerGuidesTest extends AbstractClientServerTest {
               .getValue());
       assertEquals(
           35.0, client.readValue(0, TimestampsToReturn.Neither, node.getNodeId()).value().value());
+      assertEquals(1, forwardedWrites.get(), "rejected values must not reach later filters");
+      assertEquals(
+          StatusCodes.Bad_WriteNotSupported,
+          client
+              .writeValues(List.of(node.getNodeId()), List.of(new DataValue(new Variant(37.0))))
+              .get(0)
+              .getValue());
+      assertEquals(
+          35.0, client.readValue(0, TimestampsToReturn.Neither, node.getNodeId()).value().value());
+      DateTime suppliedTime = new DateTime(1_700_000_000_000L);
+      assertTrue(
+          client
+              .writeValues(
+                  List.of(node.getNodeId()),
+                  List.of(new DataValue(new Variant(35.0), StatusCode.BAD, suppliedTime)))
+              .get(0)
+              .isGood());
+      DataValue suppliedMetadata = client.readValue(0, TimestampsToReturn.Both, node.getNodeId());
+      assertEquals(StatusCode.BAD, suppliedMetadata.statusCode());
+      assertEquals(suppliedTime, suppliedMetadata.sourceTime());
     } finally {
       node.delete();
     }
@@ -159,15 +213,24 @@ public class WikiServerGuidesTest extends AbstractClientServerTest {
     try {
       var values = new LinkedBlockingQueue<DataValue>();
       OpcUaMonitoredItem item = OpcUaMonitoredItem.newDataItem(node.getNodeId());
-      item.setSamplingInterval(120.0);
+      item.setSamplingInterval(50.0);
       item.setDataValueListener((i, value) -> values.add(value));
       subscription.addMonitoredItem(item);
       subscription.synchronizeMonitoredItems();
       assertEquals(StatusCode.GOOD, item.getCreateResult().orElseThrow());
-      assertEquals(125.0, item.getRevisedSamplingInterval().orElseThrow());
+      assertEquals(100.0, item.getRevisedSamplingInterval().orElseThrow());
       DataValue initial = values.poll(5, TimeUnit.SECONDS);
       assertNotNull(initial);
       assertEquals(42.0, initial.value().value());
+      node.setUserAccessLevel(AccessLevel.toValue(AccessLevel.NONE));
+      assertEquals(
+          StatusCodes.Bad_UserAccessDenied,
+          client
+              .readValue(0, TimestampsToReturn.Neither, node.getNodeId())
+              .statusCode()
+              .getValue());
+      assertTrue(server.getAccessControlManager().getReadAccessCache().size() > 0);
+      assertNull(values.poll(1, TimeUnit.SECONDS), "cached grant persists before invalidation");
       // wiki:access-revoke:start
       node.setUserAccessLevel(AccessLevel.toValue(AccessLevel.NONE));
       server.getAccessControlManager().invalidateReadAccess(node.getNodeId());
@@ -183,6 +246,9 @@ public class WikiServerGuidesTest extends AbstractClientServerTest {
               .statusCode()
               .getValue());
       node.setUserAccessLevel(AccessLevel.toValue(AccessLevel.READ_WRITE));
+      assertTrue(
+          client.readValue(0, TimestampsToReturn.Neither, node.getNodeId()).statusCode().isGood());
+      assertNull(values.poll(1, TimeUnit.SECONDS), "cached denial persists before invalidation");
       server.getAccessControlManager().invalidateReadAccess(node.getNodeId());
       DataValue restored = values.poll(5, TimeUnit.SECONDS);
       assertNotNull(restored);
@@ -249,6 +315,9 @@ public class WikiServerGuidesTest extends AbstractClientServerTest {
     InstantiationResult<UaObjectNode> result = server.getNodeInstantiator().instantiate(request);
     // wiki:instantiate:end
     try {
+      assertTrue(
+          browse(NodeIds.ObjectsFolder, NodeIds.Organizes).stream()
+              .anyMatch(r -> r.getNodeId().equalTo(folderId)));
       assertEquals(
           LocalizedText.english("Devices"),
           client.getAddressSpace().getNode(folderId).readDisplayName());
@@ -257,6 +326,9 @@ public class WikiServerGuidesTest extends AbstractClientServerTest {
       result.deleteCreated();
     }
     assertTrue(nodeManager.getNode(folderId).isEmpty());
+    assertFalse(
+        browse(NodeIds.ObjectsFolder, NodeIds.Organizes).stream()
+            .anyMatch(r -> r.getNodeId().equalTo(folderId)));
     assertTrue(nodeManager.getNode(namespace.temperature.getNodeId()).isPresent());
   }
 
@@ -280,7 +352,6 @@ public class WikiServerGuidesTest extends AbstractClientServerTest {
       try {
         event.setEventId(
             ByteString.of(UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8)));
-        event.setEventType(NodeIds.BaseEventType);
         event.setSourceNode(sourceId);
         event.setSourceName("Temperature");
         event.setTime(DateTime.now());
@@ -317,6 +388,15 @@ public class WikiServerGuidesTest extends AbstractClientServerTest {
             .orElseThrow();
     NodeId alarmId = namespace.id("HighTemperature");
     QualifiedName alarmName = namespace.name("HighTemperature");
+    var subscription = new OpcUaSubscription(client);
+    subscription.create();
+    EventFilter filter =
+        EventTestSupport.conditionNameFilter(
+            "HighTemperature",
+            EventTestSupport.eventField(NodeIds.BaseEventType, "EventId"),
+            EventTestSupport.eventField(NodeIds.AlarmConditionType, "ActiveState", "Id"),
+            EventTestSupport.eventField(NodeIds.ConditionType, "Retain"));
+    List<Variant[]> events = EventTestSupport.monitorEvents(subscription, NodeIds.Server, filter);
     // wiki:alarm:start
     ExclusiveLimitAlarm alarm =
         ExclusiveLimitAlarm.create(
@@ -331,12 +411,26 @@ public class WikiServerGuidesTest extends AbstractClientServerTest {
     alarm.evaluate(85.0);
     // wiki:alarm:end
     try {
+      Variant[] active =
+          EventTestSupport.awaitEvent(
+              events,
+              "active retained alarm",
+              fields ->
+                  Boolean.TRUE.equals(fields[1].value()) && Boolean.TRUE.equals(fields[2].value()));
+      assertTrue(active[0].value() instanceof ByteString);
       assertTrue(alarm.isActive());
       assertFalse(alarm.isAcked());
       assertTrue(alarm.isRetained());
       alarm.evaluate(70.0);
       assertFalse(alarm.isActive());
       assertTrue(alarm.isRetained());
+      Variant[] cleared =
+          EventTestSupport.awaitEvent(
+              events,
+              "cleared unacknowledged alarm",
+              fields ->
+                  Boolean.FALSE.equals(fields[1].value())
+                      && Boolean.TRUE.equals(fields[2].value()));
       CallMethodResult invalid =
           call(
               alarm.getConditionId(),
@@ -348,14 +442,20 @@ public class WikiServerGuidesTest extends AbstractClientServerTest {
           call(
               alarm.getConditionId(),
               NodeIds.AcknowledgeableConditionType_Acknowledge,
-              new Variant(alarm.currentBranch().getLastEventId()),
+              cleared[0],
               new Variant(LocalizedText.NULL_VALUE));
       assertEquals(StatusCode.GOOD, acknowledged.getStatusCode());
       assertTrue(alarm.isAcked());
       assertFalse(alarm.isRetained());
+      EventTestSupport.awaitEvent(
+          events,
+          "acknowledged cleared alarm",
+          fields ->
+              Boolean.FALSE.equals(fields[1].value()) && Boolean.FALSE.equals(fields[2].value()));
     } finally {
       server.getConditionManager().unregister(alarm);
       alarm.getNode().delete();
+      subscription.delete();
     }
   }
 
@@ -405,6 +505,20 @@ public class WikiServerGuidesTest extends AbstractClientServerTest {
   private CallMethodResult call(NodeId objectId, NodeId methodId, Variant... inputs)
       throws Exception {
     return client.call(List.of(new CallMethodRequest(objectId, methodId, inputs))).getResults()[0];
+  }
+
+  private List<ReferenceDescription> browse(NodeId nodeId, NodeId referenceType) throws Exception {
+    var result =
+        client.browse(
+                new ViewDescription(NodeId.NULL_VALUE, DateTime.MIN_VALUE, uint(0)),
+                uint(0),
+                List.of(
+                    new BrowseDescription(
+                        nodeId, BrowseDirection.Forward, referenceType, false, uint(0), uint(63))))
+            .getResults()[0];
+    assertTrue(result.getStatusCode().isGood());
+    assertTrue(result.getContinuationPoint().isNullOrEmpty());
+    return Arrays.asList(result.getReferences());
   }
 
   // wiki:method:start
