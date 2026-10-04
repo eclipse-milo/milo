@@ -33,8 +33,8 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Call {@link #invalidateReadAccess(ReadAccessScope)} after committing a change that can alter a
  * read access answer: a role mapping, a per-Session attribute filter, a Node removed and re-added
- * under the same NodeId. The SDK calls it for a Session whose identity or endpoint changed, and
- * drops a closed Session's entries itself.
+ * under the same NodeId. The SDK calls it for a Session whose identity or endpoint changed and for
+ * a transferred Subscription, and drops a closed Session's entries itself.
  *
  * <pre>{@code
  * node.setUserAccessLevel(AccessLevel.toValue(AccessLevel.NONE));
