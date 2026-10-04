@@ -15,9 +15,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -55,7 +57,7 @@ class FirstProgramsTest {
 
   // The first two tutorials must work together, expose a browsable read-only Variable, and stop.
   @Test
-  void firstProgramsReadBrowseRejectWritesAndReleaseTheirPort() throws Exception {
+  void firstProgramsReadBrowseRejectWritesAndStopListening() throws Exception {
     int port;
     try (var reservation = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))) {
       port = reservation.getLocalPort();
@@ -96,10 +98,13 @@ class FirstProgramsTest {
     } finally {
       server.shutdown().get(10, TimeUnit.SECONDS);
     }
-    try (var rebound = new ServerSocket()) {
-      rebound.setReuseAddress(true);
-      rebound.bind(new InetSocketAddress("127.0.0.1", port));
-      assertEquals(port, rebound.getLocalPort());
+    // Test listener closure without requiring immediate rebinding after connected TCP traffic.
+    var address = new InetSocketAddress("127.0.0.1", port);
+    try (var probe = new Socket()) {
+      assertThrows(
+          ConnectException.class,
+          () -> probe.connect(address, 1_000),
+          "Tutorial listener still accepts connections at " + address);
     }
   }
 
