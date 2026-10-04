@@ -10,108 +10,77 @@
 
 package org.eclipse.milo.opcua.sdk.server.util;
 
-import static org.eclipse.milo.opcua.sdk.core.util.GroupMapCollate.groupMapCollate;
-
-import com.google.common.math.DoubleMath;
-import java.math.RoundingMode;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.server.AbstractLifecycle;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace;
-import org.eclipse.milo.opcua.sdk.server.AddressSpace.ReadContext;
+import org.eclipse.milo.opcua.sdk.server.ManagedAddressSpace;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
-import org.eclipse.milo.opcua.stack.core.AttributeId;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
-import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
-import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
-import org.eclipse.milo.opcua.stack.core.util.ExecutionQueue;
+import org.eclipse.milo.opcua.sdk.server.sampling.AddressSpaceSamplingGroup;
+import org.eclipse.milo.opcua.sdk.server.sampling.SamplingManager;
+import org.eclipse.milo.opcua.sdk.server.sampling.SamplingManagerConfig;
 
+/**
+ * Samples data MonitoredItems on behalf of an {@link AddressSpace} by reading them from it at each
+ * item's sampling interval.
+ *
+ * <p>An {@link AddressSpace} that does not have its own sampling mechanism forwards its {@code
+ * onDataItemsCreated}, {@code onDataItemsModified}, {@code onDataItemsDeleted}, and {@code
+ * onMonitoringModeChanged} callbacks to an instance of this class and adds it to its lifecycle.
+ *
+ * <p>This is an adapter over a {@link SamplingManager} with {@link AddressSpaceSamplingGroup}s and
+ * the default {@link SamplingManagerConfig} without bucketing: every sampling cycle refreshes each
+ * item's read access result for its current Session and then reads the items the Session may read,
+ * as the framework does for any group. Each item is sampled at its own sampling interval rounded up
+ * to a whole millisecond, as before this class became an adapter, because that is the interval the
+ * AddressSpace reported to the client.
+ *
+ * @deprecated {@link ManagedAddressSpace} forwards the four callbacks to a {@link SamplingManager}
+ *     of its own, so a subclass that used this class need only delete its forwarding. An
+ *     AddressSpace that is not a {@code ManagedAddressSpace} creates a {@link SamplingManager} with
+ *     an {@link AddressSpaceSamplingGroup} factory directly, which also gives it the configuration
+ *     this class does not expose.
+ */
+@Deprecated
 public class SubscriptionModel extends AbstractLifecycle {
 
-  private final Set<DataItem> itemSet = ConcurrentHashMap.newKeySet();
-
-  private final List<ScheduledUpdate> schedule = new CopyOnWriteArrayList<>();
-
-  private final ExecutorService executor;
-  private final ScheduledExecutorService scheduler;
-  private final ExecutionQueue executionQueue;
-
-  private final OpcUaServer server;
-  private final AddressSpace addressSpace;
+  private final SamplingManager samplingManager;
 
   public SubscriptionModel(OpcUaServer server, AddressSpace addressSpace) {
-    this.server = server;
-
-    this.addressSpace = addressSpace;
-
-    executor = server.getExecutorService();
-    scheduler = server.getScheduledExecutorService();
-
-    executionQueue = new ExecutionQueue(executor);
+    // An AddressSpace that forwards here revises intervals with its own onCreateDataItem, which
+    // knows nothing of buckets, so bucketing would sample at an interval the client was not told.
+    samplingManager =
+        new SamplingManager(
+            server,
+            (s, intervalMillis) -> new AddressSpaceSamplingGroup(s, addressSpace, intervalMillis),
+            SamplingManagerConfig.defaults().withBucketMillis(0));
   }
 
   @Override
-  protected void onStartup() {}
+  protected void onStartup() {
+    samplingManager.startup();
+  }
 
   @Override
   protected void onShutdown() {
-    executionQueue.submit(
-        () -> {
-          schedule.forEach(ScheduledUpdate::cancel);
-          schedule.clear();
-          itemSet.clear();
-        });
+    samplingManager.shutdown();
   }
 
   public void onDataItemsCreated(List<DataItem> items) {
-    if (isNotRunning()) {
-      throw new IllegalArgumentException("not running");
-    }
-
-    executionQueue.submit(
-        () -> {
-          itemSet.addAll(items);
-          reschedule();
-        });
+    samplingManager.onDataItemsCreated(items);
   }
 
   public void onDataItemsModified(List<DataItem> items) {
-    if (isNotRunning()) {
-      throw new IllegalArgumentException("not running");
-    }
-
-    executionQueue.submit(this::reschedule);
+    samplingManager.onDataItemsModified(items);
   }
 
   public void onDataItemsDeleted(List<DataItem> items) {
-    if (isNotRunning()) {
-      throw new IllegalArgumentException("not running");
-    }
-
-    executionQueue.submit(
-        () -> {
-          items.forEach(itemSet::remove);
-          reschedule();
-        });
+    samplingManager.onDataItemsDeleted(items);
   }
 
   public void onMonitoringModeChanged(List<MonitoredItem> items) {
-    if (isNotRunning()) {
-      throw new IllegalArgumentException("not running");
-    }
-
-    executionQueue.submit(this::reschedule);
+    samplingManager.onMonitoringModeChanged(items);
   }
 
   /**
@@ -120,101 +89,15 @@ public class SubscriptionModel extends AbstractLifecycle {
    * @return a copy of the {@link DataItem}s in this {@link SubscriptionModel}.
    */
   public List<DataItem> getDataItems() {
-    return List.copyOf(itemSet);
+    return samplingManager.getDataItems();
   }
 
-  private void reschedule() {
-    Map<Double, List<DataItem>> bySamplingInterval =
-        itemSet.stream()
-            .filter(DataItem::isSamplingEnabled)
-            .collect(Collectors.groupingBy(DataItem::getSamplingInterval));
-
-    List<ScheduledUpdate> updates =
-        bySamplingInterval.keySet().stream()
-            .map(
-                samplingInterval -> {
-                  List<DataItem> items = bySamplingInterval.get(samplingInterval);
-
-                  return new ScheduledUpdate(samplingInterval, items);
-                })
-            .toList();
-
-    schedule.forEach(ScheduledUpdate::cancel);
-    schedule.clear();
-    schedule.addAll(updates);
-    schedule.forEach(executor::execute);
-  }
-
-  static long nextDelayMillis(long samplingInterval, long elapsedMillis) {
-    return Math.max(1, samplingInterval - elapsedMillis);
-  }
-
-  private class ScheduledUpdate implements Runnable {
-
-    private volatile boolean cancelled = false;
-
-    private final long samplingInterval;
-    private final List<DataItem> items;
-
-    private ScheduledUpdate(double samplingInterval, List<DataItem> items) {
-      this.samplingInterval = DoubleMath.roundToLong(samplingInterval, RoundingMode.UP);
-      this.items = items;
-    }
-
-    private void cancel() {
-      cancelled = true;
-    }
-
-    @Override
-    public void run() {
-      if (cancelled) return;
-
-      long startNanos = System.nanoTime();
-
-      List<DataValue> values =
-          groupMapCollate(
-              items,
-              MonitoredItem::getSession,
-              session ->
-                  (List<DataItem> sessionItems) -> {
-                    List<ReadValueId> readValueIds =
-                        sessionItems.stream()
-                            .map(MonitoredItem::getReadValueId)
-                            .collect(Collectors.toList());
-
-                    var context = new ReadContext(server, session);
-
-                    return addressSpace.read(context, 0d, TimestampsToReturn.Both, readValueIds);
-                  });
-
-      Iterator<DataItem> ii = items.iterator();
-      Iterator<DataValue> vi = values.iterator();
-
-      while (ii.hasNext() && vi.hasNext()) {
-        DataItem item = ii.next();
-        DataValue value = vi.next();
-
-        TimestampsToReturn timestamps = item.getTimestampsToReturn();
-
-        if (timestamps != null) {
-          UInteger attributeId = item.getReadValueId().getAttributeId();
-
-          value =
-              (AttributeId.Value.isEqual(attributeId))
-                  ? DataValue.derivedValue(value, timestamps)
-                  : DataValue.derivedNonValue(value, timestamps);
-        }
-
-        item.setValue(value);
-      }
-
-      if (!cancelled) {
-        long elapsedNanos = System.nanoTime() - startNanos;
-        long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(elapsedNanos);
-        long delay = nextDelayMillis(samplingInterval, elapsedMillis);
-
-        scheduler.schedule(() -> executor.execute(this), delay, TimeUnit.MILLISECONDS);
-      }
-    }
+  /**
+   * Get the {@link SamplingManager} this model forwards to.
+   *
+   * @return the {@link SamplingManager} this model forwards to.
+   */
+  public SamplingManager getSamplingManager() {
+    return samplingManager;
   }
 }

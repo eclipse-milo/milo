@@ -517,6 +517,16 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
   }
 
   @Override
+  public void onDataItemsTransferred(List<DataItem> dataItems) {
+    Map<AddressSpace, List<DataItem>> byAddressSpace =
+        dataItems.stream()
+            .collect(
+                groupingBy(item -> getAddressSpaceInternal(item.getReadValueId().getNodeId())));
+
+    byAddressSpace.forEach(AddressSpace::onDataItemsTransferred);
+  }
+
+  @Override
   public void onEventItemsCreated(List<EventItem> eventItems) {
     Map<AddressSpace, List<EventItem>> byAddressSpace =
         eventItems.stream()

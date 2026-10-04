@@ -31,16 +31,20 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ObjectTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.core.typetree.VariableTypeTree;
+import org.eclipse.milo.opcua.sdk.server.access.AccessControlManager;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController;
 import org.eclipse.milo.opcua.sdk.server.conditions.ConditionManager;
 import org.eclipse.milo.opcua.sdk.server.conditions.DefaultConditionManager;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.ServerDiagnosticsSummary;
 import org.eclipse.milo.opcua.sdk.server.events.EventNotifierScope;
 import org.eclipse.milo.opcua.sdk.server.events.TransientEvent;
+import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.EventItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.model.ObjectTypeInitializer;
@@ -67,8 +71,6 @@ import org.eclipse.milo.opcua.sdk.server.servicesets.Service;
 import org.eclipse.milo.opcua.sdk.server.servicesets.SessionServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.SubscriptionServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.ViewServiceSet;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultAccessController;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.sdk.server.typetree.DataTypeTreeBuilder;
 import org.eclipse.milo.opcua.sdk.server.typetree.ObjectTypeTreeBuilder;
@@ -158,6 +160,9 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final AddressSpaceManager addressSpaceManager = new AddressSpaceManager(this);
   private final SessionManager sessionManager;
 
+  private final List<DataItemListener> dataItemListeners = new CopyOnWriteArrayList<>();
+  private final DataItemListener dataItemListener = new DataItemListenerDispatcher();
+
   private final EncodingManager encodingManager = DefaultEncodingManager.createAndInitialize();
 
   private final ObjectTypeManager objectTypeManager = new ObjectTypeManager();
@@ -227,7 +232,7 @@ public class OpcUaServer extends AbstractServiceHandler {
   private final OpcUaNamespace opcUaNamespace;
   private final ServerNamespace serverNamespace;
 
-  private final AccessController accessController;
+  private final AccessControlManager accessControlManager;
 
   private final OpcUaServerConfig config;
   private final OpcServerTransportFactory transportFactory;
@@ -365,13 +370,13 @@ public class OpcUaServer extends AbstractServiceHandler {
 
     sessionManager = new SessionManager(this, config.getExecutor());
 
+    accessControlManager = new AccessControlManager(this);
+
     opcUaNamespace = new OpcUaNamespace(this);
     opcUaNamespace.startup();
 
     serverNamespace = new ServerNamespace(this);
     serverNamespace.startup();
-
-    accessController = new DefaultAccessController(this);
   }
 
   /**
@@ -783,8 +788,30 @@ public class OpcUaServer extends AbstractServiceHandler {
     return config;
   }
 
-  public AccessController getAccessController() {
-    return accessController;
+  /**
+   * Get the {@link AccessController} the service implementations authorize requests with.
+   *
+   * <p>A shortcut for {@code getAccessControlManager().getAccessController()}. It is final so that
+   * every check, including the read access cache's, uses the one controller; install a custom
+   * controller with {@link OpcUaServerConfigBuilder#setAccessControllerFactory} instead.
+   *
+   * @return this server's {@link AccessController}.
+   */
+  public final AccessController getAccessController() {
+    return accessControlManager.getAccessController();
+  }
+
+  /**
+   * Get the {@link AccessControlManager}: the controller, the read access cache, and read access
+   * invalidation.
+   *
+   * <p>It is final for the same reason as {@link #getAccessController()}: the services, the cache,
+   * and invalidation must all reach the one manager the server created.
+   *
+   * @return this server's {@link AccessControlManager}.
+   */
+  public final AccessControlManager getAccessControlManager() {
+    return accessControlManager;
   }
 
   public ServerApplicationContext getApplicationContext() {
@@ -797,6 +824,38 @@ public class OpcUaServer extends AbstractServiceHandler {
 
   public SessionManager getSessionManager() {
     return sessionManager;
+  }
+
+  /**
+   * Add a {@link DataItemListener} to be notified about every data MonitoredItem on this server.
+   *
+   * @param listener the {@link DataItemListener} to add.
+   */
+  public void addDataItemListener(DataItemListener listener) {
+    dataItemListeners.add(listener);
+  }
+
+  /**
+   * Remove a previously added {@link DataItemListener}.
+   *
+   * @param listener the {@link DataItemListener} to remove.
+   */
+  public void removeDataItemListener(DataItemListener listener) {
+    dataItemListeners.remove(listener);
+  }
+
+  /**
+   * Get the {@link DataItemListener} the SDK's service implementations notify about data
+   * MonitoredItems.
+   *
+   * <p>It forwards each notification to every listener added with {@link #addDataItemListener},
+   * catching and logging anything a listener throws. This is for the SDK's own use; application
+   * code registers with {@link #addDataItemListener} rather than calling it.
+   *
+   * @return the {@link DataItemListener} that notifies the registered listeners.
+   */
+  public DataItemListener getDataItemListener() {
+    return dataItemListener;
   }
 
   public OpcUaNamespace getOpcUaNamespace() {
@@ -1829,6 +1888,43 @@ public class OpcUaServer extends AbstractServiceHandler {
     @Override
     public void unregister(EventListener eventListener) {
       eventListeners.remove(eventListener);
+    }
+  }
+
+  /** Forwards each data item notification to every registered listener. */
+  private class DataItemListenerDispatcher implements DataItemListener {
+
+    @Override
+    public void onDataItemsCreated(List<DataItem> dataItems) {
+      notify("onDataItemsCreated", listener -> listener.onDataItemsCreated(dataItems));
+    }
+
+    @Override
+    public void onDataItemsDeleted(List<DataItem> dataItems) {
+      notify("onDataItemsDeleted", listener -> listener.onDataItemsDeleted(dataItems));
+    }
+
+    @Override
+    public void onMonitoringModeChanged(List<DataItem> dataItems) {
+      notify("onMonitoringModeChanged", listener -> listener.onMonitoringModeChanged(dataItems));
+    }
+
+    @Override
+    public void onDataItemsTransferred(
+        List<DataItem> dataItems, Session oldSession, Session newSession) {
+      notify(
+          "onDataItemsTransferred",
+          listener -> listener.onDataItemsTransferred(dataItems, oldSession, newSession));
+    }
+
+    private void notify(String callback, Consumer<DataItemListener> notification) {
+      for (DataItemListener listener : dataItemListeners) {
+        try {
+          notification.accept(listener);
+        } catch (Throwable t) {
+          logger.error("Uncaught Throwable in DataItemListener.{}", callback, t);
+        }
+      }
     }
   }
 }
