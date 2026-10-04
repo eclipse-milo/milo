@@ -109,6 +109,6 @@ class SubscriptionModelTest {
         model.getSamplingManager().getGroups().stream()
             .map(SamplingGroupInfo::intervalMillis)
             .toList(),
-        "120 ms stays 120 ms rather than the 150 ms bucket, and 0 polls at the 1 ms floor");
+        "120 ms stays 120 ms rather than the 125 ms bucket, and 0 polls at the 1 ms floor");
   }
 }

@@ -169,14 +169,14 @@ public class SamplingFrameworkTest extends AbstractClientServerTest {
         "five reads span at least four intervals, less scheduling slack: " + spanMillis + " ms");
   }
 
-  // Part 4 §7.21: the server revises up to an interval it supports, never down. With 50 ms buckets
+  // Part 4 §7.21: the server revises up to an interval it supports, never down. With 25 ms buckets
   // a request between two supported intervals gets the slower one.
   @Test
   void aRequestedIntervalIsRevisedUpToTheNextSupportedOne() throws Exception {
     var values = new LinkedBlockingQueue<DataValue>();
     OpcUaMonitoredItem item = monitor(namespace.variable.getNodeId(), 320.0, values);
 
-    assertEquals(350.0, item.getRevisedSamplingInterval().orElseThrow());
+    assertEquals(325.0, item.getRevisedSamplingInterval().orElseThrow());
     assertNotNull(values.poll(5, TimeUnit.SECONDS));
   }
 

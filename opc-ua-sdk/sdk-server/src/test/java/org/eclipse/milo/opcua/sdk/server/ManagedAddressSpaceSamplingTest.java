@@ -115,7 +115,7 @@ class ManagedAddressSpaceSamplingTest {
     var readValueId = new ReadValueId(new NodeId(2, "v"), AttributeId.Value.uid(), null, null);
 
     RevisedDataItemParameters created = addressSpace.onCreateDataItem(readValueId, 120.0, uint(5));
-    assertEquals(150.0, created.revisedSamplingInterval(), "up to the next supported interval");
+    assertEquals(125.0, created.revisedSamplingInterval(), "up to the next supported interval");
     assertEquals(uint(5), created.revisedQueueSize(), "the queue size is as requested");
 
     RevisedDataItemParameters modified = addressSpace.onModifyDataItem(readValueId, 0.0, uint(5));

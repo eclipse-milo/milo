@@ -44,6 +44,10 @@
  * through {@link org.eclipse.milo.opcua.sdk.server.AddressSpace#read}; a custom sampler subclasses
  * {@code SamplingGroup} and implements only the read.
  *
+ * <p>By default, requested intervals are rounded up to multiples of 25 ms, so the fastest supported
+ * sampling interval is 25 ms. {@link
+ * org.eclipse.milo.opcua.sdk.server.sampling.SamplingManagerConfig} controls this bucketing.
+ *
  * <h2>Read access</h2>
  *
  * <p>{@link org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessPolicy#perCycle()}, the default,

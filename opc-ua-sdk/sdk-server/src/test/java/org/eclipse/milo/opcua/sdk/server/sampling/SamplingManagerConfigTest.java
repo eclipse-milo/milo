@@ -64,7 +64,7 @@ class SamplingManagerConfigTest {
   void theRevisedIntervalIsTheGroupInterval() {
     SamplingManagerConfig config = SamplingManagerConfig.defaults().withMinimumIntervalMillis(100);
 
-    assertEquals(150.0, config.reviseSamplingInterval(120.0));
+    assertEquals(125.0, config.reviseSamplingInterval(120.0));
     assertEquals(100.0, config.reviseSamplingInterval(0.0));
     assertEquals(1000.0, config.reviseSamplingInterval(1000.0));
   }

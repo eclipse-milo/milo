@@ -85,10 +85,10 @@ class SamplingManagerTest {
   @Test
   void itemsWithIntervalsInTheSameBucketShareAGroup() {
     manager.onDataItemsCreated(
-        List.of(item("a", 100.0), item("b", 100.4), item("c", 149.0), item("d", 150.0)));
+        List.of(item("a", 100.0), item("b", 100.4), item("c", 124.0), item("d", 125.0)));
 
     assertEquals(
-        List.of(new SamplingGroupInfo(100, 1, 0), new SamplingGroupInfo(150, 3, 0)),
+        List.of(new SamplingGroupInfo(100, 1, 0), new SamplingGroupInfo(125, 3, 0)),
         manager.getGroups());
   }
 
@@ -97,7 +97,7 @@ class SamplingManagerTest {
   @Test
   void aZeroIntervalSamplesAtTheConfiguredFloor() {
     manager.onDataItemsCreated(List.of(item("a", 0.0)));
-    assertEquals(List.of(new SamplingGroupInfo(50, 1, 0)), manager.getGroups());
+    assertEquals(List.of(new SamplingGroupInfo(25, 1, 0)), manager.getGroups());
 
     SamplingManager floored =
         manager(SamplingManagerConfig.defaults().withMinimumIntervalMillis(200));

@@ -31,8 +31,9 @@ import java.util.Objects;
  * @param bucketMillis the bucket size: the sampling intervals the framework supports are the
  *     multiples of it, and a requested interval is revised up to the next one (Part 4 §7.21: the
  *     revised interval is equal to or higher than the requested one), so items asking for 100 ms
- *     and 120 ms sample at 100 ms and 150 ms, and nothing samples faster than the interval it was
- *     given. Zero disables bucketing, and intervals are revised up to whole milliseconds only.
+ *     and 120 ms sample at 100 ms and 125 ms with the default bucket size, and nothing samples
+ *     faster than the interval it was given. Zero disables bucketing, and intervals are revised up
+ *     to whole milliseconds only.
  * @param minimumIntervalMillis the fastest interval the framework samples at, applied before
  *     bucketing, so the fastest interval it supports is the first multiple of the bucket at or
  *     above this. A requested interval of zero, which asks for the fastest practical rate, is
@@ -76,14 +77,14 @@ public record SamplingManagerConfig(
   }
 
   /**
-   * The defaults: 50 ms buckets and a 1 ms minimum interval, so the fastest interval supported is
-   * 50 ms; an initial sample 100 ms after the first new item and at most 500 ms after it; a warning
+   * The defaults: 25 ms buckets and a 1 ms minimum interval, so the fastest interval supported is
+   * 25 ms; an initial sample 100 ms after the first new item and at most 500 ms after it; a warning
    * after 3 overrun intervals; and {@link ReadAccessPolicy#perCycle()}.
    *
    * @return the default configuration.
    */
   public static SamplingManagerConfig defaults() {
-    return new SamplingManagerConfig(50, 1, 100, 500, 3, ReadAccessPolicy.perCycle());
+    return new SamplingManagerConfig(25, 1, 100, 500, 3, ReadAccessPolicy.perCycle());
   }
 
   public SamplingManagerConfig withBucketMillis(long bucketMillis) {

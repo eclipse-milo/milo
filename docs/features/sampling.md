@@ -88,7 +88,7 @@ configuration when it is created.
 
 | Setting | Default | Effect |
 | --- | --- | --- |
-| `bucketMillis` | 50 | Nearby intervals share a group. Zero disables bucketing. |
+| `bucketMillis` | 25 | Nearby intervals share a group. Zero disables bucketing. |
 | `minimumIntervalMillis` | 1 | The fastest a group runs, including for a revised interval of zero. |
 | `initialSampleDelayMillis` | 100 | How long a new item waits for more new items before its first sample. |
 | `initialSampleMaxWindowMillis` | 500 | How long a steady stream of new items can postpone that first sample. |
@@ -103,10 +103,10 @@ interval the item is assigned, so `ManagedAddressSpace` returns it from `onCreat
 
 | Requested | Revised and sampled at |
 | --- | --- |
-| 0 ms | 50 ms |
-| 1.2 ms | 50 ms |
+| 0 ms | 25 ms |
+| 1.2 ms | 25 ms |
 | 100 ms | 100 ms |
-| 120 ms | 150 ms |
+| 120 ms | 125 ms |
 | 250 ms | 250 ms |
 
 A device that cannot poll faster than some rate sets the minimum to it, as the device example
@@ -369,7 +369,7 @@ to a different sampler, pick one owner for those items rather than forwarding to
 
 What changes for a managed namespace, whether or not it deletes the forwarding: a requested
 interval is revised up to the next supported one and reported to the client, so a request of 0
-becomes 50 ms by default where `SubscriptionModel` polled at 1 ms. A direct `AddressSpace` that
+becomes 25 ms by default where `SubscriptionModel` polled at 1 ms. A direct `AddressSpace` that
 keeps forwarding keeps its intervals, since its own `onCreateDataItem()` still decides them. For
 both: new items get a debounced initial sample; a membership change no longer rebuilds every schedule; a
 sampling exception no longer stops the schedule; reads are split at `MaxNodesPerRead`; callbacks
