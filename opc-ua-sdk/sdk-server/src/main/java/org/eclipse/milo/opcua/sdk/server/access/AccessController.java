@@ -29,6 +29,10 @@ public interface AccessController {
    * Check if the current Session has read access to the Nodes and Attributes identified by {@code
    * readValueIds}.
    *
+   * <p>A Node the AddressSpace does not know can get {@link AccessResult#NODE_UNKNOWN}, which is
+   * neither allowed nor denied. A caller that decides what to read branches on {@link
+   * AccessResult#isDenied()}, so such a Node is still read and reports {@code Bad_NodeIdUnknown}.
+   *
    * @param session the Session to check access for.
    * @param readValueIds the Nodes and Attributes to check access for.
    * @return a Map containing the {@link AccessResult} for each {@link ReadValueId}.
@@ -120,8 +124,24 @@ public interface AccessController {
     /** Access is denied due to insufficient security mode. */
     AccessResult DENIED_SECURITY_MODE = new Denied(StatusCodes.Bad_SecurityModeInsufficient);
 
+    /**
+     * No decision: the Node is not known to the AddressSpace, so there are no attributes to decide
+     * from. Neither {@link #isAllowed()} nor {@link #isDenied()} is true.
+     */
+    AccessResult NODE_UNKNOWN = new NodeUnknown();
+
     /** Access is allowed. */
     record Allowed() implements AccessResult {}
+
+    /**
+     * No decision could be made because the AddressSpace does not know the Node.
+     *
+     * <p>A service that goes on to ask the AddressSpace for the Node, such as Read, proceeds and
+     * lets the AddressSpace answer {@code Bad_NodeIdUnknown} as it would have anyway. A component
+     * that refreshes a previous decision, such as the read access result of a MonitoredItem, leaves
+     * that decision in place, the same as for a check that failed.
+     */
+    record NodeUnknown() implements AccessResult {}
 
     /**
      * Access is denied for the reason described by {@code statusCode}.
@@ -146,6 +166,14 @@ public interface AccessController {
      */
     default boolean isDenied() {
       return this instanceof Denied;
+    }
+
+    /**
+     * @return {@code true} if this result is a decision, allowed or denied, rather than {@link
+     *     #NODE_UNKNOWN}.
+     */
+    default boolean isDecision() {
+      return this instanceof Allowed || this instanceof Denied;
     }
   }
 }

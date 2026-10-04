@@ -10,7 +10,9 @@
 
 package org.eclipse.milo.opcua.sdk.server.access;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.HashMap;
 import java.util.List;
@@ -58,6 +60,42 @@ class DefaultAccessControllerTest {
   @BeforeEach
   void setup() {
     Mockito.when(context.readAccessControlAttributes(Mockito.anyList())).thenReturn(attributesMap);
+  }
+
+  /**
+   * A Node the AddressSpace does not know yields no decision rather than a denial, so Read still
+   * reaches the AddressSpace, which answers Bad_NodeIdUnknown as it always has, and a component
+   * that re-checks a MonitoredItem whose Node has been removed leaves the item's last result alone.
+   */
+  @Test
+  void checkReadAccess_UnknownNode_NoDecision() {
+    var nodeId = new NodeId(1, "removed");
+    var readValueId = new ReadValueId(nodeId, AttributeId.Value.uid(), null, null);
+
+    attributesMap.put(
+        nodeId, new AccessControlAttributes(null, null, null, null, null, null, null, true));
+
+    AccessResult result =
+        DefaultAccessController.checkReadAccess(context, List.of(readValueId)).get(readValueId);
+
+    assertEquals(AccessResult.NODE_UNKNOWN, result);
+    assertFalse(result.isAllowed(), "no decision is not an allowance");
+    assertFalse(result.isDenied(), "no decision is not a denial");
+  }
+
+  // An invalid attribute id is wrong whatever the Node, so it is still denied first.
+  @Test
+  void checkReadAccess_UnknownNodeWithInvalidAttributeId_DeniedAttributeIdInvalid() {
+    var nodeId = new NodeId(1, "removed");
+    var readValueId = new ReadValueId(nodeId, uint(99), null, null);
+
+    attributesMap.put(
+        nodeId, new AccessControlAttributes(null, null, null, null, null, null, null, true));
+
+    AccessResult result =
+        DefaultAccessController.checkReadAccess(context, List.of(readValueId)).get(readValueId);
+
+    assertEquals(AccessResult.DENIED_ATTRIBUTE_ID_INVALID, result);
   }
 
   @Test
