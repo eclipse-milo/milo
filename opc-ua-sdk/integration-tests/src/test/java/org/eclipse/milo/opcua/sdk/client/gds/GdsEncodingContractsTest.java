@@ -135,7 +135,9 @@ class GdsEncodingContractsTest extends AbstractGdsClientTest {
           property[0] =
               (UaVariableNode)
                   object.getPropertyNode(AuthorizationServiceType.SERVICE_URI).orElseThrow();
-          property[0].setAccessLevel(AccessLevel.toValue(AccessLevel.READ_ONLY));
+          // The Node allows writing; only this user may not, so the operation result is
+          // Bad_UserAccessDenied rather than the Node-level Bad_NotWritable.
+          property[0].setAccessLevel(AccessLevel.toValue(AccessLevel.READ_WRITE));
           property[0].setUserAccessLevel(AccessLevel.toValue(AccessLevel.READ_ONLY));
         });
     var node =
@@ -159,7 +161,6 @@ class GdsEncodingContractsTest extends AbstractGdsClientTest {
     UaException error = assertThrows(UaException.class, () -> node.writeServiceUri("urn:rejected"));
     assertEquals(StatusCodes.Bad_UserAccessDenied, error.getStatusCode().value());
     assertEquals("urn:original", node.readServiceUri());
-    property[0].setAccessLevel(AccessLevel.toValue(AccessLevel.READ_WRITE));
     property[0].setUserAccessLevel(AccessLevel.toValue(AccessLevel.READ_WRITE));
     node.writeServiceUri("urn:accepted");
     assertEquals("urn:accepted", node.readServiceUri());

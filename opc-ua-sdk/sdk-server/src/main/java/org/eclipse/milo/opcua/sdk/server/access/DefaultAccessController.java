@@ -88,13 +88,15 @@ public class DefaultAccessController implements AccessController {
       UInteger attributeId = p.value.getAttributeId();
 
       if (AttributeId.Value.uid().equals(attributeId)) {
+        UByte accessLevel = attributes.get(nodeId).accessLevel();
         UByte userAccessLevel = attributes.get(nodeId).userAccessLevel();
 
-        if (userAccessLevel != null) {
-          Set<AccessLevel> accessLevels = AccessLevel.fromValue(userAccessLevel);
-          if (!accessLevels.contains(AccessLevel.CurrentRead)) {
-            p.result = AccessResult.DENIED_USER_ACCESS;
-          }
+        if (accessLevel != null
+            && !AccessLevel.fromValue(accessLevel).contains(AccessLevel.CurrentRead)) {
+          p.result = AccessResult.DENIED_NOT_READABLE;
+        } else if (userAccessLevel != null
+            && !AccessLevel.fromValue(userAccessLevel).contains(AccessLevel.CurrentRead)) {
+          p.result = AccessResult.DENIED_USER_ACCESS;
         }
       } else if (AttributeId.RolePermissions.uid().equals(attributeId)) {
         List<NodeId> roleIds = context.getRoleIds().orElse(null);
@@ -119,6 +121,14 @@ public class DefaultAccessController implements AccessController {
 
   // region Write
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>A Value write is checked the way a Value read is: the Node's {@code AccessLevel} first,
+   * which denies with {@code Bad_NotWritable} when it lacks CurrentWrite, and then the Session's
+   * {@code UserAccessLevel}, which denies with {@code Bad_UserAccessDenied}. Other attributes are
+   * checked against {@code UserWriteMask}.
+   */
   @Override
   public Map<WriteValue, AccessResult> checkWriteAccess(
       Session session, List<WriteValue> writeValues) {
@@ -153,13 +163,15 @@ public class DefaultAccessController implements AccessController {
       UInteger attributeId = p.value.getAttributeId();
 
       if (AttributeId.Value.uid().equals(attributeId)) {
+        UByte accessLevel = attributes.get(nodeId).accessLevel();
         UByte userAccessLevel = attributes.get(nodeId).userAccessLevel();
 
-        if (userAccessLevel != null) {
-          Set<AccessLevel> accessLevels = AccessLevel.fromValue(userAccessLevel);
-          if (!accessLevels.contains(AccessLevel.CurrentWrite)) {
-            p.result = AccessResult.DENIED_USER_ACCESS;
-          }
+        if (accessLevel != null
+            && !AccessLevel.fromValue(accessLevel).contains(AccessLevel.CurrentWrite)) {
+          p.result = AccessResult.DENIED_NOT_WRITABLE;
+        } else if (userAccessLevel != null
+            && !AccessLevel.fromValue(userAccessLevel).contains(AccessLevel.CurrentWrite)) {
+          p.result = AccessResult.DENIED_USER_ACCESS;
         }
       } else {
         UInteger userWriteMask = attributes.get(nodeId).userWriteMask();
@@ -578,6 +590,7 @@ public class DefaultAccessController implements AccessController {
       @Nullable NodeClass nodeClass,
       @Nullable AccessRestrictionType accessRestrictions,
       @Nullable UInteger userWriteMask,
+      @Nullable UByte accessLevel,
       @Nullable UByte userAccessLevel,
       @Nullable Boolean userExecutable,
       RolePermissionType @Nullable [] userRolePermissions) {}
@@ -614,6 +627,7 @@ public class DefaultAccessController implements AccessController {
                             new ReadValueId(id, AttributeId.NodeClass.uid(), null, null),
                             new ReadValueId(id, AttributeId.AccessRestrictions.uid(), null, null),
                             new ReadValueId(id, AttributeId.UserWriteMask.uid(), null, null),
+                            new ReadValueId(id, AttributeId.AccessLevel.uid(), null, null),
                             new ReadValueId(id, AttributeId.UserAccessLevel.uid(), null, null),
                             new ReadValueId(id, AttributeId.UserExecutable.uid(), null, null),
                             new ReadValueId(id, AttributeId.UserRolePermissions.uid(), null, null));
@@ -633,7 +647,7 @@ public class DefaultAccessController implements AccessController {
 
       var attributesMap = new HashMap<NodeId, AccessControlAttributes>();
 
-      for (int i = 0; i < readValueIds.size(); i += 6) {
+      for (int i = 0; i < readValueIds.size(); i += 7) {
         NodeId nodeId = readValueIds.get(i).getNodeId();
 
         Object v0 = values.get(i).value().value();
@@ -642,10 +656,12 @@ public class DefaultAccessController implements AccessController {
         Object v3 = values.get(i + 3).value().value();
         Object v4 = values.get(i + 4).value().value();
         Object v5 = values.get(i + 5).value().value();
+        Object v6 = values.get(i + 6).value().value();
 
         NodeClass nodeClass = null;
         AccessRestrictionType accessRestrictions = null;
         UInteger userWriteMask = null;
+        UByte accessLevel = null;
         UByte userAccessLevel = null;
         Boolean userExecutable = null;
         RolePermissionType[] userRolePermissions = null;
@@ -659,13 +675,16 @@ public class DefaultAccessController implements AccessController {
         if (v2 instanceof UInteger um) {
           userWriteMask = um;
         }
-        if (v3 instanceof UByte ub) {
+        if (v3 instanceof UByte al) {
+          accessLevel = al;
+        }
+        if (v4 instanceof UByte ub) {
           userAccessLevel = ub;
         }
-        if (v4 instanceof Boolean b) {
+        if (v5 instanceof Boolean b) {
           userExecutable = b;
         }
-        if (v5 instanceof RolePermissionType[] rpt) {
+        if (v6 instanceof RolePermissionType[] rpt) {
           userRolePermissions = rpt;
         }
 
@@ -674,6 +693,7 @@ public class DefaultAccessController implements AccessController {
                 nodeClass,
                 accessRestrictions,
                 userWriteMask,
+                accessLevel,
                 userAccessLevel,
                 userExecutable,
                 userRolePermissions);
