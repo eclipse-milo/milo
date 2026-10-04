@@ -376,14 +376,16 @@ synchronous listeners short: record what changed and enqueue the work.
 server.getAccessControlManager().addReadAccessListener(scope -> coordinator.markStale(scope));
 ```
 
-A refresh task snapshots the live items with their Sessions, checks them with
+A refresh task snapshots the live items with their Sessions and each Session's
+`getAccessEpoch()`, checks them with
 `server.getAccessController().checkReadAccess(session, readValueIds)` or through
-`server.getAccessControlManager().getReadAccessCache().getOrCheck(session, readValueIds)`, and applies each result with
-`item.setReadAccessResult()` only if the item is still tracked, still on that Session, the
-Session's `getAccessEpoch()` is what it was before the check, and no newer refresh has been
-requested for it. `setReadAccessResult()` is thread-safe but applies calls
-in arrival order and cannot tell an old allowance from a new one, so the coordinator serializes
-or versions its checks. The SDK re-checks a Session's items itself when its identity or
+`server.getAccessControlManager().getReadAccessCache().getOrCheck(session, readValueIds)`, and
+applies each result to an item it still tracks, with no newer refresh requested for it, through
+`item.setReadAccessResult(result, session, accessEpoch)`. That call applies the result only if
+the item is still on that Session at that epoch, and for a `MonitoredDataItem` it compares and
+applies in one step, so a transfer or an identity or endpoint change that lands in between keeps
+the answer the SDK applied for it. Results otherwise apply in arrival order and the item cannot
+tell an old allowance from a new one, so the coordinator serializes or versions its own checks. The SDK re-checks a Session's items itself when its identity or
 endpoint changes and checks transferred items for their new Session; re-enabled items need a
 refresh before their next value, and so does every change the application makes. Repeated cache
 hits do not bound staleness, so a periodic

@@ -222,8 +222,8 @@ public class SubscriptionManager {
               dataItem.setReadAccessResultAfterSessionChange(result);
             }
           }
-        } else if (isCheckedFor(item, accessEpoch)) {
-          item.setReadAccessResult(result);
+        } else {
+          item.setReadAccessResult(result, session, accessEpoch);
         }
       }
     } catch (Throwable t) {

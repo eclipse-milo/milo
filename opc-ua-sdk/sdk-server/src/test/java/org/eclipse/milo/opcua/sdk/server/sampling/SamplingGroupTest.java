@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -551,7 +552,9 @@ class SamplingGroupTest {
     when(failing.getReadValueId()).thenReturn(a.getReadValueId());
     when(failing.getSamplingInterval()).thenReturn(100.0);
     when(failing.isSamplingEnabled()).thenReturn(true);
-    doThrow(new IllegalStateException("cannot apply")).when(failing).setReadAccessResult(any());
+    doThrow(new IllegalStateException("cannot apply"))
+        .when(failing)
+        .setReadAccessResult(any(), any(), anyLong());
     policy.results.put(failing, AccessResult.ALLOWED);
 
     group.addItems(List.of(failing));

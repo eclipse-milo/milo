@@ -165,6 +165,20 @@ public class MonitoredDataItem extends BaseMonitoredItem<DataValue> implements D
   }
 
   /**
+   * {@inheritDoc}
+   *
+   * <p>The comparison and the update happen under this item's lock. The SDK's TransferSubscriptions
+   * and identity or endpoint refresh apply their results under the same lock, after moving the item
+   * or bumping the epoch.
+   */
+  @Override
+  public synchronized boolean setReadAccessResult(
+      AccessResult accessResult, Session session, long accessEpoch) {
+
+    return DataItem.super.setReadAccessResult(accessResult, session, accessEpoch);
+  }
+
+  /**
    * Apply the result of a read access check made because the Session this item reports to changed:
    * a TransferSubscriptions moved the item to another Session, or an ActivateSession changed its
    * Session's user identity or endpoint.

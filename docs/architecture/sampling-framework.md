@@ -109,9 +109,10 @@ group's network I/O. The group also records each item's Session, and that Sessio
 epoch, before the check, and applies nothing to an item that a TransferSubscriptions moved
 meanwhile or whose Session's identity or endpoint changed meanwhile. The transfer and
 ActivateSession apply a current answer themselves, and the item is read again next cycle. The
-group makes that last check and applies its answer under a `MonitoredDataItem`'s lock, which the
-transfer and the identity or endpoint refresh also apply under after moving the item or bumping
-the epoch, so an answer for the Session as it was never replaces theirs.
+group applies its answer with `DataItem.setReadAccessResult(result, session, accessEpoch)`, which
+compares and applies in one step. A `MonitoredDataItem` does that under the lock the transfer and
+the identity or endpoint refresh apply under after moving the item or bumping the epoch, so an
+answer for the Session as it was never replaces theirs.
 
 ## Read access
 
