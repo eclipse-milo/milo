@@ -61,6 +61,9 @@ class WikiFeatureAliasesTest extends AbstractClientServerTest {
               .orElseThrow();
       assertEquals(0, client.readValue(0.0, TimestampsToReturn.Neither, target).value().value());
       assertTrue(findAliases(client, "Missing.%").isEmpty());
+      UaException oversized =
+          assertThrows(UaException.class, () -> findAliases(client, "x".repeat(513)));
+      assertEquals(StatusCodes.Bad_InvalidArgument, oversized.getStatusCode().value());
       manager.deleteAlias(NodeIds.TagVariables, "Demo.Counter", null);
       assertTrue(findAliases(client, "Demo.%").isEmpty());
       UaException wrongTarget =

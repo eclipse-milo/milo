@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
@@ -30,6 +31,7 @@ import org.eclipse.milo.opcua.sdk.test.TestPortAllocator;
 import org.eclipse.milo.opcua.sdk.test.TestServer;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.WiresharkKeyLogWriter;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.DefaultClientCertificateValidator;
@@ -192,16 +194,7 @@ public class WikiDiagnosticsTest {
               TimestampsToReturn.Neither,
               NodeIds.Server_ServerDiagnostics_ServerDiagnosticsSummary_CurrentSessionCount);
       assertEquals(StatusCodes.Bad_OutOfService, disabled.statusCode().getValue());
-      // wiki:diagnostics-enable:start
-      diagnostics.setEnabledFlag(true);
-      // wiki:diagnostics-enable:end
-      DataValue enabled =
-          client.readValue(
-              0,
-              TimestampsToReturn.Neither,
-              NodeIds.Server_ServerDiagnostics_ServerDiagnosticsSummary_CurrentSessionCount);
-      assertTrue(enabled.statusCode().isGood());
-      assertTrue(((UInteger) enabled.value().value()).longValue() >= 1);
+      assertTrue(enableAndReadSessionCount(server, client).longValue() >= 1);
       DataValue restricted =
           client.readValue(
               0,
@@ -227,6 +220,79 @@ public class WikiDiagnosticsTest {
       unsecured.disconnectAsync().get(10, TimeUnit.SECONDS);
     }
   }
+
+  // A discovery failure still closes the writer and leaves an empty file, without channel keys.
+  @Test
+  void unavailableDiscoveryLeavesAnEmptyClosedKeyLog() throws Exception {
+    Path keyLog = directory.resolve("failed-discovery.keys");
+    int unusedPort = TestPortAllocator.allocatePort();
+    Exception failure =
+        assertThrows(
+            Exception.class,
+            () ->
+                readWithKeyLog(
+                    keyLog,
+                    "opc.tcp://127.0.0.1:" + unusedPort + "/unavailable",
+                    fixture.getClientKeyPair(),
+                    fixture.getClientCertificateChain(),
+                    validator));
+    assertEquals(
+        StatusCodes.Bad_ConnectionRejected,
+        UaException.extract(failure).orElseThrow().getStatusCode().getValue());
+    assertTrue(Files.exists(keyLog));
+    assertEquals(0, Files.size(keyLog));
+    Files.delete(keyLog);
+  }
+
+  // A status must be checked before casting the payload, even if the caller supplied another peer.
+  @Test
+  void diagnosticsHelperRejectsAnUnavailableRemoteCounter() throws Exception {
+    TestServer other = TestServer.create();
+    OpcUaServer otherServer = other.getServer();
+    OpcUaClient client = null;
+    try {
+      otherServer.startup().get(10, TimeUnit.SECONDS);
+      String url = otherServer.getConfig().getEndpoints().iterator().next().getEndpointUrl();
+      client = OpcUaClient.create(url);
+      client.connectAsync().get(10, TimeUnit.SECONDS);
+      OpcUaClient connected = client;
+      UaException failure =
+          assertThrows(UaException.class, () -> enableAndReadSessionCount(server, connected));
+      assertEquals(StatusCodes.Bad_OutOfService, failure.getStatusCode().getValue());
+    } finally {
+      if (client != null) client.disconnectAsync().get(10, TimeUnit.SECONDS);
+      ((ServerDiagnosticsTypeNode)
+              server
+                  .getAddressSpaceManager()
+                  .getManagedNode(NodeIds.Server_ServerDiagnostics)
+                  .orElseThrow())
+          .setEnabledFlag(false);
+      otherServer.shutdown().get(10, TimeUnit.SECONDS);
+    }
+  }
+
+  // wiki:diagnostics-enable:start
+  static UInteger enableAndReadSessionCount(OpcUaServer server, OpcUaClient client)
+      throws UaException {
+    var diagnostics =
+        (ServerDiagnosticsTypeNode)
+            server
+                .getAddressSpaceManager()
+                .getManagedNode(NodeIds.Server_ServerDiagnostics)
+                .orElseThrow();
+    diagnostics.setEnabledFlag(true);
+    DataValue count =
+        client.readValue(
+            0,
+            TimestampsToReturn.Neither,
+            NodeIds.Server_ServerDiagnostics_ServerDiagnosticsSummary_CurrentSessionCount);
+    if (!count.statusCode().isGood()) {
+      throw new UaException(count.statusCode());
+    }
+    return (UInteger) count.value().value();
+  }
+
+  // wiki:diagnostics-enable:end
 
   private OpcUaClient newSecureClient() throws Exception {
     return OpcUaClient.create(

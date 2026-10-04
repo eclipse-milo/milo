@@ -56,7 +56,8 @@ import org.slf4j.LoggerFactory;
  * gds.password} system properties; the defaults match the OPC Foundation reference GDS from
  * UA-.NETStandard. Registration and signing need an administrator account on most servers, and the
  * GDS must trust the example client certificate (move it from its rejected store after the first
- * attempt). The issued certificate and trust list are only printed; nothing is installed.
+ * attempt). The example verifies and prints the issued certificate for its throwaway key without
+ * installing it. The pulled trust list is applied to the client's file-based certificate group.
  */
 public class GdsPullExample implements ClientExample {
 

@@ -242,7 +242,8 @@ ancestor and returns null. Pass that nullable result to `GetCertificateStatus`,
 
 `GdsPullExample` in `milo-examples/client-examples` runs the sequence once against a GDS named by
 the `gds.endpoint`, `gds.username`, and `gds.password` system properties, printing the issued
-certificate and the trust list counts without installing anything. While the GDS answers
+certificate and the trust list counts. It does not install the issued certificate for its
+throwaway key, but it applies the pulled trust list to its file-based certificate group. While the GDS answers
 `Bad_NothingToDo`, the example polls `FinishRequest` every two seconds for up to a minute so an
 administrator can approve the request.
 

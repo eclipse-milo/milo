@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
@@ -31,7 +32,11 @@ import org.eclipse.milo.opcua.sdk.client.subscriptions.EventFilterBuilder;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.MonitoredItemSynchronizationException;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaMonitoredItem;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
+import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
+import org.eclipse.milo.opcua.sdk.test.TestClient;
+import org.eclipse.milo.opcua.sdk.test.TestNamespace;
+import org.eclipse.milo.opcua.sdk.test.TestServer;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -268,6 +273,82 @@ class WikiClientGuideTest extends AbstractClientServerTest {
     assertInstanceOf(DateTime.class, values.get(2).value().value());
     assertThrows(IllegalArgumentException.class, () -> readInBatches(client, List.of(), 0));
     assertTrue(readInBatches(client, List.of(), 1).isEmpty());
+  }
+
+  // Endpoint selection remains a failure after the factory's /discovery retry.
+  @Test
+  void emptyEndpointSelectionReportsConfigurationError() {
+    String url = server.getConfig().getEndpoints().iterator().next().getEndpointUrl();
+    UaException failure =
+        assertThrows(
+            UaException.class,
+            () ->
+                OpcUaClient.create(
+                    url, endpoints -> Optional.empty(), transport -> {}, config -> {}));
+    assertEquals(StatusCodes.Bad_ConfigurationError, failure.getStatusCode().value());
+  }
+
+  // The convenience browse helper omits operation errors; raw Browse retains their status.
+  @Test
+  void browseHelperReturnsEmptyForAnUnknownNodeWhileRawBrowseReportsFailure() throws Exception {
+    NodeId missing = newNodeId("missing");
+    assertTrue(client.getAddressSpace().browse(missing).isEmpty());
+    var description =
+        new BrowseDescription(
+            missing, BrowseDirection.Forward, NodeIds.References, true, uint(0), uint(63));
+    BrowseResult result =
+        requireNonNull(
+            client
+                .browse(
+                    new ViewDescription(NodeId.NULL_VALUE, DateTime.MIN_VALUE, uint(0)),
+                    uint(0),
+                    List.of(description))
+                .getResults())[0];
+    assertEquals(StatusCodes.Bad_NodeIdUnknown, result.getStatusCode().value());
+  }
+
+  // The advertised server limit must bind even when the caller chooses a larger application cap.
+  @Test
+  void effectiveReadLimitPartitionsWhenRawBulkReadExceedsTheServerLimit() throws Exception {
+    var fixture =
+        TestServer.create(
+            new OpcUaServerConfigLimits() {
+              @Override
+              public UInteger getMaxNodesPerRead() {
+                return uint(1);
+              }
+            });
+    var limitedServer = fixture.getServer();
+    var namespace = new TestNamespace(limitedServer);
+    limitedServer.addLifecycleParticipant(namespace);
+    OpcUaClient limitedClient = null;
+    try {
+      limitedServer.startup().get(10, TimeUnit.SECONDS);
+      limitedClient = TestClient.create(limitedServer, config -> {});
+      limitedClient.connectAsync().get(10, TimeUnit.SECONDS);
+      var ids =
+          List.of(
+              new NodeId(namespace.getNamespaceIndex(), "TestInt32"),
+              new NodeId(namespace.getNamespaceIndex(), "missing"),
+              NodeIds.Server_ServerStatus_CurrentTime);
+      assertEquals(uint(1), limitedClient.getOperationLimits().maxNodesPerRead().orElseThrow());
+      List<DataValue> values = readInBatches(limitedClient, ids, 10);
+      assertEquals(3, values.size());
+      assertEquals(0, values.get(0).value().value());
+      assertEquals(StatusCodes.Bad_NodeIdUnknown, values.get(1).statusCode().value());
+      assertInstanceOf(DateTime.class, values.get(2).value().value());
+      OpcUaClient connected = limitedClient;
+      UaException unpartitioned =
+          assertThrows(
+              UaException.class, () -> connected.readValues(0.0, TimestampsToReturn.Both, ids));
+      assertEquals(StatusCodes.Bad_TooManyOperations, unpartitioned.getStatusCode().value());
+    } finally {
+      try {
+        if (limitedClient != null) limitedClient.disconnectAsync().get(10, TimeUnit.SECONDS);
+      } finally {
+        limitedServer.shutdown().get(10, TimeUnit.SECONDS);
+      }
+    }
   }
 
   // snippet:connect:start

@@ -18,25 +18,35 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
+import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransport;
+import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfig;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
 
 @Timeout(45)
 class FirstProgramsTest {
+
+  @TempDir Path directory;
 
   @AfterAll
   static void releaseResources() {
@@ -99,10 +109,138 @@ class FirstProgramsTest {
     try (var occupied = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))) {
       OpcUaServer server = FirstServer.create(occupied.getLocalPort());
       try {
-        assertThrows(ExecutionException.class, () -> server.startup().get(10, TimeUnit.SECONDS));
+        ExecutionException failure =
+            assertThrows(
+                ExecutionException.class, () -> server.startup().get(10, TimeUnit.SECONDS));
+        assertEquals(
+            StatusCodes.Bad_ConfigurationError,
+            UaException.extract(failure).orElseThrow().getStatusCode().getValue());
+        assertEquals("No endpoints bound", UaException.extract(failure).orElseThrow().getMessage());
       } finally {
         server.shutdown().get(10, TimeUnit.SECONDS);
       }
+    }
+  }
+
+  // Discovery failure is observable before a client Session exists, including the fallback URL.
+  @Test
+  void stoppedServerAndMismatchedEndpointReportTheirActualStatuses() throws Exception {
+    int port;
+    try (var reservation = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))) {
+      port = reservation.getLocalPort();
+    }
+    Exception refused =
+        assertThrows(
+            Exception.class,
+            () -> FirstClient.readTemperature("opc.tcp://127.0.0.1:" + port + "/wiki"));
+    assertEquals(
+        StatusCodes.Bad_ConnectionRejected,
+        UaException.extract(refused).orElseThrow().getStatusCode().getValue());
+    OpcUaServer server = FirstServer.create(port);
+    try {
+      server.startup().get(10, TimeUnit.SECONDS);
+      Exception mismatch =
+          assertThrows(
+              Exception.class,
+              () -> FirstClient.readTemperature("opc.tcp://localhost:" + port + "/wiki"));
+      UaException cause = UaException.extract(mismatch).orElseThrow();
+      assertEquals(StatusCodes.Bad_TcpEndpointUrlInvalid, cause.getStatusCode().getValue());
+      assertTrue(cause.getMessage().contains("/wiki/discovery"));
+    } finally {
+      server.shutdown().get(10, TimeUnit.SECONDS);
+    }
+  }
+
+  // A reachable endpoint with no tutorial namespace takes the displayed helper's own error path.
+  @Test
+  void missingNamespaceFailsTheTutorialHelperAndClosesItsSession() throws Exception {
+    int port;
+    try (var reservation = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))) {
+      port = reservation.getLocalPort();
+    }
+    OpcUaServer template = FirstServer.create(port);
+    OpcUaServer server =
+        new OpcUaServer(
+            template.getConfig(),
+            profile -> new OpcTcpServerTransport(OpcTcpServerTransportConfig.newBuilder().build()));
+    try {
+      server.startup().get(10, TimeUnit.SECONDS);
+      IllegalStateException failure =
+          assertThrows(
+              IllegalStateException.class,
+              () -> FirstClient.readTemperature("opc.tcp://127.0.0.1:" + port + "/wiki"));
+      assertEquals("Server does not expose the tutorial namespace", failure.getMessage());
+      assertTrue(server.getSessionManager().getAllSessions().isEmpty());
+    } finally {
+      server.shutdown().get(10, TimeUnit.SECONDS);
+      template.shutdown().get(10, TimeUnit.SECONDS);
+    }
+  }
+
+  // The displayed helper must reject sample quality and payload type, not just connection errors.
+  @Test
+  void unexpectedTypeAndBadQualityTakeTheTutorialHelpersFailurePaths() throws Exception {
+    int port;
+    try (var reservation = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))) {
+      port = reservation.getLocalPort();
+    }
+    OpcUaServer server = FirstServer.create(port);
+    try {
+      server.startup().get(10, TimeUnit.SECONDS);
+      NodeId id =
+          new NodeId(server.getNamespaceTable().getIndex(FirstServer.NAMESPACE_URI), "Temperature");
+      UaVariableNode node =
+          (UaVariableNode) server.getAddressSpaceManager().getManagedNode(id).orElseThrow();
+      String url = "opc.tcp://127.0.0.1:" + port + "/wiki";
+      node.setValue(new DataValue(new Variant("unexpected")));
+      IllegalStateException wrongType =
+          assertThrows(IllegalStateException.class, () -> FirstClient.readTemperature(url));
+      assertTrue(wrongType.getMessage().startsWith("Expected a Double"));
+      node.setValue(new DataValue(new StatusCode(StatusCodes.Bad_OutOfService)));
+      IllegalStateException badQuality =
+          assertThrows(IllegalStateException.class, () -> FirstClient.readTemperature(url));
+      assertTrue(badQuality.getMessage().contains("Read failed"));
+      assertTrue(badQuality.getMessage().contains("Bad_OutOfService"));
+      assertTrue(server.getSessionManager().getAllSessions().isEmpty());
+    } finally {
+      server.shutdown().get(10, TimeUnit.SECONDS);
+    }
+  }
+
+  // EOF must take the same graceful stop path as Enter, including when launched without a terminal.
+  @Test
+  void closedStandardInputStopsTheServerProcessAndReleasesItsPort() throws Exception {
+    int port;
+    try (var reservation = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))) {
+      port = reservation.getLocalPort();
+    }
+    Path output = directory.resolve("first-server.log");
+    Process process =
+        new ProcessBuilder(
+                Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+                "-cp",
+                System.getProperty("java.class.path"),
+                FirstServer.class.getName(),
+                Integer.toString(port))
+            .redirectErrorStream(true)
+            .redirectOutput(output.toFile())
+            .start();
+    try {
+      process.getOutputStream().close();
+      assertTrue(process.waitFor(30, TimeUnit.SECONDS));
+      assertEquals(0, process.exitValue(), Files.readString(output));
+      assertTrue(Files.readString(output).contains("press Enter to stop"));
+    } finally {
+      if (process.isAlive()) {
+        process.destroyForcibly();
+        process.waitFor(10, TimeUnit.SECONDS);
+      }
+    }
+    // The tutorial listener must be gone, independent of the process's exit status.
+    try (var listener = new ServerSocket()) {
+      listener.setReuseAddress(true);
+      listener.bind(new InetSocketAddress("127.0.0.1", port));
+      assertEquals(port, listener.getLocalPort());
     }
   }
 }

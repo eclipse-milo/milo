@@ -11,13 +11,18 @@
 package org.eclipse.milo.opcua.sdk.client;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectCandidateSnapshot;
+import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectListener;
 import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectManager;
 import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectSelector;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
@@ -43,26 +48,57 @@ class WikiFeatureReverseTest extends AbstractClientServerTest {
     assertTrue(server.getReverseConnectTargetSnapshots().isEmpty());
   }
 
-  // A listener without a matching server must not pretend that a Session was established.
+  // The caller deadline cancels nothing; disconnect removes the selector and manager close unbinds.
   @Test
   void noInboundServerTimesOutAndDisconnectReleasesTheListener() throws Exception {
+    InetSocketAddress bound;
     try (var manager =
         ReverseConnectManager.builder()
             .addBindAddress(new InetSocketAddress("127.0.0.1", 0))
             .build()) {
       manager.startup();
+      bound = (InetSocketAddress) manager.snapshot().listeners().get(0).boundAddress();
+      String endpointUrl = client.getConfig().getEndpoint().getEndpointUrl();
+      String serverUri = client.getConfig().getEndpoint().getServer().getApplicationUri();
       OpcUaClient pending =
           OpcUaClient.createReverseConnect(
               client.getConfig(),
               manager,
-              ReverseConnectSelector.byServerUriAndEndpointUrl(
-                  "urn:missing", "opc.tcp://missing:4840"));
+              ReverseConnectSelector.byServerUriAndEndpointUrl(serverUri, endpointUrl));
       try {
         assertThrows(
             TimeoutException.class, () -> pending.connectAsync().get(100, TimeUnit.MILLISECONDS));
       } finally {
         pending.disconnectAsync().get(10, TimeUnit.SECONDS);
       }
+      var candidatePending = new CompletableFuture<ReverseConnectCandidateSnapshot>();
+      manager.addListener(
+          new ReverseConnectListener() {
+            @Override
+            public void onCandidatePending(ReverseConnectCandidateSnapshot candidate) {
+              candidatePending.complete(candidate);
+            }
+          });
+      var target =
+          server.addReverseConnectTarget(
+              ReverseConnectTarget.builder()
+                  .setClientListenerUrl("opc.tcp://127.0.0.1:" + bound.getPort())
+                  .setEndpointUrl(endpointUrl)
+                  .build());
+      try {
+        var candidate = candidatePending.get(10, TimeUnit.SECONDS);
+        assertEquals(0, manager.snapshot().claimedCount());
+        assertTrue(
+            manager.snapshot().pendingCandidates().stream()
+                .anyMatch(value -> value.id().equals(candidate.id())));
+      } finally {
+        target.remove().get(10, TimeUnit.SECONDS);
+      }
+    }
+    try (var rebound = new ServerSocket()) {
+      rebound.setReuseAddress(true);
+      rebound.bind(bound);
+      assertTrue(rebound.isBound());
     }
   }
 

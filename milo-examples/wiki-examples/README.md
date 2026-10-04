@@ -77,7 +77,7 @@ issuance, and malformed responses. Neither local fixtures nor mocks establish
 interoperability with a vendor server, GDS, or discovery service. External product
 behavior needs separate tests with that product and its configuration.
 
-[`smoke_source_examples.py`](tools/smoke_source_examples.py) runs the eleven local
+[`smoke_source_examples.py`](tools/smoke_source_examples.py) runs the sixteen local
 source example entry points in separate JVMs. Build `client-examples` and generate
 its dependency classpath first, then pass the source root, classpath file, and an
 evidence directory to the script. It checks expected output, logged errors, exit,
@@ -156,10 +156,35 @@ Each `MigrationExamplesTest` runs
 `migrationFragmentsEstablishTrustExposeFolderAndCleanUp`. It executes the
 version-specific client identity, certificate-manager, and node-instantiation
 fragments; establishes a trusted Basic256Sha256/SignAndEncrypt connection; reads
-and browses the published Folder; deletes it and checks `Bad_NodeIdUnknown`; and
-checks rejection of an untrusted certificate. Generated identities, nodes,
+and browses the published FileType instance and its mandatory Size child; deletes
+them and checks `Bad_NodeIdUnknown`. The 1.2 fixture also checks duplicate root
+rejection, numeric child NodeId formatting, and identity-builder errors. Generated identities, nodes,
 connections, and shared stack resources belong to the fixture. These tests cover
 the included migration fragments, not every behavior changed between releases.
+
+`RevocationMigrationTest` generates a local CA, leaf certificate, and signed clear
+and revoked CRLs. Four flag combinations check revoked peers, missing CRLs, and
+successful validation with a clear CRL. No network CRL distribution points or
+vendor services are involved. Run the old test again in a separate JVM with
+`-Dtest=RevocationMigrationTest` and
+`'-DargLine=--add-opens java.base/sun.security.provider.certpath=ALL-UNNAMED'`
+to compare the legacy public-checker fallback with its internal JDK checker.
+Preserve the first run's Surefire reports before rerunning the same class.
+
+The paired `JsonMigrationTest` classes also exchange files across the two JVMs.
+Run the projects in the order above. The 1.1.7 test generates and decodes real
+legacy JSON, explicitly converts JSON ExtensionObject bodies to Binary, and writes
+Binary DataValues plus a format marker to `migration-1.1.7/target/json-migration`.
+The 1.2 test reads that directory, writes current JSON, decodes it again, and
+checks the values, Matrix shape, unsigned range, quality, timestamps, and structure
+identity. It also checks direct decoding of legacy Variant/DataValue/ExtensionObject
+layouts and the changed null Matrix field result.
+
+Both tests accept `-Dwiki.json.exchange=/absolute/path` to use a different shared
+directory. Pass the same path to both invocations. Preserve this directory until
+the second process has completed; the generated files contain only local fixture
+data. Remove it after inspection. These cases exercise standard types, not
+application-specific optional structures, unions, or vendor models.
 
 ## Capture an encrypted diagnostic exchange
 
