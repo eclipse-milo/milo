@@ -51,9 +51,12 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.ViewDescription;
 import org.eclipse.milo.opcua.stack.core.util.Lists;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BrowseHelper {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(BrowseHelper.class);
 
   public static List<BrowseResult> browse(
       OpcUaServer server, AccessContext context, BrowseRequest browseRequest) {
@@ -373,8 +376,7 @@ public class BrowseHelper {
 
               typeDefinitions.add(typeDefinitionId);
             } catch (UaException e) {
-              LoggerFactory.getLogger(BrowseHelper.class)
-                  .error("Error browsing TypeDefinition for nodeId={}", nodeId, e);
+              LOGGER.error("Error browsing TypeDefinition for nodeId={}", nodeId, e);
 
               typeDefinitions.add(ExpandedNodeId.NULL_VALUE);
             }
@@ -401,8 +403,7 @@ public class BrowseHelper {
     if (typeDefinitionId != null) {
       return typeDefinitionId;
     } else {
-      LoggerFactory.getLogger(BrowseHelper.class)
-          .debug("No managed TypeDefinition for nodeId={}, browsing...", nodeId);
+      LOGGER.debug("No managed TypeDefinition for nodeId={}, browsing...", nodeId);
 
       var browseContext = new BrowseContext(server, null);
 

@@ -36,7 +36,7 @@ public final class TaskQueue {
   /** Default max queue size, effectively unlimited. */
   private static final int DEFAULT_MAX_QUEUE_SIZE = Integer.MAX_VALUE;
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(TaskQueue.class);
 
   private int pending = 0;
   private boolean paused = false;
@@ -303,7 +303,7 @@ public final class TaskQueue {
           notifyCallback(callback);
         }
       } catch (Throwable throwable) {
-        logger.warn("Uncaught Throwable during Task execution.", throwable);
+        LOGGER.warn("Uncaught Throwable during Task execution.", throwable);
 
         if (callback != null) {
           notifyCallbackExceptionally(callback, throwable);
@@ -337,7 +337,7 @@ public final class TaskQueue {
             notifyCallback(callback);
           }
         } catch (Throwable throwable) {
-          logger.warn("Uncaught Throwable during Task execution.", throwable);
+          LOGGER.warn("Uncaught Throwable during Task execution.", throwable);
 
           if (inlineTask.callback != null) {
             CompletableFuture<Unit> callback = inlineTask.callback;

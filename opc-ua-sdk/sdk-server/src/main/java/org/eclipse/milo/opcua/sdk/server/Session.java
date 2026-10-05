@@ -67,7 +67,7 @@ public class Session {
   private static final int CONCURRENT_CALL_LIMIT =
       Integer.getInteger("milo.session.concurrentCallLimit", 64);
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(Session.class);
 
   private final List<LifecycleListener> listeners = new CopyOnWriteArrayList<>();
 
@@ -408,7 +408,7 @@ public class Session {
     long elapsed = Math.abs(System.nanoTime() - lastActivityNanos);
 
     if (elapsed > sessionTimeout.toNanos()) {
-      logger.debug("Session id={} lifetime expired ({}ms).", sessionId, sessionTimeout.toMillis());
+      LOGGER.debug("Session id={} lifetime expired ({}ms).", sessionId, sessionTimeout.toMillis());
 
       close(false);
 
@@ -416,7 +416,7 @@ public class Session {
     } else {
       Duration remaining = Duration.ofNanos(sessionTimeout.toNanos() - elapsed);
 
-      logger.trace("Session id={} timeout scheduled for +{}s.", sessionId, remaining.getSeconds());
+      LOGGER.trace("Session id={} timeout scheduled for +{}s.", sessionId, remaining.getSeconds());
 
       checkTimeoutFuture = scheduleTimeoutCheck(server, remaining);
     }

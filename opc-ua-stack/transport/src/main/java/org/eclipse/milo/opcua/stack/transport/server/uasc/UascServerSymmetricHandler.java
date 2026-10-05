@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
 public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceResponse>
     implements HeaderDecoder {
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(UascServerSymmetricHandler.class);
 
   private final int maxChunkCount;
   private final int maxChunkSize;
@@ -222,10 +222,10 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
 
         out.add(serviceRequest);
       } catch (MessageAbortException e) {
-        logger.warn(
+        LOGGER.warn(
             "Received message abort chunk; error={}, reason={}", e.getStatusCode(), e.getMessage());
       } catch (MessageDecodeException e) {
-        logger.error("Error decoding symmetric message", e);
+        LOGGER.error("Error decoding symmetric message", e);
 
         ctx.close();
       } finally {
@@ -259,15 +259,15 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
 
       outBuffer.writeBytes(chunkComposite);
     } catch (MessageEncodeException e) {
-      logger.error("Error encoding {}: {}", response, e.getMessage(), e);
+      LOGGER.error("Error encoding {}: {}", response, e.getMessage(), e);
 
       sendServiceFault(ctx, response, outBuffer, e);
     } catch (UaSerializationException e) {
-      logger.error("Error serializing response: {}", e.getStatusCode(), e);
+      LOGGER.error("Error serializing response: {}", e.getStatusCode(), e);
 
       sendServiceFault(ctx, response, outBuffer, e);
     } catch (Throwable t) {
-      logger.error("Uncaught error sending service response", t);
+      LOGGER.error("Uncaught error sending service response", t);
 
       sendServiceFault(ctx, response, outBuffer, t);
     } finally {
@@ -318,7 +318,7 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
       // unique nonce), so the server can never send anything more on this channel. Closing with an
       // Error tells the client to drop the half-dead channel and reconnect instead of waiting for
       // responses that will never arrive.
-      logger.error(
+      LOGGER.error(
           "Error encoding ServiceFault on secure channel id={}; closing channel with Error",
           secureChannel.getChannelId(),
           e);
@@ -334,7 +334,7 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
     try {
       ExceptionHandler.sendErrorMessage(ctx, cause);
     } catch (Exception e) {
-      logger.error("Error sending Error message; closing channel", e);
+      LOGGER.error("Error sending Error message; closing channel", e);
 
       ctx.close();
     }

@@ -427,11 +427,10 @@ public abstract class ManagedAddressSpace implements AddressSpace {
               new CallMethodResult(
                   e.getStatusCode(), new StatusCode[0], new DiagnosticInfo[0], new Variant[0]));
         } catch (Throwable t) {
-          LoggerFactory.getLogger(getClass())
-              .error(
-                  "Uncaught Throwable invoking method handler for methodId={}.",
-                  request.getMethodId(),
-                  t);
+          logger.error(
+              "Uncaught Throwable invoking method handler for methodId={}.",
+              request.getMethodId(),
+              t);
 
           results.add(
               new CallMethodResult(

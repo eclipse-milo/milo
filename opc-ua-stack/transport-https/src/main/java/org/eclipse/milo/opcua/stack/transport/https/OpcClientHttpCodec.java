@@ -45,7 +45,7 @@ public class OpcClientHttpCodec extends MessageToMessageCodec<HttpResponse, UaRe
   private static final String UABINARY_CONTENT_TYPE =
       HttpHeaderValues.APPLICATION_OCTET_STREAM.toString();
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpcClientHttpCodec.class);
 
   private final EndpointDescription endpoint;
   private final TransportProfile transportProfile;
@@ -67,7 +67,7 @@ public class OpcClientHttpCodec extends MessageToMessageCodec<HttpResponse, UaRe
       ChannelHandlerContext ctx, UaRequestMessageType requestMessage, List<Object> out)
       throws Exception {
 
-    logger.debug("encoding: {}", requestMessage);
+    LOGGER.debug("encoding: {}", requestMessage);
 
     ByteBuf content = Unpooled.buffer();
 
@@ -113,7 +113,7 @@ public class OpcClientHttpCodec extends MessageToMessageCodec<HttpResponse, UaRe
   protected void decode(ChannelHandlerContext ctx, HttpResponse httpResponse, List<Object> out)
       throws Exception {
 
-    logger.trace("channelRead0: {}", httpResponse);
+    LOGGER.trace("channelRead0: {}", httpResponse);
 
     if (httpResponse instanceof FullHttpResponse fullHttpResponse) {
       String contentType = httpResponse.headers().get(HttpHeaderNames.CONTENT_TYPE);

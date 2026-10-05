@@ -133,7 +133,7 @@ public class SubscriptionManager {
   private static final AtomicLong SUBSCRIPTION_IDS = new AtomicLong(0L);
   private static final QualifiedName EU_RANGE_BROWSE_NAME = new QualifiedName(0, "EURange");
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(SubscriptionManager.class);
   private final Map<UInteger, Subscription> subscriptions = new ConcurrentHashMap<>();
   private final List<Subscription> transferred = new CopyOnWriteArrayList<>();
   private final AtomicLong monitoredItemCount = new AtomicLong(0L);
@@ -227,7 +227,7 @@ public class SubscriptionManager {
         }
       }
     } catch (Throwable t) {
-      logger.warn("Read access refresh failed for Session {}", session.getSessionId(), t);
+      LOGGER.warn("Read access refresh failed for Session {}", session.getSessionId(), t);
     }
   }
 
@@ -563,7 +563,7 @@ public class SubscriptionManager {
         if (e instanceof UaException ue) {
           statusCode = ue.getStatusCode();
         } else {
-          logger.error("Unexpected error creating MonitoredItem", e);
+          LOGGER.error("Unexpected error creating MonitoredItem", e);
           statusCode = new StatusCode(StatusCodes.Bad_InternalError);
         }
 
@@ -605,7 +605,7 @@ public class SubscriptionManager {
 
       return false;
     } catch (UaSerializationException e) {
-      logger.debug("Failed to decode filter when checking for Percent Deadband", e);
+      LOGGER.debug("Failed to decode filter when checking for Percent Deadband", e);
       return false;
     }
   }
@@ -650,7 +650,7 @@ public class SubscriptionManager {
         filter = validateDataItemFilter(filterObject, attributeId, attributes);
       }
     } catch (UaSerializationException e) {
-      logger.debug("error decoding MonitoringFilter", e);
+      LOGGER.debug("error decoding MonitoringFilter", e);
 
       throw new UaException(StatusCodes.Bad_MonitoredItemFilterInvalid, e);
     }
@@ -727,7 +727,7 @@ public class SubscriptionManager {
 
       filter = validateEventItemFilter(filterObject);
     } catch (UaSerializationException e) {
-      logger.debug("error decoding MonitoringFilter", e);
+      LOGGER.debug("error decoding MonitoringFilter", e);
 
       throw new UaException(StatusCodes.Bad_MonitoredItemFilterInvalid, e);
     }
@@ -992,7 +992,7 @@ public class SubscriptionManager {
 
         filter = validateEventItemFilter(filterObject);
       } catch (UaSerializationException e) {
-        logger.debug("error decoding MonitoringFilter", e);
+        LOGGER.debug("error decoding MonitoringFilter", e);
 
         throw new UaException(StatusCodes.Bad_MonitoredItemFilterInvalid, e);
       }
@@ -1060,7 +1060,7 @@ public class SubscriptionManager {
           }
         }
       } catch (UaSerializationException e) {
-        logger.debug("error decoding MonitoringFilter", e);
+        LOGGER.debug("error decoding MonitoringFilter", e);
 
         throw new UaException(StatusCodes.Bad_MonitoredItemFilterInvalid, e);
       }
@@ -1331,7 +1331,7 @@ public class SubscriptionManager {
       var helper = new BrowsePathsHelper(() -> Optional.of(session), server);
       response = helper.translateBrowsePaths(request);
     } catch (UaException e) {
-      logger.warn("Failed to translate EURange browse paths", e);
+      LOGGER.warn("Failed to translate EURange browse paths", e);
       return Collections.emptyMap();
     }
 
@@ -1545,14 +1545,14 @@ public class SubscriptionManager {
         Subscription subscription = subscriptions.get(subscriptionId);
 
         if (subscription == null) {
-          logger.debug(
+          LOGGER.debug(
               "Can't acknowledge sequenceNumber={} on subscriptionId={}; id not valid for this"
                   + " session",
               sequenceNumber,
               subscriptionId);
           results[i] = new StatusCode(StatusCodes.Bad_SubscriptionIdInvalid);
         } else {
-          logger.debug(
+          LOGGER.debug(
               "Acknowledging sequenceNumber={} on subscriptionId={}",
               sequenceNumber,
               subscriptionId);
@@ -1875,8 +1875,7 @@ public class SubscriptionManager {
         dataItemConsumer.accept(dataItems);
       }
     } catch (Throwable t) {
-      LoggerFactory.getLogger(SubscriptionManager.class)
-          .error("Uncaught Throwable in dataItemConsumer", t);
+      LOGGER.error("Uncaught Throwable in dataItemConsumer", t);
     }
 
     try {
@@ -1884,8 +1883,7 @@ public class SubscriptionManager {
         eventItemConsumer.accept(eventItems);
       }
     } catch (Throwable t) {
-      LoggerFactory.getLogger(SubscriptionManager.class)
-          .error("Uncaught Throwable in eventItemConsumer", t);
+      LOGGER.error("Uncaught Throwable in eventItemConsumer", t);
     }
   }
 
