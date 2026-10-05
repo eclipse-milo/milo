@@ -22,14 +22,22 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
+import org.eclipse.milo.opcua.sdk.server.AddressSpace.AddNodesContext;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.ReadContext;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
+import org.eclipse.milo.opcua.stack.core.types.structured.AddNodesItem;
+import org.eclipse.milo.opcua.stack.core.types.structured.AddNodesResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -79,6 +87,43 @@ class AddressSpaceCompositeRoutingTest {
     verify(server).getObjectTypeManager();
   }
 
+  // AddNodes routes on the requested NodeId, or on the parent NodeId when none is requested, and
+  // SimpleAddressSpaceComposite has a separate empty-fragment fallback for each route.
+  @ParameterizedTest(name = "{0}, {2}")
+  @MethodSource("addNodesRoutes")
+  void addNodesOfAMatchedNodeDoesNotBuildAnEmptyFragment(
+      String name,
+      BiFunction<OpcUaServer, AddressSpaceFragment, AddressSpace> factory,
+      String route,
+      AddNodesItem item) {
+
+    when(server.getNamespaceTable()).thenReturn(new NamespaceTable());
+    AddressSpace composite = factory.apply(server, knownNodeFragment());
+
+    List<AddNodesResult> results =
+        composite.addNodes(new AddNodesContext(server, null), List.of(item));
+
+    assertEquals(StatusCode.GOOD, results.get(0).getStatusCode());
+    verify(server, never()).getObjectTypeManager();
+  }
+
+  static Stream<Arguments> addNodesRoutes() {
+    AddNodesItem byRequestedNodeId =
+        addNodesItem(ExpandedNodeId.NULL_VALUE, KNOWN_NODE_ID.expanded());
+    AddNodesItem byParentNodeId = addNodesItem(KNOWN_NODE_ID.expanded(), ExpandedNodeId.NULL_VALUE);
+
+    return composites()
+        .flatMap(
+            composite -> {
+              Object name = composite.get()[0];
+              Object factory = composite.get()[1];
+
+              return Stream.of(
+                  Arguments.of(name, factory, "requested NodeId", byRequestedNodeId),
+                  Arguments.of(name, factory, "parent NodeId", byParentNodeId));
+            });
+  }
+
   static Stream<Arguments> composites() {
     BiFunction<OpcUaServer, AddressSpaceFragment, AddressSpace> composite =
         (server, fragment) -> {
@@ -106,13 +151,30 @@ class AddressSpaceCompositeRoutingTest {
         Arguments.of("SimpleAddressSpaceComposite", simpleComposite));
   }
 
-  /** A fragment that serves {@link #KNOWN_NODE_ID} and reads 42 from it. */
+  /**
+   * A fragment that serves {@link #KNOWN_NODE_ID}, reads 42 from it, and accepts nodes added to it.
+   */
   private static AddressSpaceFragment knownNodeFragment() {
     AddressSpaceFragment fragment = mock(AddressSpaceFragment.class);
     when(fragment.getFilter()).thenReturn(SimpleAddressSpaceFilter.create(KNOWN_NODE_ID::equals));
     when(fragment.read(any(), any(), any(), anyList()))
         .thenReturn(List.of(new DataValue(new Variant(42))));
+    when(fragment.addNodes(any(), anyList()))
+        .thenReturn(List.of(new AddNodesResult(StatusCode.GOOD, KNOWN_NODE_ID)));
     return fragment;
+  }
+
+  private static AddNodesItem addNodesItem(
+      ExpandedNodeId parentNodeId, ExpandedNodeId requestedNewNodeId) {
+
+    return new AddNodesItem(
+        parentNodeId,
+        NodeIds.HasComponent,
+        requestedNewNodeId,
+        new QualifiedName(1, "added"),
+        NodeClass.Object,
+        null,
+        NodeIds.BaseObjectType.expanded());
   }
 
   private List<DataValue> read(AddressSpace composite, NodeId nodeId) {
