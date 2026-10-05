@@ -43,12 +43,16 @@ Compilation alone does not check service behavior. The commands above select
 these documentation fixtures, not the full repository test suite.
 
 [FirstProgramsTest](src/test/java/org/eclipse/milo/examples/wiki/FirstProgramsTest.java)
-exercises both tutorial programs. Its
-`firstProgramsReadBrowseRejectWritesAndReleaseTheirPort` test reads `21.5`, browses
-the Variable, checks `Bad_NotWritable` and `Bad_NodeIdUnknown`, disconnects, shuts
-down, and rebinds the server port. Its
-`occupiedPortFailsStartupAndCanBeShutDown` test checks exceptional startup and the
-subsequent shutdown path.
+exercises both tutorial programs through six tests:
+
+| Test | Behavior checked |
+| --- | --- |
+| `firstProgramsReadBrowseRejectWritesAndStopListening` | Reads `21.5`, browses the Variable, checks `Bad_NotWritable` and `Bad_NodeIdUnknown`, verifies the value is unchanged, then disconnects and shuts down. A TCP connection attempt confirms the listener has stopped. |
+| `occupiedPortFailsStartupAndCanBeShutDown` | Checks `Bad_ConfigurationError` and "No endpoints bound" when the port is occupied, then runs shutdown. |
+| `stoppedServerAndMismatchedEndpointReportTheirActualStatuses` | Checks `Bad_ConnectionRejected` for an unavailable listener and `Bad_TcpEndpointUrlInvalid` for the mismatched `localhost` endpoint, including the `/wiki/discovery` fallback. |
+| `missingNamespaceFailsTheTutorialHelperAndClosesItsSession` | Checks the helper's missing-namespace error against a reachable server and verifies that no Session remains. |
+| `unexpectedTypeAndBadQualityTakeTheTutorialHelpersFailurePaths` | Checks the helper's rejection of a String payload and `Bad_OutOfService` quality, then verifies that no Session remains. |
+| `closedStandardInputStopsTheServerProcessAndReleasesItsPort` | Launches the server entry point in a separate JVM, closes standard input, checks the startup message and zero exit, and rebinds its port with address reuse enabled. |
 
 The integration fixtures are under
 [`opc-ua-sdk/integration-tests`](../../opc-ua-sdk/integration-tests/src/test/java/org/eclipse/milo/opcua/sdk).
@@ -153,7 +157,7 @@ Its POM does not declare the consumer project's snapshot repository. Separate
 local repositories can also isolate dependency provenance when comparing builds.
 
 Each `MigrationExamplesTest` runs
-`migrationFragmentsEstablishTrustExposeFolderAndCleanUp`. It executes the
+`migrationFragmentsEstablishTrustPreserveFileMemberIdsAndCleanUp`. It executes the
 version-specific client identity, certificate-manager, and node-instantiation
 fragments; establishes a trusted Basic256Sha256/SignAndEncrypt connection; reads
 and browses the published FileType instance and its mandatory Size child; deletes
