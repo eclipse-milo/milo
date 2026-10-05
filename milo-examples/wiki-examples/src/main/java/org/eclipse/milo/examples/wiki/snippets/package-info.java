@@ -15,9 +15,6 @@
  * comments. The build compiles these classes, so an API change that breaks a sample fails here.
  * Nothing calls them. Wrapper methods and their parameters supply the variables that a Wiki
  * fragment uses without declaring.
- *
- * <p>Change a sample here, then copy it into the Wiki with {@code tools/sync_snippets.py}. A Wiki
- * code block names its source in a {@code <!-- snippet: ... -->} comment above the block.
  */
 @org.jspecify.annotations.NullMarked
 package org.eclipse.milo.examples.wiki.snippets;

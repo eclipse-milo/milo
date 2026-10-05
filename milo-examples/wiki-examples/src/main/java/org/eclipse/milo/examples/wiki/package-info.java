@@ -17,9 +17,6 @@
  * The client selects that endpoint explicitly, reads Temperature, and checks both operation status
  * and value type.
  *
- * <p>Wiki pages show {@code FirstServer} whole and as named regions marked by {@code // snippet:}
- * comments, so keep those markers in place when editing the file.
- *
  * <p>The server owns its namespace lifecycle. The standalone entry points close their client or
  * server before releasing Milo's shared resources. Applications hosting other Milo components must
  * defer that process-wide release until all components have stopped.
