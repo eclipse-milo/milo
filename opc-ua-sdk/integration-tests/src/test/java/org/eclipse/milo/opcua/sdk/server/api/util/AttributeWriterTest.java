@@ -23,6 +23,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.ValueRanks;
@@ -51,8 +52,13 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class AttributeWriterTest extends AbstractClientServerTest {
+
+  private static final int UNDEFINED_VALUE_RANK = -4;
 
   @Test
   void writeNullAllowed() throws Exception {
@@ -341,6 +347,139 @@ public class AttributeWriterTest extends AbstractClientServerTest {
     assertEquals(new StatusCode(StatusCodes.Bad_TypeMismatch), statusCode);
   }
 
+  // Part 6 §5.1.9: an Attribute that accepts a null value also accepts an empty Variant and vice
+  // versa. A null Matrix written by server code is checked against AllowNulls like an empty Variant
+  // instead of being unwrapped as an array.
+  @Test
+  void rejectNullMatrixWhereNullsAreNotAllowed() {
+    UaServerNode node = getManagedNode("Int32Matrix");
+
+    StatusCode statusCode =
+        AttributeWriter.writeAttribute(
+            AccessContext.INTERNAL,
+            node,
+            AttributeId.Value,
+            DataValue.valueOnly(new Variant(Matrix.ofNull())),
+            null);
+
+    assertEquals(new StatusCode(StatusCodes.Bad_TypeMismatch), statusCode);
+  }
+
+  // Storing an accepted null Matrix as an empty Variant gives later reads and IndexRange writes a
+  // plain null, the same value a Binary client's null Matrix arrives as.
+  @Test
+  void writeNullMatrixWhereNullsAreAllowedStoresNullValue() {
+    UaVariableNode node = (UaVariableNode) getManagedNode("NullableInt32Matrix");
+
+    StatusCode statusCode =
+        AttributeWriter.writeAttribute(
+            AccessContext.INTERNAL,
+            node,
+            AttributeId.Value,
+            DataValue.valueOnly(new Variant(Matrix.ofNull())),
+            null);
+
+    assertEquals(StatusCode.GOOD, statusCode);
+    assertEquals(Variant.NULL_VALUE, node.getValue().value());
+  }
+
+  // Part 4 §7.38.2: Bad_IndexRangeNoData is the result when no data exists within the range, and a
+  // null Matrix stored by server code holds no data.
+  @Test
+  void indexRangeWriteToStoredNullMatrixReturnsIndexRangeNoData() throws Exception {
+    UaVariableNode node = (UaVariableNode) getManagedNode("NullableInt32Matrix");
+    node.setValue(new DataValue(new Variant(Matrix.ofNull())));
+
+    StatusCode statusCode =
+        client
+            .writeAsync(
+                List.of(
+                    new WriteValue(
+                        node.getNodeId(),
+                        AttributeId.Value.uid(),
+                        "0:1,0:1",
+                        DataValue.valueOnly(
+                            new Variant(new Matrix(new Integer[][] {{1, 2}, {3, 4}}))))))
+            .get(5, TimeUnit.SECONDS)
+            .getResults()[0];
+
+    assertEquals(new StatusCode(StatusCodes.Bad_IndexRangeNoData), statusCode);
+  }
+
+  /**
+   * Part 3 §5.6.2: ValueRank declares whether a Variable's value is a scalar or an array, and how
+   * many dimensions an array has. A written value of another shape must be rejected and leave the
+   * stored value unchanged, or server code that relies on the declared shape fails later.
+   */
+  @ParameterizedTest(name = "ValueRank {0} rejects {1}")
+  @MethodSource("mismatchedShapes")
+  void rejectValueWhoseShapeDoesNotMatchValueRank(int valueRank, String shape, Variant value)
+      throws Exception {
+
+    NodeId nodeId = new NodeId(2, doubleVariableName(valueRank));
+    Variant before = getStoredValue(valueRank);
+
+    StatusCode statusCode =
+        client.writeValues(List.of(nodeId), List.of(DataValue.valueOnly(value))).get(0);
+
+    assertEquals(new StatusCode(StatusCodes.Bad_TypeMismatch), statusCode);
+    assertEquals(before, getStoredValue(valueRank), "stored value changed");
+  }
+
+  static Stream<Arguments> mismatchedShapes() {
+    return Stream.of(
+        Arguments.of(ValueRanks.Scalar, "array", new Variant(new Double[] {1.0, 2.0})),
+        Arguments.of(ValueRanks.Scalar, "empty array", new Variant(new Double[0])),
+        Arguments.of(ValueRanks.Scalar, "matrix", new Variant(doubleMatrix())),
+        Arguments.of(ValueRanks.OneOrMoreDimensions, "scalar", new Variant(1.0)),
+        Arguments.of(ValueRanks.ScalarOrOneDimension, "matrix", new Variant(doubleMatrix())),
+        // Part 3 defines no ValueRank below -3, so no value matches one.
+        Arguments.of(UNDEFINED_VALUE_RANK, "scalar", new Variant(1.0)),
+        Arguments.of(UNDEFINED_VALUE_RANK, "empty array", new Variant(new Double[0])));
+  }
+
+  // Control for the case above: every shape a ValueRank allows is still accepted and stored.
+  @ParameterizedTest(name = "ValueRank {0} accepts {1}")
+  @MethodSource("matchingShapes")
+  void writeValueWhoseShapeMatchesValueRank(int valueRank, String shape, Variant value)
+      throws Exception {
+
+    NodeId nodeId = new NodeId(2, doubleVariableName(valueRank));
+
+    StatusCode statusCode =
+        client.writeValues(List.of(nodeId), List.of(DataValue.valueOnly(value))).get(0);
+
+    assertEquals(StatusCode.GOOD, statusCode);
+    assertEquals(value, getStoredValue(valueRank));
+  }
+
+  static Stream<Arguments> matchingShapes() {
+    return Stream.of(
+        Arguments.of(ValueRanks.Scalar, "scalar", new Variant(1.0)),
+        Arguments.of(ValueRanks.OneOrMoreDimensions, "array", new Variant(new Double[] {1.0, 2.0})),
+        Arguments.of(ValueRanks.OneOrMoreDimensions, "matrix", new Variant(doubleMatrix())),
+        Arguments.of(ValueRanks.ScalarOrOneDimension, "scalar", new Variant(1.0)),
+        Arguments.of(
+            ValueRanks.ScalarOrOneDimension, "array", new Variant(new Double[] {1.0, 2.0})),
+        Arguments.of(ValueRanks.Any, "scalar", new Variant(1.0)),
+        Arguments.of(ValueRanks.Any, "array", new Variant(new Double[] {1.0, 2.0})),
+        Arguments.of(ValueRanks.Any, "matrix", new Variant(doubleMatrix())));
+  }
+
+  private static Matrix doubleMatrix() {
+    return new Matrix(new Double[][] {{1.0, 2.0}, {3.0, 4.0}});
+  }
+
+  private static String doubleVariableName(int valueRank) {
+    return "DoubleValueRank" + valueRank;
+  }
+
+  private Variant getStoredValue(int valueRank) {
+    UaVariableNode node = (UaVariableNode) getManagedNode(doubleVariableName(valueRank));
+
+    return node.getValue().value();
+  }
+
   @Test
   void writeValue_VariableNode_SuccessAndFailure() throws Exception {
     StatusCode ok =
@@ -541,6 +680,44 @@ public class AttributeWriterTest extends AbstractClientServerTest {
                 b.setUserAccessLevel(AccessLevel.READ_WRITE);
                 return b.buildAndAdd();
               });
+
+          UaVariableNode nullableInt32Matrix =
+              UaVariableNode.build(
+                  context,
+                  b -> {
+                    b.setNodeId(new NodeId(2, "NullableInt32Matrix"));
+                    b.setBrowseName(new QualifiedName(2, "NullableInt32Matrix"));
+                    b.setDisplayName(LocalizedText.english("NullableInt32Matrix"));
+                    b.setDataType(NodeIds.Int32);
+                    b.setValueRank(2);
+                    b.setAccessLevel(AccessLevel.READ_WRITE);
+                    b.setUserAccessLevel(AccessLevel.READ_WRITE);
+                    return b.buildAndAdd();
+                  });
+
+          nullableInt32Matrix.setAllowNulls(true);
+
+          for (int valueRank :
+              List.of(
+                  ValueRanks.ScalarOrOneDimension,
+                  ValueRanks.Any,
+                  ValueRanks.Scalar,
+                  ValueRanks.OneOrMoreDimensions,
+                  UNDEFINED_VALUE_RANK)) {
+
+            UaVariableNode.build(
+                context,
+                b -> {
+                  b.setNodeId(new NodeId(2, doubleVariableName(valueRank)));
+                  b.setBrowseName(new QualifiedName(2, doubleVariableName(valueRank)));
+                  b.setDisplayName(LocalizedText.english(doubleVariableName(valueRank)));
+                  b.setDataType(NodeIds.Double);
+                  b.setValueRank(valueRank);
+                  b.setAccessLevel(AccessLevel.READ_WRITE);
+                  b.setUserAccessLevel(AccessLevel.READ_WRITE);
+                  return b.buildAndAdd();
+                });
+          }
 
           UaVariableNode.build(
               context,

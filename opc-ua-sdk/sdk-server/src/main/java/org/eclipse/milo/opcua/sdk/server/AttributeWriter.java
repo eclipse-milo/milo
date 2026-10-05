@@ -115,6 +115,11 @@ public class AttributeWriter {
 
     Variant updateVariant = value.value();
 
+    if (updateVariant.value() instanceof Matrix matrix && matrix.isNull()) {
+      // A null Matrix is just a null value; check and store it as one.
+      updateVariant = Variant.NULL_VALUE;
+    }
+
     if (indexRange != null && !indexRange.isEmpty()) {
       try {
         NumericRange range = NumericRange.parse(indexRange);
@@ -124,7 +129,7 @@ public class AttributeWriter {
           currentValue = dataValue.value().value();
         }
         if (currentValue instanceof Matrix matrix) {
-          currentValue = matrix.nestedArrayValue();
+          currentValue = matrix.isNull() ? null : matrix.nestedArrayValue();
         }
 
         Object updateValue = updateVariant.value();
@@ -184,13 +189,11 @@ public class AttributeWriter {
           valueRank = ((VariableTypeNode) node).getValueRank();
           arrayDimensions = ((VariableTypeNode) node).getArrayDimensions();
         } else {
-          valueRank = 0;
+          valueRank = ValueRanks.Any;
           arrayDimensions = null;
         }
 
-        if (valueRank > 0) {
-          value = validateArrayType(valueRank, arrayDimensions, value);
-        }
+        value = validateArrayType(valueRank, arrayDimensions, value);
       } catch (UaException e) {
         return e.getStatusCode();
       }
@@ -476,7 +479,8 @@ public class AttributeWriter {
 
       case ValueRanks.OneDimension:
       default:
-        if (!valueIsArray) {
+        // Part 3 defines no ValueRank below -3, so no value matches one.
+        if (valueRank < 1 || !valueIsArray) {
           throw new UaException(StatusCodes.Bad_TypeMismatch);
         }
 
