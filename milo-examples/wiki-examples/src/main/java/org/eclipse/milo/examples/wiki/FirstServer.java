@@ -223,17 +223,22 @@ public final class FirstServer {
     @Override
     protected Variant[] invoke(InvocationContext context, Variant[] inputs) throws UaException {
       double delta = (Double) inputs[0].value();
-      double current = (Double) setpoint.getValue().value().value();
-      double adjusted = current + delta;
 
-      boolean inRange = adjusted >= 0.0 && adjusted <= 100.0;
-      if (!inRange) {
-        throw new UaException(StatusCodes.Bad_OutOfRange);
+      // Writes store Setpoint while holding the node's lock, so holding it here keeps a
+      // concurrent write or call from changing Setpoint between the read and the update.
+      synchronized (setpoint) {
+        double current = (Double) setpoint.getValue().value().value();
+        double adjusted = current + delta;
+
+        boolean inRange = adjusted >= 0.0 && adjusted <= 100.0;
+        if (!inRange) {
+          throw new UaException(StatusCodes.Bad_OutOfRange);
+        }
+
+        setpoint.setValue(new DataValue(new Variant(adjusted)));
+
+        return new Variant[] {new Variant(adjusted)};
       }
-
-      setpoint.setValue(new DataValue(new Variant(adjusted)));
-
-      return new Variant[] {new Variant(adjusted)};
     }
   }
   // snippet:adjust-setpoint:end

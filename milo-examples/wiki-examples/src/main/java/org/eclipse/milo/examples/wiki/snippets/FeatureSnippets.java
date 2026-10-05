@@ -310,9 +310,11 @@ public final class FeatureSnippets {
       chain.get(i).verify(chain.get(i + 1).getPublicKey());
     }
 
-    // The last certificate must be signed by a CA the application already trusts.
+    // The chain must end at, or be signed by, a CA the application already trusts.
     X509Certificate last = chain.get(chain.size() - 1);
-    last.verify(trustedCa.getPublicKey());
+    if (!last.equals(trustedCa)) {
+      last.verify(trustedCa.getPublicKey());
+    }
 
     X509Certificate[] certificates = chain.toArray(X509Certificate[]::new);
     group.updateCertificate(NodeIds.RsaSha256ApplicationCertificateType, keyPair, certificates);
