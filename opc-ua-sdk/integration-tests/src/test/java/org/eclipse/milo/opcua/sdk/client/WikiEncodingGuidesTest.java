@@ -754,7 +754,7 @@ public class WikiEncodingGuidesTest {
                     Arguments.of(encoding, OpcUaDataType.Double, new Double[] {1.0, null}, null)));
   }
 
-  // A Java null DateTime becomes a real timestamp, unlike the OPC UA null DateTime sentinel.
+  // Milo's JSON round trip distinguishes a Java null DateTime from DateTime.NULL_VALUE.
   @ParameterizedTest
   @EnumSource(Encoding.class)
   void jsonNullDateTimeElementBecomesYearOneWhileNullSentinelSurvives(Encoding encoding)

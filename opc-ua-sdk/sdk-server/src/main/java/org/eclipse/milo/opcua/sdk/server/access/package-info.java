@@ -12,12 +12,18 @@
  * Authorization: whether a Session may read, write, browse, call, or manage a Node, and how a read
  * decision handed to a MonitoredItem stays current.
  *
- * <p>The {@link org.eclipse.milo.opcua.sdk.server.access.AccessController} decides. Every service
- * implementation asks it before touching an AddressSpace: Read and Write per attribute, Browse per
- * Node, Call per Object and Method, and the node-management services per source Node. {@link
- * org.eclipse.milo.opcua.sdk.server.access.DefaultAccessController} decides from the Node's access
- * attributes as read for the requesting Session, so an application shapes its answers through
- * attribute filters that supply {@code UserAccessLevel}, {@code UserWriteMask}, {@code
+ * <p>The SDK's default Read, Write, Browse, Call, DeleteNodes, AddReferences, and DeleteReferences
+ * paths consult the {@link org.eclipse.milo.opcua.sdk.server.access.AccessController}.
+ * CreateMonitoredItems checks read access through it, and TransferSubscriptions rechecks read
+ * access for transferred data items.
+ *
+ * <p>HistoryRead, HistoryUpdate, AddNodes, and TranslateBrowsePathsToNodeIds dispatch without a
+ * controller check. BrowseNext returns previously filtered references without rechecking access.
+ * Applications must enforce their policy for these paths and for direct AddressSpace calls.
+ *
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.access.DefaultAccessController} decides from the
+ * Node's access attributes as read for the requesting Session, so an application shapes its answers
+ * through attribute filters that supply {@code UserAccessLevel}, {@code UserWriteMask}, {@code
  * UserExecutable}, and {@code UserRolePermissions}, and through the server's {@code RoleMapper}. An
  * application whose rules go beyond attributes supplies its own controller through {@link
  * org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigBuilder#setAccessControllerFactory}.
