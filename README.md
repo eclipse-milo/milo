@@ -9,6 +9,23 @@ Stack Overflow tag: [milo](http://stackoverflow.com/questions/tagged/milo)
 
 Mailing list: https://dev.eclipse.org/mailman/listinfo/milo-dev
 
+## Documentation
+
+The [Milo Wiki][wiki] is the user guide. If you are new to Milo, start with
+[Getting started][getting-started], then build the tutorial [server][first-server] and a
+[client][first-client] that talks to it. The [client][client-guide] and [server][server-guide]
+guides continue from there, and the [1.2.0 migration guide][migration] covers upgrading from 1.1.
+[Examples][examples] lists the runnable programs in `milo-examples`.
+
+[wiki]: https://github.com/eclipse-milo/milo/wiki
+[getting-started]: https://github.com/eclipse-milo/milo/wiki/Getting-Started
+[first-server]: https://github.com/eclipse-milo/milo/wiki/First-Server
+[first-client]: https://github.com/eclipse-milo/milo/wiki/First-Client
+[client-guide]: https://github.com/eclipse-milo/milo/wiki/Client
+[server-guide]: https://github.com/eclipse-milo/milo/wiki/Server
+[migration]: https://github.com/eclipse-milo/milo/wiki/Release-Notes-1.2.0
+[examples]: https://github.com/eclipse-milo/milo/wiki/Examples
+
 ## Requirements
 
 The repository pins its Java and Maven toolchain with `mise`:
@@ -57,13 +74,14 @@ Releases are published to Maven Central and snapshots to Sonatype.
 </dependency>
 ```
 
-Server guides: [sampling framework](docs/features/sampling.md) and
-[access control, roles, and permissions](docs/features/access-control.md) (1.2.0 and later).
+The Wiki's server guides cover the [sampling framework](https://github.com/eclipse-milo/milo/wiki/Server-Sampling) and
+[access control, roles, and permissions](https://github.com/eclipse-milo/milo/wiki/Server-Access-Control)
+(1.2.0 and later).
 
 #### GDS Client (1.2.0 and later)
 
 Registers an application with a Global Discovery Server, requests certificates through the Pull
-Model, and reads GDS trust lists. See [docs/features/gds-client.md](docs/features/gds-client.md).
+Model, and reads GDS trust lists. See the [GDS client guide](https://github.com/eclipse-milo/milo/wiki/GDS-Client).
 
 ```xml
 <dependency>
@@ -77,9 +95,10 @@ Referencing a `SNAPSHOT` release requires the Sonatype snapshot repository be ad
 
 ```xml
 <repository>
-    <id>oss-sonatype</id>
-    <name>oss-sonatype</name>
-    <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+    <id>sonatype-snapshots</id>
+    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+    <releases><enabled>false</enabled></releases>
+    <snapshots><enabled>true</enabled></snapshots>
 </repository>
 ```
 
