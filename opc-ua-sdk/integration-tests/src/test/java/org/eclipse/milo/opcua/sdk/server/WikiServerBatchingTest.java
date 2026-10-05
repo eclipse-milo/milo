@@ -149,22 +149,23 @@ public class WikiServerBatchingTest extends AbstractClientServerTest {
 
     @Override
     protected @Nullable CompletionStage<@Nullable Void> sample(List<DataItem> items) {
-      List<NodeId> ids =
+      List<NodeId> nodeIds =
           items.stream().map(item -> item.getReadValueId().getNodeId()).distinct().toList();
+
       Map<NodeId, DataValue> values;
       try {
-        values = readBatch.apply(ids);
-      } catch (RuntimeException failure) {
+        values = readBatch.apply(nodeIds);
+      } catch (RuntimeException e) {
         for (DataItem item : items) {
           deliver(item, new DataValue(StatusCodes.Bad_CommunicationError));
         }
         return null;
       }
+
       for (DataItem item : items) {
-        deliver(
-            item,
-            values.getOrDefault(
-                item.getReadValueId().getNodeId(), new DataValue(StatusCodes.Bad_NoData)));
+        NodeId nodeId = item.getReadValueId().getNodeId();
+        DataValue value = values.getOrDefault(nodeId, new DataValue(StatusCodes.Bad_NoData));
+        deliver(item, value);
       }
       return null;
     }

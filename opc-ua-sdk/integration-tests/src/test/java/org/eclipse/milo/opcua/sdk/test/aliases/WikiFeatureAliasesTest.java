@@ -32,6 +32,7 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.AliasNameDataType;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
+import org.eclipse.milo.opcua.stack.core.types.structured.CallResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -90,32 +91,28 @@ class WikiFeatureAliasesTest extends AbstractClientServerTest {
   // snippet:alias_find:start
   static List<AliasNameDataType> findAliases(OpcUaClient client, String pattern)
       throws UaException {
-    var request =
-        new CallMethodRequest(
-            NodeIds.Aliases,
-            NodeIds.Aliases_FindAlias,
-            new Variant[] {new Variant(pattern), new Variant(NodeId.NULL_VALUE)});
-    CallMethodResult[] results = client.call(List.of(request)).getResults();
-    if (results == null || results.length != 1)
-      throw new IllegalStateException("Missing method result");
-    CallMethodResult result = results[0];
-    if (!result.getStatusCode().isGood()) throw new UaException(result.getStatusCode());
-    Variant[] outputs = result.getOutputArguments();
-    if (outputs == null || outputs.length != 1)
-      throw new IllegalStateException("Missing aliases output");
-    List<AliasNameDataType> aliases = new ArrayList<>();
-    if (outputs[0].value() == null) return aliases;
-    if (!(outputs[0].value() instanceof ExtensionObject[] encoded)) {
-      throw new IllegalStateException("Expected encoded AliasNameDataType array");
+    // A null reference type filter matches aliases of any reference type.
+    Variant[] inputs = {new Variant(pattern), new Variant(NodeId.NULL_VALUE)};
+    var request = new CallMethodRequest(NodeIds.Aliases, NodeIds.Aliases_FindAlias, inputs);
+
+    CallResponse response = client.call(List.of(request));
+    CallMethodResult result = requireNonNull(response.getResults())[0];
+    if (!result.getStatusCode().isGood()) {
+      throw new UaException(result.getStatusCode());
     }
-    for (ExtensionObject entry : encoded) {
-      Object decoded = entry.decode(client.getStaticEncodingContext());
-      if (!(decoded instanceof AliasNameDataType alias)) {
-        throw new IllegalStateException("Expected AliasNameDataType");
+
+    // The only output is an array of encoded AliasNameDataType structures.
+    Variant[] outputs = requireNonNull(result.getOutputArguments());
+    ExtensionObject[] encoded = (ExtensionObject[]) outputs[0].value();
+
+    List<AliasNameDataType> aliases = new ArrayList<>();
+    if (encoded != null) {
+      for (ExtensionObject entry : encoded) {
+        aliases.add((AliasNameDataType) entry.decode(client.getStaticEncodingContext()));
       }
-      aliases.add(alias);
     }
     return aliases;
   }
+
   // snippet:alias_find:end
 }

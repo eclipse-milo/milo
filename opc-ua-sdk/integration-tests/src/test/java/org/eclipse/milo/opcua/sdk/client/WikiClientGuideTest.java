@@ -61,6 +61,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.BrowseResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrowseResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
+import org.eclipse.milo.opcua.stack.core.types.structured.CallResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.EventFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.RelativePath;
@@ -368,7 +369,9 @@ class WikiClientGuideTest extends AbstractClientServerTest {
       client.connectAsync().get(10, TimeUnit.SECONDS);
       DataValue value =
           client.readValue(0.0, TimestampsToReturn.Both, NodeIds.Server_ServerStatus_CurrentTime);
-      if (!value.statusCode().isGood()) throw new UaException(value.statusCode());
+      if (!value.statusCode().isGood()) {
+        throw new UaException(value.statusCode());
+      }
       return value;
     } finally {
       client.disconnectAsync().get(10, TimeUnit.SECONDS);
@@ -380,7 +383,10 @@ class WikiClientGuideTest extends AbstractClientServerTest {
   // snippet:read:start
   static int readInt32(OpcUaClient client, NodeId nodeId) throws UaException {
     DataValue value = client.readValue(0.0, TimestampsToReturn.Both, nodeId);
-    if (!value.statusCode().isGood()) throw new UaException(value.statusCode());
+    if (!value.statusCode().isGood()) {
+      throw new UaException(value.statusCode());
+    }
+
     Object body = value.value().value();
     if (!(body instanceof Integer integer)) {
       throw new IllegalArgumentException("Expected an Int32, got " + body);
@@ -392,10 +398,13 @@ class WikiClientGuideTest extends AbstractClientServerTest {
 
   // snippet:write:start
   static void writeInt32(OpcUaClient client, NodeId nodeId, int value) throws UaException {
-    List<StatusCode> results =
-        client.writeValues(List.of(nodeId), List.of(DataValue.valueOnly(new Variant(value))));
-    if (results.size() != 1) throw new IllegalStateException("Missing write result");
-    if (!results.get(0).isGood()) throw new UaException(results.get(0));
+    DataValue dataValue = DataValue.valueOnly(new Variant(value));
+    List<StatusCode> results = client.writeValues(List.of(nodeId), List.of(dataValue));
+
+    StatusCode status = results.get(0);
+    if (!status.isGood()) {
+      throw new UaException(status);
+    }
   }
 
   // snippet:write:end
@@ -416,13 +425,19 @@ class WikiClientGuideTest extends AbstractClientServerTest {
   // snippet:node:start
   static void synchronizeValue(OpcUaClient client, NodeId nodeId, int value) throws UaException {
     UaVariableNode node = client.getAddressSpace().getVariableNode(nodeId);
+
+    // Stage the value in the local cache, then write it to the server.
     node.setValue(new Variant(value));
-    List<StatusCode> writes = node.synchronize(EnumSet.of(AttributeId.Value));
-    if (writes.size() != 1) throw new IllegalStateException("Missing write result");
-    if (!writes.get(0).isGood()) throw new UaException(writes.get(0));
-    List<DataValue> reads = node.refresh(EnumSet.of(AttributeId.Value));
-    if (reads.size() != 1) throw new IllegalStateException("Missing read result");
-    if (!reads.get(0).statusCode().isGood()) throw new UaException(reads.get(0).statusCode());
+    StatusCode writeStatus = node.synchronize(EnumSet.of(AttributeId.Value)).get(0);
+    if (!writeStatus.isGood()) {
+      throw new UaException(writeStatus);
+    }
+
+    // Read the value back so the cache holds what the server stored.
+    DataValue refreshed = node.refresh(EnumSet.of(AttributeId.Value)).get(0);
+    if (!refreshed.statusCode().isGood()) {
+      throw new UaException(refreshed.statusCode());
+    }
   }
 
   // snippet:node:end
@@ -430,19 +445,16 @@ class WikiClientGuideTest extends AbstractClientServerTest {
   // snippet:method:start
   static double callSquareRoot(OpcUaClient client, NodeId objectId, NodeId methodId, double input)
       throws UaException {
-    CallMethodResult result =
-        requireNonNull(
-            client
-                .call(
-                    List.of(
-                        new CallMethodRequest(
-                            objectId, methodId, new Variant[] {new Variant(input)})))
-                .getResults())[0];
-    if (!result.getStatusCode().isGood()) throw new UaException(result.getStatusCode());
-    Variant[] outputs = result.getOutputArguments();
-    if (outputs == null || outputs.length != 1 || !(outputs[0].value() instanceof Double)) {
-      throw new IllegalStateException("Expected one Double output");
+    Variant[] inputs = {new Variant(input)};
+    var request = new CallMethodRequest(objectId, methodId, inputs);
+
+    CallResponse response = client.call(List.of(request));
+    CallMethodResult result = requireNonNull(response.getResults())[0];
+    if (!result.getStatusCode().isGood()) {
+      throw new UaException(result.getStatusCode());
     }
+
+    Variant[] outputs = requireNonNull(result.getOutputArguments());
     return (Double) outputs[0].value();
   }
 
@@ -461,7 +473,9 @@ class WikiClientGuideTest extends AbstractClientServerTest {
       subscription.create();
       subscription.synchronizeMonitoredItems();
       DataValue value = firstValue.get(10, TimeUnit.SECONDS);
-      if (!value.statusCode().isGood()) throw new UaException(value.statusCode());
+      if (!value.statusCode().isGood()) {
+        throw new UaException(value.statusCode());
+      }
       return value;
     } finally {
       subscription.delete();
@@ -495,21 +509,29 @@ class WikiClientGuideTest extends AbstractClientServerTest {
   // snippet:event_subscription:end
 
   // snippet:partition:start
-  static List<DataValue> readInBatches(
-      OpcUaClient client, List<NodeId> nodeIds, int applicationBatchSize) throws UaException {
-    if (applicationBatchSize < 1) throw new IllegalArgumentException("Batch size must be positive");
-    long limit = client.getOperationLimits().maxNodesPerRead().map(UInteger::longValue).orElse(0L);
-    int size = limit > 0 ? (int) Math.min(limit, applicationBatchSize) : applicationBatchSize;
+  static List<DataValue> readInBatches(OpcUaClient client, List<NodeId> nodeIds, int maxBatchSize)
+      throws UaException {
+    if (maxBatchSize < 1) {
+      throw new IllegalArgumentException("maxBatchSize must be positive");
+    }
+
+    // A server limit of 0 means the server advertises no limit.
+    long serverLimit =
+        client.getOperationLimits().maxNodesPerRead().map(UInteger::longValue).orElse(0L);
+
+    int batchSize = maxBatchSize;
+    if (serverLimit > 0 && serverLimit < batchSize) {
+      batchSize = (int) serverLimit;
+    }
+
     List<DataValue> values = new ArrayList<>();
-    for (int start = 0; start < nodeIds.size(); ) {
-      int end = start + Math.min(size, nodeIds.size() - start);
-      List<DataValue> batch =
-          client.readValues(0.0, TimestampsToReturn.Both, nodeIds.subList(start, end));
-      if (batch.size() != end - start) throw new IllegalStateException("Missing read results");
-      values.addAll(batch);
-      start = end;
+    for (int start = 0; start < nodeIds.size(); start += batchSize) {
+      int end = Math.min(start + batchSize, nodeIds.size());
+      List<NodeId> batch = nodeIds.subList(start, end);
+      values.addAll(client.readValues(0.0, TimestampsToReturn.Both, batch));
     }
     return values;
   }
+
   // snippet:partition:end
 }

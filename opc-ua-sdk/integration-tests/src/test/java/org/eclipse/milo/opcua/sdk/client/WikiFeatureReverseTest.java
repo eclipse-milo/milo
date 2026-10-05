@@ -109,38 +109,46 @@ class WikiFeatureReverseTest extends AbstractClientServerTest {
             .addBindAddress(new InetSocketAddress("127.0.0.1", 0))
             .build()) {
       manager.startup();
-      InetSocketAddress bound =
+
+      // The listener binds an ephemeral port. The server needs its URL to connect.
+      var listenerAddress =
           (InetSocketAddress) manager.snapshot().listeners().get(0).boundAddress();
+      String listenerUrl = "opc.tcp://127.0.0.1:" + listenerAddress.getPort();
+
       String endpointUrl = config.getEndpoint().getEndpointUrl();
       String serverUri = config.getEndpoint().getServer().getApplicationUri();
-      OpcUaClient reverse =
+      OpcUaClient client =
           OpcUaClient.createReverseConnect(
               config,
               manager,
               ReverseConnectSelector.byServerUriAndEndpointUrl(serverUri, endpointUrl));
+
       ReverseConnectTargetHandle target =
           server.addReverseConnectTarget(
               ReverseConnectTarget.builder()
-                  .setClientListenerUrl("opc.tcp://127.0.0.1:" + bound.getPort())
+                  .setClientListenerUrl(listenerUrl)
                   .setEndpointUrl(endpointUrl)
                   .setRegistrationPeriod(uint(1_000))
                   .setConnectTimeout(uint(5_000))
                   .build());
+
       try {
-        reverse.connectAsync().get(10, TimeUnit.SECONDS);
+        client.connectAsync().get(10, TimeUnit.SECONDS);
         DataValue value =
-            reverse.readValue(
-                0.0, TimestampsToReturn.Both, NodeIds.Server_ServerStatus_CurrentTime);
-        if (!value.statusCode().isGood()) throw new UaException(value.statusCode());
+            client.readValue(0.0, TimestampsToReturn.Both, NodeIds.Server_ServerStatus_CurrentTime);
+        if (!value.statusCode().isGood()) {
+          throw new UaException(value.statusCode());
+        }
         return value;
       } finally {
         try {
-          reverse.disconnectAsync().get(10, TimeUnit.SECONDS);
+          client.disconnectAsync().get(10, TimeUnit.SECONDS);
         } finally {
           target.remove().get(10, TimeUnit.SECONDS);
         }
       }
     }
   }
+
   // snippet:reverse:end
 }
