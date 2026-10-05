@@ -25,8 +25,9 @@ import org.slf4j.LoggerFactory;
  * A {@link SecurityKeysListener} that writes keysets to a file in the Wireshark OPC UA key log
  * format.
  *
- * <p>The output file can be loaded into Wireshark (4.4+) via Edit → Preferences → Protocols → OPC
- * UA → Key log file.
+ * <p>With TShark 4.4.19, set {@code opcua.debug_file} ("OPCUA debug file") to this file and {@code
+ * opcua.tcp.port} to the server listening port. Decode As alone does not configure the direction
+ * used to select keys. Verify decrypted requests and responses for the chosen policy.
  *
  * <p>This class is thread-safe. Each entry is written as a single synchronized operation.
  *
