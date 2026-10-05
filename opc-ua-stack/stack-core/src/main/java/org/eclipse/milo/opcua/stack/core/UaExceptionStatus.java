@@ -33,8 +33,8 @@ public interface UaExceptionStatus {
    * @return a {@link UaExceptionStatus} if one was present in the exception chain.
    */
   static Optional<UaExceptionStatus> extract(Throwable ex) {
-    if (ex instanceof UaExceptionStatus) {
-      return Optional.of((UaExceptionStatus) ex);
+    if (ex instanceof UaExceptionStatus uaExceptionStatus) {
+      return Optional.of(uaExceptionStatus);
     } else {
       Throwable cause = ex.getCause();
       return cause != null ? extract(cause) : Optional.empty();
