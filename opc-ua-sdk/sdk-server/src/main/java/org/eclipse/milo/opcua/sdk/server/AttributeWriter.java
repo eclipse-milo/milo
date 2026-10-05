@@ -184,13 +184,11 @@ public class AttributeWriter {
           valueRank = ((VariableTypeNode) node).getValueRank();
           arrayDimensions = ((VariableTypeNode) node).getArrayDimensions();
         } else {
-          valueRank = 0;
+          valueRank = ValueRanks.Any;
           arrayDimensions = null;
         }
 
-        if (valueRank > 0) {
-          value = validateArrayType(valueRank, arrayDimensions, value);
-        }
+        value = validateArrayType(valueRank, arrayDimensions, value);
       } catch (UaException e) {
         return e.getStatusCode();
       }
@@ -476,7 +474,8 @@ public class AttributeWriter {
 
       case ValueRanks.OneDimension:
       default:
-        if (!valueIsArray) {
+        // Part 3 defines no ValueRank below -3, so no value matches one.
+        if (valueRank < 1 || !valueIsArray) {
           throw new UaException(StatusCodes.Bad_TypeMismatch);
         }
 
