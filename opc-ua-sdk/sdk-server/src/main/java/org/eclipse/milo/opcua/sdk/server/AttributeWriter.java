@@ -115,6 +115,11 @@ public class AttributeWriter {
 
     Variant updateVariant = value.value();
 
+    if (updateVariant.value() instanceof Matrix matrix && matrix.isNull()) {
+      // A null Matrix is just a null value; check and store it as one.
+      updateVariant = Variant.NULL_VALUE;
+    }
+
     if (indexRange != null && !indexRange.isEmpty()) {
       try {
         NumericRange range = NumericRange.parse(indexRange);
@@ -124,7 +129,7 @@ public class AttributeWriter {
           currentValue = dataValue.value().value();
         }
         if (currentValue instanceof Matrix matrix) {
-          currentValue = matrix.nestedArrayValue();
+          currentValue = matrix.isNull() ? null : matrix.nestedArrayValue();
         }
 
         Object updateValue = updateVariant.value();

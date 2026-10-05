@@ -347,6 +347,65 @@ public class AttributeWriterTest extends AbstractClientServerTest {
     assertEquals(new StatusCode(StatusCodes.Bad_TypeMismatch), statusCode);
   }
 
+  // Part 6 §5.1.9: an Attribute that accepts a null value also accepts an empty Variant and vice
+  // versa. A null Matrix written by server code is checked against AllowNulls like an empty Variant
+  // instead of being unwrapped as an array.
+  @Test
+  void rejectNullMatrixWhereNullsAreNotAllowed() {
+    UaServerNode node = getManagedNode("Int32Matrix");
+
+    StatusCode statusCode =
+        AttributeWriter.writeAttribute(
+            AccessContext.INTERNAL,
+            node,
+            AttributeId.Value,
+            DataValue.valueOnly(new Variant(Matrix.ofNull())),
+            null);
+
+    assertEquals(new StatusCode(StatusCodes.Bad_TypeMismatch), statusCode);
+  }
+
+  // Storing an accepted null Matrix as an empty Variant gives later reads and IndexRange writes a
+  // plain null, the same value a Binary client's null Matrix arrives as.
+  @Test
+  void writeNullMatrixWhereNullsAreAllowedStoresNullValue() {
+    UaVariableNode node = (UaVariableNode) getManagedNode("NullableInt32Matrix");
+
+    StatusCode statusCode =
+        AttributeWriter.writeAttribute(
+            AccessContext.INTERNAL,
+            node,
+            AttributeId.Value,
+            DataValue.valueOnly(new Variant(Matrix.ofNull())),
+            null);
+
+    assertEquals(StatusCode.GOOD, statusCode);
+    assertEquals(Variant.NULL_VALUE, node.getValue().value());
+  }
+
+  // Part 4 §7.38.2: Bad_IndexRangeNoData is the result when no data exists within the range, and a
+  // null Matrix stored by server code holds no data.
+  @Test
+  void indexRangeWriteToStoredNullMatrixReturnsIndexRangeNoData() throws Exception {
+    UaVariableNode node = (UaVariableNode) getManagedNode("NullableInt32Matrix");
+    node.setValue(new DataValue(new Variant(Matrix.ofNull())));
+
+    StatusCode statusCode =
+        client
+            .writeAsync(
+                List.of(
+                    new WriteValue(
+                        node.getNodeId(),
+                        AttributeId.Value.uid(),
+                        "0:1,0:1",
+                        DataValue.valueOnly(
+                            new Variant(new Matrix(new Integer[][] {{1, 2}, {3, 4}}))))))
+            .get(5, TimeUnit.SECONDS)
+            .getResults()[0];
+
+    assertEquals(new StatusCode(StatusCodes.Bad_IndexRangeNoData), statusCode);
+  }
+
   /**
    * Part 3 §5.6.2: ValueRank declares whether a Variable's value is a scalar or an array, and how
    * many dimensions an array has. A written value of another shape must be rejected and leave the
@@ -621,6 +680,22 @@ public class AttributeWriterTest extends AbstractClientServerTest {
                 b.setUserAccessLevel(AccessLevel.READ_WRITE);
                 return b.buildAndAdd();
               });
+
+          UaVariableNode nullableInt32Matrix =
+              UaVariableNode.build(
+                  context,
+                  b -> {
+                    b.setNodeId(new NodeId(2, "NullableInt32Matrix"));
+                    b.setBrowseName(new QualifiedName(2, "NullableInt32Matrix"));
+                    b.setDisplayName(LocalizedText.english("NullableInt32Matrix"));
+                    b.setDataType(NodeIds.Int32);
+                    b.setValueRank(2);
+                    b.setAccessLevel(AccessLevel.READ_WRITE);
+                    b.setUserAccessLevel(AccessLevel.READ_WRITE);
+                    return b.buildAndAdd();
+                  });
+
+          nullableInt32Matrix.setAllowNulls(true);
 
           for (int valueRank :
               List.of(
