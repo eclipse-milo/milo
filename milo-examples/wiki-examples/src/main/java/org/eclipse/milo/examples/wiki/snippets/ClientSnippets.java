@@ -17,91 +17,250 @@ import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.Executor;
 import org.eclipse.milo.opcua.sdk.client.AddressSpace;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
+import org.eclipse.milo.opcua.sdk.client.methods.UaMethod;
+import org.eclipse.milo.opcua.sdk.client.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.EventFilterBuilder;
+import org.eclipse.milo.opcua.sdk.client.subscriptions.MonitoredItemSynchronizationException;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaMonitoredItem;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.Stack;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.DefaultClientCertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.MemoryTrustListManager;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
+import org.eclipse.milo.opcua.stack.core.types.structured.BrowsePath;
+import org.eclipse.milo.opcua.stack.core.types.structured.BrowsePathResult;
+import org.eclipse.milo.opcua.stack.core.types.structured.BrowsePathTarget;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EventFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.RelativePath;
+import org.eclipse.milo.opcua.stack.core.types.structured.RelativePathElement;
+import org.eclipse.milo.opcua.stack.core.types.structured.TranslateBrowsePathsToNodeIdsResponse;
 import org.eclipse.milo.opcua.stack.core.util.validation.ValidationCheck;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/** Client samples from the Wiki's connecting, service, node, subscription, and security pages. */
+/** Client samples from the Wiki's client guide pages. */
 public final class ClientSnippets {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ClientSnippets.class);
 
   private ClientSnippets() {}
 
   // snippet:connect:start
-  static DataValue connectAndRead(String discoveryUrl) throws Exception {
+  static OpcUaClient connect(String endpointUrl) throws UaException {
     OpcUaClient client =
         OpcUaClient.create(
-            discoveryUrl,
-            endpoints ->
-                endpoints.stream()
-                    .filter(e -> SecurityPolicy.None.getUri().equals(e.getSecurityPolicyUri()))
-                    .filter(e -> e.getSecurityMode() == MessageSecurityMode.None)
-                    .findFirst(),
+            endpointUrl,
+            endpoints -> selectEndpoint(endpoints),
             transport -> {},
             config ->
-                config.setIdentityProvider(new AnonymousProvider()).setRequestTimeout(uint(5_000)));
+                config
+                    .setApplicationName(LocalizedText.english("Thermostat client"))
+                    .setApplicationUri("urn:eclipse:milo:wiki:client")
+                    .setIdentityProvider(new AnonymousProvider())
+                    .setRequestTimeout(uint(5_000)));
+
     try {
-      client.connectAsync().get(10, TimeUnit.SECONDS);
-      DataValue value =
-          client.readValue(0.0, TimestampsToReturn.Both, NodeIds.Server_ServerStatus_CurrentTime);
-      if (!value.statusCode().isGood()) {
-        throw new UaException(value.statusCode());
+      client.connect();
+    } catch (UaException e) {
+      // A failed connect keeps retrying in the background until you disconnect.
+      try {
+        client.disconnect();
+      } catch (UaException disconnectFailure) {
+        e.addSuppressed(disconnectFailure);
       }
-      return value;
-    } finally {
-      client.disconnectAsync().get(10, TimeUnit.SECONDS);
+      throw e;
     }
+
+    return client;
+  }
+
+  static Optional<EndpointDescription> selectEndpoint(List<EndpointDescription> endpoints) {
+    return endpoints.stream()
+        .filter(e -> SecurityPolicy.None.getUri().equals(e.getSecurityPolicyUri()))
+        .filter(e -> e.getSecurityMode() == MessageSecurityMode.None)
+        .findFirst();
   }
 
   // snippet:connect:end
 
+  // snippet:disconnect:start
+  static void runClient(String endpointUrl) throws Exception {
+    try {
+      OpcUaClient client = connect(endpointUrl);
+      try {
+        System.out.println("Connected. Press Enter to disconnect.");
+        System.in.read();
+      } finally {
+        client.disconnect();
+      }
+    } finally {
+      Stack.releaseSharedResources();
+    }
+  }
+
+  // snippet:disconnect:end
+
+  // snippet:tutorial-namespace:start
+  static UShort tutorialNamespaceIndex(OpcUaClient client) {
+    NamespaceTable namespaceTable = client.getNamespaceTable();
+    UShort namespaceIndex = namespaceTable.getIndex("urn:eclipse:milo:wiki");
+    if (namespaceIndex == null) {
+      throw new IllegalStateException("Server does not expose the tutorial namespace");
+    }
+    return namespaceIndex;
+  }
+
+  // snippet:tutorial-namespace:end
+
+  // snippet:browse:start
+  static Optional<NodeId> findThermostat(OpcUaClient client, UShort namespaceIndex)
+      throws UaException {
+    var thermostatName = new QualifiedName(namespaceIndex, "Thermostat");
+    List<ReferenceDescription> references = client.getAddressSpace().browse(NodeIds.ObjectsFolder);
+
+    for (ReferenceDescription reference : references) {
+      if (thermostatName.equals(reference.getBrowseName())) {
+        ExpandedNodeId targetId = reference.getNodeId();
+        return targetId.toNodeId(client.getNamespaceTable());
+      }
+    }
+
+    return Optional.empty();
+  }
+
+  // snippet:browse:end
+
+  // snippet:browse-components:start
+  static void printComponents(OpcUaClient client, NodeId thermostatId) throws UaException {
+    List<ReferenceDescription> references = client.getAddressSpace().browse(thermostatId);
+
+    for (ReferenceDescription reference : references) {
+      String name = reference.getBrowseName().name();
+      NodeClass nodeClass = reference.getNodeClass();
+      System.out.println(name + ": " + nodeClass);
+    }
+  }
+
+  // snippet:browse-components:end
+
+  // snippet:translate:start
+  static NodeId resolveSetpoint(OpcUaClient client, UShort namespaceIndex) throws UaException {
+    var thermostatName = new QualifiedName(namespaceIndex, "Thermostat");
+    var setpointName = new QualifiedName(namespaceIndex, "Setpoint");
+
+    RelativePathElement[] elements = {
+      new RelativePathElement(NodeIds.Organizes, false, true, thermostatName),
+      new RelativePathElement(NodeIds.HasComponent, false, true, setpointName)
+    };
+    var browsePath = new BrowsePath(NodeIds.ObjectsFolder, new RelativePath(elements));
+
+    TranslateBrowsePathsToNodeIdsResponse response =
+        client.translateBrowsePaths(List.of(browsePath));
+    BrowsePathResult result = requireNonNull(response.getResults())[0];
+    if (!result.getStatusCode().isGood()) {
+      throw new UaException(result.getStatusCode());
+    }
+
+    BrowsePathTarget target = requireNonNull(result.getTargets())[0];
+    if (!target.getRemainingPathIndex().equals(UInteger.MAX)) {
+      throw new UaException(StatusCodes.Bad_NoMatch, "Setpoint path resolved only partly");
+    }
+
+    ExpandedNodeId setpointId = target.getTargetId();
+    return setpointId.toNodeIdOrThrow(client.getNamespaceTable());
+  }
+
+  // snippet:translate:end
+
+  // snippet:browse-options:start
+  static List<ReferenceDescription> browseVariables(OpcUaClient client, NodeId thermostatId)
+      throws UaException {
+    AddressSpace.BrowseOptions options =
+        AddressSpace.BrowseOptions.builder()
+            .setReferenceType(NodeIds.HasComponent)
+            .setIncludeSubtypes(true)
+            .setNodeClassMask(EnumSet.of(NodeClass.Variable))
+            .build();
+
+    return client.getAddressSpace().browse(thermostatId, options);
+  }
+
+  // snippet:browse-options:end
+
   // snippet:read:start
-  static int readInt32(OpcUaClient client, NodeId nodeId) throws UaException {
-    DataValue value = client.readValue(0.0, TimestampsToReturn.Both, nodeId);
+  static double readTemperature(OpcUaClient client, NodeId temperatureId) throws UaException {
+    DataValue value = client.readValue(0.0, TimestampsToReturn.Both, temperatureId);
     if (!value.statusCode().isGood()) {
       throw new UaException(value.statusCode());
     }
 
     Object body = value.value().value();
-    if (!(body instanceof Integer integer)) {
-      throw new IllegalArgumentException("Expected an Int32, got " + body);
+    if (!(body instanceof Double temperature)) {
+      throw new IllegalStateException("Expected a Double, got " + body);
     }
-    return integer;
+    return temperature;
   }
 
   // snippet:read:end
 
+  // snippet:read-values:start
+  static void printThermostat(OpcUaClient client, NodeId temperatureId, NodeId setpointId)
+      throws UaException {
+    List<NodeId> nodeIds = List.of(temperatureId, setpointId);
+    List<DataValue> values = client.readValues(0.0, TimestampsToReturn.Both, nodeIds);
+
+    for (int i = 0; i < nodeIds.size(); i++) {
+      NodeId nodeId = nodeIds.get(i);
+      DataValue value = values.get(i);
+
+      if (value.statusCode().isGood()) {
+        System.out.println(nodeId.getIdentifier() + " = " + value.value().value());
+      } else {
+        System.out.println(nodeId.getIdentifier() + " failed: " + value.statusCode());
+      }
+    }
+  }
+
+  // snippet:read-values:end
+
   // snippet:write:start
-  static void writeInt32(OpcUaClient client, NodeId nodeId, int value) throws UaException {
-    DataValue dataValue = DataValue.valueOnly(new Variant(value));
-    List<StatusCode> results = client.writeValues(List.of(nodeId), List.of(dataValue));
+  static void writeSetpoint(OpcUaClient client, NodeId setpointId, double setpoint)
+      throws UaException {
+    DataValue dataValue = DataValue.valueOnly(Variant.ofDouble(setpoint));
+    List<StatusCode> results = client.writeValues(List.of(setpointId), List.of(dataValue));
 
     StatusCode status = results.get(0);
     if (!status.isGood()) {
@@ -111,44 +270,101 @@ public final class ClientSnippets {
 
   // snippet:write:end
 
-  // snippet:browse:start
-  static List<ReferenceDescription> browseProperties(OpcUaClient client) throws UaException {
-    AddressSpace.BrowseOptions options =
-        AddressSpace.BrowseOptions.builder()
-            .setReferenceType(NodeIds.HasProperty)
-            .setIncludeSubtypes(true)
-            .setMaxReferencesPerNode(uint(1))
+  // snippet:write-batch:start
+  static Map<NodeId, StatusCode> writeBatch(
+      OpcUaClient client, List<NodeId> nodeIds, List<DataValue> values) throws UaException {
+    if (nodeIds.size() != values.size()) {
+      throw new IllegalArgumentException("Each NodeId needs exactly one value");
+    }
+
+    List<StatusCode> results = client.writeValues(nodeIds, values);
+
+    Map<NodeId, StatusCode> failures = new LinkedHashMap<>();
+    for (int i = 0; i < nodeIds.size(); i++) {
+      StatusCode status = results.get(i);
+      if (!status.isGood()) {
+        failures.put(nodeIds.get(i), status);
+      }
+    }
+    return failures;
+  }
+
+  // snippet:write-batch:end
+
+  // snippet:data_subscription:start
+  static OpcUaSubscription watchSetpoint(OpcUaClient client, NodeId setpointId) throws UaException {
+    var subscription = new OpcUaSubscription(client, 500.0);
+
+    OpcUaMonitoredItem item = OpcUaMonitoredItem.newDataItem(setpointId);
+    item.setSamplingInterval(100.0);
+    item.setDataValueListener(
+        (monitoredItem, value) -> {
+          StatusCode status = value.statusCode();
+          if (status.isGood()) {
+            Object setpoint = value.value().value();
+            System.out.println("Setpoint: " + setpoint);
+          } else {
+            System.out.println("Setpoint unavailable: " + status);
+          }
+        });
+    subscription.addMonitoredItem(item);
+
+    subscription.create();
+    try {
+      subscription.synchronizeMonitoredItems();
+    } catch (MonitoredItemSynchronizationException e) {
+      subscription.delete();
+      throw e;
+    }
+
+    return subscription;
+  }
+
+  // snippet:data_subscription:end
+
+  // snippet:event_subscription:start
+  static OpcUaMonitoredItem watchServerEvents(OpcUaSubscription subscription) throws UaException {
+    EventFilter filter =
+        new EventFilterBuilder()
+            .select(NodeIds.BaseEventType, new QualifiedName(0, "EventId"))
+            .select(NodeIds.BaseEventType, new QualifiedName(0, "Message"))
             .build();
-    return client.getAddressSpace().getNode(NodeIds.Server).browse(options);
+
+    OpcUaMonitoredItem item = OpcUaMonitoredItem.newEventItem(NodeIds.Server, filter);
+    item.setEventValueListener(
+        (monitoredItem, fields) -> {
+          // Fields arrive in select-clause order: EventId, then Message.
+          Object message = fields[1].value();
+          if (message instanceof LocalizedText text) {
+            System.out.println("Event: " + text.text());
+          }
+        });
+
+    subscription.addMonitoredItem(item);
+    subscription.synchronizeMonitoredItems();
+
+    return item;
   }
 
-  // snippet:browse:end
+  // snippet:event_subscription:end
 
-  // snippet:node:start
-  static void synchronizeValue(OpcUaClient client, NodeId nodeId, int value) throws UaException {
-    UaVariableNode node = client.getAddressSpace().getVariableNode(nodeId);
-
-    // Stage the value in the local cache, then write it to the server.
-    node.setValue(new Variant(value));
-    StatusCode writeStatus = node.synchronize(EnumSet.of(AttributeId.Value)).get(0);
-    if (!writeStatus.isGood()) {
-      throw new UaException(writeStatus);
-    }
-
-    // Read the value back so the cache holds what the server stored.
-    DataValue refreshed = node.refresh(EnumSet.of(AttributeId.Value)).get(0);
-    if (!refreshed.statusCode().isGood()) {
-      throw new UaException(refreshed.statusCode());
+  // snippet:delete-subscription:start
+  static void stopWatching(OpcUaClient client, OpcUaSubscription subscription) throws UaException {
+    try {
+      subscription.delete();
+    } finally {
+      client.disconnect();
     }
   }
 
-  // snippet:node:end
+  // snippet:delete-subscription:end
 
   // snippet:method:start
-  static double callSquareRoot(OpcUaClient client, NodeId objectId, NodeId methodId, double input)
+  static double adjustSetpoint(
+      OpcUaClient client, NodeId thermostatId, NodeId adjustSetpointId, double delta)
       throws UaException {
-    Variant[] inputs = {new Variant(input)};
-    var request = new CallMethodRequest(objectId, methodId, inputs);
+    Variant[] inputs = {new Variant(delta)};
+    var request = new CallMethodRequest(thermostatId, adjustSetpointId, inputs);
 
     CallResponse response = client.call(List.of(request));
     CallMethodResult result = requireNonNull(response.getResults())[0];
@@ -157,58 +373,115 @@ public final class ClientSnippets {
     }
 
     Variant[] outputs = requireNonNull(result.getOutputArguments());
-    return (Double) outputs[0].value();
+    Object newSetpoint = outputs[0].value();
+    if (!(newSetpoint instanceof Double setpoint)) {
+      throw new IllegalStateException("Expected a Double, got " + newSetpoint);
+    }
+    return setpoint;
   }
 
   // snippet:method:end
 
-  // snippet:data_subscription:start
-  static DataValue firstNotification(OpcUaClient client, NodeId nodeId) throws Exception {
-    var subscription = new OpcUaSubscription(client);
-    subscription.setPublishingInterval(100.0);
-    var firstValue = new CompletableFuture<DataValue>();
-    var item = OpcUaMonitoredItem.newDataItem(nodeId);
-    item.setSamplingInterval(100.0);
-    item.setDataValueListener((ignored, value) -> firstValue.complete(value));
-    subscription.addMonitoredItem(item);
-    try {
-      subscription.create();
-      subscription.synchronizeMonitoredItems();
-      DataValue value = firstValue.get(10, TimeUnit.SECONDS);
-      if (!value.statusCode().isGood()) {
-        throw new UaException(value.statusCode());
-      }
-      return value;
-    } finally {
-      subscription.delete();
+  // snippet:method-wrapper:start
+  static double adjustSetpointWithWrapper(OpcUaClient client, NodeId thermostatId, double delta)
+      throws UaException {
+    UaObjectNode thermostat = client.getAddressSpace().getObjectNode(thermostatId);
+    UaMethod adjustSetpoint = thermostat.getMethod("AdjustSetpoint");
+
+    Variant[] inputs = {new Variant(delta)};
+    Variant[] outputs = adjustSetpoint.call(inputs);
+
+    Object newSetpoint = outputs[0].value();
+    if (!(newSetpoint instanceof Double setpoint)) {
+      throw new IllegalStateException("Expected a Double, got " + newSetpoint);
+    }
+    return setpoint;
+  }
+
+  // snippet:method-wrapper:end
+
+  // snippet:node-wrappers:start
+  static void updateSetpoint(
+      OpcUaClient client, NodeId thermostatId, NodeId setpointId, double newSetpoint)
+      throws UaException {
+    AddressSpace addressSpace = client.getAddressSpace();
+    UaObjectNode thermostat = addressSpace.getObjectNode(thermostatId);
+    UaVariableNode setpoint = addressSpace.getVariableNode(setpointId);
+
+    // The lookup read DisplayName, so this getter answers from the cache.
+    LocalizedText name = thermostat.getDisplayName();
+
+    // readValue() reads from the server and caches the result.
+    DataValue current = setpoint.readValue();
+    if (!current.statusCode().isGood()) {
+      throw new UaException(current.statusCode());
+    }
+    System.out.println(name.text() + " setpoint: " + current.value().value());
+
+    // writeValue() writes to the server, then updates the cached Value.
+    setpoint.writeValue(new Variant(newSetpoint));
+  }
+
+  // snippet:node-wrappers:end
+
+  // snippet:node:start
+  static void synchronizeSetpoint(OpcUaClient client, NodeId setpointId, double newSetpoint)
+      throws UaException {
+    UaVariableNode setpoint = client.getAddressSpace().getVariableNode(setpointId);
+    Set<AttributeId> valueOnly = EnumSet.of(AttributeId.Value);
+
+    // Stage the value in the local cache, then write it to the server.
+    setpoint.setValue(new Variant(newSetpoint));
+    List<StatusCode> writeResults = setpoint.synchronize(valueOnly);
+    StatusCode writeStatus = writeResults.get(0);
+    if (!writeStatus.isGood()) {
+      throw new UaException(writeStatus);
+    }
+
+    // Read the value back so the cache holds what the server stored.
+    List<DataValue> readResults = setpoint.refresh(valueOnly);
+    DataValue refreshed = readResults.get(0);
+    if (!refreshed.statusCode().isGood()) {
+      throw new UaException(refreshed.statusCode());
     }
   }
 
-  // snippet:data_subscription:end
+  // snippet:node:end
 
-  // snippet:event_subscription:start
-  static Variant[] firstEvent(OpcUaClient client, NodeId notifierId) throws Exception {
-    var subscription = new OpcUaSubscription(client);
-    subscription.setPublishingInterval(100.0);
-    EventFilter filter =
-        new EventFilterBuilder()
-            .select(NodeIds.BaseEventType, new QualifiedName(0, "EventId"))
-            .select(NodeIds.BaseEventType, new QualifiedName(0, "Message"))
-            .build();
-    var item = OpcUaMonitoredItem.newEventItem(notifierId, filter);
-    var firstFields = new CompletableFuture<Variant[]>();
-    item.setEventValueListener((ignored, fields) -> firstFields.complete(fields));
-    subscription.addMonitoredItem(item);
+  // snippet:recover-subscription:start
+  static void recreateWhenLost(OpcUaSubscription subscription, Executor recoveryExecutor) {
+    subscription.setSubscriptionListener(
+        new OpcUaSubscription.SubscriptionListener() {
+          @Override
+          public void onTransferFailed(OpcUaSubscription lostSubscription, StatusCode status) {
+            recoveryExecutor.execute(() -> recreate(lostSubscription));
+          }
+
+          @Override
+          public void onStatusChanged(OpcUaSubscription changedSubscription, StatusCode status) {
+            if (status.value() == StatusCodes.Bad_Timeout) {
+              recoveryExecutor.execute(() -> recreate(changedSubscription));
+            }
+          }
+
+          @Override
+          public void onNotificationDataLost(OpcUaSubscription affectedSubscription) {
+            LOGGER.warn("Notifications were lost. Reconcile from current values.");
+          }
+        });
+  }
+
+  static void recreate(OpcUaSubscription subscription) {
     try {
+      // The client kept the MonitoredItems, so synchronizing creates them on the server again.
       subscription.create();
       subscription.synchronizeMonitoredItems();
-      return firstFields.get(10, TimeUnit.SECONDS);
-    } finally {
-      subscription.delete();
+    } catch (UaException e) {
+      LOGGER.warn("Recreating the subscription failed", e);
     }
   }
 
-  // snippet:event_subscription:end
+  // snippet:recover-subscription:end
 
   // snippet:partition:start
   static List<DataValue> readInBatches(OpcUaClient client, List<NodeId> nodeIds, int maxBatchSize)
@@ -236,6 +509,22 @@ public final class ClientSnippets {
   }
 
   // snippet:partition:end
+
+  // snippet:partition-thermostat:start
+  static List<DataValue> readThermostat(OpcUaClient client) throws UaException {
+    UShort namespaceIndex = client.getNamespaceTable().getIndex("urn:eclipse:milo:wiki");
+    if (namespaceIndex == null) {
+      throw new IllegalStateException("Server does not expose the tutorial namespace");
+    }
+
+    NodeId temperatureId = new NodeId(namespaceIndex, "Temperature");
+    NodeId setpointId = new NodeId(namespaceIndex, "Setpoint");
+    List<NodeId> nodeIds = List.of(temperatureId, setpointId);
+
+    return readInBatches(client, nodeIds, 500);
+  }
+
+  // snippet:partition-thermostat:end
 
   // snippet:security:start
   static OpcUaClient secureClient(

@@ -2,11 +2,14 @@
 
 This module holds the code samples shown on the [Milo Wiki](https://github.com/eclipse-milo/milo/wiki).
 
-- `FirstClient` and `FirstServer` are the complete programs from the first-client and first-server
-  tutorials. `FirstProgramsTest` runs them together.
+- `FirstServer` and `FirstClient` are the complete programs from the first-server and first-client
+  tutorials. `FirstServer` models a thermostat as one Thermostat Object with a read-only
+  Temperature Variable, a writable Setpoint Variable, and an AdjustSetpoint Method. `FirstClient`
+  reads Temperature. `FirstProgramsTest` runs them together and checks the thermostat results the
+  client pages rely on. The server pages also show regions of `FirstServer`.
 - The `snippets` package holds the other samples. The build compiles them, so an API change that
-  breaks a sample fails here. Nothing runs them. Each sample sits between `// snippet:NAME:start`
-  and `// snippet:NAME:end` comments.
+  breaks a sample fails here. Nothing runs them.
+- Each named sample sits between `// snippet:NAME:start` and `// snippet:NAME:end` comments.
 
 ## Updating the Wiki
 
@@ -15,6 +18,9 @@ Each Wiki code block backed by this module has a marker line directly above it:
 ```markdown
 <!-- snippet: snippets/ClientSnippets.java#read -->
 ```
+
+A marker with `#NAME` selects one region. A marker without it selects the whole file after its
+license header, without the `// snippet:` marker lines.
 
 Edit samples here, not in the Wiki. Then copy them into a local clone of the Wiki from the
 repository root:
