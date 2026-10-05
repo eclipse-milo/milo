@@ -149,7 +149,7 @@ public class AddressSpaceComposite implements AddressSpaceFragment {
     return addressSpaces.stream()
         .filter(filter)
         .findFirst()
-        .orElse(new EmptyAddressSpaceFragment(server));
+        .orElseGet(() -> new EmptyAddressSpaceFragment(server));
   }
 
   // region ViewServices
