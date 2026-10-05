@@ -155,6 +155,14 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
     assertEquals(0, history.cursorCount());
   }
 
+  // A nonpositive page budget is a caller error, not an empty history result.
+  @Test
+  void nonpositivePageBudgetIsRejected() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> readRawHistory(client, history.namespace.historyNode, START, END, 0));
+  }
+
   @Test
   void unsupportedHistoryFailsPerNodeAndEmptyRequestFailsTheService() throws Exception {
     UaException unavailable =
@@ -450,6 +458,10 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
   static List<DataValue> readRawHistory(
       OpcUaClient client, NodeId nodeId, DateTime start, DateTime end, int maxPages)
       throws UaException {
+    if (maxPages < 1) {
+      throw new IllegalArgumentException("maxPages must be positive");
+    }
+
     var details = new ReadRawModifiedDetails(false, start, end, uint(2), false);
     List<DataValue> values = new ArrayList<>();
     ByteString continuationPoint = ByteString.NULL_VALUE;
