@@ -14,8 +14,7 @@ Mailing list: https://dev.eclipse.org/mailman/listinfo/milo-dev
 The [Milo Wiki][wiki] is the user guide. If you are new to Milo, start with
 [Getting started][getting-started], then build the tutorial [server][first-server] and a
 [client][first-client] that talks to it. The [client][client-guide] and [server][server-guide]
-guides continue from there, and the [1.2.0 migration guide][migration] covers upgrading from 1.1.
-[Examples][examples] lists the runnable programs in `milo-examples`.
+guides continue from there. [Examples][examples] lists the runnable programs in `milo-examples`.
 
 [wiki]: https://github.com/eclipse-milo/milo/wiki
 [getting-started]: https://github.com/eclipse-milo/milo/wiki/Getting-Started
@@ -23,7 +22,6 @@ guides continue from there, and the [1.2.0 migration guide][migration] covers up
 [first-client]: https://github.com/eclipse-milo/milo/wiki/First-Client
 [client-guide]: https://github.com/eclipse-milo/milo/wiki/Client
 [server-guide]: https://github.com/eclipse-milo/milo/wiki/Server
-[migration]: https://github.com/eclipse-milo/milo/wiki/Release-Notes-1.2.0
 [examples]: https://github.com/eclipse-milo/milo/wiki/Examples
 
 ## Requirements
