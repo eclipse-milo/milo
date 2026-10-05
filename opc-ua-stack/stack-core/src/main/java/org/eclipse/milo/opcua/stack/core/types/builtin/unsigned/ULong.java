@@ -186,8 +186,8 @@ public final class ULong extends UNumber implements Comparable<ULong> {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof ULong) {
-      return value == ((ULong) obj).value;
+    if (obj instanceof ULong that) {
+      return value == that.value;
     }
 
     return false;
