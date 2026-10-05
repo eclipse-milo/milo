@@ -130,16 +130,19 @@ public class WikiServerGuidesTest extends AbstractClientServerTest {
                     AttributeFilterContext ctx, AttributeId attributeId, Object value)
                     throws UaException {
                   if (attributeId == AttributeId.Value) {
-                    if (!(((DataValue) value).value().value() instanceof Double setpoint)) {
+                    DataValue dataValue = (DataValue) value;
+                    if (!(dataValue.value().value() instanceof Double setpoint)) {
                       throw new UaException(StatusCodes.Bad_TypeMismatch);
                     }
                     if (!Double.isFinite(setpoint) || setpoint < 0.0 || setpoint > 100.0) {
                       throw new UaException(StatusCodes.Bad_OutOfRange);
                     }
                   }
+
                   ctx.writeAttribute(attributeId, value);
                 }
               });
+
       // wiki:data-filter:end
       var forwardedWrites = new AtomicInteger();
       node.getFilterChain()

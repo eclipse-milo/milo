@@ -139,19 +139,25 @@ class WikiFeatureGdsTest extends AbstractGdsClientTest {
     NodeId requestType =
         gds.resolveCertificateTypeId(groupId, NodeIds.RsaSha256ApplicationCertificateType);
     NodeId requestId = gds.startSigningRequest(applicationId, groupId, requestType, csr);
+
     GdsClient.FinishRequestResult issued;
     try {
       issued = gds.finishRequest(applicationId, requestId);
-    } catch (UaMethodException pending) {
-      if (pending.getStatusCode().value() != StatusCodes.Bad_NothingToDo) throw pending;
-      // This bounded local example retries once. Production polling needs scheduling/persistence.
+    } catch (UaMethodException e) {
+      if (e.getStatusCode().value() != StatusCodes.Bad_NothingToDo) {
+        throw e;
+      }
+      // Bad_NothingToDo means the request is still pending. This example retries once;
+      // production code persists the RequestId and polls on a schedule.
       issued = gds.finishRequest(applicationId, requestId);
     }
+
     X509Certificate certificate =
         CertificateUtil.decodeCertificate(issued.certificate().bytesOrEmpty());
     GdsClient.verifyIssuedCertificate(certificate, keyPair.getPublic(), applicationUri);
     certificate.checkValidity();
     certificate.verify(issuingCa.getPublicKey());
+
     group.updateCertificate(
         NodeIds.RsaSha256ApplicationCertificateType,
         keyPair,
@@ -166,8 +172,14 @@ class WikiFeatureGdsTest extends AbstractGdsClientTest {
       throws UaException {
     GdsClient gds = GdsClient.create(client);
     ApplicationRecordDataType[] found = gds.findApplications(record.getApplicationUri());
-    if (found.length > 1) throw new IllegalStateException("Ambiguous application URI");
-    return found.length == 0 ? gds.registerApplication(record) : found[0].getApplicationId();
+
+    if (found.length == 0) {
+      return gds.registerApplication(record);
+    } else if (found.length == 1) {
+      return found[0].getApplicationId();
+    } else {
+      throw new IllegalStateException("Ambiguous application URI");
+    }
   }
 
   // snippet:gds_registration:end

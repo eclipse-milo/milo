@@ -149,9 +149,9 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
   @Test
   void earlyStopOnAnEndpointWithoutAPathReleasesItsContinuationPoint() throws Exception {
     assertEquals("", server.getConfig().getEndpoints().iterator().next().getPath());
-    int releases = history.releaseCount;
+    int releases = history.releaseCount();
     assertEquals(2, readRawHistory(client, history.namespace.historyNode, START, END, 1).size());
-    assertEquals(releases + 1, history.releaseCount);
+    assertEquals(releases + 1, history.releaseCount());
     assertEquals(0, history.cursorCount());
   }
 
@@ -450,49 +450,61 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
   static List<DataValue> readRawHistory(
       OpcUaClient client, NodeId nodeId, DateTime start, DateTime end, int maxPages)
       throws UaException {
-    if (maxPages < 1) throw new IllegalArgumentException("Page limit must be positive");
     var details = new ReadRawModifiedDetails(false, start, end, uint(2), false);
-    ByteString cursor = ByteString.NULL_VALUE;
     List<DataValue> values = new ArrayList<>();
+    ByteString continuationPoint = ByteString.NULL_VALUE;
+
     try {
       for (int page = 0; page < maxPages; page++) {
-        var request = new HistoryReadValueId(nodeId, null, QualifiedName.NULL_VALUE, cursor);
-        HistoryReadResult[] results =
-            client
-                .historyRead(details, TimestampsToReturn.Both, false, List.of(request))
-                .getResults();
-        if (results == null || results.length != 1) {
-          throw new IllegalStateException("Missing history result");
+        HistoryReadResult result =
+            sendHistoryRead(client, details, nodeId, continuationPoint, false);
+        continuationPoint = result.getContinuationPoint();
+
+        if (!result.getStatusCode().isGood()) {
+          throw new UaException(result.getStatusCode());
         }
-        HistoryReadResult result = results[0];
-        cursor = result.getContinuationPoint();
-        if (!result.getStatusCode().isGood()) throw new UaException(result.getStatusCode());
-        ExtensionObject encoded = result.getHistoryData();
-        if (encoded != null && !encoded.isNull()) {
-          Object body = encoded.decode(client.getStaticEncodingContext());
-          if (!(body instanceof HistoryData data)) {
-            throw new IllegalStateException("Expected HistoryData");
+
+        // A Good_NoData result can omit the HistoryData body.
+        ExtensionObject historyData = result.getHistoryData();
+        if (historyData != null && !historyData.isNull()) {
+          var data = (HistoryData) historyData.decode(client.getStaticEncodingContext());
+          if (data.getDataValues() != null) {
+            values.addAll(Arrays.asList(data.getDataValues()));
           }
-          if (data.getDataValues() != null) values.addAll(Arrays.asList(data.getDataValues()));
         }
-        if (cursor == null || cursor.isNullOrEmpty()) break;
+
+        if (continuationPoint == null || continuationPoint.isNullOrEmpty()) {
+          break;
+        }
       }
       return values;
     } finally {
-      if (cursor != null && !cursor.isNullOrEmpty()) {
-        var release = new HistoryReadValueId(nodeId, null, QualifiedName.NULL_VALUE, cursor);
-        HistoryReadResult[] released =
-            client
-                .historyRead(details, TimestampsToReturn.Both, true, List.of(release))
-                .getResults();
-        if (released == null || released.length != 1) {
-          throw new IllegalStateException("Missing release result");
-        }
-        if (!released[0].getStatusCode().isGood()) {
-          throw new UaException(released[0].getStatusCode());
+      // Release the continuation point if the loop stopped before the last page.
+      if (continuationPoint != null && !continuationPoint.isNullOrEmpty()) {
+        HistoryReadResult released =
+            sendHistoryRead(client, details, nodeId, continuationPoint, true);
+        if (!released.getStatusCode().isGood()) {
+          throw new UaException(released.getStatusCode());
         }
       }
     }
+  }
+
+  static HistoryReadResult sendHistoryRead(
+      OpcUaClient client,
+      ReadRawModifiedDetails details,
+      NodeId nodeId,
+      ByteString continuationPoint,
+      boolean releaseContinuationPoints)
+      throws UaException {
+    var nodeToRead =
+        new HistoryReadValueId(nodeId, null, QualifiedName.NULL_VALUE, continuationPoint);
+
+    HistoryReadResponse response =
+        client.historyRead(
+            details, TimestampsToReturn.Both, releaseContinuationPoints, List.of(nodeToRead));
+
+    return requireNonNull(response.getResults())[0];
   }
 
   // snippet:history:end
@@ -518,7 +530,6 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
   static final class RawHistoryService extends DefaultAttributeServiceSet {
     private final OpcUaServer server;
     final RawHistoryNamespace namespace;
-    volatile int releaseCount;
 
     RawHistoryService(OpcUaServer server) {
       super(server);
@@ -533,28 +544,33 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
       if (!request.getReleaseContinuationPoints()) {
         return super.onHistoryRead(context, request);
       }
+
       Session session = server.getSessionManager().getSession(context, request.getRequestHeader());
       try {
         HistoryReadValueId[] nodes = request.getNodesToRead();
-        if (nodes == null || nodes.length == 0) throw new UaException(StatusCodes.Bad_NothingToDo);
-        if (nodes.length > server.getConfig().getLimits().getMaxNodesPerRead().longValue()) {
+        if (nodes == null || nodes.length == 0) {
+          throw new UaException(StatusCodes.Bad_NothingToDo);
+        }
+        long maxNodesPerRead = server.getConfig().getLimits().getMaxNodesPerRead().longValue();
+        if (nodes.length > maxNodesPerRead) {
           throw new UaException(StatusCodes.Bad_TooManyOperations);
         }
         if (request.getTimestampsToReturn() == null) {
           throw new UaException(StatusCodes.Bad_TimestampsToReturnInvalid);
         }
-        var diagnostics = new DiagnosticsContext<HistoryReadValueId>();
+
         HistoryReadResult[] results = new HistoryReadResult[nodes.length];
         for (int i = 0; i < nodes.length; i++) {
           results[i] = namespace.release(session, nodes[i]);
-          if (results[i].getStatusCode().isGood()) releaseCount++;
         }
+
+        var diagnostics = new DiagnosticsContext<HistoryReadValueId>();
         return new HistoryReadResponse(
             createResponseHeader(request), results, diagnostics.getDiagnosticInfos(nodes));
-      } catch (UaException failure) {
+      } catch (UaException e) {
         session.getSessionDiagnostics().getHistoryReadCount().incrementErrorCount();
         session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();
-        throw failure;
+        throw e;
       } finally {
         session.getSessionDiagnostics().getHistoryReadCount().incrementTotalCount();
         session.getSessionDiagnostics().getTotalRequestCount().incrementTotalCount();
@@ -565,6 +581,10 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
 
     int cursorCount() {
       return namespace.cursorCount();
+    }
+
+    int releaseCount() {
+      return namespace.releaseCount();
     }
 
     void clear() {
@@ -590,6 +610,7 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
                 StatusCode.GOOD,
                 new DateTime(Instant.parse("2026-01-01T00:00:02Z"))));
     private final Map<ByteString, Cursor> cursors = new LinkedHashMap<>();
+    private int releaseCount;
     private final SessionListener listener =
         new SessionListener() {
           @Override
@@ -713,11 +734,16 @@ class WikiClientHistoryTest extends AbstractClientServerTest {
         return error(StatusCodes.Bad_ContinuationPointInvalid);
       }
       cursors.remove(node.getContinuationPoint());
+      releaseCount++;
       return new HistoryReadResult(StatusCode.GOOD, ByteString.NULL_VALUE, null);
     }
 
     synchronized int cursorCount() {
       return cursors.size();
+    }
+
+    synchronized int releaseCount() {
+      return releaseCount;
     }
 
     synchronized void clear() {
