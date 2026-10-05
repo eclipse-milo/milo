@@ -17,6 +17,7 @@ import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -275,6 +276,9 @@ public final class ClientSnippets {
       OpcUaClient client, List<NodeId> nodeIds, List<DataValue> values) throws UaException {
     if (nodeIds.size() != values.size()) {
       throw new IllegalArgumentException("Each NodeId needs exactly one value");
+    }
+    if (new HashSet<>(nodeIds).size() != nodeIds.size()) {
+      throw new IllegalArgumentException("Each NodeId may appear only once");
     }
 
     List<StatusCode> results = client.writeValues(nodeIds, values);
