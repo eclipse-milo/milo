@@ -11,9 +11,14 @@
 /**
  * Runnable programs for the Wiki's first client and server tutorials.
  *
- * <p>The server binds only to IPv4 loopback and exposes one read-only Variable over an anonymous,
- * unencrypted endpoint. It is a local learning fixture, not a deployment security configuration.
- * The client selects that endpoint explicitly and checks both operation status and value type.
+ * <p>The server binds only to IPv4 loopback and exposes a small thermostat (one Object with a
+ * read-only Temperature, a writable Setpoint, and an AdjustSetpoint Method) over an anonymous,
+ * unencrypted endpoint. It is a local learning program, not a deployment security configuration.
+ * The client selects that endpoint explicitly, reads Temperature, and checks both operation status
+ * and value type.
+ *
+ * <p>Wiki pages show {@code FirstServer} whole and as named regions marked by {@code // snippet:}
+ * comments, so keep those markers in place when editing the file.
  *
  * <p>The server owns its namespace lifecycle. The standalone entry points close their client or
  * server before releasing Milo's shared resources. Applications hosting other Milo components must

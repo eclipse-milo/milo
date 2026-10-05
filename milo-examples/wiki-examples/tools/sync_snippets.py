@@ -8,7 +8,8 @@ A Wiki code block backed by this module has a marker line directly above it:
 The path is relative to the module's org/eclipse/milo/examples/wiki source directory. With
 "#name", the block holds the region between "// snippet:name:start" and "// snippet:name:end",
 without its common indentation. Without a name, the block holds the whole file after its license
-header.
+header, minus the "// snippet:name:start" and "// snippet:name:end" lines, so a page can show a
+file whole while other pages show its regions.
 
 usage: sync_snippets.py [--check] WIKI_DIR
 """
@@ -25,12 +26,21 @@ SOURCE_ROOT = (
 )
 MARKER = re.compile(r"^<!-- snippet: (?P<path>[^#\s]+)(?:#(?P<name>[\w-]+))? -->$", re.M)
 BLOCK = re.compile(r"```java\n(?P<body>.*?)^```$", re.S | re.M)
+REGION_MARKER_LINE = re.compile(r"^[ \t]*// snippet:[\w-]+:(?:start|end)\n", re.M)
+
+
+def source_file(path):
+    file = (SOURCE_ROOT / path).resolve()
+    if not file.is_relative_to(SOURCE_ROOT.resolve()):
+        raise ValueError(f"{path} is outside the snippet source directory")
+    return file
 
 
 def sample(path, name):
-    text = (SOURCE_ROOT / path).read_text()
+    text = source_file(path).read_text()
     if name is None:
-        return re.sub(r"\A/\*.*?\*/\s*", "", text, flags=re.S)
+        body = re.sub(r"\A/\*.*?\*/\s*", "", text, flags=re.S)
+        return REGION_MARKER_LINE.sub("", body)
     region = re.search(
         rf"^[ \t]*// snippet:{re.escape(name)}:start\n(.*?)^[ \t]*// snippet:{re.escape(name)}:end$",
         text,
@@ -66,9 +76,14 @@ def main():
     parser.add_argument("--check", action="store_true", help="report stale blocks without editing")
     args = parser.parse_args()
 
+    pages = sorted(args.wiki.glob("*.md"))
+    if not pages:
+        print(f"error: {args.wiki} contains no Wiki pages", file=sys.stderr)
+        return 2
+
     stale = []
     try:
-        for page in sorted(args.wiki.glob("*.md")):
+        for page in pages:
             stale += sync_page(page, args.check)
     except ValueError as e:
         print(f"error: {e}", file=sys.stderr)

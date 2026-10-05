@@ -56,7 +56,8 @@ public final class HistorySnippets {
       throw new IllegalArgumentException("maxPages must be positive");
     }
 
-    var details = new ReadRawModifiedDetails(false, start, end, uint(2), false);
+    // Unmodified raw values, at most 1,000 per page, without bounding values.
+    var details = new ReadRawModifiedDetails(false, start, end, uint(1_000), false);
     List<DataValue> values = new ArrayList<>();
     ByteString continuationPoint = ByteString.NULL_VALUE;
 
@@ -70,14 +71,7 @@ public final class HistorySnippets {
           throw new UaException(result.getStatusCode());
         }
 
-        // A Good_NoData result can omit the HistoryData body.
-        ExtensionObject historyData = result.getHistoryData();
-        if (historyData != null && !historyData.isNull()) {
-          var data = (HistoryData) historyData.decode(client.getStaticEncodingContext());
-          if (data.getDataValues() != null) {
-            values.addAll(Arrays.asList(data.getDataValues()));
-          }
-        }
+        values.addAll(decodeHistoryData(client, result));
 
         if (continuationPoint == null || continuationPoint.isNullOrEmpty()) {
           break;
@@ -96,6 +90,9 @@ public final class HistorySnippets {
     }
   }
 
+  // snippet:history:end
+
+  // snippet:history-request:start
   static HistoryReadResult sendHistoryRead(
       OpcUaClient client,
       ReadRawModifiedDetails details,
@@ -113,7 +110,22 @@ public final class HistorySnippets {
     return requireNonNull(response.getResults())[0];
   }
 
-  // snippet:history:end
+  static List<DataValue> decodeHistoryData(OpcUaClient client, HistoryReadResult result) {
+    // A Good_NoData result can omit the HistoryData body.
+    ExtensionObject historyData = result.getHistoryData();
+    if (historyData == null || historyData.isNull()) {
+      return List.of();
+    }
+
+    var data = (HistoryData) historyData.decode(client.getStaticEncodingContext());
+    DataValue[] dataValues = data.getDataValues();
+    if (dataValues == null) {
+      return List.of();
+    }
+    return Arrays.asList(dataValues);
+  }
+
+  // snippet:history-request:end
 
   // snippet:history-install:start
   static RawHistoryService installHistoryProvider(OpcUaServer server) {
