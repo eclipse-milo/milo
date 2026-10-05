@@ -222,8 +222,6 @@ public final class ChunkDecoder {
 
   private abstract class AbstractDecoder {
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
-
     DecodedMessage decode(
         SecureChannel channel,
         CompositeByteBuf composite,
@@ -509,6 +507,8 @@ public final class ChunkDecoder {
 
   private final class SymmetricDecoder extends AbstractDecoder {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SymmetricDecoder.class);
+
     private volatile ChannelSecurity.SecurityKeys securityKeys;
     private volatile Cipher cipher = null;
     private volatile long cipherId = -1;
@@ -535,10 +535,10 @@ public final class ChunkDecoder {
           long previousTokenId =
               channelSecurity.getPreviousToken().map(t -> t.getTokenId().longValue()).orElse(-1L);
 
-          logger.debug("Attempting to use SecurityKeys from previousTokenId={}", previousTokenId);
+          LOGGER.debug("Attempting to use SecurityKeys from previousTokenId={}", previousTokenId);
 
           if (receivedTokenId != previousTokenId) {
-            logger.warn(
+            LOGGER.warn(
                 "receivedTokenId={} did not match previousTokenId={}",
                 receivedTokenId,
                 previousTokenId);

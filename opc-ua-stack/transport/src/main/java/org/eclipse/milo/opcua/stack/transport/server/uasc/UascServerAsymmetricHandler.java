@@ -82,7 +82,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
   static final AttributeKey<EndpointDescription> ENDPOINT_KEY = AttributeKey.valueOf("endpoint");
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(UascServerAsymmetricHandler.class);
 
   private ServerSecureChannel secureChannel;
   private Timeout secureChannelTimeout;
@@ -154,19 +154,19 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
     //noinspection DuplicatedCode
     if (cause instanceof IOException) {
       ctx.close();
-      logger.debug(
+      LOGGER.debug(
           "[remote={}] IOException caught; channel closed", ctx.channel().remoteAddress(), cause);
     } else {
       ErrorMessage errorMessage = ExceptionHandler.sendErrorMessage(ctx, cause);
 
       if (cause instanceof UaException) {
-        logger.debug(
+        LOGGER.debug(
             "[remote={}] UaException caught; sent {}",
             ctx.channel().remoteAddress(),
             errorMessage,
             cause);
       } else {
-        logger.error(
+        LOGGER.error(
             "[remote={}] Exception caught; sent {}",
             ctx.channel().remoteAddress(),
             errorMessage,
@@ -191,7 +191,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
             break;
 
           case CloseSecureChannel:
-            logger.debug("Received CloseSecureChannelRequest");
+            LOGGER.debug("Received CloseSecureChannelRequest");
 
             buffer.skipBytes(messageLength);
 
@@ -389,11 +389,11 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
         requestId = decodedMessage.getRequestId();
         requestSignature = decodedMessage.getSignature();
       } catch (MessageAbortException e) {
-        logger.warn(
+        LOGGER.warn(
             "Received message abort chunk; error={}, reason={}", e.getStatusCode(), e.getMessage());
         return;
       } catch (MessageDecodeException e) {
-        logger.error("Error decoding asymmetric message", e);
+        LOGGER.error("Error decoding asymmetric message", e);
 
         ctx.executor()
             .schedule(() -> ctx.close(), new Random().nextInt(1000), TimeUnit.MILLISECONDS);
@@ -405,7 +405,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
         OpenSecureChannelRequest request =
             (OpenSecureChannelRequest) binaryDecoder.setBuffer(message).decodeMessage(null);
 
-        logger.debug(
+        LOGGER.debug(
             "Received OpenSecureChannelRequest ({}, id={}).",
             request.getRequestType(),
             secureChannelId);
@@ -430,7 +430,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
         sendOpenSecureChannelResponse(ctx, requestId, header, request, requestSignature);
       } catch (Throwable t) {
-        logger.error("Error decoding OpenSecureChannelRequest", t);
+        LOGGER.error("Error decoding OpenSecureChannelRequest", t);
 
         ctx.close();
       } finally {
@@ -501,15 +501,15 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
 
       ctx.writeAndFlush(chunkComposite, ctx.voidPromise());
 
-      logger.debug("Sent OpenSecureChannelResponse.");
+      LOGGER.debug("Sent OpenSecureChannelResponse.");
     } catch (MessageEncodeException e) {
-      logger.error("Error encoding OpenSecureChannelResponse: {}", e.getMessage(), e);
+      LOGGER.error("Error encoding OpenSecureChannelResponse: {}", e.getMessage(), e);
       ctx.fireExceptionCaught(e);
     } catch (UaSerializationException e) {
-      logger.error("Error serializing OpenSecureChannelResponse: {}", e.getMessage(), e);
+      LOGGER.error("Error serializing OpenSecureChannelResponse: {}", e.getMessage(), e);
       ctx.fireExceptionCaught(e);
     } catch (UaException e) {
-      logger.error("Error installing security token: {}", e.getStatusCode(), e);
+      LOGGER.error("Error installing security token: {}", e.getStatusCode(), e);
       ctx.close();
     } finally {
       messageBuffer.release();
@@ -659,7 +659,7 @@ public class UascServerAsymmetricHandler extends ByteToMessageDecoder implements
           Stack.sharedWheelTimer()
               .newTimeout(
                   timeout -> {
-                    logger.debug(
+                    LOGGER.debug(
                         "SecureChannel renewal timed out after {}ms. id={}, channel={}",
                         lifetime,
                         secureChannel.getChannelId(),

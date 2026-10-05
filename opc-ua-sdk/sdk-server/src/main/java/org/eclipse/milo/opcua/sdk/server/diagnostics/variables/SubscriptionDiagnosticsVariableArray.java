@@ -51,7 +51,8 @@ import org.slf4j.LoggerFactory;
 
 public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifecycle {
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(SubscriptionDiagnosticsVariableArray.class);
 
   private final AtomicLong nextElementId = new AtomicLong();
 
@@ -242,7 +243,7 @@ public abstract class SubscriptionDiagnosticsVariableArray extends AbstractLifec
 
         subscriptionDiagnosticsVariables.add(diagnosticsVariable);
       } catch (UaException e) {
-        logger.error(
+        LOGGER.error(
             "Failed to create SubscriptionDiagnosticsTypeNode for subscription id={}",
             subscription.getId(),
             e);
