@@ -6,7 +6,8 @@ This module holds the code samples shown on the [Milo Wiki](https://github.com/e
   tutorials. `FirstServer` models a thermostat as one Thermostat Object with a read-only
   Temperature Variable, a writable Setpoint Variable, and an AdjustSetpoint Method. `FirstClient`
   reads Temperature. `FirstProgramsTest` runs them together and checks the thermostat results the
-  client pages rely on. The server pages also show regions of `FirstServer`.
+  client pages rely on. The server pages also show regions of `FirstServer`, so keep its `// snippet:` markers in place
+  when you edit it.
 - The `snippets` package holds the other samples. The build compiles them, so an API change that
   breaks a sample fails here. Nothing runs them.
 - Each named sample sits between `// snippet:NAME:start` and `// snippet:NAME:end` comments.
