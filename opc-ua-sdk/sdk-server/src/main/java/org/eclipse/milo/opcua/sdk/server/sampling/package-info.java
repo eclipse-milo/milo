@@ -84,20 +84,22 @@
  *
  * <h2>Runtime boundaries</h2>
  *
- * <p>Groups schedule on the server's scheduled executor and run on its executor. The sample is a
- * {@link java.util.concurrent.CompletionStage} so a protocol that delivers asynchronously can keep
- * its own execution model; the next cycle is timed from the stage's completion. The cache is safe
- * to use from any thread; invalidations run on the caller's thread and hold the cache's write lock
- * while they scan, so a scope's predicate must be cheap, and listeners are called synchronously on
- * the same thread.
+ * <p>Groups schedule on the server's scheduled executor and run on its executor, or on the executor
+ * a {@code SamplingManagerConfig} names, such as one that starts a virtual thread per turn for a
+ * sampler that blocks. The sample is a {@link java.util.concurrent.CompletionStage} so a protocol
+ * that delivers asynchronously can keep its own execution model; the next cycle is timed from the
+ * stage's completion. The cache is safe to use from any thread; invalidations run on the caller's
+ * thread and hold the cache's write lock while they scan, so a scope's predicate must be cheap, and
+ * listeners are called synchronously on the same thread.
  *
  * <h2>Extension points</h2>
  *
  * <p>Subclass {@code SamplingGroup} for a protocol that reads items itself, and give the manager a
  * factory that creates it. Use {@code SamplingManagerConfig} for the bucket size, the minimum
- * interval a revised interval of zero becomes, the initial sample debounce, and the policy. A
- * server whose AddressSpaces sample without the framework keeps results current with {@link
- * org.eclipse.milo.opcua.sdk.server.DataItemListener} and a {@code ReadAccessListener} instead.
+ * interval a revised interval of zero becomes, the initial sample debounce, the policy, and the
+ * executor. A server whose AddressSpaces sample without the framework keeps results current with
+ * {@link org.eclipse.milo.opcua.sdk.server.DataItemListener} and a {@code ReadAccessListener}
+ * instead.
  */
 @NullMarked
 package org.eclipse.milo.opcua.sdk.server.sampling;
