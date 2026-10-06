@@ -138,9 +138,11 @@ protected SamplingManagerConfig samplingManagerConfig() {
 ```
 
 Here `samplingExecutor` is, for example, `Executors.newVirtualThreadPerTaskExecutor()`, created
-once by the address space. Timers stay on the server's scheduled executor. A group still runs one
-turn at a time, so the executor need not be serial or bounded. The manager never shuts the
-executor down; close it after the manager has shut down.
+once by the address space. Timers stay on the server's scheduled executor, so the executor must
+run tasks on threads of its own rather than the calling thread. A group still runs one turn at a
+time, so the executor need not be serial or bounded. A turn the executor rejects is logged and
+skipped, and the group samples again at its next cycle. The manager never shuts the executor
+down; close it after the manager has shut down.
 
 ### Read-access policy
 

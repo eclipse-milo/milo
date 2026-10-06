@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -413,7 +414,24 @@ public abstract class SamplingGroup {
 
   private ScheduledFuture<?> scheduleCycle(long delayMillis) {
     return scheduler.schedule(
-        () -> executor.execute(this::runCycle), delayMillis, TimeUnit.MILLISECONDS);
+        () -> dispatch("a cycle", this::runCycle, () -> scheduleNextCycle(System.nanoTime())),
+        delayMillis,
+        TimeUnit.MILLISECONDS);
+  }
+
+  /**
+   * Hand {@code task} to the executor. An executor that is full or shut down must not stop the
+   * group, so a rejection is logged and {@code onRejected} runs in place of the task.
+   */
+  private void dispatch(String what, Runnable task, Runnable onRejected) {
+    try {
+      executor.execute(task);
+    } catch (RejectedExecutionException e) {
+      logger.warn(
+          "The executor rejected {} for the {} ms group: {}", what, intervalMillis, e.toString());
+
+      onRejected.run();
+    }
   }
 
   /** A cycle became due. Takes the turn, or waits for it to be released. */
@@ -525,6 +543,7 @@ public abstract class SamplingGroup {
    */
   private void releaseTurn() {
     Runnable next = null;
+    Runnable onRejected = null;
 
     synchronized (lock) {
       sampling = false;
@@ -537,20 +556,29 @@ public abstract class SamplingGroup {
         cycleDue = false;
         sampling = true;
         next = this::cycle;
+        // As if the cycle had sampled nothing.
+        onRejected =
+            () -> {
+              scheduleNextCycle(System.nanoTime());
+              releaseTurn();
+            };
       } else if (initialSampleDue) {
         initialSampleDue = false;
         sampling = true;
         next = this::initialSample;
+        // The pending items stay pending, and the next cycle samples them.
+        onRejected = this::releaseTurn;
       }
     }
 
-    if (next != null) {
+    if (next != null && onRejected != null) {
       Runnable step = next;
+      Runnable skip = onRejected;
 
       // Through the scheduler, never inline: the handoff must not run on the thread that completed
       // the stage, and an executor that runs tasks on the calling thread must not recurse through
       // one handoff after another.
-      scheduler.schedule(() -> executor.execute(step), 0, TimeUnit.MILLISECONDS);
+      scheduler.schedule(() -> dispatch("a handoff", step, skip), 0, TimeUnit.MILLISECONDS);
     }
   }
 
@@ -741,9 +769,12 @@ public abstract class SamplingGroup {
 
     long delayMillis = Math.max(0, Math.min(initialSampleDelayMillis, windowRemainingMillis));
 
+    // A rejected initial sample leaves its items pending, and the next cycle samples them.
     initialSampleTimer =
         scheduler.schedule(
-            () -> executor.execute(this::runInitialSample), delayMillis, TimeUnit.MILLISECONDS);
+            () -> dispatch("an initial sample", this::runInitialSample, () -> {}),
+            delayMillis,
+            TimeUnit.MILLISECONDS);
   }
 
   /** Caller holds the lock. */

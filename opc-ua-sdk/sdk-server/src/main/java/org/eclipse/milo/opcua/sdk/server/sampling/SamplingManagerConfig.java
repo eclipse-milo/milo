@@ -48,8 +48,8 @@ import org.jspecify.annotations.Nullable;
  *     since the group cannot sample again until it does.
  * @param readAccessPolicy how each group refreshes its items' read access results before sampling.
  * @param executor the executor each group runs its refreshes and samples on, or {@code null} for
- *     the server's executor. Timers stay on the server's scheduled executor. The manager never
- *     shuts this executor down.
+ *     the server's executor. It must run tasks on threads of its own, not the calling thread.
+ *     Timers stay on the server's scheduled executor. The manager never shuts this executor down.
  */
 public record SamplingManagerConfig(
     long bucketMillis,
@@ -171,9 +171,12 @@ public record SamplingManagerConfig(
    *         .withExecutor(Executors.newVirtualThreadPerTaskExecutor());
    * }</pre>
    *
-   * <p>A group runs one turn at a time whatever the executor, so it need not be serial or bounded.
-   * The caller owns the executor and shuts it down, if it needs to, after the manager has shut
-   * down.
+   * <p>The executor must run each task on a thread of its own. One that runs tasks on the calling
+   * thread would run every turn on the server's scheduled executor, which keeps time for every
+   * group. A group runs one turn at a time whatever the executor, so it need not be serial or
+   * bounded. A turn the executor rejects is logged and skipped, and the group samples again at its
+   * next cycle. The caller owns the executor and shuts it down, if it needs to, after the manager
+   * has shut down.
    *
    * @param executor the executor to sample on, or {@code null} for the server's executor.
    * @return a copy of this configuration with {@code executor}.
