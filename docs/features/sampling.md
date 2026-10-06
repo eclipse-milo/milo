@@ -94,6 +94,7 @@ configuration when it is created.
 | `initialSampleMaxWindowMillis` | 500 | How long a steady stream of new items can postpone that first sample. |
 | `overrunWarningMultiple` | 3 | Log a turn that has not completed after this many intervals. |
 | `readAccessPolicy` | `perCycle()` | How a group refreshes read access before each sample. |
+| `executor` | `null` | Where groups run their refreshes and samples. `null` uses the server's executor. |
 
 A requested interval is revised to the one the framework samples at: rounded up to a whole
 millisecond, raised to the minimum, then rounded up to the next bucket multiple. Part 4 §7.21
@@ -125,6 +126,21 @@ the client was not told.
 
 The initial-sample window bounds how long new items are batched, not how soon the first value
 arrives; a busy group or a slow read can delay it further. The overrun warning only logs.
+
+A sampler whose reads block can run its groups on an executor of their own, so the blocking stays
+off the server's shared executor. On Java 21 or later that can be a virtual thread per turn:
+
+```java
+@Override
+protected SamplingManagerConfig samplingManagerConfig() {
+  return SamplingManagerConfig.defaults().withExecutor(samplingExecutor);
+}
+```
+
+Here `samplingExecutor` is, for example, `Executors.newVirtualThreadPerTaskExecutor()`, created
+once by the address space. Timers stay on the server's scheduled executor. A group still runs one
+turn at a time, so the executor need not be serial or bounded. The manager never shuts the
+executor down; close it after the manager has shut down.
 
 ### Read-access policy
 
@@ -421,7 +437,7 @@ before startup wait instead of throwing; and callbacks after shutdown are ignore
 | Sampling stops after an overrun warning | A stage that never completed, or a refresh or synchronous read that blocked. |
 | Optimizer does not rerun | Membership is unchanged; permission changes and same-bucket interval changes do not mark it changed. A rebuild that threw is not retried. |
 | Values arrive twice per interval | An inherited manager and a custom or legacy sampler both own the items. |
-| Many blocked worker threads | A synchronous read or an access-attribute filter is doing I/O on the shared platform-thread executor. |
+| Many blocked worker threads | A synchronous read or an access-attribute filter is doing I/O on the shared platform-thread executor. Give the groups their own `executor`. |
 | The revised interval is higher than requested | Expected: it is the next supported interval, a bucket multiple at or above the minimum. Lower `bucketMillis` or `minimumIntervalMillis` if the device allows. |
 | A permission change does not reach subscribed clients | See [Changing permissions at runtime](access-control.md#changing-permissions-at-runtime). |
 

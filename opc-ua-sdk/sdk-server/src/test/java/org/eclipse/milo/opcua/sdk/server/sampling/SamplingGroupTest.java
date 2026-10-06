@@ -30,6 +30,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -365,6 +366,44 @@ class SamplingGroupTest {
     assertEquals(0, pendingInitialSamples());
     runHandoffs();
     assertEquals(2, group.samples.size(), "and no separate initial sample follows");
+  }
+
+  // A sampler whose reads block can keep them off the server's executor by naming one of its own,
+  // such as a virtual thread per turn. Every path into sample must use it: an initial sample, a
+  // cycle that became due while the turn was held and runs on its handoff, and a cycle on time.
+  // Timers stay on the scheduler, so the executor sees only the work they hand off.
+  @Test
+  void everyTurnRunsOnTheConfiguredExecutor() {
+    var executor = new MarkingExecutor();
+    group.configure(
+        SamplingManagerConfig.defaults().withReadAccessPolicy(policy).withExecutor(executor));
+
+    var ranOnExecutor = new CopyOnWriteArrayList<Boolean>();
+    var initialStage = new CompletableFuture<@Nullable Void>();
+    group.sampler =
+        items -> {
+          ranOnExecutor.add(executor.running);
+          return initialStage;
+        };
+    group.startup();
+    group.addItems(List.of(a));
+    runInitialSample();
+    runCycle(); // due while the initial sample holds the turn
+
+    group.sampler =
+        items -> {
+          ranOnExecutor.add(executor.running);
+          return CompletableFuture.completedFuture(null);
+        };
+    initialStage.complete(null);
+    runHandoffs();
+    runCycle();
+
+    assertEquals(List.of(true, true, true), ranOnExecutor);
+    assertEquals(
+        4,
+        executor.executed,
+        "the initial sample, the cycle that found the turn held, its handoff, and the next cycle");
   }
 
   // The initial sample's turn is watched like a cycle's: a first debounced sample that blocks
@@ -759,6 +798,24 @@ class SamplingGroupTest {
     @Override
     protected void onItemsRemoved(List<DataItem> items) {
       removed.add(List.copyOf(items));
+    }
+  }
+
+  /** Runs each task on the calling thread, and marks while it does. */
+  static final class MarkingExecutor implements Executor {
+
+    boolean running = false;
+    int executed = 0;
+
+    @Override
+    public void execute(Runnable command) {
+      executed++;
+      running = true;
+      try {
+        command.run();
+      } finally {
+        running = false;
+      }
     }
   }
 

@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * The items sampled at one interval, and the cycle that samples them.
  *
  * <p>A subclass implements {@link #sample(List)}, the protocol read, delivers each value with
- * {@link #deliver(DataItem, DataValue)}, and gets the rest: scheduling on the server's executors,
+ * {@link #deliver(DataItem, DataValue)}, and gets the rest: scheduling and running each cycle,
  * membership, a debounced initial sample for new items, and a read access refresh before every
  * sample. Each cycle, in order, tells the subclass about a changed item set through {@link
  * #onItemsChanged(List)}, refreshes the read access result of every item with the group's {@link
@@ -52,7 +52,10 @@ import org.slf4j.LoggerFactory;
  *
  * <h2>Threading</h2>
  *
- * <p>{@code onItemsChanged} and {@code sample} run on the server's executor, one turn at a time: a
+ * <p>A group keeps time on the server's scheduled executor and runs its turns on the group's
+ * executor: the server's executor, or the one its {@link SamplingManagerConfig} names.
+ *
+ * <p>{@code onItemsChanged} and {@code sample} run on the group's executor, one turn at a time: a
  * cycle or an initial sample holds the group's turn from its refresh until the stage its {@code
  * sample} returned completes, and whichever of the two becomes due meanwhile runs when the turn is
  * released, dispatched through the scheduler rather than on the thread that completed the stage. A
@@ -114,13 +117,13 @@ public abstract class SamplingGroup {
 
   private final OpcUaServer server;
   private final long intervalMillis;
-  private final ExecutorService executor;
   private final ScheduledExecutorService scheduler;
+  private volatile Executor executor;
 
   /**
    * Create a group that samples at {@code intervalMillis}.
    *
-   * @param server the server whose executors run the cycle.
+   * @param server the server the group runs on.
    * @param intervalMillis the sampling interval, in milliseconds.
    */
   protected SamplingGroup(OpcUaServer server, long intervalMillis) {
@@ -135,7 +138,7 @@ public abstract class SamplingGroup {
    * Sample every one of {@code items} once and deliver each result with {@link #deliver(DataItem,
    * DataValue)}, synchronously or asynchronously.
    *
-   * <p>Called on the server's executor at each interval, and for the initial sample of new items.
+   * <p>Called on the group's executor at each interval, and for the initial sample of new items.
    * The items' Sessions may read them; the group has already refreshed and applied their read
    * access results. The returned stage completes when every item has been delivered or failed; the
    * group holds its turn and times the next cycle from that completion. Returning {@code null} is
@@ -271,6 +274,11 @@ public abstract class SamplingGroup {
     initialSampleDelayMillis = config.initialSampleDelayMillis();
     initialSampleMaxWindowMillis = config.initialSampleMaxWindowMillis();
     overrunWarningMultiple = config.overrunWarningMultiple();
+
+    Executor configured = config.executor();
+    if (configured != null) {
+      executor = configured;
+    }
   }
 
   final void addItems(List<DataItem> newItems) {

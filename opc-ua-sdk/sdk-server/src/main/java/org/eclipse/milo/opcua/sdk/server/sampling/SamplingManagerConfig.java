@@ -14,10 +14,12 @@ import com.google.common.math.DoubleMath;
 import com.google.common.math.LongMath;
 import java.math.RoundingMode;
 import java.util.Objects;
+import java.util.concurrent.Executor;
+import org.jspecify.annotations.Nullable;
 
 /**
- * How a {@link SamplingManager} buckets intervals, floors them, debounces initial samples, and
- * refreshes read access.
+ * How a {@link SamplingManager} buckets intervals, floors them, debounces initial samples,
+ * refreshes read access, and where its groups run.
  *
  * <p>Start from {@link #defaults()} and change what you need:
  *
@@ -45,6 +47,9 @@ import java.util.Objects;
  * @param overrunWarningMultiple a cycle that has not completed after this many intervals is logged,
  *     since the group cannot sample again until it does.
  * @param readAccessPolicy how each group refreshes its items' read access results before sampling.
+ * @param executor the executor each group runs its refreshes and samples on, or {@code null} for
+ *     the server's executor. Timers stay on the server's scheduled executor. The manager never
+ *     shuts this executor down.
  */
 public record SamplingManagerConfig(
     long bucketMillis,
@@ -52,7 +57,8 @@ public record SamplingManagerConfig(
     long initialSampleDelayMillis,
     long initialSampleMaxWindowMillis,
     long overrunWarningMultiple,
-    ReadAccessPolicy readAccessPolicy) {
+    ReadAccessPolicy readAccessPolicy,
+    @Nullable Executor executor) {
 
   public SamplingManagerConfig {
     if (bucketMillis < 0) {
@@ -79,12 +85,12 @@ public record SamplingManagerConfig(
   /**
    * The defaults: 25 ms buckets and a 1 ms minimum interval, so the fastest interval supported is
    * 25 ms; an initial sample 100 ms after the first new item and at most 500 ms after it; a warning
-   * after 3 overrun intervals; and {@link ReadAccessPolicy#perCycle()}.
+   * after 3 overrun intervals; {@link ReadAccessPolicy#perCycle()}; and the server's executor.
    *
    * @return the default configuration.
    */
   public static SamplingManagerConfig defaults() {
-    return new SamplingManagerConfig(25, 1, 100, 500, 3, ReadAccessPolicy.perCycle());
+    return new SamplingManagerConfig(25, 1, 100, 500, 3, ReadAccessPolicy.perCycle(), null);
   }
 
   public SamplingManagerConfig withBucketMillis(long bucketMillis) {
@@ -94,7 +100,8 @@ public record SamplingManagerConfig(
         initialSampleDelayMillis,
         initialSampleMaxWindowMillis,
         overrunWarningMultiple,
-        readAccessPolicy);
+        readAccessPolicy,
+        executor);
   }
 
   public SamplingManagerConfig withMinimumIntervalMillis(long minimumIntervalMillis) {
@@ -104,7 +111,8 @@ public record SamplingManagerConfig(
         initialSampleDelayMillis,
         initialSampleMaxWindowMillis,
         overrunWarningMultiple,
-        readAccessPolicy);
+        readAccessPolicy,
+        executor);
   }
 
   public SamplingManagerConfig withInitialSampleDelayMillis(long initialSampleDelayMillis) {
@@ -114,7 +122,8 @@ public record SamplingManagerConfig(
         initialSampleDelayMillis,
         initialSampleMaxWindowMillis,
         overrunWarningMultiple,
-        readAccessPolicy);
+        readAccessPolicy,
+        executor);
   }
 
   public SamplingManagerConfig withInitialSampleMaxWindowMillis(long initialSampleMaxWindowMillis) {
@@ -124,7 +133,8 @@ public record SamplingManagerConfig(
         initialSampleDelayMillis,
         initialSampleMaxWindowMillis,
         overrunWarningMultiple,
-        readAccessPolicy);
+        readAccessPolicy,
+        executor);
   }
 
   public SamplingManagerConfig withOverrunWarningMultiple(long overrunWarningMultiple) {
@@ -134,7 +144,8 @@ public record SamplingManagerConfig(
         initialSampleDelayMillis,
         initialSampleMaxWindowMillis,
         overrunWarningMultiple,
-        readAccessPolicy);
+        readAccessPolicy,
+        executor);
   }
 
   public SamplingManagerConfig withReadAccessPolicy(ReadAccessPolicy readAccessPolicy) {
@@ -144,7 +155,38 @@ public record SamplingManagerConfig(
         initialSampleDelayMillis,
         initialSampleMaxWindowMillis,
         overrunWarningMultiple,
-        readAccessPolicy);
+        readAccessPolicy,
+        executor);
+  }
+
+  /**
+   * Run each group's refreshes and samples on {@code executor} instead of the server's executor.
+   *
+   * <p>A sampler that blocks in its reads can keep that blocking off the server's shared executor.
+   * On Java 21 or later, for example, each turn can run on a virtual thread:
+   *
+   * <pre>{@code
+   * SamplingManagerConfig config =
+   *     SamplingManagerConfig.defaults()
+   *         .withExecutor(Executors.newVirtualThreadPerTaskExecutor());
+   * }</pre>
+   *
+   * <p>A group runs one turn at a time whatever the executor, so it need not be serial or bounded.
+   * The caller owns the executor and shuts it down, if it needs to, after the manager has shut
+   * down.
+   *
+   * @param executor the executor to sample on, or {@code null} for the server's executor.
+   * @return a copy of this configuration with {@code executor}.
+   */
+  public SamplingManagerConfig withExecutor(@Nullable Executor executor) {
+    return new SamplingManagerConfig(
+        bucketMillis,
+        minimumIntervalMillis,
+        initialSampleDelayMillis,
+        initialSampleMaxWindowMillis,
+        overrunWarningMultiple,
+        readAccessPolicy,
+        executor);
   }
 
   /**
