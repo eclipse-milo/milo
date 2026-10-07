@@ -97,11 +97,13 @@ public class BrowseHelper {
       }
     }
 
+    // Operations resolved above keep their results; the rest are browsed, and each result goes
+    // back to the operation it came from.
+    List<PendingBrowse> toBrowse =
+        pending.stream().filter(pb -> pb.referenceDescriptionResult == null).toList();
+
     List<BrowseDescription> nodesToBrowse =
-        pending.stream()
-            .filter(pb -> pb.referenceDescriptionResult == null)
-            .map(pb -> pb.browseDescription)
-            .toList();
+        toBrowse.stream().map(pb -> pb.browseDescription).toList();
 
     List<AddressSpace.ReferenceResult> referenceResults =
         server
@@ -116,8 +118,8 @@ public class BrowseHelper {
     List<ReferenceDescriptionResult> referenceDescriptionLists =
         createReferenceDescriptions(server, nodesToBrowse, referenceResults);
 
-    for (int i = 0; i < nodesToBrowse.size(); i++) {
-      PendingBrowse pb = pending.get(i);
+    for (int i = 0; i < toBrowse.size(); i++) {
+      PendingBrowse pb = toBrowse.get(i);
       ReferenceDescriptionResult referenceDescriptionResult = referenceDescriptionLists.get(i);
 
       if (referenceDescriptionResult instanceof ReferenceDescriptionResult.BadNoReferences) {
@@ -176,6 +178,9 @@ public class BrowseHelper {
                 server, context.getSession().orElse(null), max, rdl.referenceDescriptions);
 
         browseResults.add(browseResult);
+      } else {
+        // Skipping an operation would shift every later result onto the wrong operation.
+        throw new IllegalStateException("no result for a BrowseDescription");
       }
     }
 
