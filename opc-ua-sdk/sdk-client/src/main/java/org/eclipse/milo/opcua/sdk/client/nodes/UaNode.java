@@ -853,7 +853,8 @@ public abstract class UaNode implements Node {
    * {@link BrowseOptions} from the {@link AddressSpace}.
    *
    * @return a List of {@link ReferenceDescription}s.
-   * @throws UaException if a service-level error occurs.
+   * @throws UaException if a service-level error occurs or a Browse or BrowseNext result has a Bad
+   *     StatusCode, such as {@code Bad_NodeIdUnknown}.
    * @see AddressSpace#getBrowseOptions()
    * @see AddressSpace#modifyBrowseOptions(Consumer)
    * @see AddressSpace#setBrowseOptions(BrowseOptions)
@@ -867,7 +868,8 @@ public abstract class UaNode implements Node {
    *
    * @param browseOptions the {@link BrowseOptions} to browse with.
    * @return a List of {@link ReferenceDescription}s.
-   * @throws UaException if a service-level error occurs.
+   * @throws UaException if a service-level error occurs or a Browse or BrowseNext result has a Bad
+   *     StatusCode, such as {@code Bad_NodeIdUnknown}.
    */
   public List<ReferenceDescription> browse(BrowseOptions browseOptions) throws UaException {
     return client.getAddressSpace().browse(this, browseOptions);
@@ -880,7 +882,8 @@ public abstract class UaNode implements Node {
    * <p>This call completes asynchronously.
    *
    * @return a CompletableFuture that completes successfully with the List of references or
-   *     completes exceptionally if a service-level error occurs.
+   *     completes exceptionally if a service-level error occurs or a Browse or BrowseNext result
+   *     has a Bad StatusCode.
    * @see AddressSpace#getBrowseOptions()
    * @see AddressSpace#modifyBrowseOptions(Consumer)
    * @see AddressSpace#setBrowseOptions(BrowseOptions)
@@ -896,7 +899,8 @@ public abstract class UaNode implements Node {
    *
    * @param browseOptions the {@link BrowseOptions} to browse with.
    * @return a CompletableFuture that completes successfully with the List of references or
-   *     completes exceptionally if a service-level error occurs.
+   *     completes exceptionally if a service-level error occurs or a Browse or BrowseNext result
+   *     has a Bad StatusCode.
    */
   public CompletableFuture<List<ReferenceDescription>> browseAsync(BrowseOptions browseOptions) {
     return client.getAddressSpace().browseAsync(this, browseOptions);
@@ -907,7 +911,8 @@ public abstract class UaNode implements Node {
    * configured {@link BrowseOptions} from the {@link AddressSpace}.
    *
    * @return a List of {@link UaNode}s referenced by this Node.
-   * @throws UaException if a service-level error occurs.
+   * @throws UaException if a service-level error occurs or a Browse or BrowseNext result has a Bad
+   *     StatusCode, such as {@code Bad_NodeIdUnknown}.
    * @see AddressSpace#getBrowseOptions()
    * @see AddressSpace#modifyBrowseOptions(Consumer)
    * @see AddressSpace#setBrowseOptions(BrowseOptions)
@@ -921,7 +926,8 @@ public abstract class UaNode implements Node {
    *
    * @param browseOptions the {@link BrowseOptions} to browse with.
    * @return a List of {@link UaNode}s referenced by this Node.
-   * @throws UaException if a service-level error occurs.
+   * @throws UaException if a service-level error occurs or a Browse or BrowseNext result has a Bad
+   *     StatusCode, such as {@code Bad_NodeIdUnknown}.
    */
   public List<? extends UaNode> browseNodes(BrowseOptions browseOptions) throws UaException {
     return client.getAddressSpace().browseNodes(this, browseOptions);
@@ -934,7 +940,8 @@ public abstract class UaNode implements Node {
    * <p>This call completes asynchronously.
    *
    * @return a CompletableFuture that completes successfully with the List of {@link UaNode}s
-   *     referenced by this Node or completes exceptionally if a service-level error occurs.
+   *     referenced by this Node or completes exceptionally if a service-level error occurs or a
+   *     Browse or BrowseNext result has a Bad StatusCode.
    * @see AddressSpace#getBrowseOptions()
    * @see AddressSpace#modifyBrowseOptions(Consumer)
    * @see AddressSpace#setBrowseOptions(BrowseOptions)
@@ -950,7 +957,8 @@ public abstract class UaNode implements Node {
    *
    * @param browseOptions the {@link BrowseOptions} to browse with.
    * @return a CompletableFuture that completes successfully with the List of {@link UaNode}s
-   *     referenced by this Node or completes exceptionally if a service-level error occurs.
+   *     referenced by this Node or completes exceptionally if a service-level error occurs or a
+   *     Browse or BrowseNext result has a Bad StatusCode.
    */
   public CompletableFuture<List<? extends UaNode>> browseNodesAsync(BrowseOptions browseOptions) {
     return client.getAddressSpace().browseNodesAsync(this, browseOptions);

@@ -407,7 +407,8 @@ public class AddressSpace {
    *
    * @param node the {@link UaNode} to browse.
    * @return a List of {@link ReferenceDescription}s.
-   * @throws UaException if a service-level error occurs.
+   * @throws UaException if a service-level error occurs or a Browse or BrowseNext result has a Bad
+   *     StatusCode, such as {@code Bad_NodeIdUnknown}.
    * @see #getBrowseOptions()
    * @see #modifyBrowseOptions(Consumer)
    * @see #setBrowseOptions(BrowseOptions)
@@ -422,7 +423,8 @@ public class AddressSpace {
    * @param node the {@link UaNode} to browse.
    * @param browseOptions the {@link BrowseOptions} to browse with.
    * @return a List of {@link ReferenceDescription}s.
-   * @throws UaException if a service-level error occurs.
+   * @throws UaException if a service-level error occurs or a Browse or BrowseNext result has a Bad
+   *     StatusCode, such as {@code Bad_NodeIdUnknown}.
    */
   public List<ReferenceDescription> browse(UaNode node, BrowseOptions browseOptions)
       throws UaException {
@@ -442,7 +444,8 @@ public class AddressSpace {
    *
    * @param nodeId the {@link NodeId} of the Node to browse.
    * @return a List of {@link ReferenceDescription}s.
-   * @throws UaException if a service-level error occurs.
+   * @throws UaException if a service-level error occurs or a Browse or BrowseNext result has a Bad
+   *     StatusCode, such as {@code Bad_NodeIdUnknown}.
    * @see #getBrowseOptions()
    * @see #modifyBrowseOptions(Consumer)
    * @see #setBrowseOptions(BrowseOptions)
@@ -457,7 +460,8 @@ public class AddressSpace {
    * @param nodeId the {@link NodeId} of the Node to browse.
    * @param browseOptions the {@link BrowseOptions} to browse with.
    * @return a List of {@link ReferenceDescription}s.
-   * @throws UaException if a service-level error occurs.
+   * @throws UaException if a service-level error occurs or a Browse or BrowseNext result has a Bad
+   *     StatusCode, such as {@code Bad_NodeIdUnknown}.
    */
   public List<ReferenceDescription> browse(NodeId nodeId, BrowseOptions browseOptions)
       throws UaException {
@@ -479,7 +483,8 @@ public class AddressSpace {
    *
    * @param node the {@link UaNode} to browse.
    * @return a CompletableFuture that completes successfully with the List of references or
-   *     completes exceptionally if a service-level error occurs.
+   *     completes exceptionally if a service-level error occurs or a Browse or BrowseNext result
+   *     has a Bad StatusCode.
    * @see #getBrowseOptions()
    * @see #modifyBrowseOptions(Consumer)
    * @see #setBrowseOptions(BrowseOptions)
@@ -496,7 +501,8 @@ public class AddressSpace {
    * @param node the {@link UaNode} to browse.
    * @param browseOptions the {@link BrowseOptions} to browse with.
    * @return a CompletableFuture that completes successfully with the List of references or
-   *     completes exceptionally if a service-level error occurs.
+   *     completes exceptionally if a service-level error occurs or a Browse or BrowseNext result
+   *     has a Bad StatusCode.
    */
   public CompletableFuture<List<ReferenceDescription>> browseAsync(
       UaNode node, BrowseOptions browseOptions) {
@@ -511,7 +517,8 @@ public class AddressSpace {
    *
    * @param nodeId the {@link NodeId} of the Node to browse.
    * @return a CompletableFuture that completes successfully with the List of references or
-   *     completes exceptionally if a service-level error occurs.
+   *     completes exceptionally if a service-level error occurs or a Browse or BrowseNext result
+   *     has a Bad StatusCode.
    * @see #getBrowseOptions()
    * @see #modifyBrowseOptions(Consumer)
    * @see #setBrowseOptions(BrowseOptions)
@@ -525,10 +532,15 @@ public class AddressSpace {
    *
    * <p>This call completes asynchronously.
    *
+   * <p>The Browse is followed by as many BrowseNext calls as needed to get all the references.
+   * References from results with an Uncertain StatusCode, such as {@code
+   * Uncertain_NotAllNodesAvailable}, are included.
+   *
    * @param nodeId the {@link NodeId} of the Node to browse.
    * @param browseOptions the {@link BrowseOptions} to browse with.
    * @return a CompletableFuture that completes successfully with the List of references or
-   *     completes exceptionally if a service-level error occurs.
+   *     completes exceptionally if a service-level error occurs or a Browse or BrowseNext result
+   *     has a Bad StatusCode.
    */
   public CompletableFuture<List<ReferenceDescription>> browseAsync(
       NodeId nodeId, BrowseOptions browseOptions) {
@@ -550,7 +562,8 @@ public class AddressSpace {
    * @param node the {@link UaNode} to start the browse from.
    * @return a List of {@link UaNode}s referenced by {@code node} given the currently configured
    *     {@link BrowseOptions}.
-   * @throws UaException if an error occurs while browsing or creating Nodes.
+   * @throws UaException if a service-level error occurs or a Browse or BrowseNext result has a Bad
+   *     StatusCode, such as {@code Bad_NodeIdUnknown}.
    * @see #browseNodes(UaNode, BrowseOptions)
    * @see #getBrowseOptions()
    * @see #modifyBrowseOptions(Consumer)
@@ -566,7 +579,8 @@ public class AddressSpace {
    * @param node the {@link UaNode} to start the browse from.
    * @param browseOptions the {@link BrowseOptions} to use.
    * @return a List of {@link UaNode}s referenced by {@code node} given {@code browseOptions}.
-   * @throws UaException if an error occurs while browsing or creating Nodes.
+   * @throws UaException if a service-level error occurs or a Browse or BrowseNext result has a Bad
+   *     StatusCode, such as {@code Bad_NodeIdUnknown}.
    */
   public List<? extends UaNode> browseNodes(UaNode node, BrowseOptions browseOptions)
       throws UaException {
@@ -586,7 +600,8 @@ public class AddressSpace {
    * @param nodeId the {@link NodeId} to start the browse from.
    * @return a List of {@link UaNode}s referenced by {@code nodeId} given the currently configured
    *     {@link BrowseOptions}.
-   * @throws UaException if an error occurs while browsing or creating Nodes.
+   * @throws UaException if a service-level error occurs or a Browse or BrowseNext result has a Bad
+   *     StatusCode, such as {@code Bad_NodeIdUnknown}.
    * @see #browseNodes(UaNode, BrowseOptions)
    * @see #getBrowseOptions()
    * @see #modifyBrowseOptions(Consumer)
@@ -602,7 +617,8 @@ public class AddressSpace {
    * @param nodeId the {@link NodeId} to start the browse from.
    * @param browseOptions the {@link BrowseOptions} to use.
    * @return a List of {@link UaNode}s referenced by {@code nodeId} given {@code browseOptions}.
-   * @throws UaException if an error occurs while browsing or creating Nodes.
+   * @throws UaException if a service-level error occurs or a Browse or BrowseNext result has a Bad
+   *     StatusCode, such as {@code Bad_NodeIdUnknown}.
    */
   public List<? extends UaNode> browseNodes(NodeId nodeId, BrowseOptions browseOptions)
       throws UaException {
@@ -624,7 +640,8 @@ public class AddressSpace {
    * @param node the {@link UaNode} to start the browse from.
    * @return a CompletableFuture that completes successfully with a List of {@link UaNode}s
    *     referenced by {@code node} given the currently configured {@link BrowseOptions} or
-   *     completes exceptionally if a service-level error occurs.
+   *     completes exceptionally if a service-level error occurs or a Browse or BrowseNext result
+   *     has a Bad StatusCode.
    * @see #browseNodesAsync(UaNode, BrowseOptions)
    * @see #getBrowseOptions()
    * @see #modifyBrowseOptions(Consumer)
@@ -643,7 +660,8 @@ public class AddressSpace {
    * @param browseOptions the {@link BrowseOptions} to use.
    * @return a CompletableFuture that completes successfully with a List of {@link UaNode}s
    *     referenced by {@code node} given the currently configured {@link BrowseOptions} or
-   *     completes exceptionally if a service-level error occurs.
+   *     completes exceptionally if a service-level error occurs or a Browse or BrowseNext result
+   *     has a Bad StatusCode.
    */
   public CompletableFuture<List<? extends UaNode>> browseNodesAsync(
       UaNode node, BrowseOptions browseOptions) {
@@ -658,7 +676,8 @@ public class AddressSpace {
    * @param nodeId the {@link NodeId} to start the browse from.
    * @return a CompletableFuture that completes successfully with a List of {@link UaNode}s
    *     referenced by {@code node} given the currently configured {@link BrowseOptions} or
-   *     completes exceptionally if a service-level error occurs.
+   *     completes exceptionally if a service-level error occurs or a Browse or BrowseNext result
+   *     has a Bad StatusCode.
    * @see #browseNodesAsync(UaNode, BrowseOptions)
    * @see #getBrowseOptions()
    * @see #modifyBrowseOptions(Consumer)
@@ -673,11 +692,16 @@ public class AddressSpace {
    *
    * <p>This call completes asynchronously.
    *
+   * <p>The Browse is followed by as many BrowseNext calls as needed to get all the references.
+   * References from results with an Uncertain StatusCode, such as {@code
+   * Uncertain_NotAllNodesAvailable}, are included.
+   *
    * @param nodeId the {@link NodeId} to start the browse from.
    * @param browseOptions the {@link BrowseOptions} to use.
    * @return a CompletableFuture that completes successfully with a List of {@link UaNode}s
    *     referenced by {@code node} given the currently configured {@link BrowseOptions} or
-   *     completes exceptionally if a service-level error occurs.
+   *     completes exceptionally if a service-level error occurs or a Browse or BrowseNext result
+   *     has a Bad StatusCode.
    */
   public CompletableFuture<List<? extends UaNode>> browseNodesAsync(
       NodeId nodeId, BrowseOptions browseOptions) {
