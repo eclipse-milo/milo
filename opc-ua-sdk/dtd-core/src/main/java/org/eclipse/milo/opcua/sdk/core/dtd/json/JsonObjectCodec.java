@@ -66,28 +66,28 @@ public class JsonObjectCodec extends AbstractBsdCodec<JsonObject, JsonElement> {
   protected JsonElement opcUaToMemberTypeScalar(String name, Object value, String typeName) {
     if (value == null) {
       return JsonNull.INSTANCE;
-    } else if (value instanceof Number) {
-      if (value instanceof UByte) {
-        return new JsonPrimitive(((UByte) value).shortValue());
-      } else if (value instanceof UShort) {
-        return new JsonPrimitive(((UShort) value).intValue());
-      } else if (value instanceof UInteger) {
-        return new JsonPrimitive(((UInteger) value).longValue());
-      } else if (value instanceof ULong) {
-        return new JsonPrimitive(((ULong) value).toBigInteger());
+    } else if (value instanceof Number number) {
+      if (value instanceof UByte ub) {
+        return new JsonPrimitive(ub.shortValue());
+      } else if (value instanceof UShort us) {
+        return new JsonPrimitive(us.intValue());
+      } else if (value instanceof UInteger ui) {
+        return new JsonPrimitive(ui.longValue());
+      } else if (value instanceof ULong ul) {
+        return new JsonPrimitive(ul.toBigInteger());
       } else {
-        return new JsonPrimitive((Number) value);
+        return new JsonPrimitive(number);
       }
-    } else if (value instanceof Boolean) {
-      return new JsonPrimitive((Boolean) value);
-    } else if (value instanceof String) {
-      return new JsonPrimitive((String) value);
-    } else if (value instanceof Character) {
-      return new JsonPrimitive((Character) value);
-    } else if (value instanceof JsonElement) {
-      return (JsonElement) value;
-    } else if (value instanceof DateTime) {
-      return new JsonPrimitive(((DateTime) value).getUtcTime());
+    } else if (value instanceof Boolean b) {
+      return new JsonPrimitive(b);
+    } else if (value instanceof String s) {
+      return new JsonPrimitive(s);
+    } else if (value instanceof Character c) {
+      return new JsonPrimitive(c);
+    } else if (value instanceof JsonElement jsonElement) {
+      return jsonElement;
+    } else if (value instanceof DateTime dateTime) {
+      return new JsonPrimitive(dateTime.getUtcTime());
     } else if (value instanceof UUID) {
       return new JsonPrimitive(value.toString());
     } else if (value instanceof LocalizedText) {
@@ -101,17 +101,17 @@ public class JsonObjectCodec extends AbstractBsdCodec<JsonObject, JsonElement> {
         array.add(new JsonPrimitive(b));
       }
       return array;
-    } else if (value instanceof XmlElement) {
-      String fragment = ((XmlElement) value).fragment();
+    } else if (value instanceof XmlElement xmlElement) {
+      String fragment = xmlElement.fragment();
       return fragment != null ? new JsonPrimitive(fragment) : JsonNull.INSTANCE;
-    } else if (value instanceof NodeId) {
-      String nodeId = ((NodeId) value).toParseableString();
+    } else if (value instanceof NodeId id) {
+      String nodeId = id.toParseableString();
       return new JsonPrimitive(nodeId);
-    } else if (value instanceof ExpandedNodeId) {
-      String xNodeId = ((ExpandedNodeId) value).toParseableString();
+    } else if (value instanceof ExpandedNodeId eni) {
+      String xNodeId = eni.toParseableString();
       return new JsonPrimitive(xNodeId);
-    } else if (value instanceof StatusCode) {
-      long code = ((StatusCode) value).value();
+    } else if (value instanceof StatusCode statusCode) {
+      long code = statusCode.value();
       return new JsonPrimitive(code);
     } else if (value instanceof BsdStructWrapper<?> wrapper
         && wrapper.object() instanceof JsonElement element) {
