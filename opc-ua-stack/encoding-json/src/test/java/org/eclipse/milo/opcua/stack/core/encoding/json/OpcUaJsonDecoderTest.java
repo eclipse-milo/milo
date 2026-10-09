@@ -52,6 +52,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class OpcUaJsonDecoderTest {
 
@@ -216,6 +217,17 @@ class OpcUaJsonDecoderTest {
     decoder.jsonReader.beginObject();
     assertEquals(ULong.MIN, decoder.decodeUInt64("foo"));
     decoder.jsonReader.endObject();
+  }
+
+  // UInt64 is carried as a decimal string, so an out-of-range value must be rejected like the XML
+  // decoder rejects it, not decoded to an unrelated number.
+  @ParameterizedTest
+  @ValueSource(strings = {"90000000000000000000", "92233720368547758079"})
+  void decodeUInt64RejectsValuesAboveTheRange(String value) {
+    var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
+    decoder.reset(new StringReader(String.format("\"%s\"", value)));
+
+    assertThrows(UaSerializationException.class, () -> decoder.decodeUInt64(null));
   }
 
   @Test
