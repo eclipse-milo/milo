@@ -113,38 +113,7 @@ public final class ULong extends UNumber implements Comparable<ULong> {
    *     unsigned long</code>.
    */
   private ULong(String value) throws NumberFormatException {
-    if (value == null) {
-      throw new NumberFormatException("null");
-    }
-
-    int length = value.length();
-
-    if (length == 0) {
-      throw new NumberFormatException("Empty input string");
-    }
-
-    if (value.charAt(0) == '-') {
-      throw new NumberFormatException(
-          String.format("Illegal leading minus sign on unsigned string %s", value));
-    }
-
-    if (length <= 18) {
-      this.value = Long.parseLong(value, 10);
-      return;
-    }
-
-    final long first = Long.parseLong(value.substring(0, length - 1), 10);
-    final int second = Character.digit(value.charAt(length - 1), 10);
-    if (second < 0) {
-      throw new NumberFormatException("Bad digit at end of " + value);
-    }
-    long result = first * 10 + second;
-    if (compare(result, first) < 0) {
-      throw new NumberFormatException(
-          String.format("String value %s exceeds range of unsigned long", value));
-    }
-
-    this.value = result;
+    this.value = Long.parseUnsignedLong(value);
   }
 
   @Override
