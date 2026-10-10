@@ -62,12 +62,11 @@ class ClientBrowseUtilsTest {
   @Test
   void emptyContinuationPointInResponseFinishesBrowse() throws UaException {
     var client = mock(OpcUaClient.class);
-    var response = mock(BrowseNextResponse.class);
-    var result = mock(BrowseResult.class);
     var continuationPoint = ByteString.of(new byte[] {1});
-    when(client.browseNext(false, List.of(continuationPoint))).thenReturn(response);
-    when(response.getResults()).thenReturn(new BrowseResult[] {result});
-    when(result.getContinuationPoint()).thenReturn(ByteString.of(new byte[0]));
+    when(client.browseNext(false, List.of(continuationPoint)))
+        .thenReturn(
+            browseNextResponse(
+                new BrowseResult(StatusCode.GOOD, ByteString.of(new byte[0]), null)));
 
     assertEquals(List.of(), ClientBrowseUtils.maybeBrowseNext(client, continuationPoint));
 
@@ -398,19 +397,187 @@ class ClientBrowseUtilsTest {
   @Test
   void releasesContinuationPointWhenBrowseNextLimitIsReached() throws UaException {
     var client = mock(OpcUaClient.class);
-    var response = mock(BrowseNextResponse.class);
-    var result = mock(BrowseResult.class);
     var continuationPoint = ByteString.of(new byte[] {1, 2, 3, 4});
 
-    when(client.browseNext(false, List.of(continuationPoint))).thenReturn(response);
-    when(response.getResults()).thenReturn(new BrowseResult[] {result});
-    when(result.getContinuationPoint()).thenReturn(continuationPoint);
+    when(client.browseNext(false, List.of(continuationPoint)))
+        .thenReturn(browseNextResponse(new BrowseResult(StatusCode.GOOD, continuationPoint, null)));
 
     assertThrows(
         UaException.class, () -> ClientBrowseUtils.maybeBrowseNext(client, continuationPoint));
 
     verify(client, times(1000)).browseNext(false, List.of(continuationPoint));
     verify(client).browseNext(true, List.of(continuationPoint));
+  }
+
+  /**
+   * Part 4 §7.9: a Server frees a Session's ContinuationPoints when another request on the Session
+   * needs them, and answers Bad_ContinuationPointInvalid when the Client then uses one. Returning
+   * the first page would let a type tree build cache it as the Node's complete references.
+   */
+  @Test
+  void badBrowseNextResultFailsTheBrowse() throws UaException {
+    var client = mock(OpcUaClient.class);
+    List<BrowseDescription> requests = browseRequests(1);
+    List<ReferenceDescription> references = references(1);
+    var continuationPoint = ByteString.of(new byte[] {1});
+
+    when(client.browse(requests))
+        .thenReturn(
+            List.of(
+                new BrowseResult(
+                    StatusCode.GOOD,
+                    continuationPoint,
+                    new ReferenceDescription[] {references.get(0)})));
+    when(client.browseNext(false, List.of(continuationPoint)))
+        .thenReturn(
+            browseNextResponse(
+                new BrowseResult(
+                    new StatusCode(StatusCodes.Bad_ContinuationPointInvalid),
+                    ByteString.NULL_VALUE,
+                    null)));
+
+    UaException thrown =
+        assertThrows(
+            UaException.class,
+            () ->
+                ClientBrowseUtils.browseWithOperationLimits(
+                    client, requests, operationLimits(null, null)));
+
+    assertEquals(StatusCodes.Bad_ContinuationPointInvalid, thrown.getStatusCode().value());
+    verify(client).browse(requests);
+    verify(client).browseNext(false, List.of(continuationPoint));
+    verifyNoMoreInteractions(client);
+  }
+
+  /**
+   * Part 4 §7.9: a ContinuationPoint stays active until the Client releases it or the Session
+   * closes. A Bad BrowseNext result that still carries one is released before the browse fails.
+   */
+  @Test
+  void badBrowseNextResultWithContinuationPointFailsAndReleasesIt() throws UaException {
+    var client = mock(OpcUaClient.class);
+    var continuationPoint = ByteString.of(new byte[] {1});
+    var nextContinuationPoint = ByteString.of(new byte[] {2});
+
+    when(client.browseNext(false, List.of(continuationPoint)))
+        .thenReturn(
+            browseNextResponse(
+                new BrowseResult(
+                    new StatusCode(StatusCodes.Bad_NodeNotInView), nextContinuationPoint, null)));
+
+    UaException thrown =
+        assertThrows(
+            UaException.class, () -> ClientBrowseUtils.maybeBrowseNext(client, continuationPoint));
+
+    assertEquals(StatusCodes.Bad_NodeNotInView, thrown.getStatusCode().value());
+    verify(client).browseNext(true, List.of(nextContinuationPoint));
+  }
+
+  /**
+   * Part 4 §5.9.2.4: Uncertain_NotAllNodesAvailable means the results may be incomplete, not that
+   * they are wrong. The first page's references are kept and its ContinuationPoint is followed, the
+   * same as an Uncertain BrowseNext page.
+   */
+  @Test
+  void uncertainFirstBrowseResultKeepsReferencesAndFollowsContinuationPoint() throws UaException {
+
+    var client = mock(OpcUaClient.class);
+    List<BrowseDescription> requests = browseRequests(1);
+    List<ReferenceDescription> references = references(2);
+    var continuationPoint = ByteString.of(new byte[] {1});
+
+    when(client.browse(requests))
+        .thenReturn(
+            List.of(
+                new BrowseResult(
+                    new StatusCode(StatusCodes.Uncertain_NotAllNodesAvailable),
+                    continuationPoint,
+                    new ReferenceDescription[] {references.get(0)})));
+    when(client.browseNext(false, List.of(continuationPoint)))
+        .thenReturn(
+            browseNextResponse(
+                new BrowseResult(
+                    StatusCode.GOOD,
+                    ByteString.NULL_VALUE,
+                    new ReferenceDescription[] {references.get(1)})));
+
+    List<List<ReferenceDescription>> result =
+        ClientBrowseUtils.browseWithOperationLimits(client, requests, operationLimits(null, null));
+
+    assertEquals(List.of(references), result);
+  }
+
+  /**
+   * A Bad first result is an operation-level failure that yields no references for that Node only.
+   * Part 4 §7.6 gives a Bad result no ContinuationPoint, but if a Server sends one anyway it is
+   * released rather than held until the Session closes.
+   */
+  @Test
+  void badFirstBrowseResultYieldsEmptyListAndReleasesAnyContinuationPoint() throws UaException {
+    var client = mock(OpcUaClient.class);
+    List<BrowseDescription> requests = browseRequests(3);
+    List<ReferenceDescription> references = references(1);
+    var continuationPoint = ByteString.of(new byte[] {1});
+    var badStatus = new StatusCode(StatusCodes.Bad_NodeIdUnknown);
+
+    when(client.browse(requests))
+        .thenReturn(
+            List.of(
+                new BrowseResult(badStatus, ByteString.NULL_VALUE, null),
+                new BrowseResult(badStatus, continuationPoint, null),
+                new BrowseResult(
+                    StatusCode.GOOD,
+                    ByteString.NULL_VALUE,
+                    new ReferenceDescription[] {references.get(0)})));
+
+    List<List<ReferenceDescription>> result =
+        ClientBrowseUtils.browseWithOperationLimits(
+            client, requests, operationLimits(null, uint(3)));
+
+    assertEquals(List.of(List.of(), List.of(), references), result);
+    verify(client).browse(requests);
+    verify(client).browseNext(true, List.of(continuationPoint));
+    verifyNoMoreInteractions(client);
+  }
+
+  /**
+   * Each result in a multi-node Browse response can carry its own ContinuationPoint. When paging
+   * one Node fails, the ContinuationPoints of the Nodes not yet paged are released rather than held
+   * by the Server until the Session closes (Part 4 §7.9).
+   */
+  @Test
+  void failedBrowseNextReleasesContinuationPointsNotYetFollowed() throws UaException {
+    var client = mock(OpcUaClient.class);
+    List<BrowseDescription> requests = browseRequests(3);
+    var continuationPoint0 = ByteString.of(new byte[] {0});
+    var continuationPoint1 = ByteString.of(new byte[] {1});
+
+    when(client.browse(requests))
+        .thenReturn(
+            List.of(
+                new BrowseResult(StatusCode.GOOD, continuationPoint0, null),
+                new BrowseResult(StatusCode.GOOD, continuationPoint1, null),
+                new BrowseResult(StatusCode.GOOD, ByteString.NULL_VALUE, null)));
+    when(client.browseNext(false, List.of(continuationPoint0)))
+        .thenReturn(
+            browseNextResponse(
+                new BrowseResult(
+                    new StatusCode(StatusCodes.Bad_ContinuationPointInvalid),
+                    ByteString.NULL_VALUE,
+                    null)));
+
+    UaException thrown =
+        assertThrows(
+            UaException.class,
+            () ->
+                ClientBrowseUtils.browseWithOperationLimits(
+                    client, requests, operationLimits(null, uint(3))));
+
+    assertEquals(StatusCodes.Bad_ContinuationPointInvalid, thrown.getStatusCode().value());
+    verify(client).browse(requests);
+    verify(client).browseNext(false, List.of(continuationPoint0));
+    verify(client).browseNext(true, List.of(continuationPoint1));
+    verifyNoMoreInteractions(client);
   }
 
   private static OperationLimits operationLimits(
@@ -475,6 +642,10 @@ class ClientBrowseUtilsTest {
                     ByteString.NULL_VALUE,
                     new ReferenceDescription[] {references.get(requests.indexOf(request))}))
         .toList();
+  }
+
+  private static BrowseNextResponse browseNextResponse(BrowseResult result) {
+    return new BrowseNextResponse(null, new BrowseResult[] {result}, null);
   }
 
   private static <T> List<List<T>> singletonPartitions(List<T> values) {
