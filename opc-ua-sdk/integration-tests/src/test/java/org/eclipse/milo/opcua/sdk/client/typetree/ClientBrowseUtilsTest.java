@@ -580,6 +580,42 @@ class ClientBrowseUtilsTest {
     verifyNoMoreInteractions(client);
   }
 
+  // Releasing ContinuationPoints is cleanup. If it fails, callers still need the Bad BrowseNext
+  // status that ended the browse, with the release failures attached as suppressed exceptions.
+  @Test
+  void failedReleaseKeepsTheBadBrowseNextStatus() throws UaException {
+    var client = mock(OpcUaClient.class);
+    List<BrowseDescription> requests = browseRequests(2);
+    var continuationPoint0 = ByteString.of(new byte[] {0});
+    var continuationPoint1 = ByteString.of(new byte[] {1});
+    var nextContinuationPoint0 = ByteString.of(new byte[] {2});
+    var releaseFailure = new UaException(StatusCodes.Bad_Timeout);
+
+    when(client.browse(requests))
+        .thenReturn(
+            List.of(
+                new BrowseResult(StatusCode.GOOD, continuationPoint0, null),
+                new BrowseResult(StatusCode.GOOD, continuationPoint1, null)));
+    when(client.browseNext(false, List.of(continuationPoint0)))
+        .thenReturn(
+            browseNextResponse(
+                new BrowseResult(
+                    new StatusCode(StatusCodes.Bad_NodeNotInView), nextContinuationPoint0, null)));
+    when(client.browseNext(eq(true), anyList())).thenThrow(releaseFailure);
+
+    UaException thrown =
+        assertThrows(
+            UaException.class,
+            () ->
+                ClientBrowseUtils.browseWithOperationLimits(
+                    client, requests, operationLimits(null, uint(2))));
+
+    assertEquals(StatusCodes.Bad_NodeNotInView, thrown.getStatusCode().value());
+    assertEquals(List.of(releaseFailure, releaseFailure), List.of(thrown.getSuppressed()));
+    verify(client).browseNext(true, List.of(nextContinuationPoint0));
+    verify(client).browseNext(true, List.of(continuationPoint1));
+  }
+
   private static OperationLimits operationLimits(
       @Nullable UInteger maxNodesPerRead, @Nullable UInteger maxNodesPerBrowse) {
 
