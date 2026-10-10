@@ -16,6 +16,7 @@ import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLClassLoader;
 import org.eclipse.milo.opcua.stack.core.Stack;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,14 +32,20 @@ class RateLimitingHandlerPropertiesTest {
   private static final String PROPERTY =
       Stack.ConnectionLimits.RATE_LIMIT_MAX_CONNECTIONS_PER_ADDRESS_PROPERTY;
 
+  private @Nullable String previousValue;
+
   @BeforeEach
   void setProperty() {
-    System.setProperty(PROPERTY, "250");
+    previousValue = System.setProperty(PROPERTY, "250");
   }
 
   @AfterEach
-  void clearProperty() {
-    System.clearProperty(PROPERTY);
+  void restoreProperty() {
+    if (previousValue == null) {
+      System.clearProperty(PROPERTY);
+    } else {
+      System.setProperty(PROPERTY, previousValue);
+    }
   }
 
   @Test
