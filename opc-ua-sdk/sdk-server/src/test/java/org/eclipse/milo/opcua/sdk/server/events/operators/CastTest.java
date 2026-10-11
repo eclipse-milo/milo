@@ -55,6 +55,18 @@ public class CastTest {
     assertEquals(Boolean.TRUE, cast(ulong(0x1_0000_0000L), NodeIds.Boolean));
   }
 
+  // Float to integer casts used to round through Math.round(float), which returns an int, so
+  // anything above Integer.MAX_VALUE saturated there instead of keeping its value or failing.
+  @Test
+  public void testFloatAbove32BitsCastsToInt64() throws Exception {
+    assertEquals(3_000_000_000L, cast(3e9f, NodeIds.Int64));
+  }
+
+  @Test
+  public void testFloatOutsideInt32RangeFailsToCast() throws Exception {
+    assertNull(cast(3e9f, NodeIds.Int32));
+  }
+
   @Test
   public void testConversionFailureReturnsNull() throws Exception {
     assertNull(cast("not an int", NodeIds.Int32));
