@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.server.access;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -189,6 +190,9 @@ public class DefaultAccessController implements AccessController {
    * which denies with {@code Bad_NotWritable} when it lacks CurrentWrite, and then the Session's
    * {@code UserAccessLevel}, which denies with {@code Bad_UserAccessDenied}. Other attributes are
    * checked against {@code UserWriteMask}.
+   *
+   * <p>The returned Map compares WriteValues by identity, so look up each result with the same
+   * WriteValue instance that was passed in. Equal WriteValues each get their own entry.
    */
   @Override
   public Map<WriteValue, AccessResult> checkWriteAccess(
@@ -291,7 +295,13 @@ public class DefaultAccessController implements AccessController {
       }
     }
 
-    return pending.stream().collect(Collectors.toMap(p -> p.value, p -> p.result, (a, b) -> b));
+    // Keyed by identity: WriteValue.hashCode hashes the whole value being written, which for an
+    // array is every element, and the caller looks results up with the same instances.
+    var results = new IdentityHashMap<WriteValue, AccessResult>(pending.size());
+    for (PendingResult<WriteValue> p : pending) {
+      results.put(p.value, p.result);
+    }
+    return results;
   }
 
   // endregion
