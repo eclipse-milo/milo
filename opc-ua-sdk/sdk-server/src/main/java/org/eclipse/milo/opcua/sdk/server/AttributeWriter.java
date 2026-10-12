@@ -369,7 +369,9 @@ public class AttributeWriter {
       o = matrix.nestedArrayValue();
     }
 
-    Class<?> valueClass = o.getClass().isArray() ? ArrayUtil.getType(o) : o.getClass();
+    // A primitive array such as int[] holds the same builtin type as its boxed form, and the
+    // DataTypeTree only knows the boxed backing classes.
+    Class<?> valueClass = o.getClass().isArray() ? ArrayUtil.getBoxedType(o) : o.getClass();
 
     DataTypeTree dataTypeTree = server.getDataTypeTree();
 
