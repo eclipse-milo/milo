@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 public class PublishQueue {
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(PublishQueue.class);
 
   private final LinkedList<PendingPublish> pendingQueue = new LinkedList<>();
 
@@ -49,12 +49,12 @@ public class PublishQueue {
     if (waitingSubscriptions.isEmpty()) {
       pendingQueue.add(pending);
 
-      logger.debug(
+      LOGGER.debug(
           "Queued PublishRequest requestHandle={}, size={}",
           pending.request.getRequestHeader().getRequestHandle(),
           pendingQueue.size());
     } else {
-      logger.debug("{} subscriptions waiting", waitingSubscriptions.size());
+      LOGGER.debug("{} subscriptions waiting", waitingSubscriptions.size());
 
       WaitingSubscription subscription = null;
 
@@ -65,7 +65,7 @@ public class PublishQueue {
         final int priority = waiting.getSubscription().getPriority();
         final long waitingSince = waiting.getWaitingSince().getTime();
 
-        logger.debug(
+        LOGGER.debug(
             "subscription id={} priority={} waitingSince={}",
             waiting.getSubscription().getId(),
             priority,
@@ -79,7 +79,7 @@ public class PublishQueue {
           minWaitingSince = waitingSince;
           subscription = waiting;
 
-          logger.debug(
+          LOGGER.debug(
               "subscription id={} priority={} now next in line",
               waiting.getSubscription().getId(),
               priority);
@@ -89,7 +89,7 @@ public class PublishQueue {
       if (subscription != null) {
         waitList.remove(subscription.subscription.getId());
 
-        logger.debug(
+        LOGGER.debug(
             "delivering PublishRequest to subscription id={} priority={}",
             subscription.getSubscription().getId(),
             subscription.getSubscription().getPriority());
@@ -162,7 +162,7 @@ public class PublishQueue {
         if (timeoutHint == 0 || millisSinceReceived < timeoutHint) {
           return pending;
         } else {
-          logger.debug(
+          LOGGER.debug(
               "Discarding expired PublishRequest "
                   + "requestHandle={} timestamp={} timeoutHint={} millisSinceReceived={}",
               requestHeader.getRequestHandle(),

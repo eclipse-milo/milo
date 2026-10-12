@@ -480,84 +480,33 @@ class FieldUtil {
       UaEncoder encoder, String fieldName, OpcUaDataType dataType, Object value) {
 
     switch (dataType) {
-      case Boolean:
-        encoder.encodeBoolean(fieldName, (Boolean) value);
-        break;
-      case SByte:
-        encoder.encodeSByte(fieldName, (Byte) value);
-        break;
-      case Byte:
-        encoder.encodeByte(fieldName, (UByte) value);
-        break;
-      case Int16:
-        encoder.encodeInt16(fieldName, (Short) value);
-        break;
-      case UInt16:
-        encoder.encodeUInt16(fieldName, (UShort) value);
-        break;
-      case Int32:
-        encoder.encodeInt32(fieldName, (Integer) value);
-        break;
-      case UInt32:
-        encoder.encodeUInt32(fieldName, (UInteger) value);
-        break;
-      case Int64:
-        encoder.encodeInt64(fieldName, (Long) value);
-        break;
-      case UInt64:
-        encoder.encodeUInt64(fieldName, (ULong) value);
-        break;
-      case Float:
-        encoder.encodeFloat(fieldName, (Float) value);
-        break;
-      case Double:
-        encoder.encodeDouble(fieldName, (Double) value);
-        break;
-      case String:
-        encoder.encodeString(fieldName, (String) value);
-        break;
-      case DateTime:
-        encoder.encodeDateTime(fieldName, (DateTime) value);
-        break;
-      case Guid:
-        encoder.encodeGuid(fieldName, (UUID) value);
-        break;
-      case ByteString:
-        encoder.encodeByteString(fieldName, (ByteString) value);
-        break;
-      case XmlElement:
-        encoder.encodeXmlElement(fieldName, (XmlElement) value);
-        break;
-      case NodeId:
-        encoder.encodeNodeId(fieldName, (NodeId) value);
-        break;
-      case ExpandedNodeId:
-        encoder.encodeExpandedNodeId(fieldName, (ExpandedNodeId) value);
-        break;
-      case StatusCode:
-        encoder.encodeStatusCode(fieldName, (StatusCode) value);
-        break;
-      case QualifiedName:
-        encoder.encodeQualifiedName(fieldName, (QualifiedName) value);
-        break;
-      case LocalizedText:
-        encoder.encodeLocalizedText(fieldName, (LocalizedText) value);
-        break;
-      case ExtensionObject:
-        encoder.encodeExtensionObject(fieldName, (ExtensionObject) value);
-        break;
-      case DataValue:
-        encoder.encodeDataValue(fieldName, (DataValue) value);
-        break;
-      case Variant:
-        encoder.encodeVariant(fieldName, (Variant) value);
-        break;
-      case DiagnosticInfo:
-        encoder.encodeDiagnosticInfo(fieldName, (DiagnosticInfo) value);
-        break;
-      default:
-        // Shouldn't happen
-        throw new RuntimeException("unhandled BuiltinDataType: " + dataType);
+      case Boolean -> encoder.encodeBoolean(fieldName, (Boolean) value);
+      case SByte -> encoder.encodeSByte(fieldName, (Byte) value);
+      case Byte -> encoder.encodeByte(fieldName, (UByte) value);
+      case Int16 -> encoder.encodeInt16(fieldName, (Short) value);
+      case UInt16 -> encoder.encodeUInt16(fieldName, (UShort) value);
+      case Int32 -> encoder.encodeInt32(fieldName, (Integer) value);
+      case UInt32 -> encoder.encodeUInt32(fieldName, (UInteger) value);
+      case Int64 -> encoder.encodeInt64(fieldName, (Long) value);
+      case UInt64 -> encoder.encodeUInt64(fieldName, (ULong) value);
+      case Float -> encoder.encodeFloat(fieldName, (Float) value);
+      case Double -> encoder.encodeDouble(fieldName, (Double) value);
+      case String -> encoder.encodeString(fieldName, (String) value);
+      case DateTime -> encoder.encodeDateTime(fieldName, (DateTime) value);
+      case Guid -> encoder.encodeGuid(fieldName, (UUID) value);
+      case ByteString -> encoder.encodeByteString(fieldName, (ByteString) value);
+      case XmlElement -> encoder.encodeXmlElement(fieldName, (XmlElement) value);
+      case NodeId -> encoder.encodeNodeId(fieldName, (NodeId) value);
+      case ExpandedNodeId -> encoder.encodeExpandedNodeId(fieldName, (ExpandedNodeId) value);
+      case StatusCode -> encoder.encodeStatusCode(fieldName, (StatusCode) value);
+      case QualifiedName -> encoder.encodeQualifiedName(fieldName, (QualifiedName) value);
+      case LocalizedText -> encoder.encodeLocalizedText(fieldName, (LocalizedText) value);
+      case ExtensionObject -> encoder.encodeExtensionObject(fieldName, (ExtensionObject) value);
+      case DataValue -> encoder.encodeDataValue(fieldName, (DataValue) value);
+      case Variant -> encoder.encodeVariant(fieldName, (Variant) value);
+      case DiagnosticInfo -> encoder.encodeDiagnosticInfo(fieldName, (DiagnosticInfo) value);
+      // Shouldn't happen
+      default -> throw new RuntimeException("unhandled BuiltinDataType: " + dataType);
     }
   }
 
@@ -565,84 +514,34 @@ class FieldUtil {
       UaEncoder encoder, String fieldName, OpcUaDataType dataType, Object value) {
 
     switch (dataType) {
-      case Boolean:
-        encoder.encodeBooleanArray(fieldName, (Boolean[]) value);
-        break;
-      case SByte:
-        encoder.encodeSByteArray(fieldName, (Byte[]) value);
-        break;
-      case Byte:
-        encoder.encodeByteArray(fieldName, (UByte[]) value);
-        break;
-      case Int16:
-        encoder.encodeInt16Array(fieldName, (Short[]) value);
-        break;
-      case UInt16:
-        encoder.encodeUInt16Array(fieldName, (UShort[]) value);
-        break;
-      case Int32:
-        encoder.encodeInt32Array(fieldName, (Integer[]) value);
-        break;
-      case UInt32:
-        encoder.encodeUInt32Array(fieldName, (UInteger[]) value);
-        break;
-      case Int64:
-        encoder.encodeInt64Array(fieldName, (Long[]) value);
-        break;
-      case UInt64:
-        encoder.encodeUInt64Array(fieldName, (ULong[]) value);
-        break;
-      case Float:
-        encoder.encodeFloatArray(fieldName, (Float[]) value);
-        break;
-      case Double:
-        encoder.encodeDoubleArray(fieldName, (Double[]) value);
-        break;
-      case String:
-        encoder.encodeStringArray(fieldName, (String[]) value);
-        break;
-      case DateTime:
-        encoder.encodeDateTimeArray(fieldName, (DateTime[]) value);
-        break;
-      case Guid:
-        encoder.encodeGuidArray(fieldName, (UUID[]) value);
-        break;
-      case ByteString:
-        encoder.encodeByteStringArray(fieldName, (ByteString[]) value);
-        break;
-      case XmlElement:
-        encoder.encodeXmlElementArray(fieldName, (XmlElement[]) value);
-        break;
-      case NodeId:
-        encoder.encodeNodeIdArray(fieldName, (NodeId[]) value);
-        break;
-      case ExpandedNodeId:
-        encoder.encodeExpandedNodeIdArray(fieldName, (ExpandedNodeId[]) value);
-        break;
-      case StatusCode:
-        encoder.encodeStatusCodeArray(fieldName, (StatusCode[]) value);
-        break;
-      case QualifiedName:
-        encoder.encodeQualifiedNameArray(fieldName, (QualifiedName[]) value);
-        break;
-      case LocalizedText:
-        encoder.encodeLocalizedTextArray(fieldName, (LocalizedText[]) value);
-        break;
-      case ExtensionObject:
-        encoder.encodeExtensionObjectArray(fieldName, (ExtensionObject[]) value);
-        break;
-      case DataValue:
-        encoder.encodeDataValueArray(fieldName, (DataValue[]) value);
-        break;
-      case Variant:
-        encoder.encodeVariantArray(fieldName, (Variant[]) value);
-        break;
-      case DiagnosticInfo:
-        encoder.encodeDiagnosticInfoArray(fieldName, (DiagnosticInfo[]) value);
-        break;
-      default:
-        // Shouldn't happen
-        throw new RuntimeException("unhandled BuiltinDataType: " + dataType);
+      case Boolean -> encoder.encodeBooleanArray(fieldName, (Boolean[]) value);
+      case SByte -> encoder.encodeSByteArray(fieldName, (Byte[]) value);
+      case Byte -> encoder.encodeByteArray(fieldName, (UByte[]) value);
+      case Int16 -> encoder.encodeInt16Array(fieldName, (Short[]) value);
+      case UInt16 -> encoder.encodeUInt16Array(fieldName, (UShort[]) value);
+      case Int32 -> encoder.encodeInt32Array(fieldName, (Integer[]) value);
+      case UInt32 -> encoder.encodeUInt32Array(fieldName, (UInteger[]) value);
+      case Int64 -> encoder.encodeInt64Array(fieldName, (Long[]) value);
+      case UInt64 -> encoder.encodeUInt64Array(fieldName, (ULong[]) value);
+      case Float -> encoder.encodeFloatArray(fieldName, (Float[]) value);
+      case Double -> encoder.encodeDoubleArray(fieldName, (Double[]) value);
+      case String -> encoder.encodeStringArray(fieldName, (String[]) value);
+      case DateTime -> encoder.encodeDateTimeArray(fieldName, (DateTime[]) value);
+      case Guid -> encoder.encodeGuidArray(fieldName, (UUID[]) value);
+      case ByteString -> encoder.encodeByteStringArray(fieldName, (ByteString[]) value);
+      case XmlElement -> encoder.encodeXmlElementArray(fieldName, (XmlElement[]) value);
+      case NodeId -> encoder.encodeNodeIdArray(fieldName, (NodeId[]) value);
+      case ExpandedNodeId -> encoder.encodeExpandedNodeIdArray(fieldName, (ExpandedNodeId[]) value);
+      case StatusCode -> encoder.encodeStatusCodeArray(fieldName, (StatusCode[]) value);
+      case QualifiedName -> encoder.encodeQualifiedNameArray(fieldName, (QualifiedName[]) value);
+      case LocalizedText -> encoder.encodeLocalizedTextArray(fieldName, (LocalizedText[]) value);
+      case ExtensionObject ->
+          encoder.encodeExtensionObjectArray(fieldName, (ExtensionObject[]) value);
+      case DataValue -> encoder.encodeDataValueArray(fieldName, (DataValue[]) value);
+      case Variant -> encoder.encodeVariantArray(fieldName, (Variant[]) value);
+      case DiagnosticInfo -> encoder.encodeDiagnosticInfoArray(fieldName, (DiagnosticInfo[]) value);
+      // Shouldn't happen
+      default -> throw new RuntimeException("unhandled BuiltinDataType: " + dataType);
     }
   }
 

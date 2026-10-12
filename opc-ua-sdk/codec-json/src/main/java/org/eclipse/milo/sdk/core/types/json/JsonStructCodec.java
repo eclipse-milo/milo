@@ -233,19 +233,23 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
       Object hint = getHint(field);
       if (hint instanceof OpcUaDataType) {
         Matrix matrix = decoder.decodeMatrix(fieldName, (OpcUaDataType) hint);
+        if (isNullMatrix(matrix)) return JsonNull.INSTANCE;
 
         return decodeBuiltinDataTypeMatrix(matrix);
       } else if (hint instanceof EnumHint) {
         Matrix matrix = decoder.decodeEnumMatrix(fieldName);
+        if (isNullMatrix(matrix)) return JsonNull.INSTANCE;
 
         return decodeEnumMatrix(matrix);
       } else if (hint instanceof StructHint) {
         if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(field)) {
           Matrix matrix = decoder.decodeMatrix(fieldName, OpcUaDataType.ExtensionObject);
+          if (isNullMatrix(matrix)) return JsonNull.INSTANCE;
 
           return decodeStructMatrix(decoder.getEncodingContext(), matrix, true);
         } else {
           Matrix matrix = decoder.decodeStructMatrix(fieldName, dataTypeId);
+          if (isNullMatrix(matrix)) return JsonNull.INSTANCE;
 
           return decodeStructMatrix(decoder.getEncodingContext(), matrix, false);
         }
@@ -255,6 +259,14 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
     } else {
       throw new IllegalArgumentException("unsupported value rank: " + field.getValueRank());
     }
+  }
+
+  /**
+   * A null Matrix field arrives as {@link Matrix#ofNull()} from the JSON and XML decoders and as
+   * {@code null} from the Binary decoder. Both mean the field has no value.
+   */
+  private static boolean isNullMatrix(@Nullable Matrix matrix) {
+    return matrix == null || matrix.isNull();
   }
 
   /**
@@ -590,39 +602,52 @@ public class JsonStructCodec extends GenericDataTypeCodec<JsonStruct> {
         throw new IllegalArgumentException("hint: " + hint);
       }
     } else if (field.getValueRank() > 1) {
-      JsonArray jsonArray = value.getAsJsonArray();
+      // A missing member or a JSON null is a null Matrix; every encoder accepts Matrix.ofNull().
+      JsonArray jsonArray = value == null || value.isJsonNull() ? null : value.getAsJsonArray();
 
       Object hint = getHint(field);
       if (hint instanceof OpcUaDataType) {
-        Object[] flatArray = encodeBuiltinDataTypeMatrix((OpcUaDataType) hint, jsonArray);
-        var matrix = new Matrix(flatArray, getDimensions(jsonArray), (OpcUaDataType) hint);
+        Matrix matrix = Matrix.ofNull();
+        if (jsonArray != null) {
+          Object[] flatArray = encodeBuiltinDataTypeMatrix((OpcUaDataType) hint, jsonArray);
+          matrix = new Matrix(flatArray, getDimensions(jsonArray), (OpcUaDataType) hint);
+        }
         encoder.encodeMatrix(fieldName, matrix);
       } else if (hint instanceof EnumHint) {
-        Object[] flatArray = encodeEnumMatrix(dataTypeId.expanded(), jsonArray);
-        var matrix =
-            new Matrix(
-                flatArray, getDimensions(jsonArray), OpcUaDataType.Int32, dataTypeId.expanded());
+        Matrix matrix = Matrix.ofNull();
+        if (jsonArray != null) {
+          Object[] flatArray = encodeEnumMatrix(dataTypeId.expanded(), jsonArray);
+          matrix =
+              new Matrix(
+                  flatArray, getDimensions(jsonArray), OpcUaDataType.Int32, dataTypeId.expanded());
+        }
         encoder.encodeEnumMatrix(fieldName, matrix);
       } else if (hint instanceof StructHint) {
         if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(field)) {
-          Object[] flatArray =
-              encodeStructMatrix(encoder.getEncodingContext(), dataTypeTree, jsonArray, true);
-          var matrix =
-              new Matrix(
-                  flatArray,
-                  getDimensions(jsonArray),
-                  OpcUaDataType.ExtensionObject,
-                  dataTypeId.expanded());
+          Matrix matrix = Matrix.ofNull();
+          if (jsonArray != null) {
+            Object[] flatArray =
+                encodeStructMatrix(encoder.getEncodingContext(), dataTypeTree, jsonArray, true);
+            matrix =
+                new Matrix(
+                    flatArray,
+                    getDimensions(jsonArray),
+                    OpcUaDataType.ExtensionObject,
+                    dataTypeId.expanded());
+          }
           encoder.encodeMatrix(fieldName, matrix);
         } else {
-          Object[] flatArray =
-              encodeStructMatrix(encoder.getEncodingContext(), dataTypeTree, jsonArray, false);
-          var matrix =
-              new Matrix(
-                  flatArray,
-                  getDimensions(jsonArray),
-                  OpcUaDataType.ExtensionObject,
-                  dataTypeId.expanded());
+          Matrix matrix = Matrix.ofNull();
+          if (jsonArray != null) {
+            Object[] flatArray =
+                encodeStructMatrix(encoder.getEncodingContext(), dataTypeTree, jsonArray, false);
+            matrix =
+                new Matrix(
+                    flatArray,
+                    getDimensions(jsonArray),
+                    OpcUaDataType.ExtensionObject,
+                    dataTypeId.expanded());
+          }
           encoder.encodeStructMatrix(fieldName, matrix, dataTypeId);
         }
       } else {

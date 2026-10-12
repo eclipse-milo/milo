@@ -31,7 +31,8 @@ import org.slf4j.LoggerFactory;
 public class OpcClientWebSocketBinaryFrameCodec
     extends MessageToMessageCodec<WebSocketFrame, ByteBuf> {
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(OpcClientWebSocketBinaryFrameCodec.class);
 
   private final UascClientConfig config;
   private final ClientApplicationContext application;
@@ -53,7 +54,7 @@ public class OpcClientWebSocketBinaryFrameCodec
   @Override
   public void userEventTriggered(ChannelHandlerContext ctx, Object event) throws Exception {
     if (event instanceof ClientHandshakeStateEvent) {
-      logger.debug("WebSocket handshake event: {}", event);
+      LOGGER.debug("WebSocket handshake event: {}", event);
 
       if (event == ClientHandshakeStateEvent.HANDSHAKE_COMPLETE) {
         var acknowledgeHandler =
@@ -74,7 +75,7 @@ public class OpcClientWebSocketBinaryFrameCodec
     if (msg instanceof BinaryWebSocketFrame) {
       out.add(msg.content().retain());
     } else if (msg instanceof TextWebSocketFrame textFrame) {
-      logger.error("Received WebSocket frame:\n{}", textFrame.text());
+      LOGGER.error("Received WebSocket frame:\n{}", textFrame.text());
       ctx.close();
     }
   }

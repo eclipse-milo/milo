@@ -52,8 +52,8 @@ public class UaMethodNode extends UaNode implements MethodNode {
 
   private final Map<NodeId, MethodInvocationHandler> objectHandlers = new ConcurrentHashMap<>();
 
-  private Boolean executable;
-  private Boolean userExecutable;
+  private volatile Boolean executable;
+  private volatile Boolean userExecutable;
 
   /** Construct a {@link UaMethodNode} using only attributes defined prior to OPC UA 1.04. */
   public UaMethodNode(
@@ -136,7 +136,7 @@ public class UaMethodNode extends UaNode implements MethodNode {
   }
 
   @Override
-  public synchronized Object getAttribute(AttributeId attributeId) {
+  public Object getAttribute(AttributeId attributeId) {
     return switch (attributeId) {
       case Executable -> executable;
       case UserExecutable -> userExecutable;

@@ -25,9 +25,11 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 /**
  * A shared, stack-wide, one-per-application-regardless-of-how-many-server-instances-you-have
@@ -53,7 +55,8 @@ public class RateLimitingHandler extends AbstractRemoteAddressFilter<InetSocketA
    * Stack.ConnectionLimits#RATE_LIMIT_WINDOW_MS}, {@link
    * Stack.ConnectionLimits#RATE_LIMIT_MAX_CONNECTIONS}, and {@link
    * Stack.ConnectionLimits#RATE_LIMIT_MAX_CONNECTIONS_PER_ADDRESS} will be locked in whenever the
-   * first invocation of this method occurs.
+   * first invocation of this method occurs. Those fields start from system properties; see {@link
+   * Stack.ConnectionLimits}.
    *
    * @return the shared {@link RateLimitingHandler} instance.
    */
@@ -103,14 +106,29 @@ public class RateLimitingHandler extends AbstractRemoteAddressFilter<InetSocketA
     this.maxConnections = maxConnections;
     this.maxConnectionsPerAddress = maxConnectionsPerAddress;
 
-    logger.debug(
-        "enabled={}, maxAttempts={}, rateLimitWindowMs={}, maxConnections={},"
-            + " maxConnectionsPerAddress={}",
-        enabled,
-        maxAttempts,
-        rateLimitWindowMs,
-        maxConnections,
-        maxConnectionsPerAddress);
+    // A support log should be able to confirm limits that were changed with system properties.
+    Level level = anyLimitPropertySet() ? Level.INFO : Level.DEBUG;
+
+    logger
+        .atLevel(level)
+        .log(
+            "enabled={}, maxAttempts={}, rateLimitWindowMs={}, maxConnections={},"
+                + " maxConnectionsPerAddress={}",
+            enabled,
+            maxAttempts,
+            rateLimitWindowMs,
+            maxConnections,
+            maxConnectionsPerAddress);
+  }
+
+  private static boolean anyLimitPropertySet() {
+    return Stream.of(
+            Stack.ConnectionLimits.RATE_LIMIT_ENABLED_PROPERTY,
+            Stack.ConnectionLimits.RATE_LIMIT_MAX_ATTEMPTS_PROPERTY,
+            Stack.ConnectionLimits.RATE_LIMIT_WINDOW_MS_PROPERTY,
+            Stack.ConnectionLimits.RATE_LIMIT_MAX_CONNECTIONS_PROPERTY,
+            Stack.ConnectionLimits.RATE_LIMIT_MAX_CONNECTIONS_PER_ADDRESS_PROPERTY)
+        .anyMatch(name -> System.getProperty(name) != null);
   }
 
   @Override

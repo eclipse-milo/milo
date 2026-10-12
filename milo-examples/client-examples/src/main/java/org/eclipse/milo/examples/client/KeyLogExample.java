@@ -30,8 +30,8 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Starts an embedded server and client, both configured with {@link WiresharkKeyLogWriter}.
  * After the encrypted connection is established and some traffic is exchanged, the key log file
- * contents are printed. The resulting file can be loaded into Wireshark 4.4+ via Edit → Preferences
- * → Protocols → OPC UA → Key log file.
+ * contents are printed. For TShark 4.4.19, set {@code opcua.debug_file} to the file and {@code
+ * opcua.tcp.port} to the server listening port. Verify both traffic directions.
  */
 public class KeyLogExample implements ClientExample {
 
@@ -100,7 +100,8 @@ public class KeyLogExample implements ClientExample {
     Files.readAllLines(clientKeyLogFile).forEach(line -> logger.info("  {}", line));
 
     logger.info("Load either file into Wireshark 4.4+ via:");
-    logger.info("  Edit > Preferences > Protocols > OPC UA > Key log file");
+    logger.info(
+        "  Set opcua.debug_file and opcua.tcp.port (TShark 4.4.19); verify both directions");
 
     future.complete(client);
   }

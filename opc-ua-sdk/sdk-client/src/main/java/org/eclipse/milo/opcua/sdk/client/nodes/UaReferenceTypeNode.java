@@ -317,25 +317,10 @@ public class UaReferenceTypeNode extends UaNode implements ReferenceTypeNode {
   @Override
   protected void setAttributeValue(AttributeId attributeId, DataValue value) {
     switch (attributeId) {
-      case IsAbstract:
-        {
-          setIsAbstract((Boolean) value.value().value());
-          break;
-        }
-      case Symmetric:
-        {
-          setSymmetric((Boolean) value.value().value());
-          break;
-        }
-      case InverseName:
-        {
-          setInverseName((LocalizedText) value.value().value());
-          break;
-        }
-      default:
-        {
-          super.setAttributeValue(attributeId, value);
-        }
+      case IsAbstract -> setIsAbstract((Boolean) value.value().value());
+      case Symmetric -> setSymmetric((Boolean) value.value().value());
+      case InverseName -> setInverseName((LocalizedText) value.value().value());
+      default -> super.setAttributeValue(attributeId, value);
     }
   }
 }

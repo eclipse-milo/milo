@@ -11,56 +11,88 @@
 package org.eclipse.milo.opcua.sdk.core.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class GroupMapCollate {
 
+  /**
+   * Group {@code items} by key, map each group to results with the mapper for its key, and collate
+   * the results back into the order of {@code items}.
+   *
+   * <p>Each mapper is called once, with a new mutable list holding its group's items in their
+   * original order, and must return one result per item in the same order.
+   *
+   * @param items the items to group, map, and collate.
+   * @param grouper returns the non-null group key for an item.
+   * @param mappers returns the mapper for a group key.
+   * @param <T> the item type.
+   * @param <K> the group key type.
+   * @param <R> the result type.
+   * @return the results, in the order of {@code items}.
+   * @throws NullPointerException if {@code grouper} returns {@code null} for an item.
+   * @throws RuntimeException if a mapper returns a different number of results than items.
+   */
   public static <T, K, R> List<R> groupMapCollate(
       List<T> items, Function<T, K> grouper, Function<K, Function<List<T>, List<R>>> mappers) {
 
-    var pending = new ArrayList<Pending<T, R>>(items.size());
+    int size = items.size();
+    var groups = new LinkedHashMap<K, Group<T>>();
 
-    for (int i = 0; i < items.size(); i++) {
-      pending.add(new Pending<>(items.get(i), i));
+    for (int i = 0; i < size; i++) {
+      T item = items.get(i);
+      K key = Objects.requireNonNull(grouper.apply(item), "element cannot be mapped to a null key");
+
+      groups.computeIfAbsent(key, k -> new Group<>()).add(item, i);
     }
 
-    Map<K, List<Pending<T, R>>> grouped =
-        pending.stream().collect(Collectors.groupingBy(p -> grouper.apply(p.item)));
+    var results = new Object[size];
 
-    grouped.forEach(
-        (key, pendingForKey) -> {
-          Function<List<T>, List<R>> mapper = mappers.apply(key);
+    for (Map.Entry<K, Group<T>> entry : groups.entrySet()) {
+      Group<T> group = entry.getValue();
+      Function<List<T>, List<R>> mapper = mappers.apply(entry.getKey());
 
-          List<R> results =
-              mapper.apply(pendingForKey.stream().map(p -> p.item).collect(Collectors.toList()));
+      // The mapper may change the list it is given, so the group's size is taken beforehand.
+      int groupSize = group.items.size();
+      List<R> groupResults = mapper.apply(group.items);
 
-          if (results.size() != pendingForKey.size()) {
-            String message =
-                String.format(
-                    "result size (%s) does not match pending size (%s)",
-                    results.size(), pendingForKey.size());
-            throw new RuntimeException(message);
-          }
+      if (groupResults.size() != groupSize) {
+        String message =
+            String.format(
+                "result size (%s) does not match pending size (%s)",
+                groupResults.size(), groupSize);
+        throw new RuntimeException(message);
+      }
 
-          for (int i = 0; i < results.size(); i++) {
-            pendingForKey.get(i).result = results.get(i);
-          }
-        });
+      for (int i = 0; i < groupResults.size(); i++) {
+        results[group.indices[i]] = groupResults.get(i);
+      }
+    }
 
-    return pending.stream().map(p -> p.result).collect(Collectors.toList());
+    var collated = new ArrayList<R>(size);
+    for (Object result : results) {
+      @SuppressWarnings("unchecked")
+      R r = (R) result;
+      collated.add(r);
+    }
+    return collated;
   }
 
-  private static class Pending<T, R> {
-    volatile R result;
-    final T item;
-    final int index;
+  /** The items that share a key, and each item's index in the original list. */
+  private static final class Group<T> {
+    final List<T> items = new ArrayList<>();
+    int[] indices = new int[4];
 
-    public Pending(T item, int index) {
-      this.item = item;
-      this.index = index;
+    void add(T item, int index) {
+      if (items.size() == indices.length) {
+        indices = Arrays.copyOf(indices, indices.length * 2);
+      }
+      indices[items.size()] = index;
+      items.add(item);
     }
   }
 }

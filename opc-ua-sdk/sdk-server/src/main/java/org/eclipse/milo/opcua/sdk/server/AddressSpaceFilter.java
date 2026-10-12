@@ -238,6 +238,23 @@ public interface AddressSpaceFilter {
    * Return {@code true} if the monitored item operation for {@code readValueId} should be handled
    * by the {@link AddressSpace} this filter belongs to.
    *
+   * <p>The default implementation delegates to {@link #filterOnDataItemsModified(OpcUaServer,
+   * ReadValueId)}, since a transfer changes an existing item.
+   *
+   * @param server the {@link OpcUaServer}.
+   * @param readValueId the {@link ReadValueId} from the monitored item operation.
+   * @return {@code true} if the monitored item operation for {@code readValueId} should be handled
+   *     by the {@link AddressSpace} this filter belongs to.
+   * @see AddressSpace#onDataItemsTransferred(List)
+   */
+  default boolean filterOnDataItemsTransferred(OpcUaServer server, ReadValueId readValueId) {
+    return filterOnDataItemsModified(server, readValueId);
+  }
+
+  /**
+   * Return {@code true} if the monitored item operation for {@code readValueId} should be handled
+   * by the {@link AddressSpace} this filter belongs to.
+   *
    * @param server the {@link OpcUaServer}.
    * @param readValueId the {@link ReadValueId} from the monitored item operation.
    * @return {@code true} if the monitored item operation for {@code readValueId} should be handled

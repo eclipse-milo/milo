@@ -14,17 +14,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Maven Central Repository
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          server-id: central
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
+          overwrite-settings: false
 
       - name: Clean and Deploy
-        run: mvn -B clean deploy -P deploy-snapshot
+        run: mvn -B --settings .github/maven-settings.xml clean deploy -P deploy-snapshot
         env:
           MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}

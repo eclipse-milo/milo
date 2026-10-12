@@ -29,6 +29,7 @@
     <module>client-examples</module>
     <module>pubsub-examples</module>
     <module>server-examples</module>
+    <module>wiki-examples</module>
   </modules>
 
   <build>

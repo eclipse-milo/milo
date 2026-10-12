@@ -55,7 +55,7 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
 
   private static final long PROTOCOL_VERSION = 0L;
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(UascClientAcknowledgeHandler.class);
 
   private final List<UaRequestMessageType> awaitingHandshake =
       Collections.synchronizedList(new ArrayList<>());
@@ -211,7 +211,7 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
 
   @Override
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-    logger.error(
+    LOGGER.error(
         "[remote={}] Exception caught: {}",
         ctx.channel().remoteAddress(),
         cause.getMessage(),
@@ -245,7 +245,7 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
 
     ctx.writeAndFlush(messageBuffer, ctx.voidPromise());
 
-    logger.debug("Sent Hello message on channel={}.", ctx.channel());
+    LOGGER.debug("Sent Hello message on channel={}.", ctx.channel());
   }
 
   private void sendHelloIfChannelActive(ChannelHandlerContext ctx) throws UaException {
@@ -313,7 +313,7 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
       return;
     }
 
-    logger.debug("Received Acknowledge message on channel={}.", ctx.channel());
+    LOGGER.debug("Received Acknowledge message on channel={}.", ctx.channel());
 
     buffer.skipBytes(3 + 1 + 4); // Skip messageType, chunkType, and messageSize
 
@@ -326,7 +326,7 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
     long remoteMaxChunkCount = acknowledge.getMaxChunkCount();
 
     if (PROTOCOL_VERSION > remoteProtocolVersion) {
-      logger.warn(
+      LOGGER.warn(
           "Client protocol version ({}) does not match server protocol version ({}).",
           PROTOCOL_VERSION,
           remoteProtocolVersion);
@@ -388,14 +388,14 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
       ErrorMessage errorMessage = TcpMessageDecoder.decodeError(buffer);
       StatusCode statusCode = errorMessage.getError();
 
-      logger.error(
+      LOGGER.error(
           "[remote={}] received error message: {}", ctx.channel().remoteAddress(), errorMessage);
 
       failHandshake(new UaException(statusCode, errorMessage.getReason()));
 
       ctx.fireUserEventTriggered(errorMessage);
     } catch (UaException e) {
-      logger.error(
+      LOGGER.error(
           "[remote={}] an exception occurred while decoding an error message: {}",
           ctx.channel().remoteAddress(),
           e.getMessage(),

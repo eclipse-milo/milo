@@ -12,6 +12,8 @@ package org.eclipse.milo.opcua.stack.core.encoding.binary;
 
 import io.netty.buffer.ByteBuf;
 import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -716,84 +718,72 @@ public class OpcUaBinaryEncoder implements UaEncoder {
 
   private void encodeBuiltinType(int typeId, Object value) throws UaSerializationException {
     switch (typeId) {
-      case 1:
-        encodeBoolean(null, (Boolean) value);
-        break;
-      case 2:
-        encodeSByte((Byte) value);
-        break;
-      case 3:
-        encodeByte((UByte) value);
-        break;
-      case 4:
-        encodeInt16((Short) value);
-        break;
-      case 5:
-        encodeUInt16((UShort) value);
-        break;
-      case 6:
-        encodeInt32((Integer) value);
-        break;
-      case 7:
-        encodeUInt32((UInteger) value);
-        break;
-      case 8:
-        encodeInt64((Long) value);
-        break;
-      case 9:
-        encodeUInt64((ULong) value);
-        break;
-      case 10:
-        encodeFloat((Float) value);
-        break;
-      case 11:
-        encodeDouble((Double) value);
-        break;
-      case 12:
-        encodeString((String) value);
-        break;
-      case 13:
-        encodeDateTime((DateTime) value);
-        break;
-      case 14:
-        encodeGuid((UUID) value);
-        break;
-      case 15:
-        encodeByteString((ByteString) value);
-        break;
-      case 16:
-        encodeXmlElement((XmlElement) value);
-        break;
-      case 17:
-        encodeNodeId((NodeId) value);
-        break;
-      case 18:
-        encodeExpandedNodeId((ExpandedNodeId) value);
-        break;
-      case 19:
-        encodeStatusCode((StatusCode) value);
-        break;
-      case 20:
-        encodeQualifiedName((QualifiedName) value);
-        break;
-      case 21:
-        encodeLocalizedText((LocalizedText) value);
-        break;
-      case 22:
-        encodeExtensionObject((ExtensionObject) value);
-        break;
-      case 23:
-        encodeDataValue((DataValue) value);
-        break;
-      case 24:
-        encodeVariant((Variant) value);
-        break;
-      case 25:
-        encodeDiagnosticInfo((DiagnosticInfo) value);
-        break;
-      default:
-        throw new UaSerializationException(
-            StatusCodes.Bad_EncodingError, "unknown builtin type: " + typeId);
+      case 1 -> encodeBoolean(null, (Boolean) value);
+      case 2 -> encodeSByte((Byte) value);
+      case 3 -> encodeByte((UByte) value);
+      case 4 -> encodeInt16((Short) value);
+      case 5 -> encodeUInt16((UShort) value);
+      case 6 -> encodeInt32((Integer) value);
+      case 7 -> encodeUInt32((UInteger) value);
+      case 8 -> encodeInt64((Long) value);
+      case 9 -> encodeUInt64((ULong) value);
+      case 10 -> encodeFloat((Float) value);
+      case 11 -> encodeDouble((Double) value);
+      case 12 -> encodeString((String) value);
+      case 13 -> encodeDateTime((DateTime) value);
+      case 14 -> encodeGuid((UUID) value);
+      case 15 -> encodeByteString((ByteString) value);
+      case 16 -> encodeXmlElement((XmlElement) value);
+      case 17 -> encodeNodeId((NodeId) value);
+      case 18 -> encodeExpandedNodeId((ExpandedNodeId) value);
+      case 19 -> encodeStatusCode((StatusCode) value);
+      case 20 -> encodeQualifiedName((QualifiedName) value);
+      case 21 -> encodeLocalizedText((LocalizedText) value);
+      case 22 -> encodeExtensionObject((ExtensionObject) value);
+      case 23 -> encodeDataValue((DataValue) value);
+      case 24 -> encodeVariant((Variant) value);
+      case 25 -> encodeDiagnosticInfo((DiagnosticInfo) value);
+      default ->
+          throw new UaSerializationException(
+              StatusCodes.Bad_EncodingError, "unknown builtin type: " + typeId);
+    }
+  }
+
+  /** Bytes converted per block by {@link #writeFixedWidthArray}. */
+  private static final int ARRAY_BLOCK_SIZE = 8192;
+
+  /** Writes elements {@code from} to {@code from + count} of an array into a block. */
+  @FunctionalInterface
+  private interface BlockWriter {
+    void write(ByteBuffer block, int from, int count);
+  }
+
+  /**
+   * Write {@code length} array elements of {@code width} bytes each.
+   *
+   * <p>The space is reserved once, and the elements are converted a block at a time into a
+   * little-endian heap buffer that is then copied into the buffer, instead of one bounds- and
+   * capacity-checked write per element. Copying a block works for any {@link ByteBuf} type.
+   *
+   * @param length the number of elements to write.
+   * @param width the encoded size of one element, in bytes.
+   * @param writer writes a range of elements into a block, starting at its position 0.
+   */
+  private void writeFixedWidthArray(int length, int width, BlockWriter writer) {
+    if (length == 0) return;
+
+    buffer.ensureWritable(Math.multiplyExact(length, width));
+
+    int perBlock = Math.min(length, Math.max(1, ARRAY_BLOCK_SIZE / width));
+    ByteBuffer block = ByteBuffer.allocate(perBlock * width).order(ByteOrder.LITTLE_ENDIAN);
+
+    // Advance by the elements written, so the index never passes length and cannot overflow.
+    for (int from = 0; from < length; ) {
+      int count = Math.min(perBlock, length - from);
+      block.clear();
+      writer.write(block, from, count);
+      buffer.writeBytes(block.array(), 0, count * width);
+      from += count;
     }
   }
 
@@ -842,74 +832,149 @@ public class OpcUaBinaryEncoder implements UaEncoder {
     switch (typeId) {
       case 1 -> {
         if (array instanceof boolean[] values) {
-          for (int i = 0; i < length; i++) buffer.writeBoolean(values[i]);
+          writeFixedWidthArray(
+              length,
+              1,
+              (b, from, n) -> {
+                for (int i = from; i < from + n; i++) b.put(values[i] ? (byte) 1 : (byte) 0);
+              });
         } else {
           Boolean[] values = (Boolean[]) array;
-          for (int i = 0; i < length; i++) encodeBoolean(values[i]);
+          writeFixedWidthArray(
+              length,
+              1,
+              (b, from, n) -> {
+                for (int i = from; i < from + n; i++) {
+                  b.put(Boolean.TRUE.equals(values[i]) ? (byte) 1 : (byte) 0);
+                }
+              });
         }
       }
       case 2 -> {
         if (array instanceof byte[] values) {
-          for (int i = 0; i < length; i++) buffer.writeByte(values[i]);
+          buffer.writeBytes(values, 0, length);
         } else {
           Byte[] values = (Byte[]) array;
-          for (int i = 0; i < length; i++) encodeSByte(values[i]);
+          writeFixedWidthArray(
+              length,
+              1,
+              (b, from, n) -> {
+                for (int i = from; i < from + n; i++) b.put(values[i] == null ? 0 : values[i]);
+              });
         }
       }
       case 3 -> {
         UByte[] values = (UByte[]) array;
-        for (int i = 0; i < length; i++) encodeByte(values[i]);
+        writeFixedWidthArray(
+            length,
+            1,
+            (b, from, n) -> {
+              for (int i = from; i < from + n; i++) {
+                b.put(values[i] == null ? 0 : (byte) values[i].intValue());
+              }
+            });
       }
       case 4 -> {
         if (array instanceof short[] values) {
-          for (int i = 0; i < length; i++) buffer.writeShortLE(values[i]);
+          writeFixedWidthArray(length, 2, (b, from, n) -> b.asShortBuffer().put(values, from, n));
         } else {
           Short[] values = (Short[]) array;
-          for (int i = 0; i < length; i++) encodeInt16(values[i]);
+          writeFixedWidthArray(
+              length,
+              2,
+              (b, from, n) -> {
+                for (int i = from; i < from + n; i++) {
+                  b.putShort(values[i] == null ? 0 : values[i]);
+                }
+              });
         }
       }
       case 5 -> {
         UShort[] values = (UShort[]) array;
-        for (int i = 0; i < length; i++) encodeUInt16(values[i]);
+        writeFixedWidthArray(
+            length,
+            2,
+            (b, from, n) -> {
+              for (int i = from; i < from + n; i++) {
+                b.putShort(values[i] == null ? 0 : (short) values[i].intValue());
+              }
+            });
       }
       case 6 -> {
         if (array instanceof int[] values) {
-          for (int i = 0; i < length; i++) buffer.writeIntLE(values[i]);
+          writeFixedWidthArray(length, 4, (b, from, n) -> b.asIntBuffer().put(values, from, n));
         } else {
           Integer[] values = (Integer[]) array;
-          for (int i = 0; i < length; i++) encodeInt32(values[i]);
+          writeFixedWidthArray(
+              length,
+              4,
+              (b, from, n) -> {
+                for (int i = from; i < from + n; i++) b.putInt(values[i] == null ? 0 : values[i]);
+              });
         }
       }
       case 7 -> {
         UInteger[] values = (UInteger[]) array;
-        for (int i = 0; i < length; i++) encodeUInt32(values[i]);
+        writeFixedWidthArray(
+            length,
+            4,
+            (b, from, n) -> {
+              for (int i = from; i < from + n; i++) {
+                b.putInt(values[i] == null ? 0 : values[i].intValue());
+              }
+            });
       }
       case 8 -> {
         if (array instanceof long[] values) {
-          for (int i = 0; i < length; i++) buffer.writeLongLE(values[i]);
+          writeFixedWidthArray(length, 8, (b, from, n) -> b.asLongBuffer().put(values, from, n));
         } else {
           Long[] values = (Long[]) array;
-          for (int i = 0; i < length; i++) encodeInt64(values[i]);
+          writeFixedWidthArray(
+              length,
+              8,
+              (b, from, n) -> {
+                for (int i = from; i < from + n; i++) b.putLong(values[i] == null ? 0L : values[i]);
+              });
         }
       }
       case 9 -> {
         ULong[] values = (ULong[]) array;
-        for (int i = 0; i < length; i++) encodeUInt64(values[i]);
+        writeFixedWidthArray(
+            length,
+            8,
+            (b, from, n) -> {
+              for (int i = from; i < from + n; i++) {
+                b.putLong(values[i] == null ? 0L : values[i].longValue());
+              }
+            });
       }
       case 10 -> {
         if (array instanceof float[] values) {
-          for (int i = 0; i < length; i++) buffer.writeFloatLE(values[i]);
+          writeFixedWidthArray(length, 4, (b, from, n) -> b.asFloatBuffer().put(values, from, n));
         } else {
           Float[] values = (Float[]) array;
-          for (int i = 0; i < length; i++) encodeFloat(values[i]);
+          writeFixedWidthArray(
+              length,
+              4,
+              (b, from, n) -> {
+                for (int i = from; i < from + n; i++)
+                  b.putFloat(values[i] == null ? 0f : values[i]);
+              });
         }
       }
       case 11 -> {
         if (array instanceof double[] values) {
-          for (int i = 0; i < length; i++) buffer.writeDoubleLE(values[i]);
+          writeFixedWidthArray(length, 8, (b, from, n) -> b.asDoubleBuffer().put(values, from, n));
         } else {
           Double[] values = (Double[]) array;
-          for (int i = 0; i < length; i++) encodeDouble(values[i]);
+          writeFixedWidthArray(
+              length,
+              8,
+              (b, from, n) -> {
+                for (int i = from; i < from + n; i++) {
+                  b.putDouble(values[i] == null ? 0d : values[i]);
+                }
+              });
         }
       }
       case 12 -> {
@@ -1405,13 +1470,12 @@ public class OpcUaBinaryEncoder implements UaEncoder {
 
   @Override
   public void encodeMatrix(String field, Matrix value) throws UaSerializationException {
-    Object elements = value.getElements();
-
-    if (elements == null) {
+    if (value == null || value.isNull()) {
       buffer.writeIntLE(-1);
       return;
     }
 
+    Object elements = value.getElements();
     int[] dimensions = value.getDimensions();
     assert dimensions.length > 1;
 
@@ -1448,13 +1512,12 @@ public class OpcUaBinaryEncoder implements UaEncoder {
 
   @Override
   public void encodeEnumMatrix(String field, Matrix value) throws UaSerializationException {
-    Object elements = value.getElements();
-
-    if (elements == null) {
+    if (value == null || value.isNull()) {
       buffer.writeIntLE(-1);
       return;
     }
 
+    Object elements = value.getElements();
     int[] dimensions = value.getDimensions();
     assert dimensions.length > 1;
 
@@ -1481,13 +1544,12 @@ public class OpcUaBinaryEncoder implements UaEncoder {
   public void encodeStructMatrix(String field, Matrix value, NodeId dataTypeId)
       throws UaSerializationException {
 
-    Object elements = value.getElements();
-
-    if (elements == null) {
+    if (value == null || value.isNull()) {
       buffer.writeIntLE(-1);
       return;
     }
 
+    Object elements = value.getElements();
     int[] dimensions = value.getDimensions();
     assert dimensions.length > 1;
 

@@ -19,6 +19,7 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class ULongTest {
 
@@ -146,6 +147,26 @@ class ULongTest {
       assertEquals(exact.doubleValue(), value.doubleValue(), () -> "doubleValue of " + value);
       assertEquals(exact.floatValue(), value.floatValue(), () -> "floatValue of " + value);
     }
+  }
+
+  // The old hand-written parser only caught some 20-digit overflows. The rest came back as an
+  // unrelated value, e.g. 90000000000000000000 was parsed as 16213023705161793536.
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "18446744073709551616",
+        "30000000000000000000",
+        "90000000000000000000",
+        "92233720368547758079"
+      })
+  void valueOfRejectsStringsAboveTheRange(String value) {
+    assertThrows(NumberFormatException.class, () -> ULong.valueOf(value));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"0", "9223372036854775808", "18446744073709551615"})
+  void valueOfAcceptsTheWholeRange(String value) {
+    assertEquals(new BigInteger(value), ULong.valueOf(value).toBigInteger());
   }
 
   private static void assertMatches(BigInteger expected, Supplier<ULong> operation) {

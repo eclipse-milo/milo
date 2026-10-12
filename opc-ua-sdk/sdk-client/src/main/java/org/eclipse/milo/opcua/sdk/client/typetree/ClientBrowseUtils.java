@@ -30,6 +30,7 @@ import org.eclipse.milo.opcua.stack.core.types.DataTypeEncoding;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseResultMask;
@@ -50,8 +51,13 @@ import org.slf4j.LoggerFactory;
  * Shared utility methods for client-side browse and read operations with operation limit handling.
  *
  * <p>Service-level failures propagate as {@link UaException} so that callers building type trees
- * fail rather than silently caching incomplete results. Operation-level failures (bad status on an
- * individual node) are still tolerated and yield empty/bad results for that node only.
+ * fail rather than silently caching incomplete results. A Bad BrowseNext result fails the same way,
+ * because the pages already received are not the node's complete references. Operation-level
+ * failures on a node's Browse or Read result are still tolerated and yield empty/bad results for
+ * that node only.
+ *
+ * <p>Uncertain Browse and BrowseNext results are kept and their continuation points followed, like
+ * Good results. Continuation points that will not be followed are released.
  */
 final class ClientBrowseUtils {
 
@@ -268,25 +274,48 @@ final class ClientBrowseUtils {
 
     final var referenceDescriptionLists = new ArrayList<List<ReferenceDescription>>();
 
-    for (BrowseResult result : browseResults) {
-      if (result.getStatusCode().isGood()) {
-        var references = new ArrayList<ReferenceDescription>();
+    for (int i = 0; i < browseResults.size(); i++) {
+      try {
+        referenceDescriptionLists.add(collectReferences(client, browseResults.get(i)));
+      } catch (UaException e) {
+        // The later results' continuation points will not be followed now.
+        List<ByteString> unfollowed =
+            browseResults.subList(i + 1, browseResults.size()).stream()
+                .map(BrowseResult::getContinuationPoint)
+                .filter(ClientBrowseUtils::isContinuationPoint)
+                .toList();
 
-        ReferenceDescription[] refs =
-            requireNonNullElse(result.getReferences(), new ReferenceDescription[0]);
-        Collections.addAll(references, refs);
+        releaseContinuationPoints(client, unfollowed, e);
 
-        ByteString continuationPoint = result.getContinuationPoint();
-        List<ReferenceDescription> nextRefs = maybeBrowseNext(client, continuationPoint);
-        references.addAll(nextRefs);
-
-        referenceDescriptionLists.add(references);
-      } else {
-        referenceDescriptionLists.add(List.of());
+        throw e;
       }
     }
 
     return referenceDescriptionLists;
+  }
+
+  private static List<ReferenceDescription> collectReferences(
+      OpcUaClient client, BrowseResult result) throws UaException {
+
+    ByteString continuationPoint = result.getContinuationPoint();
+
+    if (result.getStatusCode().isBad()) {
+      if (isContinuationPoint(continuationPoint)) {
+        client.browseNext(true, List.of(continuationPoint));
+      }
+      return List.of();
+    }
+
+    // Good or Uncertain: keep this page and follow its continuation point.
+    var references = new ArrayList<ReferenceDescription>();
+
+    ReferenceDescription[] refs =
+        requireNonNullElse(result.getReferences(), new ReferenceDescription[0]);
+    Collections.addAll(references, refs);
+
+    references.addAll(maybeBrowseNext(client, continuationPoint));
+
+    return references;
   }
 
   /**
@@ -295,7 +324,8 @@ final class ClientBrowseUtils {
    * @param client the OPC UA client.
    * @param continuationPoint the continuation point from a previous browse.
    * @return the list of additional reference descriptions.
-   * @throws UaException if a service-level error occurs.
+   * @throws UaException if a service-level error occurs or a BrowseNext result has a Bad
+   *     StatusCode.
    */
   static List<ReferenceDescription> maybeBrowseNext(
       OpcUaClient client, @Nullable ByteString continuationPoint) throws UaException {
@@ -304,18 +334,14 @@ final class ClientBrowseUtils {
 
     int iterations = 0;
 
-    while (continuationPoint != null && !continuationPoint.isNullOrEmpty()) {
+    while (isContinuationPoint(continuationPoint)) {
       if (++iterations > MAX_BROWSE_NEXT_ITERATIONS) {
         var limitException =
             new UaException(
                 StatusCodes.Bad_UnexpectedError,
                 "BrowseNext did not complete after %d calls".formatted(MAX_BROWSE_NEXT_ITERATIONS));
 
-        try {
-          client.browseNext(true, List.of(continuationPoint));
-        } catch (UaException e) {
-          limitException.addSuppressed(e);
-        }
+        releaseContinuationPoints(client, List.of(continuationPoint), limitException);
 
         throw limitException;
       }
@@ -328,16 +354,51 @@ final class ClientBrowseUtils {
       }
 
       BrowseResult result = results[0];
+      StatusCode statusCode = result.getStatusCode();
+      continuationPoint = result.getContinuationPoint();
 
+      if (statusCode.isBad()) {
+        // For example, Bad_ContinuationPointInvalid after the server freed the continuation point
+        // to process another request on this session (Part 4, 7.9).
+        var failure = new UaException(statusCode, "BrowseNext failed: " + statusCode);
+
+        if (isContinuationPoint(continuationPoint)) {
+          releaseContinuationPoints(client, List.of(continuationPoint), failure);
+        }
+
+        throw failure;
+      }
+
+      // Good or Uncertain: keep this page and keep paging.
       ReferenceDescription[] rds =
           requireNonNullElse(result.getReferences(), new ReferenceDescription[0]);
 
       references.addAll(List.of(rds));
-
-      continuationPoint = result.getContinuationPoint();
     }
 
     return references;
+  }
+
+  private static boolean isContinuationPoint(@Nullable ByteString continuationPoint) {
+    return continuationPoint != null && !continuationPoint.isNullOrEmpty();
+  }
+
+  /**
+   * Release {@code continuationPoints} on the way to throwing {@code failure}, adding any failure
+   * to release them to {@code failure} as a suppressed exception.
+   */
+  private static void releaseContinuationPoints(
+      OpcUaClient client, List<ByteString> continuationPoints, UaException failure) {
+
+    if (continuationPoints.isEmpty()) {
+      return;
+    }
+
+    try {
+      client.browseNext(true, continuationPoints);
+    } catch (UaException e) {
+      failure.addSuppressed(e);
+    }
   }
 
   /**

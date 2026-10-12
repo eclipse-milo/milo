@@ -120,8 +120,8 @@ public class UaException extends Exception implements UaExceptionStatus {
    * @return a {@link UaException} if one was present in the exception chain.
    */
   public static Optional<UaException> extract(Throwable ex) {
-    if (ex instanceof UaException) {
-      return Optional.of((UaException) ex);
+    if (ex instanceof UaException uaException) {
+      return Optional.of(uaException);
     } else {
       Throwable cause = ex.getCause();
       return cause != null ? extract(cause) : Optional.empty();
@@ -129,8 +129,8 @@ public class UaException extends Exception implements UaExceptionStatus {
   }
 
   public static Optional<StatusCode> extractStatusCode(Throwable ex) {
-    if (ex instanceof UaExceptionStatus) {
-      return Optional.of(((UaExceptionStatus) ex).getStatusCode());
+    if (ex instanceof UaExceptionStatus uaExceptionStatus) {
+      return Optional.of(uaExceptionStatus.getStatusCode());
     } else {
       Throwable cause = ex.getCause();
       return cause != null ? extractStatusCode(cause) : Optional.empty();

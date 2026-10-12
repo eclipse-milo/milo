@@ -98,7 +98,9 @@ public class AttributeReader {
 
           Object valueAtRange;
           if (dv.value().value() instanceof Matrix matrix) {
-            valueAtRange = NumericRange.readFromValueAtRange(matrix.nestedArrayValue(), range);
+            // A null Matrix holds no data, like any other null value.
+            Object array = matrix.isNull() ? null : matrix.nestedArrayValue();
+            valueAtRange = NumericRange.readFromValueAtRange(array, range);
             if (ArrayUtil.getValueRank(valueAtRange) > 1) {
               valueAtRange = new Matrix(valueAtRange);
             }

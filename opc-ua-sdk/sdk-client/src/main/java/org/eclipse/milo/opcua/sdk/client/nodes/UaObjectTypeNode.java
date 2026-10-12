@@ -202,15 +202,8 @@ public class UaObjectTypeNode extends UaNode implements ObjectTypeNode {
   @Override
   protected void setAttributeValue(AttributeId attributeId, DataValue value) {
     switch (attributeId) {
-      case IsAbstract:
-        {
-          setIsAbstract((Boolean) value.value().value());
-          break;
-        }
-      default:
-        {
-          super.setAttributeValue(attributeId, value);
-        }
+      case IsAbstract -> setIsAbstract((Boolean) value.value().value());
+      default -> super.setAttributeValue(attributeId, value);
     }
   }
 }

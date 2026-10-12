@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
 
 public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements EventItem {
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(MonitoredEventItem.class);
 
   private volatile EventFilter filter;
   private volatile EventFilterResult filterResult;
@@ -140,7 +140,7 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
         }
       }
     } catch (Exception e) {
-      logger.error("Filter evaluation failed: {}", e.getMessage(), e);
+      LOGGER.error("Filter evaluation failed: {}", e.getMessage(), e);
     }
   }
 
@@ -284,7 +284,7 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
 
       return selectEventFields(overflowEvent);
     } catch (UaException e) {
-      logger.error("Error creating overflow event: {}", e.getMessage(), e);
+      LOGGER.error("Error creating overflow event: {}", e.getMessage(), e);
 
       return new Variant[0];
     } finally {

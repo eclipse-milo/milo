@@ -29,7 +29,7 @@ jobs:
           cache: "maven"
 
       - name: Install
-        run: mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V
+        run: mvn install -DskipTests=true -DskipITs=true -Dmaven.javadoc.skip=true -B -V
 
       - name: Download external sources
         run: mvn generate-resources -Pdownload-external-src

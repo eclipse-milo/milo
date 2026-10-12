@@ -118,7 +118,7 @@ public class OpcUaSubscription {
   private static final double DEFAULT_PUBLISHING_INTERVAL = 1000.0;
   private static final double DEFAULT_TARGET_KEEP_ALIVE_INTERVAL = 10000.0;
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpcUaSubscription.class);
 
   /**
    * Guards the lifecycle state — {@link #syncState}, {@link #serverState}, {@link #modifications},
@@ -795,19 +795,19 @@ public class OpcUaSubscription {
    * @param subscriptionId the SubscriptionId of the Subscription to delete.
    */
   private void deleteAbandonedSubscription(UInteger subscriptionId) {
-    logger.debug("id={}, deleting Subscription abandoned by a concurrent reset()", subscriptionId);
+    LOGGER.debug("id={}, deleting Subscription abandoned by a concurrent reset()", subscriptionId);
 
     client
         .deleteSubscriptionsAsync(List.of(subscriptionId))
         .whenComplete(
             (response, ex) -> {
               if (ex != null) {
-                logger.warn("id={}, failed to delete abandoned Subscription", subscriptionId, ex);
+                LOGGER.warn("id={}, failed to delete abandoned Subscription", subscriptionId, ex);
               } else {
                 StatusCode result = requireNonNull(response.getResults())[0];
 
                 if (!result.isGood() && result.value() != StatusCodes.Bad_SubscriptionIdInvalid) {
-                  logger.warn(
+                  LOGGER.warn(
                       "id={}, failed to delete abandoned Subscription: {}", subscriptionId, result);
                 }
               }
@@ -977,7 +977,7 @@ public class OpcUaSubscription {
 
     MonitoredItemOperationContext context = getMonitoredItemOperationContext();
     if (context == null) {
-      logger.debug("Bad_InvalidState: subscription not created yet");
+      LOGGER.debug("Bad_InvalidState: subscription not created yet");
 
       var serviceOperationsResults =
           new ArrayList<MonitoredItemServiceOperationResult>(itemsToCreate.size());
@@ -1008,7 +1008,7 @@ public class OpcUaSubscription {
     }
 
     try {
-      logger.debug(
+      LOGGER.debug(
           "id={}, createMonitoredItems partition.size(): {}",
           context.serverState().getSubscriptionId(),
           partition.size());
@@ -1116,7 +1116,7 @@ public class OpcUaSubscription {
     }
 
     try {
-      logger.debug(
+      LOGGER.debug(
           "id={}, modifyMonitoredItems partition.size(): {}",
           context.serverState().subscriptionId,
           partition.size());
@@ -1264,7 +1264,7 @@ public class OpcUaSubscription {
     }
 
     try {
-      logger.debug(
+      LOGGER.debug(
           "id={}, deleteMonitoredItems partition.size(): {}",
           context.serverState().subscriptionId,
           partition.size());
@@ -1564,7 +1564,7 @@ public class OpcUaSubscription {
     }
 
     try {
-      logger.debug(
+      LOGGER.debug(
           "id={}, setMonitoringMode partition.size(): {}",
           context.serverState().subscriptionId,
           partition.size());
@@ -2331,7 +2331,7 @@ public class OpcUaSubscription {
       client.removeSessionActivityListener(watchdog);
       watchdog.cancel();
       this.watchdogTimer = null;
-      logger.debug(
+      LOGGER.debug(
           "id={}, watchdog timer cancelled",
           getServerState().map(ServerState::getSubscriptionId).orElse(null));
     }
@@ -2349,7 +2349,7 @@ public class OpcUaSubscription {
     WatchdogTimer watchdog = this.watchdogTimer;
     if (watchdog != null) {
       watchdog.pause();
-      logger.debug(
+      LOGGER.debug(
           "id={}, watchdog timer paused",
           getServerState().map(ServerState::getSubscriptionId).orElse(null));
     }
@@ -2361,7 +2361,7 @@ public class OpcUaSubscription {
       // is suspended: arming it now — from a create or modify made mid-recovery, or from the
       // finish of a recovery a newer activation has superseded — could only have it fire on a
       // healthy Subscription. The recovery that ends the suspension re-arms it.
-      logger.debug(
+      LOGGER.debug(
           "id={}, watchdog timer reset deferred pending reconnect recovery",
           getServerState().map(ServerState::getSubscriptionId).orElse(null));
       return;
@@ -2370,7 +2370,7 @@ public class OpcUaSubscription {
     WatchdogTimer watchdog = this.watchdogTimer;
     if (watchdog != null) {
       watchdog.reset();
-      logger.trace(
+      LOGGER.trace(
           "id={}, watchdog timer reset",
           getServerState().map(ServerState::getSubscriptionId).orElse(null));
     }
@@ -2416,7 +2416,7 @@ public class OpcUaSubscription {
         values.add(notification.getValue());
       } else {
         // This can happen if an item is deleted while a notification is in-flight.
-        logger.debug(
+        LOGGER.debug(
             "id={}, received data for unknown ClientHandle: {}",
             getServerState().map(ServerState::getSubscriptionId).orElse(null),
             clientHandle);
@@ -2452,7 +2452,7 @@ public class OpcUaSubscription {
         eventValuesList.add(event.getEventFields());
       } else {
         // This can happen if an item is deleted while a notification is in-flight.
-        logger.debug(
+        LOGGER.debug(
             "id={}, received event for unknown ClientHandle: {}",
             getServerState().map(ServerState::getSubscriptionId).orElse(null),
             clientHandle);
@@ -2559,7 +2559,7 @@ public class OpcUaSubscription {
                 try {
                   notifyTransferFailed(status);
                 } catch (Exception e) {
-                  logger.warn("notifyTransferFailed threw an unhandled Exception", e);
+                  LOGGER.warn("notifyTransferFailed threw an unhandled Exception", e);
                 } finally {
                   transferFailureAlreadyHandled.remove();
                 }
@@ -2567,7 +2567,7 @@ public class OpcUaSubscription {
     } catch (Exception e) {
       // Cleanup is complete. A rejected application notification must not fail Session transfer or
       // leave the FSM waiting forever for work its executor will never accept.
-      logger.warn("could not dispatch notifyTransferFailed", e);
+      LOGGER.warn("could not dispatch notifyTransferFailed", e);
     }
   }
 
@@ -2585,7 +2585,7 @@ public class OpcUaSubscription {
     try {
       delivery.run();
     } catch (Exception e) {
-      logger.warn(
+      LOGGER.warn(
           "id={}, {} threw an unhandled Exception",
           getServerState().map(ServerState::getSubscriptionId).orElse(null),
           callback,
@@ -2705,7 +2705,7 @@ public class OpcUaSubscription {
                             delay,
                             TimeUnit.MILLISECONDS);
 
-                logger.debug(
+                LOGGER.debug(
                     "id={} watchdog timer scheduled for +{}ms", state.subscriptionId, delay);
               });
     }
@@ -2725,7 +2725,7 @@ public class OpcUaSubscription {
       if (listener != null) {
         deliveryQueue.execute(
             () -> {
-              logger.debug(
+              LOGGER.debug(
                   "id={}, watchdog timer expired after {}ms",
                   getServerState().map(ServerState::getSubscriptionId).orElse(null),
                   delay);
@@ -2741,7 +2741,7 @@ public class OpcUaSubscription {
       // the Part 4 §6.7 Republish recovery for this activation has finished, so no
       // PublishResponse — the only event that feeds this timer — can arrive yet. The timer is
       // re-armed, via resetWatchdogTimer(), when publishing resumes.
-      logger.debug(
+      LOGGER.debug(
           "id={}, watchdog timer awaiting reconnect recovery after onSessionActive()",
           getServerState().map(ServerState::getSubscriptionId).orElse(null));
     }
@@ -2749,7 +2749,7 @@ public class OpcUaSubscription {
     @Override
     public void onSessionInactive(UaSession session) {
       pause();
-      logger.debug(
+      LOGGER.debug(
           "id={}, watchdog timer paused via onSessionInactive()",
           getServerState().map(ServerState::getSubscriptionId).orElse(null));
     }

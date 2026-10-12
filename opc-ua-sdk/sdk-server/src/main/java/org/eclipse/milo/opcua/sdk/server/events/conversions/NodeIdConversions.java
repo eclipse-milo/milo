@@ -48,15 +48,10 @@ final class NodeIdConversions {
 
   @Nullable
   static Object implicitConversion(@NonNull NodeId nodeId, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case ExpandedNodeId:
-        return nodeIdToExpandedNodeId(nodeId);
-      case String:
-        return nodeIdToString(nodeId);
-      default:
-        return null;
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case ExpandedNodeId -> nodeIdToExpandedNodeId(nodeId);
+      case String -> nodeIdToString(nodeId);
+      default -> null;
+    };
   }
 }

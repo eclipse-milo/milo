@@ -169,15 +169,21 @@ public abstract class AbstractX509IdentityValidator extends AbstractIdentityVali
     ByteString serverNonce = session.getLastNonce();
     ByteString clientNonce = session.getClientNonce();
 
-    // The hashed/signed "ServerCertificate" is the CreateSession server certificate. Depending on
-    // the peer and SecurityMode this is the endpoint (leaf) bytes, the server application
-    // certificate bytes, or the full chain bytes; try each candidate to match a chain-returning
-    // peer. A forged signature verifies against none of them, so trying several is safe.
+    // The hashed/signed "ServerCertificate" is the CreateSession server certificate.
     SessionServerCertificate original = session.getOriginalServerCertificate();
     List<ByteString> serverCertificateCandidates = new ArrayList<>();
-    addCandidate(serverCertificateCandidates, original.createSessionCertificate());
-    addCandidate(serverCertificateCandidates, original.certificateBytes());
-    addCandidate(serverCertificateCandidates, original.certificateChainBytes());
+    if (profile.secureChannelEnhancements()) {
+      // Channel-bound signatures hash only its leaf (Part 4 §6.1.8), so there is one valid input.
+      // An empty certificate is a valid input that hashes to a zero-length value.
+      serverCertificateCandidates.add(original.createSessionCertificate());
+    } else {
+      // Legacy signatures may cover the endpoint (leaf) bytes, the server application certificate
+      // bytes, or the full chain bytes; try each candidate to match a chain-returning peer. A
+      // forged signature verifies against none of them, so trying several is safe.
+      addCandidate(serverCertificateCandidates, original.createSessionCertificate());
+      addCandidate(serverCertificateCandidates, original.certificateBytes());
+      addCandidate(serverCertificateCandidates, original.certificateChainBytes());
+    }
 
     UaException failure = null;
 

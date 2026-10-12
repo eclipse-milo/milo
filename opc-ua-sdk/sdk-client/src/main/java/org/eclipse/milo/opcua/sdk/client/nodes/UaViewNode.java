@@ -270,20 +270,9 @@ public class UaViewNode extends UaNode implements ViewNode {
   @Override
   protected void setAttributeValue(AttributeId attributeId, DataValue value) {
     switch (attributeId) {
-      case ContainsNoLoops:
-        {
-          setContainsNoLoops((Boolean) value.value().value());
-          break;
-        }
-      case EventNotifier:
-        {
-          setEventNotifier((UByte) value.value().value());
-          break;
-        }
-      default:
-        {
-          super.setAttributeValue(attributeId, value);
-        }
+      case ContainsNoLoops -> setContainsNoLoops((Boolean) value.value().value());
+      case EventNotifier -> setEventNotifier((UByte) value.value().value());
+      default -> super.setAttributeValue(attributeId, value);
     }
   }
 }

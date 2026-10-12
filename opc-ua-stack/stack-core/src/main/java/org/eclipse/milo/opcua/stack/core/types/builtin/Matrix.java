@@ -447,8 +447,8 @@ public class Matrix {
       }
 
       Object e = Array.get(flatArray, 0);
-      if (e instanceof UaEnumeratedType) {
-        return ((UaEnumeratedType) e).getTypeId();
+      if (e instanceof UaEnumeratedType enumeratedType) {
+        return enumeratedType.getTypeId();
       } else {
         return null;
       }
@@ -458,8 +458,8 @@ public class Matrix {
       }
 
       Object e = Array.get(flatArray, 0);
-      if (e instanceof UaStructuredType) {
-        return ((UaStructuredType) e).getTypeId();
+      if (e instanceof UaStructuredType structuredType) {
+        return structuredType.getTypeId();
       } else {
         return null;
       }

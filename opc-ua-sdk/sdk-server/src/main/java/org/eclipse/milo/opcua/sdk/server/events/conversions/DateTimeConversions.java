@@ -52,14 +52,10 @@ final class DateTimeConversions {
 
   @Nullable
   static Object explicitConversion(@NonNull DateTime d, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case String:
-        return dateTimeToString(d);
-      default:
-        return implicitConversion(d, targetType);
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case String -> dateTimeToString(d);
+      default -> implicitConversion(d, targetType);
+    };
   }
 
   @Nullable

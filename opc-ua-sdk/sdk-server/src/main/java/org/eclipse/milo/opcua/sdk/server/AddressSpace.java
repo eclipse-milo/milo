@@ -222,6 +222,19 @@ public interface AddressSpace {
    * <p>If sampling is enabled for this item, it is expected that a best-effort will be made to
    * update the item's value at the sampling rate.
    *
+   * <p>An item the Session may not read is still created and delivered here, with the denial
+   * already queued (Part 4 §5.13.2.1). The item replaces any value set on it with the denial status
+   * until {@link DataItem#setReadAccessResult} is called with an allowed result. The server must
+   * keep that result current, with the result of {@code AccessController.checkReadAccess} for the
+   * item's current Session, so that access rights that change later reach the client. The sampling
+   * framework, {@link org.eclipse.milo.opcua.sdk.server.sampling.SamplingManager}, does so before
+   * every sample, and {@link ManagedAddressSpace} uses it for the implementations that do not
+   * override these callbacks. An implementation that samples on its own may do the same, or the
+   * server may keep the result current from a component of its own, for example on configuration,
+   * identity, or transfer events, on any schedule that bounds how stale it can be. An item whose
+   * result is never refreshed is stale, not unsafe: it keeps enforcing the result it was created
+   * with.
+   *
    * @param dataItems the {@link DataItem}s that were created.
    */
   void onDataItemsCreated(List<DataItem> dataItems);
@@ -243,6 +256,27 @@ public interface AddressSpace {
    * @param dataItems the {@link DataItem}s that were deleted.
    */
   void onDataItemsDeleted(List<DataItem> dataItems);
+
+  /**
+   * {@link DataItem}s for nodes belonging to this {@link AddressSpace} have been transferred to
+   * another Session by TransferSubscriptions (Part 4 §5.14.7).
+   *
+   * <p>Each item's {@link DataItem#getSession()} already returns the new Session when this is
+   * called, and each item already carries the result of a read access check for that Session,
+   * applied by the SDK before anything was sent to it, unless that check failed. A component that
+   * keeps results current on its own schedule learns here that the items answer to another Session.
+   * Sampling is unaffected.
+   *
+   * <p>This is called outside the Subscription's lock, so a further transfer of the same
+   * Subscription, or a scheduled refresh, can run at the same time. A component that checks read
+   * access from here must order those checks per item against its other triggers; see {@link
+   * DataItem#setReadAccessResult}.
+   *
+   * <p>The default implementation does nothing.
+   *
+   * @param dataItems the {@link DataItem}s that were transferred.
+   */
+  default void onDataItemsTransferred(List<DataItem> dataItems) {}
 
   /**
    * {@link EventItem}s have been created for nodes belonging to this {@link AddressSpace}.

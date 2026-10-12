@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import org.eclipse.milo.examples.server.sampling.DeviceNamespace;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
@@ -98,6 +99,7 @@ public class ExampleServer {
   private final OpcUaServer server;
   private final ExampleNamespace exampleNamespace;
   private final AlarmConditionsNamespace alarmConditionsNamespace;
+  private final DeviceNamespace deviceNamespace;
   private final AliasManager aliasManager;
   private final FileBasedTrustListManager trustListManager;
 
@@ -252,6 +254,9 @@ public class ExampleServer {
     alarmConditionsNamespace = new AlarmConditionsNamespace(server);
     alarmConditionsNamespace.startup();
 
+    deviceNamespace = new DeviceNamespace(server);
+    deviceNamespace.startup();
+
     // Opt-in OPC UA Part 17 Alias Names support: binds FindAlias on the standard Aliases,
     // TagVariables, and Topics Objects and, with FindAliasVerbose enabled, materializes
     // FindAliasVerbose Method instances alongside them, with NodeIds allocated in the example
@@ -399,6 +404,7 @@ public class ExampleServer {
       aliasManager.shutdown();
     }
 
+    deviceNamespace.shutdown();
     alarmConditionsNamespace.shutdown();
     exampleNamespace.shutdown();
 

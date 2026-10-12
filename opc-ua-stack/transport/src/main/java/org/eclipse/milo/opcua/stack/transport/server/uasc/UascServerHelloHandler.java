@@ -60,7 +60,7 @@ public class UascServerHelloHandler extends ByteToMessageDecoder implements Head
 
   public static final int MAX_HELLO_MESSAGE_SIZE = 8 + 20 + 4 + 4096;
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(UascServerHelloHandler.class);
 
   private final AtomicBoolean helloDeadlineScheduled = new AtomicBoolean(false);
   private final AtomicReference<ScheduledFuture<?>> helloDeadlineFuture = new AtomicReference<>();
@@ -110,7 +110,7 @@ public class UascServerHelloHandler extends ByteToMessageDecoder implements Head
 
     int helloDeadlineMs = config.getHelloDeadline().intValue();
 
-    logger.debug("Scheduling Hello deadline for +{}ms", helloDeadlineMs);
+    LOGGER.debug("Scheduling Hello deadline for +{}ms", helloDeadlineMs);
 
     ScheduledFuture<?> future =
         ctx.executor()
@@ -119,7 +119,7 @@ public class UascServerHelloHandler extends ByteToMessageDecoder implements Head
                   if (!receivedHello) {
                     long cumulativeDeadlinesMissed = CUMULATIVE_DEADLINES_MISSED.incrementAndGet();
 
-                    logger.debug(
+                    LOGGER.debug(
                         "No Hello received after {}ms; closing channel."
                             + " cumulativeDeadlinesMissed={}",
                         helloDeadlineMs,
@@ -138,19 +138,19 @@ public class UascServerHelloHandler extends ByteToMessageDecoder implements Head
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
     if (cause instanceof IOException) {
       ctx.close();
-      logger.debug(
+      LOGGER.debug(
           "[remote={}] IOException caught; channel closed", ctx.channel().remoteAddress(), cause);
     } else {
       ErrorMessage errorMessage = ExceptionHandler.sendErrorMessage(ctx, cause);
 
       if (cause instanceof UaException) {
-        logger.debug(
+        LOGGER.debug(
             "[remote={}] UaException caught; sent {}",
             ctx.channel().remoteAddress(),
             errorMessage,
             cause);
       } else {
-        logger.error(
+        LOGGER.error(
             "[remote={}] Exception caught; sent {}",
             ctx.channel().remoteAddress(),
             errorMessage,
@@ -180,7 +180,7 @@ public class UascServerHelloHandler extends ByteToMessageDecoder implements Head
   }
 
   private void onHello(ChannelHandlerContext ctx, ByteBuf buffer) throws UaException {
-    logger.debug("[remote={}] Received Hello message.", ctx.channel().remoteAddress());
+    LOGGER.debug("[remote={}] Received Hello message.", ctx.channel().remoteAddress());
 
     receivedHello = true;
 
@@ -253,7 +253,7 @@ public class UascServerHelloHandler extends ByteToMessageDecoder implements Head
     ctx.pipeline().addLast(asymmetricHandler);
     ctx.pipeline().remove(this);
 
-    logger.debug(
+    LOGGER.debug(
         "[remote={}] Removed HelloHandler, added AsymmetricHandler.",
         ctx.channel().remoteAddress());
 
@@ -271,6 +271,6 @@ public class UascServerHelloHandler extends ByteToMessageDecoder implements Head
     // before the message can be written and another response arrives.
     ctx.executor().execute(() -> ctx.writeAndFlush(messageBuffer));
 
-    logger.debug("[remote={}] Sent Acknowledge message.", ctx.channel().remoteAddress());
+    LOGGER.debug("[remote={}] Sent Acknowledge message.", ctx.channel().remoteAddress());
   }
 }

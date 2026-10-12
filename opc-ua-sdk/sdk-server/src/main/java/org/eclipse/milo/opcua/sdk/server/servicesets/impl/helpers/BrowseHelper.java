@@ -29,7 +29,7 @@ import org.eclipse.milo.opcua.sdk.server.AddressSpace.ReadContext;
 import org.eclipse.milo.opcua.sdk.server.ContinuationPoint;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.stack.core.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -51,9 +51,12 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.ViewDescription;
 import org.eclipse.milo.opcua.stack.core.util.Lists;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BrowseHelper {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(BrowseHelper.class);
 
   public static List<BrowseResult> browse(
       OpcUaServer server, AccessContext context, BrowseRequest browseRequest) {
@@ -94,11 +97,13 @@ public class BrowseHelper {
       }
     }
 
+    // Operations resolved above keep their results; the rest are browsed, and each result goes
+    // back to the operation it came from.
+    List<PendingBrowse> toBrowse =
+        pending.stream().filter(pb -> pb.referenceDescriptionResult == null).toList();
+
     List<BrowseDescription> nodesToBrowse =
-        pending.stream()
-            .filter(pb -> pb.referenceDescriptionResult == null)
-            .map(pb -> pb.browseDescription)
-            .toList();
+        toBrowse.stream().map(pb -> pb.browseDescription).toList();
 
     List<AddressSpace.ReferenceResult> referenceResults =
         server
@@ -113,8 +118,8 @@ public class BrowseHelper {
     List<ReferenceDescriptionResult> referenceDescriptionLists =
         createReferenceDescriptions(server, nodesToBrowse, referenceResults);
 
-    for (int i = 0; i < nodesToBrowse.size(); i++) {
-      PendingBrowse pb = pending.get(i);
+    for (int i = 0; i < toBrowse.size(); i++) {
+      PendingBrowse pb = toBrowse.get(i);
       ReferenceDescriptionResult referenceDescriptionResult = referenceDescriptionLists.get(i);
 
       if (referenceDescriptionResult instanceof ReferenceDescriptionResult.BadNoReferences) {
@@ -173,6 +178,9 @@ public class BrowseHelper {
                 server, context.getSession().orElse(null), max, rdl.referenceDescriptions);
 
         browseResults.add(browseResult);
+      } else {
+        // Skipping an operation would shift every later result onto the wrong operation.
+        throw new IllegalStateException("no result for a BrowseDescription");
       }
     }
 
@@ -373,8 +381,7 @@ public class BrowseHelper {
 
               typeDefinitions.add(typeDefinitionId);
             } catch (UaException e) {
-              LoggerFactory.getLogger(BrowseHelper.class)
-                  .error("Error browsing TypeDefinition for nodeId={}", nodeId, e);
+              LOGGER.error("Error browsing TypeDefinition for nodeId={}", nodeId, e);
 
               typeDefinitions.add(ExpandedNodeId.NULL_VALUE);
             }
@@ -401,8 +408,7 @@ public class BrowseHelper {
     if (typeDefinitionId != null) {
       return typeDefinitionId;
     } else {
-      LoggerFactory.getLogger(BrowseHelper.class)
-          .debug("No managed TypeDefinition for nodeId={}, browsing...", nodeId);
+      LOGGER.debug("No managed TypeDefinition for nodeId={}, browsing...", nodeId);
 
       var browseContext = new BrowseContext(server, null);
 

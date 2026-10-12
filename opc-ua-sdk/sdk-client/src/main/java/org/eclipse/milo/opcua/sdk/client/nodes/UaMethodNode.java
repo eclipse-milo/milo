@@ -314,20 +314,9 @@ public class UaMethodNode extends UaNode implements MethodNode {
   @Override
   protected void setAttributeValue(AttributeId attributeId, DataValue value) {
     switch (attributeId) {
-      case Executable:
-        {
-          setExecutable((Boolean) value.value().value());
-          break;
-        }
-      case UserExecutable:
-        {
-          setUserExecutable((Boolean) value.value().value());
-          break;
-        }
-      default:
-        {
-          super.setAttributeValue(attributeId, value);
-        }
+      case Executable -> setExecutable((Boolean) value.value().value());
+      case UserExecutable -> setUserExecutable((Boolean) value.value().value());
+      default -> super.setAttributeValue(attributeId, value);
     }
   }
 }

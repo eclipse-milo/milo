@@ -60,16 +60,16 @@ public abstract class UaNode implements UaServerNode {
 
   private final UaNodeContext context;
 
-  private NodeId nodeId;
-  private NodeClass nodeClass;
-  private QualifiedName browseName;
-  private LocalizedText displayName;
-  private LocalizedText description;
-  private UInteger writeMask;
-  private UInteger userWriteMask;
-  private RolePermissionType[] rolePermissions;
-  private RolePermissionType[] userRolePermissions;
-  private AccessRestrictionType accessRestrictions;
+  private volatile NodeId nodeId;
+  private volatile NodeClass nodeClass;
+  private volatile QualifiedName browseName;
+  private volatile LocalizedText displayName;
+  private volatile LocalizedText description;
+  private volatile UInteger writeMask;
+  private volatile UInteger userWriteMask;
+  private volatile RolePermissionType[] rolePermissions;
+  private volatile RolePermissionType[] userRolePermissions;
+  private volatile AccessRestrictionType accessRestrictions;
 
   protected UaNode(
       UaNodeContext context,
@@ -226,10 +226,14 @@ public abstract class UaNode implements UaServerNode {
    * Direct read access to the field for {@code attributeId}, bypassing the {@link
    * AttributeFilterChain}.
    *
+   * <p>Reads do not take this Node's monitor, so they never wait for a concurrent {@link
+   * #setAttribute} or the {@link AttributeObserver}s it notifies. Each call returns the value most
+   * recently set for that Attribute; separate calls are not a consistent snapshot of the Node.
+   *
    * @param attributeId the {@link AttributeId} to get the value for.
    * @return the value for {@code attributeId}.
    */
-  public synchronized Object getAttribute(AttributeId attributeId) {
+  public Object getAttribute(AttributeId attributeId) {
     return switch (attributeId) {
       case NodeId -> nodeId;
       case NodeClass -> nodeClass;
@@ -252,7 +256,11 @@ public abstract class UaNode implements UaServerNode {
    * AttributeFilterChain}.
    *
    * <p>Setting an attribute value invokes {@link #fireAttributeChanged(AttributeId, Object)},
-   * notifying any registered {@link AttributeObserver}s of the change.
+   * notifying any registered {@link AttributeObserver}s of the change. Writes hold this Node's
+   * monitor while the observers run, so writes from different threads and their notifications do
+   * not interleave. An observer that itself writes to this Node is notified of that write before
+   * the remaining observers hear of the first one. A concurrent {@link #getAttribute} can return
+   * the new value before the observers have run.
    *
    * @param attributeId the {@link AttributeId} to set the value for.
    * @param value the value to set.

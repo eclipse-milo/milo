@@ -59,14 +59,26 @@ final class FloatConversions {
     }
   }
 
-  @NonNull
+  @Nullable
   static Integer floatToInt32(@NonNull Float f) {
-    return Math.round(f);
+    long rounded = Math.round((double) f);
+
+    if (rounded >= Integer.MIN_VALUE && rounded <= Integer.MAX_VALUE) {
+      return (int) rounded;
+    } else {
+      return null;
+    }
   }
 
-  @NonNull
+  @Nullable
   static Long floatToInt64(@NonNull Float f) {
-    return (long) Math.round(f);
+    double d = f;
+
+    if (d >= Long.MIN_VALUE && d <= Long.MAX_VALUE) {
+      return Math.round(d);
+    } else {
+      return null;
+    }
   }
 
   @Nullable
@@ -98,9 +110,9 @@ final class FloatConversions {
 
   @Nullable
   static UInteger floatToUInt32(@NonNull Float f) {
-    int rounded = Math.round(f);
+    long rounded = Math.round((double) f);
 
-    if (rounded >= 0) {
+    if (rounded >= UInteger.MIN_VALUE && rounded <= UInteger.MAX_VALUE) {
       return uint(rounded);
     } else {
       return null;
@@ -109,7 +121,7 @@ final class FloatConversions {
 
   @Nullable
   static ULong floatToUInt64(@NonNull Float f) {
-    long rounded = Math.round(f);
+    long rounded = Math.round((double) f);
 
     if (rounded >= 0) {
       return ulong(rounded);

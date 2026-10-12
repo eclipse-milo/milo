@@ -11,10 +11,13 @@
 package org.eclipse.milo.opcua.stack.core.security;
 
 import com.google.common.primitives.Bytes;
+import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +37,11 @@ import org.jspecify.annotations.Nullable;
  * Enhancements also bind the session signature to the SecureChannel that carried the session
  * service. That binding starts with the first OpenSecureChannel response signature, exposed as the
  * channel thumbprint, and includes certificate hashes from the current channel context.
+ *
+ * <p>Each {@code HASH(certificate)} input covers only the leaf certificate (Part 4 §6.1.8). A
+ * certificate field such as {@code CreateSessionResponse.serverCertificate} may carry the issuer
+ * chain after the leaf, so the leaf DER encoding is decoded out of the supplied bytes before
+ * hashing. A null or empty certificate hashes to a zero-length value.
  *
  * <p>The {@code *SignatureData} methods own the protocol byte layout; {@link #sign} and {@link
  * #verify} apply the policy's asymmetric algorithm to those bytes and encode the {@link
@@ -97,24 +105,16 @@ public final class ChannelBoundSignatureData {
    * the latest server nonce, and the original CreateSession client nonce. For legacy profiles the
    * returned bytes keep the historical {@code ServerCertificate | ServerNonce} layout.
    *
-   * <p>On the legacy path {@code serverCertificate} is signed verbatim: the raw {@code ByteString}
-   * exactly as it was received in {@code CreateSessionResponse.serverCertificate} (or replayed on
-   * reactivation). It is <b>not</b> re-decoded to extract and sign only the leaf certificate
-   * encoding. This is deliberate — it matches the OPC UA reference (.NET) stack and the wire
-   * semantics, where the signature is computed over the bytes as transmitted. The interop
-   * implication: if a peer returns a multi-certificate chain in {@code serverCertificate} but
-   * verifies the client signature against only the re-extracted leaf encoding, the two inputs
-   * differ and verification fails. Milo's own server avoids this mismatch by verifying with a
-   * leaf-then-chain dual attempt (see {@code SessionManager.verifyClientSignature}): it first tries
-   * the leaf bytes, then retries with the full chain bytes, so it accepts a signature computed over
-   * either form. The behavior is pinned by {@code ChannelBoundSignatureDataTest}.
+   * <p>On the legacy path {@code serverCertificate} is used exactly as supplied. Part 4 §6.1.8
+   * permits the entire chain, and verifies with the leaf certificate first, then with the
+   * transmitted chain. Signers pass the leaf; verifiers call this method once per candidate.
    *
    * @param profile the security policy profile used by the selected endpoint.
    * @param channelThumbprint the first OpenSecureChannel response signature for enhancement
    *     profiles.
    * @param serverNonce the latest server nonce returned by CreateSession or ActivateSession.
    * @param serverCertificate the server certificate returned by CreateSession; on the legacy path
-   *     its raw bytes are signed exactly as received (no leaf re-extraction).
+   *     the leaf or chain bytes to sign, used as supplied.
    * @param serverChannelCertificate the server certificate used by the SecureChannel.
    * @param clientChannelCertificate the client certificate used by the SecureChannel.
    * @param clientNonce the original client nonce from CreateSession.
@@ -142,9 +142,6 @@ public final class ChannelBoundSignatureData {
           serverChannelCertificate,
           clientChannelCertificate);
     } else {
-      // Sign the serverCertificate bytes verbatim (the chain as received, not a re-extracted
-      // leaf), matching the OPC UA reference stack and wire semantics. See the method Javadoc for
-      // the interop trade-off and the leaf-then-chain dual-attempt verification on Milo's server.
       return Bytes.concat(serverCertificate.bytesOrEmpty(), serverNonce.bytesOrEmpty());
     }
   }
@@ -166,8 +163,7 @@ public final class ChannelBoundSignatureData {
    *
    * <p>The signing algorithm is the user-token policy's algorithm (see Part 4 §6.1.8); callers
    * resolve it from that policy rather than this helper. As with {@link #clientSignatureData}, on
-   * the legacy path {@code serverCertificate} is hashed/signed using the bytes as received; a
-   * verifier may need a leaf-then-chain dual attempt to match a chain-returning peer.
+   * the legacy path {@code serverCertificate} is signed using the bytes as supplied.
    *
    * @param profile the security policy profile of the selected user-token policy.
    * @param secureChannelSecured {@code true} when the carrying SecureChannel uses a SecurityMode
@@ -398,6 +394,11 @@ public final class ChannelBoundSignatureData {
         : securityPolicy.getAsymmetricSignatureAlgorithm();
   }
 
+  /**
+   * Return {@code HASH(certificate)} for a channel-bound signature: the digest of the leaf
+   * certificate's DER encoding, or a zero-length array when {@code certificate} is null or empty.
+   * Issuer certificates that follow the leaf are not hashed.
+   */
   private static byte[] certificateHash(SecurityPolicyProfile profile, ByteString certificate)
       throws UaException {
 
@@ -406,11 +407,23 @@ public final class ChannelBoundSignatureData {
       return bytes;
     }
 
+    // Part 6 §6.2.6: a chain is DER certificates appended leaf first. Read only the first
+    // certificate; other container formats such as PKCS#7 are rejected rather than searched.
+    byte[] leafBytes;
+    try {
+      leafBytes =
+          CertificateFactory.getInstance("X.509")
+              .generateCertificate(new ByteArrayInputStream(bytes))
+              .getEncoded();
+    } catch (CertificateException e) {
+      throw new UaException(StatusCodes.Bad_CertificateInvalid, e);
+    }
+
     try {
       MessageDigest digest =
           MessageDigest.getInstance(profile.certificateThumbprintAlgorithm().getTransformation());
 
-      return digest.digest(bytes);
+      return digest.digest(leafBytes);
     } catch (NoSuchAlgorithmException e) {
       throw new UaException(StatusCodes.Bad_SecurityPolicyRejected, e);
     }

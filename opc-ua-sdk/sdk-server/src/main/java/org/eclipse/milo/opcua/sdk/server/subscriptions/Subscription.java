@@ -68,7 +68,7 @@ public class Subscription {
   /** Maximum number of notifications that can be returned in a single PublishResponse. */
   private static final int MAX_NOTIFICATIONS_PER_PUBLISH = 65535;
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(Subscription.class);
 
   private volatile Iterator<BaseMonitoredItem<?>> lastIterator = Collections.emptyIterator();
 
@@ -135,7 +135,7 @@ public class Subscription {
     resetKeepAliveCounter();
     resetLifetimeCounter();
 
-    logger.debug(
+    LOGGER.debug(
         "[id={}] subscription created, interval={}, keep-alive={}, lifetime={}",
         subscriptionId,
         publishingInterval,
@@ -155,7 +155,7 @@ public class Subscription {
 
     subscriptionDiagnostics.getModifyCount().increment();
 
-    logger.debug(
+    LOGGER.debug(
         "[id={}] subscription modified, interval={}, keep-alive={}, lifetime={}",
         subscriptionId,
         publishingInterval,
@@ -170,7 +170,7 @@ public class Subscription {
     if (sf != null) sf.cancel(false);
     publishingTimer = null;
 
-    logger.debug("[id={}] subscription deleted.", subscriptionId);
+    LOGGER.debug("[id={}] subscription deleted.", subscriptionId);
 
     return List.copyOf(itemsById.values());
   }
@@ -189,7 +189,7 @@ public class Subscription {
       }
     }
 
-    logger.debug(
+    LOGGER.debug(
         "[id={}] {}.",
         subscriptionId,
         publishingEnabled ? "publishing enabled." : "publishing disabled.");
@@ -202,7 +202,7 @@ public class Subscription {
 
     resetLifetimeCounter();
 
-    logger.debug("[id={}] created {} MonitoredItems.", subscriptionId, createdItems.size());
+    LOGGER.debug("[id={}] created {} MonitoredItems.", subscriptionId, createdItems.size());
   }
 
   public synchronized void removeMonitoredItems(List<BaseMonitoredItem<?>> deletedItems) {
@@ -212,7 +212,7 @@ public class Subscription {
 
     resetLifetimeCounter();
 
-    logger.debug("[id={}] deleted {} MonitoredItems.", subscriptionId, deletedItems.size());
+    LOGGER.debug("[id={}] deleted {} MonitoredItems.", subscriptionId, deletedItems.size());
   }
 
   public synchronized Map<UInteger, BaseMonitoredItem<?>> getMonitoredItems() {
@@ -352,13 +352,13 @@ public class Subscription {
   void resetLifetimeCounter() {
     lifetimeCounter = lifetimeCount;
 
-    logger.debug("[id={}] lifetime counter reset to {}", subscriptionId, lifetimeCounter);
+    LOGGER.debug("[id={}] lifetime counter reset to {}", subscriptionId, lifetimeCounter);
   }
 
   private void resetKeepAliveCounter() {
     keepAliveCounter = maxKeepAliveCount;
 
-    logger.debug("[id={}] keep-alive counter reset to {}", subscriptionId, maxKeepAliveCount);
+    LOGGER.debug("[id={}] keep-alive counter reset to {}", subscriptionId, maxKeepAliveCount);
   }
 
   private void returnKeepAlive(PendingPublish pending) {
@@ -385,7 +385,7 @@ public class Subscription {
 
     pending.responseFuture.complete(response);
 
-    logger.debug(
+    LOGGER.debug(
         "[id={}] returned keep-alive NotificationMessage sequenceNumber={}.",
         subscriptionId,
         sequenceNumber);
@@ -416,7 +416,7 @@ public class Subscription {
 
     pending.responseFuture.complete(response);
 
-    logger.debug(
+    LOGGER.debug(
         "[id={}] returned StatusChangeNotification ({}) sequenceNumber={}.",
         subscriptionId,
         status,
@@ -534,7 +534,7 @@ public class Subscription {
       Map.Entry<UInteger, NotificationMessage> entry = availableMessages.pollFirstEntry();
       if (entry != null) {
         subscriptionDiagnostics.getDiscardedMessageCount().increment();
-        logger.debug("Discarded cached NotificationMessage with sequenceNumber={}", entry.getKey());
+        LOGGER.debug("Discarded cached NotificationMessage with sequenceNumber={}", entry.getKey());
       }
     }
 
@@ -555,7 +555,7 @@ public class Subscription {
 
     pending.responseFuture.complete(response);
 
-    logger.debug(
+    LOGGER.debug(
         "[id={}] returning {} DataChangeNotification(s) and "
             + "{} EventNotificationList(s) sequenceNumber={} moreNotifications={}.",
         subscriptionId,
@@ -573,7 +573,7 @@ public class Subscription {
   private void setState(State state) {
     State previousState = this.state.getAndSet(state);
 
-    logger.debug("[id={}] {} -> {}", subscriptionId, previousState, state);
+    LOGGER.debug("[id={}] {} -> {}", subscriptionId, previousState, state);
 
     StateListener listener = stateListener.get();
 
@@ -691,8 +691,8 @@ public class Subscription {
   synchronized void onPublish(PendingPublish pending) {
     State state = this.state.get();
 
-    if (logger.isTraceEnabled()) {
-      logger.trace(
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace(
           "[id={}] onPublish(), state={}, keep-alive={}, lifetime={}",
           subscriptionId,
           state,
@@ -719,8 +719,8 @@ public class Subscription {
   synchronized void onPublishingTimer() {
     State state = this.state.get();
 
-    if (logger.isTraceEnabled()) {
-      logger.trace(
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace(
           "[id={}] onPublishingTimer(), state={}, keep-alive={}, lifetime={}",
           subscriptionId,
           state,
@@ -740,9 +740,9 @@ public class Subscription {
     } else if (state == State.Late) {
       timerHandler.whenLate();
     } else if (state == State.Closed) {
-      logger.debug("[id={}] onPublish(), state={}", subscriptionId, state); // No-op.
+      LOGGER.debug("[id={}] onPublish(), state={}", subscriptionId, state); // No-op.
     } else if (state == State.Closing) {
-      logger.debug("[id={}] onPublish(), state={}", subscriptionId, state); // No-op.
+      LOGGER.debug("[id={}] onPublish(), state={}", subscriptionId, state); // No-op.
     } else {
       throw new RuntimeException("unhandled subscription state: " + state);
     }
@@ -771,7 +771,7 @@ public class Subscription {
     if (s == State.Closing || s == State.Closed) return;
 
     if (lifetimeCounter < 1) {
-      logger.debug("[id={}] lifetime expired.", subscriptionId);
+      LOGGER.debug("[id={}] lifetime expired.", subscriptionId);
 
       setState(State.Closing);
       publishQueue().addSubscription(this);
@@ -793,11 +793,11 @@ public class Subscription {
 
   public synchronized StatusCode acknowledge(UInteger sequenceNumber) {
     if (availableMessages.remove(sequenceNumber) != null) {
-      logger.debug("[id={}] sequence number acknowledged: {}", subscriptionId, sequenceNumber);
+      LOGGER.debug("[id={}] sequence number acknowledged: {}", subscriptionId, sequenceNumber);
 
       return StatusCode.GOOD;
     } else {
-      logger.debug("[id={}] sequence number unknown: {}", subscriptionId, sequenceNumber);
+      LOGGER.debug("[id={}] sequence number unknown: {}", subscriptionId, sequenceNumber);
 
       return new StatusCode(StatusCodes.Bad_SequenceNumberUnknown);
     }

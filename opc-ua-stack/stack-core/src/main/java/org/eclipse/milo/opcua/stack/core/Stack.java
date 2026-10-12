@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.stack.core.util.ManifestUtil;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 public final class Stack {
@@ -256,32 +257,155 @@ public final class Stack {
     }
   }
 
+  /**
+   * Stack-wide limits on inbound connections to the TCP server transport.
+   *
+   * <p>Each rate-limiting field is initialized from a system property when this class is
+   * initialized, so set the properties at JVM startup:
+   *
+   * <pre>{@code
+   * java -Dmilo.stack.rateLimit.maxConnectionsPerAddress=500 -jar server.jar
+   * }</pre>
+   *
+   * <p>A missing property leaves the default in place. A value that does not parse, or an integer
+   * that is not positive, is logged at WARN and the default is used instead.
+   *
+   * <p>Code can also assign the fields directly. The TCP server transport reads them once, when the
+   * first server binds, so an assignment must happen before then. An assignment made in time
+   * overrides the value from the system property.
+   */
   public static final class ConnectionLimits {
 
     private ConnectionLimits() {}
 
+    /** System property that sets {@link #RATE_LIMIT_ENABLED}. */
+    public static final String RATE_LIMIT_ENABLED_PROPERTY = "milo.stack.rateLimit.enabled";
+
+    /** System property that sets {@link #RATE_LIMIT_MAX_ATTEMPTS}. */
+    public static final String RATE_LIMIT_MAX_ATTEMPTS_PROPERTY =
+        "milo.stack.rateLimit.maxAttempts";
+
+    /** System property that sets {@link #RATE_LIMIT_WINDOW_MS}. */
+    public static final String RATE_LIMIT_WINDOW_MS_PROPERTY = "milo.stack.rateLimit.windowMs";
+
+    /** System property that sets {@link #RATE_LIMIT_MAX_CONNECTIONS}. */
+    public static final String RATE_LIMIT_MAX_CONNECTIONS_PROPERTY =
+        "milo.stack.rateLimit.maxConnections";
+
+    /** System property that sets {@link #RATE_LIMIT_MAX_CONNECTIONS_PER_ADDRESS}. */
+    public static final String RATE_LIMIT_MAX_CONNECTIONS_PER_ADDRESS_PROPERTY =
+        "milo.stack.rateLimit.maxConnectionsPerAddress";
+
     /**
-     * Deadline, in milliseconds, that UA Hello message must be received within before the channel
-     * is closed.
+     * Has no effect. The Hello deadline is configured per transport, with {@code
+     * OpcTcpServerTransportConfigBuilder.setHelloDeadline}.
+     *
+     * @deprecated nothing reads this field. Set the Hello deadline on the transport configuration.
      */
-    public static volatile int HELLO_DEADLINE_MS = 10_000;
+    @Deprecated public static volatile int HELLO_DEADLINE_MS = 10_000;
 
-    /** Allows rate limiting to be disabled stack-wide. */
-    public static boolean RATE_LIMIT_ENABLED = true;
+    /**
+     * Whether connection limits are enforced. {@code false} turns off the connect rate limit,
+     * {@link #RATE_LIMIT_MAX_CONNECTIONS}, and {@link #RATE_LIMIT_MAX_CONNECTIONS_PER_ADDRESS}.
+     *
+     * <p>Set with {@value #RATE_LIMIT_ENABLED_PROPERTY}, which accepts {@code true} or {@code
+     * false}, ignoring case. Defaults to {@code true}.
+     */
+    public static boolean RATE_LIMIT_ENABLED = booleanProperty(RATE_LIMIT_ENABLED_PROPERTY, true);
 
-    /** Maximum number of connect attempts per {@link #RATE_LIMIT_WINDOW_MS}. */
-    public static int RATE_LIMIT_MAX_ATTEMPTS = 4;
+    /**
+     * Maximum number of connect attempts from one remote address per {@link #RATE_LIMIT_WINDOW_MS}.
+     *
+     * <p>To turn off the connect rate limit, set {@link #RATE_LIMIT_ENABLED} to {@code false}
+     * instead of raising this value. That also turns off the connection caps. The server keeps up
+     * to this many recent attempt times for each remote address, and checks them while holding a
+     * lock that every inbound connection must take.
+     *
+     * <p>Set with {@value #RATE_LIMIT_MAX_ATTEMPTS_PROPERTY}. Defaults to 4.
+     */
+    public static int RATE_LIMIT_MAX_ATTEMPTS =
+        positiveIntProperty(RATE_LIMIT_MAX_ATTEMPTS_PROPERTY, 4);
 
-    /** The window of time over which connect attempts will be counted for rate limiting. */
-    public static int RATE_LIMIT_WINDOW_MS = 1000;
+    /**
+     * The window of time, in milliseconds, over which connect attempts are counted for rate
+     * limiting.
+     *
+     * <p>Set with {@value #RATE_LIMIT_WINDOW_MS_PROPERTY}. Defaults to 1000.
+     */
+    public static int RATE_LIMIT_WINDOW_MS =
+        positiveIntProperty(RATE_LIMIT_WINDOW_MS_PROPERTY, 1000);
 
     /**
      * The maximum number of connections allowed in total (any remote address, not including
      * localhost).
+     *
+     * <p>Set with {@value #RATE_LIMIT_MAX_CONNECTIONS_PROPERTY}. Defaults to 10000.
      */
-    public static int RATE_LIMIT_MAX_CONNECTIONS = 10_000;
+    public static int RATE_LIMIT_MAX_CONNECTIONS =
+        positiveIntProperty(RATE_LIMIT_MAX_CONNECTIONS_PROPERTY, 10_000);
 
-    /** The maximum number of connections allowed from any 1 remote address. */
-    public static int RATE_LIMIT_MAX_CONNECTIONS_PER_ADDRESS = 100;
+    /**
+     * The maximum number of connections allowed from any 1 remote address.
+     *
+     * <p>Set with {@value #RATE_LIMIT_MAX_CONNECTIONS_PER_ADDRESS_PROPERTY}. Defaults to 100.
+     */
+    public static int RATE_LIMIT_MAX_CONNECTIONS_PER_ADDRESS =
+        positiveIntProperty(RATE_LIMIT_MAX_CONNECTIONS_PER_ADDRESS_PROPERTY, 100);
+
+    private static int positiveIntProperty(String name, int defaultValue) {
+      return parsePositiveInt(name, System.getProperty(name), defaultValue);
+    }
+
+    private static boolean booleanProperty(String name, boolean defaultValue) {
+      return parseBoolean(name, System.getProperty(name), defaultValue);
+    }
+
+    static int parsePositiveInt(String name, @Nullable String value, int defaultValue) {
+      if (value == null) {
+        return defaultValue;
+      }
+
+      try {
+        int parsed = Integer.parseInt(value.trim());
+
+        if (parsed > 0) {
+          return parsed;
+        }
+      } catch (NumberFormatException e) {
+        // fall through to the warning below
+      }
+
+      LoggerFactory.getLogger(ConnectionLimits.class)
+          .warn(
+              "Ignoring {}={}: expected a positive integer. Using default {}.",
+              name,
+              value,
+              defaultValue);
+
+      return defaultValue;
+    }
+
+    static boolean parseBoolean(String name, @Nullable String value, boolean defaultValue) {
+      if (value == null) {
+        return defaultValue;
+      }
+
+      String trimmed = value.trim();
+
+      if (trimmed.equalsIgnoreCase("true")) {
+        return true;
+      } else if (trimmed.equalsIgnoreCase("false")) {
+        return false;
+      }
+
+      LoggerFactory.getLogger(ConnectionLimits.class)
+          .warn(
+              "Ignoring {}={}: expected true or false. Using default {}.",
+              name,
+              value,
+              defaultValue);
+
+      return defaultValue;
+    }
   }
 }
