@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.stack.core.security;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -22,11 +23,14 @@ import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.security.KeyPair;
+import java.security.KeyStore;
+import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -130,6 +134,62 @@ class KeyStoreCertificateStoreTest extends CertificateStoreTest {
     assertNotNull(store.get(certificateTypeId));
   }
 
+  // Application-owned entries may be committed after this store initializes. A later certificate
+  // update must merge that completed write without needing the foreign entry's password.
+  @Test
+  void setPreservesCompletedExternalChanges() throws Exception {
+    var certificateTypeId = new NodeId(2, "managed");
+    CertificateStore.Entry externalEntry = newEntry();
+
+    writeExternalEntry("application-pending", externalEntry, "external-password".toCharArray());
+
+    certificateStore.set(certificateTypeId, newEntry());
+
+    KeyStore persisted = loadKeyStore();
+    assertTrue(persisted.isKeyEntry("managed"));
+    assertNotNull(persisted.getKey("application-pending", "external-password".toCharArray()));
+  }
+
+  // An operator may delete the KeyStore file while the store is running. A write then has nothing
+  // to merge and must recreate the file from memory rather than fail.
+  @Test
+  void setRecreatesDeletedKeyStoreFile() throws Exception {
+    Files.delete(keyStorePath);
+
+    certificateStore.set(new NodeId(2, "recreated"), newEntry());
+
+    KeyStore persisted = loadKeyStore();
+    assertTrue(persisted.isKeyEntry("test"));
+    assertTrue(persisted.isKeyEntry("recreated"));
+  }
+
+  // A removal after external file deletion must update both the recreated file and the in-memory
+  // cache, or subsequent reads keep returning the deleted certificate.
+  @Test
+  void removeRecreatesDeletedKeyStoreFileWithoutLeavingStaleCacheEntry() throws Exception {
+    Files.delete(keyStorePath);
+
+    assertNotNull(certificateStore.remove(new NodeId(2, "test")));
+
+    assertFalse(certificateStore.contains(new NodeId(2, "test")));
+    assertFalse(loadKeyStore().containsAlias("test"));
+  }
+
+  // Removal is also a whole-file rewrite, so it must preserve external entries committed before
+  // the removal begins while deleting only its own target alias.
+  @Test
+  void removePreservesCompletedExternalChanges() throws Exception {
+    CertificateStore.Entry externalEntry = newEntry();
+
+    writeExternalEntry("application-pending", externalEntry, "external-password".toCharArray());
+
+    assertNotNull(certificateStore.remove(new NodeId(2, "test")));
+
+    KeyStore persisted = loadKeyStore();
+    assertFalse(persisted.containsAlias("test"));
+    assertNotNull(persisted.getKey("application-pending", "external-password".toCharArray()));
+  }
+
   @Test
   void watchEventsResolveAgainstTheWatchedDirectory() {
     Path watchedDirectory = keyStorePath.getParent();
@@ -173,6 +233,134 @@ class KeyStoreCertificateStoreTest extends CertificateStoreTest {
     } finally {
       store.close();
     }
+  }
+
+  @Test
+  void defaultAliasesPreserveRsaAndNameCurrentEccTypes() throws IOException {
+    try (var store =
+        new KeyStoreCertificateStore(
+            new KeyStoreCertificateStore.Settings(
+                keyStorePath, "password"::toCharArray, alias -> "password".toCharArray()))) {
+
+      assertEquals(
+          "server-rsa-sha256", store.getAlias(NodeIds.RsaSha256ApplicationCertificateType));
+      assertEquals(
+          "server-ecc-nistp256", store.getAlias(NodeIds.EccNistP256ApplicationCertificateType));
+      assertEquals(
+          "server-ecc-nistp384", store.getAlias(NodeIds.EccNistP384ApplicationCertificateType));
+      assertEquals(
+          "server-ecc-brainpoolp256r1",
+          store.getAlias(NodeIds.EccBrainpoolP256r1ApplicationCertificateType));
+      assertEquals(
+          "server-ecc-brainpoolp384r1",
+          store.getAlias(NodeIds.EccBrainpoolP384r1ApplicationCertificateType));
+      assertEquals(
+          "server-ecc-curve25519", store.getAlias(NodeIds.EccCurve25519ApplicationCertificateType));
+      assertEquals(
+          "server-ecc-curve448", store.getAlias(NodeIds.EccCurve448ApplicationCertificateType));
+      assertEquals(
+          new NodeId(2, "custom").toParseableString(), store.getAlias(new NodeId(2, "custom")));
+    }
+  }
+
+  @Test
+  void configuredAliasPrefixNamesStandardCertificateTypes() throws IOException {
+    try (var store =
+        new KeyStoreCertificateStore(
+            new KeyStoreCertificateStore.Settings(
+                keyStorePath,
+                "password"::toCharArray,
+                alias -> "password".toCharArray(),
+                "client-"))) {
+
+      assertEquals(
+          "client-rsa-sha256", store.getAlias(NodeIds.RsaSha256ApplicationCertificateType));
+      assertEquals(
+          "client-ecc-nistp256", store.getAlias(NodeIds.EccNistP256ApplicationCertificateType));
+      assertEquals(
+          "client-ecc-nistp384", store.getAlias(NodeIds.EccNistP384ApplicationCertificateType));
+      assertEquals(
+          "client-ecc-brainpoolp256r1",
+          store.getAlias(NodeIds.EccBrainpoolP256r1ApplicationCertificateType));
+      assertEquals(
+          "client-ecc-brainpoolp384r1",
+          store.getAlias(NodeIds.EccBrainpoolP384r1ApplicationCertificateType));
+      assertEquals(
+          "client-ecc-curve25519", store.getAlias(NodeIds.EccCurve25519ApplicationCertificateType));
+      assertEquals(
+          "client-ecc-curve448", store.getAlias(NodeIds.EccCurve448ApplicationCertificateType));
+      assertEquals(
+          new NodeId(2, "custom").toParseableString(), store.getAlias(new NodeId(2, "custom")));
+    }
+  }
+
+  @Test
+  void initializeIgnoresUnmanagedPrivateKeyEntries() throws Exception {
+    TestCertificateFactory factory = new TestCertificateFactory();
+    KeyPair keyPair = factory.createRsaSha256KeyPair();
+    X509Certificate[] certificateChain = factory.createRsaSha256CertificateChain(keyPair);
+    KeyStore keyStore = KeyStore.getInstance("pkcs12");
+    keyStore.load(null, "password".toCharArray());
+    keyStore.setKeyEntry(
+        "unmanaged", keyPair.getPrivate(), "other-password".toCharArray(), certificateChain);
+
+    try (var outputStream = Files.newOutputStream(keyStorePath)) {
+      keyStore.store(outputStream, "password".toCharArray());
+    }
+
+    var store =
+        new KeyStoreCertificateStore(
+            new KeyStoreCertificateStore.Settings(
+                keyStorePath,
+                "password"::toCharArray,
+                alias ->
+                    "unmanaged".equals(alias)
+                        ? "wrong-password".toCharArray()
+                        : "password".toCharArray()));
+
+    assertDoesNotThrow(store::initialize);
+    assertFalse(store.contains(NodeIds.RsaSha256ApplicationCertificateType));
+
+    store.close();
+  }
+
+  @Test
+  void initializeDoesNotRequestPasswordsForMissingPreloadedAliases() throws Exception {
+    TestCertificateFactory factory = new TestCertificateFactory();
+    KeyPair keyPair = factory.createRsaSha256KeyPair();
+    X509Certificate[] certificateChain = factory.createRsaSha256CertificateChain(keyPair);
+    KeyStore keyStore = KeyStore.getInstance("pkcs12");
+    keyStore.load(null, "password".toCharArray());
+    keyStore.setKeyEntry(
+        "server-rsa-sha256", keyPair.getPrivate(), "password".toCharArray(), certificateChain);
+
+    try (var outputStream = Files.newOutputStream(keyStorePath)) {
+      keyStore.store(outputStream, "password".toCharArray());
+    }
+
+    var store =
+        new KeyStoreCertificateStore(
+            new KeyStoreCertificateStore.Settings(
+                keyStorePath,
+                "password"::toCharArray,
+                alias -> {
+                  if (!"server-rsa-sha256".equals(alias)) {
+                    throw new AssertionError("unexpected password request for alias: " + alias);
+                  }
+
+                  return "password".toCharArray();
+                }));
+
+    assertDoesNotThrow(store::initialize);
+    assertTrue(store.contains(NodeIds.RsaSha256ApplicationCertificateType));
+    assertFalse(store.contains(NodeIds.EccNistP256ApplicationCertificateType));
+    assertFalse(store.contains(NodeIds.EccNistP384ApplicationCertificateType));
+    assertFalse(store.contains(NodeIds.EccBrainpoolP256r1ApplicationCertificateType));
+    assertFalse(store.contains(NodeIds.EccBrainpoolP384r1ApplicationCertificateType));
+    assertFalse(store.contains(NodeIds.EccCurve25519ApplicationCertificateType));
+    assertFalse(store.contains(NodeIds.EccCurve448ApplicationCertificateType));
+
+    store.close();
   }
 
   private static boolean awaitContains(CertificateStore store, NodeId certificateTypeId)
@@ -229,6 +417,27 @@ class KeyStoreCertificateStoreTest extends CertificateStoreTest {
         return certificateTypeId.getIdentifier().toString();
       }
     };
+  }
+
+  private void writeExternalEntry(String alias, CertificateStore.Entry entry, char[] aliasPassword)
+      throws Exception {
+
+    KeyStore keyStore = loadKeyStore();
+    keyStore.setKeyEntry(alias, entry.privateKey, aliasPassword, entry.certificateChain);
+
+    try (var outputStream = Files.newOutputStream(keyStorePath)) {
+      keyStore.store(outputStream, "password".toCharArray());
+    }
+  }
+
+  private KeyStore loadKeyStore() throws Exception {
+    KeyStore keyStore = KeyStore.getInstance("pkcs12");
+
+    try (var inputStream = Files.newInputStream(keyStorePath)) {
+      keyStore.load(inputStream, "password".toCharArray());
+    }
+
+    return keyStore;
   }
 
   private static CertificateStore.Entry newEntry() {

@@ -17,6 +17,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class OpcUaDataTypeTest {
 
@@ -31,6 +32,25 @@ class OpcUaDataTypeTest {
           fromBackingClass,
           "%s should return %s".formatted(backingClass.getName(), dataType));
     }
+  }
+
+  @Test
+  void fromTypeId() {
+    for (OpcUaDataType dataType : OpcUaDataType.values()) {
+      assertEquals(
+          dataType,
+          OpcUaDataType.fromTypeId(dataType.getTypeId()),
+          "type id %d should return %s".formatted(dataType.getTypeId(), dataType));
+    }
+  }
+
+  // The binary and JSON decoders pass the type id read from a Matrix on the wire straight in, and
+  // build the Matrix with whatever comes back, so an id outside the builtin range must be null
+  // rather than throw or resolve to a neighbouring type.
+  @ParameterizedTest
+  @ValueSource(ints = {0, 26, -1, Integer.MIN_VALUE, Integer.MAX_VALUE})
+  void fromTypeIdReturnsNullForUnknownIds(int typeId) {
+    assertNull(OpcUaDataType.fromTypeId(typeId));
   }
 
   @ParameterizedTest

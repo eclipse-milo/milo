@@ -27,9 +27,10 @@ public interface MethodInvocationHandler {
   NotImplementedHandler NOT_IMPLEMENTED = new NotImplementedHandler();
 
   /**
-   * Invoke the given {@link CallMethodRequest} and complete {@code future} when finished.
+   * Invoke the given {@link CallMethodRequest} synchronously and return its outcome.
    *
-   * <p>Under no circumstances should the future be completed exceptionally.
+   * <p>Report operation failures in the returned result. Direct callers are responsible for access
+   * checks; normal server dispatch applies ownership and service access checks before invocation.
    *
    * @param accessContext the {@link AccessContext}.
    * @param request the {@link CallMethodRequest}.

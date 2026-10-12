@@ -14,14 +14,18 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.Security;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.examples.server.ExampleServer;
+import org.eclipse.milo.opcua.sdk.client.EndpointConfiguration;
+import org.eclipse.milo.opcua.sdk.client.EndpointResolver;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
+import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfigBuilder;
 import org.eclipse.milo.opcua.stack.core.Stack;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.DefaultClientCertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.FileBasedTrustListManager;
@@ -32,11 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ClientExampleRunner {
-
-  static {
-    // Required for SecurityPolicy.Aes256_Sha256_RsaPss
-    Security.addProvider(new BouncyCastleProvider());
-  }
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -84,21 +83,42 @@ public class ClientExampleRunner {
         new DefaultClientCertificateValidator(
             clientTrustListManager, new MemoryCertificateQuarantine());
 
-    return OpcUaClient.create(
-        clientExample.getEndpointUrl(),
-        endpoints -> endpoints.stream().filter(clientExample.endpointFilter()).findFirst(),
-        transportConfigBuilder -> {},
-        clientConfigBuilder -> {
-          clientConfigBuilder
-              .setApplicationName(LocalizedText.english("eclipse milo opc-ua client"))
-              .setApplicationUri("urn:eclipse:milo:examples:client")
-              .setKeyPair(loader.getClientKeyPair())
-              .setCertificate(loader.getClientCertificate())
-              .setCertificateChain(loader.getClientCertificateChain())
-              .setCertificateValidator(certificateValidator)
-              .setIdentityProvider(clientExample.getIdentityProvider());
-          clientExample.configureClient(clientConfigBuilder);
-        });
+    // The resolver owns discovery and endpoint selection. It runs once here for the initial
+    // connection, and the client keeps it to rediscover the endpoint if SecureChannel
+    // establishment later fails on a secured endpoint, e.g. after the server's certificate is
+    // replaced. OpcUaClient.create(url, ...) builds and retains an equivalent resolver itself;
+    // this example spells it out to show the pieces involved.
+    EndpointResolver endpointResolver =
+        EndpointResolver.create(
+            clientExample.getEndpointUrl(),
+            endpoints -> endpoints.stream().filter(clientExample.endpointFilter()).findFirst(),
+            transportConfigBuilder -> {},
+            Duration.ofSeconds(10));
+
+    EndpointConfiguration resolved;
+    try {
+      resolved = endpointResolver.resolve().get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    }
+
+    // The example client has one key pair and certificate chain on hand, so it presents them
+    // directly. Its trust list lives inside the validator above, which is the only place that
+    // reads it. See GdsPullExample for a client that puts the trust list on a CertificateGroup
+    // instead, because the pull cycle has to reach it through the group to install into it.
+    OpcUaClientConfigBuilder clientConfigBuilder =
+        OpcUaClientConfig.builder()
+            .setEndpoint(resolved.endpoint())
+            .setDiscoveryEndpoints(resolved.discoveryEndpoints())
+            .setEndpointResolver(endpointResolver)
+            .setApplicationName(LocalizedText.english("eclipse milo opc-ua client"))
+            .setApplicationUri("urn:eclipse:milo:examples:client")
+            .setCertificateIdentity(loader.getClientKeyPair(), loader.getClientCertificateChain())
+            .setCertificateValidator(certificateValidator)
+            .setIdentityProvider(clientExample.getIdentityProvider());
+    clientExample.configureClient(clientConfigBuilder);
+
+    return OpcUaClient.create(clientConfigBuilder.build());
   }
 
   public void run() {
@@ -118,14 +138,20 @@ public class ClientExampleRunner {
         // Make the example server trust the example client certificate by default.
         client
             .getConfig()
-            .getCertificate()
+            .getCertificateGroup()
             .ifPresent(
-                certificate ->
-                    certificateManager
-                        .getCertificateGroups()
+                clientGroup ->
+                    clientGroup
+                        .getCertificateIdentities()
                         .forEach(
-                            group ->
-                                group.getTrustListManager().addTrustedCertificate(certificate)));
+                            identity ->
+                                certificateManager
+                                    .getCertificateGroups()
+                                    .forEach(
+                                        group ->
+                                            group
+                                                .getTrustListManager()
+                                                .addTrustedCertificate(identity.certificate()))));
 
         // Make the example client trust the example server certificate by default.
         exampleServer
@@ -140,7 +166,7 @@ public class ClientExampleRunner {
                         .forEach(
                             entry ->
                                 clientTrustListManager.addTrustedCertificate(
-                                    entry.certificateChain[0])));
+                                    entry.certificateChain()[0])));
       }
 
       future.whenCompleteAsync(

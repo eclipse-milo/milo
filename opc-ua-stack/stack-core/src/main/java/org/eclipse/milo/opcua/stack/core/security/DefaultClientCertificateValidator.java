@@ -19,6 +19,7 @@ import java.util.Set;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.util.validation.CertificateValidationUtil;
 import org.eclipse.milo.opcua.stack.core.util.validation.ValidationCheck;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,17 +63,31 @@ public class DefaultClientCertificateValidator implements CertificateValidator {
 
   @Override
   public void validateCertificateChain(
-      List<X509Certificate> certificateChain, String applicationUri, String[] validHostNames)
+      List<X509Certificate> certificateChain,
+      @Nullable String applicationUri,
+      String @Nullable [] validHostNames)
       throws UaException {
 
+    validateCertificateChain(certificateChain, applicationUri, validHostNames, null);
+  }
+
+  @Override
+  public void validateCertificateChain(
+      List<X509Certificate> certificateChain,
+      @Nullable String applicationUri,
+      String @Nullable [] validHostNames,
+      @Nullable SecurityPolicyProfile securityPolicyProfile)
+      throws UaException {
+
+    TrustListSnapshot trustListSnapshot = trustListManager.getSnapshot();
     PKIXCertPathBuilderResult certPathResult;
 
     try {
       certPathResult =
           CertificateValidationUtil.buildTrustedCertPath(
               certificateChain,
-              trustListManager.getTrustedCertificates(),
-              trustListManager.getIssuerCertificates());
+              trustListSnapshot.trustedCertificates(),
+              trustListSnapshot.issuerCertificates());
     } catch (UaException e) {
       certificateChain.forEach(certificateQuarantine::addRejectedCertificate);
 
@@ -83,15 +98,21 @@ public class DefaultClientCertificateValidator implements CertificateValidator {
 
     try {
       List<X509CRL> crls = new ArrayList<>();
-      crls.addAll(trustListManager.getTrustedCrls());
-      crls.addAll(trustListManager.getIssuerCrls());
+      crls.addAll(trustListSnapshot.trustedCrls());
+      crls.addAll(trustListSnapshot.issuerCrls());
 
       CertificateValidationUtil.validateTrustedCertPath(
           certPathResult.getCertPath(),
           certPathResult.getTrustAnchor(),
           crls,
           validationChecks,
-          false);
+          false,
+          securityPolicyProfile);
+
+      if (securityPolicyProfile != null) {
+        CertificateCompatibility.checkCompatible(
+            securityPolicyProfile, certificateChain.get(0), validationChecks);
+      }
     } catch (UaException e) {
       LOGGER.debug("validateCertificateChain failed, underlying status: {}", e.getStatusCode(), e);
 

@@ -35,8 +35,8 @@ public class UaViewNodeAttributeTest extends AbstractClientServerTest {
     assertEquals(newQualifiedName("TestView"), viewNode.getBrowseName());
     assertEquals(LocalizedText.english("TestView"), viewNode.getDisplayName());
     assertEquals(LocalizedText.english("TestView Description"), viewNode.getDescription());
-    assertEquals(uint(0), viewNode.getWriteMask());
-    assertEquals(uint(0), viewNode.getUserWriteMask());
+    assertEquals(uint(3), viewNode.getWriteMask());
+    assertEquals(uint(1), viewNode.getUserWriteMask());
     assertArrayEquals(AttributeTestHelper.ROLE_PERMISSIONS, viewNode.getRolePermissions());
     assertArrayEquals(AttributeTestHelper.USER_ROLE_PERMISSIONS, viewNode.getUserRolePermissions());
     assertEquals(AttributeTestHelper.ACCESS_RESTRICTIONS, viewNode.getAccessRestrictions());
@@ -55,8 +55,15 @@ public class UaViewNodeAttributeTest extends AbstractClientServerTest {
     assertEquals(newQualifiedName("TestView"), viewNode.readBrowseName());
     assertEquals(LocalizedText.english("TestView"), viewNode.readDisplayName());
     assertEquals(LocalizedText.english("TestView Description"), viewNode.readDescription());
-    assertEquals(uint(0), viewNode.readWriteMask());
-    assertEquals(uint(0), viewNode.readUserWriteMask());
+    // Distinct stale values expose missed cache updates and updates to the wrong attribute.
+    viewNode.setWriteMask(uint(7));
+    viewNode.setUserWriteMask(uint(2));
+    assertEquals(uint(3), viewNode.readWriteMask());
+    assertEquals(uint(3), viewNode.getWriteMask());
+    assertEquals(uint(2), viewNode.getUserWriteMask());
+    assertEquals(uint(1), viewNode.readUserWriteMask());
+    assertEquals(uint(3), viewNode.getWriteMask());
+    assertEquals(uint(1), viewNode.getUserWriteMask());
     assertArrayEquals(AttributeTestHelper.ROLE_PERMISSIONS, viewNode.readRolePermissions());
     assertArrayEquals(
         AttributeTestHelper.USER_ROLE_PERMISSIONS, viewNode.readUserRolePermissions());

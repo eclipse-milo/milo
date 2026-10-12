@@ -38,8 +38,8 @@ public class UaVariableNodeAttributeTest extends AbstractClientServerTest {
     assertEquals(newQualifiedName("TestVariable"), variableNode.getBrowseName());
     assertEquals(LocalizedText.english("TestVariable"), variableNode.getDisplayName());
     assertEquals(LocalizedText.english("TestVariable Description"), variableNode.getDescription());
-    assertEquals(uint(0), variableNode.getWriteMask());
-    assertEquals(uint(0), variableNode.getUserWriteMask());
+    assertEquals(uint(3), variableNode.getWriteMask());
+    assertEquals(uint(1), variableNode.getUserWriteMask());
     assertArrayEquals(AttributeTestHelper.ROLE_PERMISSIONS, variableNode.getRolePermissions());
     assertArrayEquals(
         AttributeTestHelper.USER_ROLE_PERMISSIONS, variableNode.getUserRolePermissions());
@@ -65,8 +65,15 @@ public class UaVariableNodeAttributeTest extends AbstractClientServerTest {
     assertEquals(newQualifiedName("TestVariable"), variableNode.readBrowseName());
     assertEquals(LocalizedText.english("TestVariable"), variableNode.readDisplayName());
     assertEquals(LocalizedText.english("TestVariable Description"), variableNode.readDescription());
-    assertEquals(uint(0), variableNode.readWriteMask());
-    assertEquals(uint(0), variableNode.readUserWriteMask());
+    // Distinct stale values expose missed cache updates and updates to the wrong attribute.
+    variableNode.setWriteMask(uint(7));
+    variableNode.setUserWriteMask(uint(2));
+    assertEquals(uint(3), variableNode.readWriteMask());
+    assertEquals(uint(3), variableNode.getWriteMask());
+    assertEquals(uint(2), variableNode.getUserWriteMask());
+    assertEquals(uint(1), variableNode.readUserWriteMask());
+    assertEquals(uint(3), variableNode.getWriteMask());
+    assertEquals(uint(1), variableNode.getUserWriteMask());
     assertArrayEquals(AttributeTestHelper.ROLE_PERMISSIONS, variableNode.readRolePermissions());
     assertArrayEquals(
         AttributeTestHelper.USER_ROLE_PERMISSIONS, variableNode.readUserRolePermissions());

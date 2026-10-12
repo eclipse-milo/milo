@@ -11,11 +11,14 @@
 package org.eclipse.milo.opcua.sdk.server;
 
 /**
- * A {@link ManagedNamespace} whose address-space and node-manager registration is lifecycle-bound.
+ * A {@link ManagedNamespace} whose registration is controlled by a {@link LifecycleManager}.
  *
  * <p>Subclasses can add their own lifecycle work with {@link #getLifecycleManager()}. Shutdown runs
- * in reverse registration order, so namespace children shut down before this base class unregisters
- * the namespace and its {@link UaNodeManager} from the server.
+ * in reverse registration order, so subclass lifecycles are stopped before this base class
+ * unregisters the namespace and its {@link UaNodeManager}. The {@link #getSamplingManager()
+ * SamplingManager} starts after every lifecycle, the registration and the subclass's own, and stops
+ * before any of them, so a sampling group can use what the subclass's lifecycles start. If it fails
+ * to start, the lifecycles are shut down again.
  */
 public abstract class ManagedNamespaceWithLifecycle extends ManagedNamespace implements Lifecycle {
 
@@ -45,12 +48,12 @@ public abstract class ManagedNamespaceWithLifecycle extends ManagedNamespace imp
 
   @Override
   public final void startup() {
-    lifecycleManager.startup();
+    startupWithSampling(lifecycleManager);
   }
 
   @Override
   public final void shutdown() {
-    lifecycleManager.shutdown();
+    shutdownWithSampling(lifecycleManager);
   }
 
   /**

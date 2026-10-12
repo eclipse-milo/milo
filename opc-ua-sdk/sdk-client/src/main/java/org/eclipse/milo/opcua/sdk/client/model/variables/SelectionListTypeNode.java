@@ -103,7 +103,10 @@ public class SelectionListTypeNode extends BaseDataVariableTypeNode implements S
   @Override
   public void writeSelections(Object[] value) throws UaException {
     try {
-      writeSelectionsAsync(value).get();
+      StatusCode statusCode = writeSelectionsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -173,7 +176,10 @@ public class SelectionListTypeNode extends BaseDataVariableTypeNode implements S
   @Override
   public void writeSelectionDescriptions(LocalizedText[] value) throws UaException {
     try {
-      writeSelectionDescriptionsAsync(value).get();
+      StatusCode statusCode = writeSelectionDescriptionsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -247,7 +253,10 @@ public class SelectionListTypeNode extends BaseDataVariableTypeNode implements S
   @Override
   public void writeRestrictToList(Boolean value) throws UaException {
     try {
-      writeRestrictToListAsync(value).get();
+      StatusCode statusCode = writeRestrictToListAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

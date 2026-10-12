@@ -31,6 +31,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.OperationLimit;
+import org.eclipse.milo.opcua.sdk.client.OperationLimits;
 import org.eclipse.milo.opcua.sdk.core.dtd.BinaryDataTypeCodec;
 import org.eclipse.milo.opcua.sdk.core.dtd.BinaryDataTypeDictionary;
 import org.eclipse.milo.opcua.sdk.core.dtd.BsdParser;
@@ -53,6 +55,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.*;
 import org.eclipse.milo.opcua.stack.core.util.FutureUtils;
 import org.eclipse.milo.opcua.stack.core.util.Lists;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.jspecify.annotations.Nullable;
 import org.opcfoundation.opcua.binaryschema.StructuredType;
 import org.opcfoundation.opcua.binaryschema.TypeDictionary;
 import org.slf4j.Logger;
@@ -480,20 +483,19 @@ public class BinaryDataTypeDictionaryReader {
                 .collect(Collectors.toList()));
   }
 
-  private CompletableFuture<List<String>> readDataTypeDescriptionValues(List<NodeId> nodeIds) {
-    CompletableFuture<UInteger> maxNodesPerRead =
+  CompletableFuture<List<String>> readDataTypeDescriptionValues(List<NodeId> nodeIds) {
+    // Read the advertised limit asynchronously rather than through client.getOperationLimits(),
+    // which blocks, and this chain may be running on the transport executor that completes Reads.
+    CompletableFuture<Integer> getPartitionSize =
         readNode(
                 new ReadValueId(
                     NodeIds.Server_ServerCapabilities_OperationLimits_MaxNodesPerRead,
                     AttributeId.Value.uid(),
                     null,
                     QualifiedName.NULL_VALUE))
-            .thenApply(dv -> (UInteger) dv.value().value());
-
-    CompletableFuture<Integer> getPartitionSize =
-        maxNodesPerRead
-            .thenApply(m -> Math.max(1, Ints.saturatedCast(m.longValue())))
-            .exceptionally(ex -> PARTITION_SIZE);
+            .thenApply(BinaryDataTypeDictionaryReader::advertisedMaxNodesPerRead)
+            .exceptionally(ex -> new OperationLimits(Map.of()))
+            .thenApply(this::getReadPartitionSize);
 
     return getPartitionSize.thenCompose(
         partitionSize -> {
@@ -524,6 +526,32 @@ public class BinaryDataTypeDictionaryReader {
                       .map(v -> (String) v.value().value())
                       .collect(Collectors.toList()));
         });
+  }
+
+  private static OperationLimits advertisedMaxNodesPerRead(@Nullable DataValue value) {
+    if (value != null
+        && !value.statusCode().isBad()
+        && value.value().value() instanceof Number number) {
+      return new OperationLimits(
+          Map.of(OperationLimit.MaxNodesPerRead, UInteger.valueOf(number.longValue())));
+    } else {
+      return new OperationLimits(Map.of());
+    }
+  }
+
+  private int getReadPartitionSize(OperationLimits advertised) {
+    OperationLimits effective =
+        client
+            .getConfig()
+            .getOperationLimitOverrides()
+            .map(advertised::withOverrides)
+            .orElse(advertised);
+
+    return effective
+        .maxNodesPerRead()
+        .filter(m -> m.longValue() > 0)
+        .map(m -> Ints.saturatedCast(m.longValue()))
+        .orElse(PARTITION_SIZE);
   }
 
   private CompletableFuture<List<NodeId>> browseDataTypeEncodingNodeIds(

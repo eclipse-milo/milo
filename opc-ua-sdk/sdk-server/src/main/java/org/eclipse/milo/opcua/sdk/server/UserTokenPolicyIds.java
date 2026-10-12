@@ -10,74 +10,76 @@
 
 package org.eclipse.milo.opcua.sdk.server;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.jspecify.annotations.Nullable;
 
 /**
- * Resolves configured user token policies into the values advertised in {@link EndpointDescription
- * EndpointDescriptions}.
+ * Assigns the user token policy IDs advertised for a resolved set of server endpoints.
  *
- * <p>An {@link EndpointConfig} can reuse a configured policy across endpoint variants, and a policy
- * with a null or empty security policy URI inherits the security policy of its endpoint. The same
- * configured policy ID can therefore describe different effective policies. This type assigns IDs
- * across the complete endpoint set and creates endpoint-specific policy copies without modifying
- * the server configuration.
- *
- * <p>Each instance is scoped to the endpoint set supplied to {@link #assign(Set)}. It must only be
- * used to build descriptions for endpoints from that set.
- *
- * @see <a href="https://reference.opcfoundation.org/specs/OPC-10000-4/7.41">OPC UA Part 4 §7.41</a>
+ * <p>OPC UA clients select a user-token policy by {@code policyId} during session activation. When
+ * several endpoint configurations reuse the same configured ID for policies that differ by token
+ * type or security policy, the advertised endpoint descriptions need distinct IDs so the selected
+ * policy can be matched unambiguously later. This helper keeps that advertisement-only
+ * normalization out of {@link OpcUaServer} while leaving the original {@link EndpointConfig}
+ * instances unchanged.
  */
 final class UserTokenPolicyIds {
 
-  private final Map<UserTokenPolicy, String> assignedPolicyIds;
+  private final Map<UserTokenPolicyKey, String> assignedPolicyIds;
 
-  private UserTokenPolicyIds(Map<UserTokenPolicy, String> assignedPolicyIds) {
+  private UserTokenPolicyIds(Map<UserTokenPolicyKey, String> assignedPolicyIds) {
     this.assignedPolicyIds = assignedPolicyIds;
   }
 
   /**
-   * Computes the policy ID assignment shared by a set of endpoint descriptions.
+   * Create a policy ID assignment for endpoints that will be advertised together.
    *
-   * <p>When a configured ID represents more than one effective policy, the first policy encountered
-   * retains that ID and subsequent policies receive unique IDs. The iteration order of {@code
-   * endpoints} therefore determines which effective policy retains a conflicting configured ID.
+   * <p>The endpoints should already have passed endpoint resolution. Endpoints that are omitted
+   * from discovery must not reserve IDs that clients will never see.
    *
-   * @param endpoints the complete set of endpoints that will be advertised together.
-   * @return the policy ID assignment for the endpoint set.
+   * @param endpoints the resolved endpoint configurations being advertised.
+   * @return an assignment that can build advertised token policies for each endpoint.
    */
-  static UserTokenPolicyIds assign(Set<EndpointConfig> endpoints) {
-    Map<String, Set<UserTokenPolicy>> policiesById = new LinkedHashMap<>();
+  static UserTokenPolicyIds assign(List<EndpointConfig> endpoints) {
+    Map<String, List<UserTokenPolicyKey>> keysByPolicyId = new LinkedHashMap<>();
 
     for (EndpointConfig endpoint : endpoints) {
       for (UserTokenPolicy tokenPolicy : endpoint.getTokenPolicies()) {
-        UserTokenPolicy effectivePolicy = effectivePolicy(endpoint, tokenPolicy);
-        policiesById
-            .computeIfAbsent(effectivePolicy.getPolicyId(), ignored -> new LinkedHashSet<>())
-            .add(effectivePolicy);
+        UserTokenPolicyKey key = UserTokenPolicyKey.from(endpoint, tokenPolicy);
+        List<UserTokenPolicyKey> keys =
+            keysByPolicyId.computeIfAbsent(key.policyId(), ignored -> new ArrayList<>());
+
+        if (!keys.contains(key)) {
+          keys.add(key);
+        }
       }
     }
 
-    Set<String> reservedPolicyIds = new LinkedHashSet<>(policiesById.keySet());
-    Map<UserTokenPolicy, String> assignedPolicyIds = new HashMap<>();
+    Set<String> reservedPolicyIds = new LinkedHashSet<>(keysByPolicyId.keySet());
+    Map<UserTokenPolicyKey, String> assignedPolicyIds = new HashMap<>();
 
-    for (Set<UserTokenPolicy> policies : policiesById.values()) {
-      boolean preserveConfiguredId = true;
+    for (List<UserTokenPolicyKey> keys : keysByPolicyId.values()) {
+      if (keys.size() == 1) {
+        UserTokenPolicyKey key = keys.get(0);
+        assignedPolicyIds.put(key, key.policyId());
+      } else {
+        UserTokenPolicyKey firstKey = keys.get(0);
+        assignedPolicyIds.put(firstKey, firstKey.policyId());
 
-      for (UserTokenPolicy policy : policies) {
-        assignedPolicyIds.put(
-            policy,
-            preserveConfiguredId
-                ? policy.getPolicyId()
-                : uniquePolicyId(policy, reservedPolicyIds));
-        preserveConfiguredId = false;
+        for (int i = 1; i < keys.size(); i++) {
+          UserTokenPolicyKey key = keys.get(i);
+          assignedPolicyIds.put(key, uniquePolicyId(key, reservedPolicyIds));
+        }
       }
     }
 
@@ -85,64 +87,59 @@ final class UserTokenPolicyIds {
   }
 
   /**
-   * Builds the user token policies to advertise for an endpoint.
+   * Return the user token policies to place in the advertised endpoint description for an endpoint.
    *
-   * <p>The returned policies contain effective security policy URIs and server-wide assigned IDs.
-   * The configured policies in {@code endpoint} remain unchanged.
+   * <p>The returned policies preserve configured values except when a reused {@code policyId} needs
+   * a unique advertised ID. Empty and null configured IDs keep their wire-compatible representation
+   * when no assignment change is needed.
    *
-   * @param endpoint an endpoint from the set supplied to {@link #assign(Set)}.
-   * @return a new array of policies for the endpoint description.
+   * @param endpoint the endpoint whose advertised token policies are being built.
+   * @return the token policies to advertise for the endpoint.
    */
   UserTokenPolicy[] policiesFor(EndpointConfig endpoint) {
     return endpoint.getTokenPolicies().stream()
-        .map(tokenPolicy -> advertisedPolicy(endpoint, tokenPolicy))
+        .map(tokenPolicy -> transform(endpoint, tokenPolicy))
         .toArray(UserTokenPolicy[]::new);
   }
 
-  private UserTokenPolicy advertisedPolicy(
-      EndpointConfig endpoint, UserTokenPolicy configuredPolicy) {
-
-    UserTokenPolicy effectivePolicy = effectivePolicy(endpoint, configuredPolicy);
-    String assignedPolicyId = assignedPolicyIds.get(effectivePolicy);
+  private UserTokenPolicy transform(EndpointConfig endpoint, UserTokenPolicy tokenPolicy) {
+    UserTokenPolicyKey key = UserTokenPolicyKey.from(endpoint, tokenPolicy);
+    String assignedPolicyId = assignedPolicyIds.getOrDefault(key, key.policyId());
 
     String policyId =
-        assignedPolicyId.equals(effectivePolicy.getPolicyId())
-            ? configuredPolicy.getPolicyId()
-            : assignedPolicyId;
+        policyIdChanged(tokenPolicy.getPolicyId(), assignedPolicyId)
+            ? assignedPolicyId
+            : tokenPolicy.getPolicyId();
 
     return new UserTokenPolicy(
         policyId,
-        effectivePolicy.getTokenType(),
-        effectivePolicy.getIssuedTokenType(),
-        effectivePolicy.getIssuerEndpointUrl(),
-        effectivePolicy.getSecurityPolicyUri());
-  }
-
-  private static UserTokenPolicy effectivePolicy(
-      EndpointConfig endpoint, UserTokenPolicy tokenPolicy) {
-
-    return new UserTokenPolicy(
-        Objects.requireNonNullElse(tokenPolicy.getPolicyId(), ""),
         tokenPolicy.getTokenType(),
         tokenPolicy.getIssuedTokenType(),
         tokenPolicy.getIssuerEndpointUrl(),
-        endpoint.getEffectiveTokenSecurityPolicyUri(tokenPolicy));
+        key.securityPolicyUri());
   }
 
-  private static String uniquePolicyId(UserTokenPolicy policy, Set<String> reservedPolicyIds) {
-    String base =
-        policy.getPolicyId().isEmpty()
-            ? policy.getTokenType().name().toLowerCase(Locale.ROOT)
-            : policy.getPolicyId();
+  private static boolean policyIdChanged(
+      @Nullable String configuredPolicyId, String assignedPolicyId) {
+    if (Objects.equals(configuredPolicyId, assignedPolicyId)) {
+      return false;
+    } else {
+      return !(isNullOrEmpty(configuredPolicyId) && assignedPolicyId.isEmpty());
+    }
+  }
 
-    String securityPolicyName = securityPolicyName(policy.getSecurityPolicyUri());
+  private static String uniquePolicyId(UserTokenPolicyKey key, Set<String> reservedPolicyIds) {
+    String base =
+        key.policyId().isEmpty() ? key.tokenType().name().toLowerCase(Locale.ROOT) : key.policyId();
+
+    String securityPolicyName = securityPolicyName(key.securityPolicyUri());
 
     String candidate = base + "-" + securityPolicyName;
     if (reservedPolicyIds.add(candidate)) {
       return candidate;
     }
 
-    candidate = base + "-" + policy.getTokenType().name() + "-" + securityPolicyName;
+    candidate = base + "-" + key.tokenType().name() + "-" + securityPolicyName;
     if (reservedPolicyIds.add(candidate)) {
       return candidate;
     }
@@ -160,5 +157,31 @@ final class UserTokenPolicyIds {
     String name = index >= 0 ? securityPolicyUri.substring(index + 1) : securityPolicyUri;
 
     return name.replaceAll("[^A-Za-z0-9_.-]", "-");
+  }
+
+  private static boolean isNullOrEmpty(@Nullable String value) {
+    return value == null || value.isEmpty();
+  }
+
+  private record UserTokenPolicyKey(
+      String policyId,
+      UserTokenType tokenType,
+      @Nullable String issuedTokenType,
+      @Nullable String issuerEndpointUrl,
+      String securityPolicyUri) {
+
+    static UserTokenPolicyKey from(EndpointConfig endpoint, UserTokenPolicy tokenPolicy) {
+      String policyId = tokenPolicy.getPolicyId();
+      String securityPolicyUri = tokenPolicy.getSecurityPolicyUri();
+
+      return new UserTokenPolicyKey(
+          policyId == null ? "" : policyId,
+          tokenPolicy.getTokenType(),
+          tokenPolicy.getIssuedTokenType(),
+          tokenPolicy.getIssuerEndpointUrl(),
+          isNullOrEmpty(securityPolicyUri)
+              ? endpoint.getSecurityPolicy().getUri()
+              : securityPolicyUri);
+    }
   }
 }

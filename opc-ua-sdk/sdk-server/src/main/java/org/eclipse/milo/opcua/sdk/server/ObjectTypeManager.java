@@ -13,15 +13,16 @@ package org.eclipse.milo.opcua.sdk.server;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.AttributeSnapshot;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.jspecify.annotations.Nullable;
 
 public class ObjectTypeManager {
 
@@ -33,7 +34,40 @@ public class ObjectTypeManager {
       Class<? extends UaObjectNode> nodeClass,
       ObjectNodeConstructor objectNodeConstructor) {
 
-    typeDefinitions.put(typeDefinition, new ObjectTypeDefinition(nodeClass, objectNodeConstructor));
+    typeDefinitions.compute(
+        typeDefinition,
+        (id, prev) ->
+            new ObjectTypeDefinition(
+                nodeClass, objectNodeConstructor, prev != null ? prev.snapshotConstructor : null));
+  }
+
+  /**
+   * Register {@code nodeClass} and a snapshot-consuming constructor for {@code typeDefinition}.
+   *
+   * <p>Unlike the tuple-signature forms, a {@link SnapshotConstructor} receives the full planned
+   * {@link AttributeSnapshot}, so attributes added to the model in future versions propagate
+   * without constructor signature changes. Registrations made through this overload are used by the
+   * node-instantiation engine; the legacy {@code NodeFactory} lookup path ({@link
+   * #getNodeConstructor(NodeId)}) does not see them and falls back to its default construction.
+   *
+   * <p>Each overload replaces only its own constructor form: registering a snapshot constructor for
+   * a type that already has a tuple registration (or vice versa) keeps the other form intact, so
+   * neither lookup path silently loses its typed construction.
+   *
+   * @param typeDefinition the {@link NodeId} of the ObjectType.
+   * @param nodeClass the Java class instances of the type are constructed as.
+   * @param snapshotConstructor the snapshot-consuming constructor.
+   */
+  public void registerObjectType(
+      NodeId typeDefinition,
+      Class<? extends UaObjectNode> nodeClass,
+      SnapshotConstructor snapshotConstructor) {
+
+    typeDefinitions.compute(
+        typeDefinition,
+        (id, prev) ->
+            new ObjectTypeDefinition(
+                nodeClass, prev != null ? prev.nodeConstructor : null, snapshotConstructor));
   }
 
   public void registerObjectType(
@@ -42,26 +76,24 @@ public class ObjectTypeManager {
       LegacyObjectNodeConstructor objectNodeConstructor) {
 
     ObjectNodeConstructor adapted =
-        new ObjectNodeConstructor() {
-          @Override
-          public UaObjectNode apply(
-              UaNodeContext context,
-              NodeId nodeId,
-              QualifiedName browseName,
-              LocalizedText displayName,
-              LocalizedText description,
-              UInteger writeMask,
-              UInteger userWriteMask,
-              RolePermissionType[] rolePermissions,
-              RolePermissionType[] userRolePermissions,
-              AccessRestrictionType accessRestrictions) {
-
-            return objectNodeConstructor.apply(
+        (context,
+            nodeId,
+            browseName,
+            displayName,
+            description,
+            writeMask,
+            userWriteMask,
+            rolePermissions,
+            userRolePermissions,
+            accessRestrictions) ->
+            objectNodeConstructor.apply(
                 context, nodeId, browseName, displayName, description, writeMask, userWriteMask);
-          }
-        };
 
-    typeDefinitions.put(typeDefinition, new ObjectTypeDefinition(nodeClass, adapted));
+    typeDefinitions.compute(
+        typeDefinition,
+        (id, prev) ->
+            new ObjectTypeDefinition(
+                nodeClass, adapted, prev != null ? prev.snapshotConstructor : null));
   }
 
   public Optional<ObjectNodeConstructor> getNodeConstructor(NodeId typeDefinition) {
@@ -70,17 +102,43 @@ public class ObjectTypeManager {
     return Optional.ofNullable(def).map(d -> d.nodeConstructor);
   }
 
-  private static class ObjectTypeDefinition {
-    final Class<? extends UaNode> nodeClass;
-    final ObjectNodeConstructor nodeConstructor;
+  /**
+   * Get the full registration for {@code typeDefinition}, if one exists: the registered Java class
+   * plus whichever constructor form the registration supplied.
+   *
+   * <p>This is the node-instantiation engine's lookup: exposing the {@link Class} enables plan-time
+   * expected-class checks and nearest-registered-ancestor fallback along the {@code HasSubtype}
+   * chain. At least one of {@link RegisteredObjectType#nodeConstructor()} and {@link
+   * RegisteredObjectType#snapshotConstructor()} is non-null; both are when the type was registered
+   * through both overload forms.
+   *
+   * @param typeDefinition the {@link NodeId} of the ObjectType.
+   * @return the registration, if one exists.
+   */
+  public Optional<RegisteredObjectType> getRegisteredType(NodeId typeDefinition) {
+    ObjectTypeDefinition def = typeDefinitions.get(typeDefinition);
 
-    private ObjectTypeDefinition(
-        Class<? extends UaNode> nodeClass, ObjectNodeConstructor nodeConstructor) {
-
-      this.nodeClass = nodeClass;
-      this.nodeConstructor = nodeConstructor;
-    }
+    return Optional.ofNullable(def)
+        .map(d -> new RegisteredObjectType(d.nodeClass, d.nodeConstructor, d.snapshotConstructor));
   }
+
+  private record ObjectTypeDefinition(
+      Class<? extends UaObjectNode> nodeClass,
+      @Nullable ObjectNodeConstructor nodeConstructor,
+      @Nullable SnapshotConstructor snapshotConstructor) {}
+
+  /**
+   * An ObjectType registration: the Java class instances are constructed as, plus the constructor
+   * form(s) the registrations supplied (at least one is non-null).
+   *
+   * @param nodeClass the registered Java class.
+   * @param nodeConstructor the tuple-signature constructor, if registered with one.
+   * @param snapshotConstructor the snapshot-consuming constructor, if registered with one.
+   */
+  public record RegisteredObjectType(
+      Class<? extends UaObjectNode> nodeClass,
+      @Nullable ObjectNodeConstructor nodeConstructor,
+      @Nullable SnapshotConstructor snapshotConstructor) {}
 
   @FunctionalInterface
   public interface ObjectNodeConstructor {
@@ -109,5 +167,29 @@ public class ObjectTypeManager {
         LocalizedText description,
         UInteger writeMask,
         UInteger userWriteMask);
+  }
+
+  /**
+   * Constructs a {@link UaObjectNode} from the planned {@link AttributeSnapshot} instead of a fixed
+   * attribute tuple, so newly modeled attributes propagate without signature changes.
+   *
+   * <p>The constructor owns attribute application: the instantiation engine applies nothing after a
+   * snapshot constructor returns, so any planned attribute the constructor does not read from
+   * {@code attributes} and set on the node is dropped. (Tuple-signature registrations, by contrast,
+   * receive an engine overlay of the attributes their signature cannot carry.)
+   */
+  @FunctionalInterface
+  public interface SnapshotConstructor {
+
+    /**
+     * Construct an instance node.
+     *
+     * @param context the {@link UaNodeContext} the node is constructed with.
+     * @param nodeId the instance {@link NodeId}.
+     * @param attributes the effective attributes planned for the instance, absent/null/value
+     *     distinction preserved.
+     * @return the constructed node.
+     */
+    UaObjectNode apply(UaNodeContext context, NodeId nodeId, AttributeSnapshot attributes);
   }
 }

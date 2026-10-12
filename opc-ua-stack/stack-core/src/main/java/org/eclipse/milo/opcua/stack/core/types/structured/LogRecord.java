@@ -266,7 +266,11 @@ public class LogRecord extends Structure implements UaStructuredType {
       final LocalizedText message;
       final TraceContextDataType traceContext;
       final NameValuePair[] additionalData;
-      final long encodingMask = decoder.decodeUInt32("EncodingMask").longValue();
+      final long encodingMask =
+          decoder
+              .decodeEncodingMask(
+                  "EventType", "SourceNode", "SourceName", "TraceContext", "AdditionalData")
+              .longValue();
       time = decoder.decodeDateTime("Time");
       severity = decoder.decodeUInt16("Severity");
       if ((encodingMask & (1L << 0)) != 0) {
@@ -320,7 +324,7 @@ public class LogRecord extends Structure implements UaStructuredType {
       if (value.getAdditionalData() != null) {
         encodingMask |= (1L << 4);
       }
-      encoder.encodeUInt32("EncodingMask", Unsigned.uint(encodingMask));
+      encoder.encodeEncodingMask(Unsigned.uint(encodingMask));
       encoder.encodeDateTime("Time", value.getTime());
       encoder.encodeUInt16("Severity", value.getSeverity());
       if (value.getEventType() != null) {

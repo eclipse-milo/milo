@@ -16,7 +16,7 @@
 
   <groupId>org.eclipse.milo</groupId>
   <artifactId>milo</artifactId>
-  <version>1.1.9-SNAPSHOT</version>
+  <version>1.2.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Eclipse Milo - OPC UA (IEC 62541)</name>
@@ -470,7 +470,6 @@
               <Export-Package>!*.internal*, !*.impl*, *</Export-Package>
               <Import-Package>
                 com.sun.management.*;resolution:=optional,
-                sun.security.*;resolution:=optional,
                 !javax.annotation.*,
                 *
               </Import-Package>
@@ -579,6 +578,15 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${maven-surefire-plugin.version}</version>
+          <configuration>
+            <!--
+              Allow `-Dtest=...` runs to span a multi-module reactor (e.g. with `-am`) without
+              failing on the dependency modules that have no matching test. Without this, a
+              targeted run like `-pl opc-ua-sdk/sdk-server -am -Dtest=EndpointConfigTest` fails on
+              test-less modules pulled in by `-am`.
+            -->
+            <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>

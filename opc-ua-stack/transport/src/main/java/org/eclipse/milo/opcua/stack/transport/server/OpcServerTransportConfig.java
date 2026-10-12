@@ -13,17 +13,9 @@ package org.eclipse.milo.opcua.stack.transport.server;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
-import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
 public interface OpcServerTransportConfig {
-
-  /**
-   * Get the {@link ExecutorService} to be used by this transport.
-   *
-   * @return the {@link ExecutorService} to be used by this transport.
-   */
-  ExecutorService getExecutor();
 
   /**
    * Get the {@link EventLoopGroup} to be used by this transport.

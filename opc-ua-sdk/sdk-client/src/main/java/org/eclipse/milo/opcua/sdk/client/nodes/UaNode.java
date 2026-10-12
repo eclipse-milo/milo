@@ -35,9 +35,11 @@ import org.eclipse.milo.opcua.sdk.client.AddressSpace.BrowseOptions;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.model.variables.PropertyTypeNode;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
+import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.sdk.core.nodes.Node;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
@@ -46,6 +48,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
@@ -70,6 +73,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.RelativePathElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
+import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
 import org.jspecify.annotations.Nullable;
 
 public abstract class UaNode implements Node {
@@ -230,7 +234,7 @@ public abstract class UaNode implements Node {
    * @see #readRolePermissions()
    */
   @Override
-  public synchronized @Nullable RolePermissionType[] getRolePermissions() {
+  public synchronized RolePermissionType @Nullable [] getRolePermissions() {
     return rolePermissions;
   }
 
@@ -242,7 +246,7 @@ public abstract class UaNode implements Node {
    * @see #readUserRolePermissions()
    */
   @Override
-  public synchronized @Nullable RolePermissionType[] getUserRolePermissions() {
+  public synchronized RolePermissionType @Nullable [] getUserRolePermissions() {
     return userRolePermissions;
   }
 
@@ -488,7 +492,7 @@ public abstract class UaNode implements Node {
    */
   @Nullable
   public UInteger readWriteMask() throws UaException {
-    DataValue value = readAttribute(AttributeId.UserWriteMask);
+    DataValue value = readAttribute(AttributeId.WriteMask);
 
     StatusCode statusCode = value.statusCode();
 
@@ -530,8 +534,7 @@ public abstract class UaNode implements Node {
    * @return the {@link RolePermissionType} read from the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  @Nullable
-  public RolePermissionType[] readRolePermissions() throws UaException {
+  public RolePermissionType @Nullable [] readRolePermissions() throws UaException {
     DataValue value = readAttribute(AttributeId.RolePermissions);
 
     StatusCode statusCode = value.statusCode();
@@ -553,8 +556,7 @@ public abstract class UaNode implements Node {
    * @return the {@link RolePermissionType} read from the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  @Nullable
-  public RolePermissionType[] readUserRolePermissions() throws UaException {
+  public RolePermissionType @Nullable [] readUserRolePermissions() throws UaException {
     DataValue value = readAttribute(AttributeId.UserRolePermissions);
 
     StatusCode statusCode = value.statusCode();
@@ -851,7 +853,8 @@ public abstract class UaNode implements Node {
    * {@link BrowseOptions} from the {@link AddressSpace}.
    *
    * @return a List of {@link ReferenceDescription}s.
-   * @throws UaException if a service-level error occurs.
+   * @throws UaException if a service-level error occurs or a Browse or BrowseNext result has a Bad
+   *     StatusCode, such as {@code Bad_NodeIdUnknown}.
    * @see AddressSpace#getBrowseOptions()
    * @see AddressSpace#modifyBrowseOptions(Consumer)
    * @see AddressSpace#setBrowseOptions(BrowseOptions)
@@ -865,7 +868,8 @@ public abstract class UaNode implements Node {
    *
    * @param browseOptions the {@link BrowseOptions} to browse with.
    * @return a List of {@link ReferenceDescription}s.
-   * @throws UaException if a service-level error occurs.
+   * @throws UaException if a service-level error occurs or a Browse or BrowseNext result has a Bad
+   *     StatusCode, such as {@code Bad_NodeIdUnknown}.
    */
   public List<ReferenceDescription> browse(BrowseOptions browseOptions) throws UaException {
     return client.getAddressSpace().browse(this, browseOptions);
@@ -878,7 +882,8 @@ public abstract class UaNode implements Node {
    * <p>This call completes asynchronously.
    *
    * @return a CompletableFuture that completes successfully with the List of references or
-   *     completes exceptionally if a service-level error occurs.
+   *     completes exceptionally if a service-level error occurs or a Browse or BrowseNext result
+   *     has a Bad StatusCode.
    * @see AddressSpace#getBrowseOptions()
    * @see AddressSpace#modifyBrowseOptions(Consumer)
    * @see AddressSpace#setBrowseOptions(BrowseOptions)
@@ -894,7 +899,8 @@ public abstract class UaNode implements Node {
    *
    * @param browseOptions the {@link BrowseOptions} to browse with.
    * @return a CompletableFuture that completes successfully with the List of references or
-   *     completes exceptionally if a service-level error occurs.
+   *     completes exceptionally if a service-level error occurs or a Browse or BrowseNext result
+   *     has a Bad StatusCode.
    */
   public CompletableFuture<List<ReferenceDescription>> browseAsync(BrowseOptions browseOptions) {
     return client.getAddressSpace().browseAsync(this, browseOptions);
@@ -905,7 +911,8 @@ public abstract class UaNode implements Node {
    * configured {@link BrowseOptions} from the {@link AddressSpace}.
    *
    * @return a List of {@link UaNode}s referenced by this Node.
-   * @throws UaException if a service-level error occurs.
+   * @throws UaException if a service-level error occurs or a Browse or BrowseNext result has a Bad
+   *     StatusCode, such as {@code Bad_NodeIdUnknown}.
    * @see AddressSpace#getBrowseOptions()
    * @see AddressSpace#modifyBrowseOptions(Consumer)
    * @see AddressSpace#setBrowseOptions(BrowseOptions)
@@ -919,7 +926,8 @@ public abstract class UaNode implements Node {
    *
    * @param browseOptions the {@link BrowseOptions} to browse with.
    * @return a List of {@link UaNode}s referenced by this Node.
-   * @throws UaException if a service-level error occurs.
+   * @throws UaException if a service-level error occurs or a Browse or BrowseNext result has a Bad
+   *     StatusCode, such as {@code Bad_NodeIdUnknown}.
    */
   public List<? extends UaNode> browseNodes(BrowseOptions browseOptions) throws UaException {
     return client.getAddressSpace().browseNodes(this, browseOptions);
@@ -932,7 +940,8 @@ public abstract class UaNode implements Node {
    * <p>This call completes asynchronously.
    *
    * @return a CompletableFuture that completes successfully with the List of {@link UaNode}s
-   *     referenced by this Node or completes exceptionally if a service-level error occurs.
+   *     referenced by this Node or completes exceptionally if a service-level error occurs or a
+   *     Browse or BrowseNext result has a Bad StatusCode.
    * @see AddressSpace#getBrowseOptions()
    * @see AddressSpace#modifyBrowseOptions(Consumer)
    * @see AddressSpace#setBrowseOptions(BrowseOptions)
@@ -948,7 +957,8 @@ public abstract class UaNode implements Node {
    *
    * @param browseOptions the {@link BrowseOptions} to browse with.
    * @return a CompletableFuture that completes successfully with the List of {@link UaNode}s
-   *     referenced by this Node or completes exceptionally if a service-level error occurs.
+   *     referenced by this Node or completes exceptionally if a service-level error occurs or a
+   *     Browse or BrowseNext result has a Bad StatusCode.
    */
   public CompletableFuture<List<? extends UaNode>> browseNodesAsync(BrowseOptions browseOptions) {
     return client.getAddressSpace().browseNodesAsync(this, browseOptions);
@@ -1092,60 +1102,23 @@ public abstract class UaNode implements Node {
 
   protected void setAttributeValue(AttributeId attributeId, DataValue value) {
     switch (attributeId) {
-      case NodeId:
-        {
-          setNodeId((NodeId) value.value().value());
-          break;
-        }
-      case NodeClass:
-        {
-          Integer i = (Integer) requireNonNullElse(value.value().value(), 0);
-          NodeClass nodeClass = NodeClass.from(i);
-          setNodeClass(nodeClass);
-          break;
-        }
-      case BrowseName:
-        {
-          setBrowseName((QualifiedName) value.value().value());
-          break;
-        }
-      case DisplayName:
-        {
-          setDisplayName((LocalizedText) value.value().value());
-          break;
-        }
-      case Description:
-        {
-          setDescription((LocalizedText) value.value().value());
-          break;
-        }
-      case WriteMask:
-        {
-          setWriteMask((UInteger) value.value().value());
-          break;
-        }
-      case UserWriteMask:
-        {
-          setUserWriteMask((UInteger) value.value().value());
-          break;
-        }
-      case RolePermissions:
-        {
-          setRolePermissions((RolePermissionType[]) value.value().value());
-          break;
-        }
-      case UserRolePermissions:
-        {
+      case NodeId -> setNodeId((NodeId) value.value().value());
+      case NodeClass -> {
+        Integer i = (Integer) requireNonNullElse(value.value().value(), 0);
+        NodeClass nodeClass = NodeClass.from(i);
+        setNodeClass(nodeClass);
+      }
+      case BrowseName -> setBrowseName((QualifiedName) value.value().value());
+      case DisplayName -> setDisplayName((LocalizedText) value.value().value());
+      case Description -> setDescription((LocalizedText) value.value().value());
+      case WriteMask -> setWriteMask((UInteger) value.value().value());
+      case UserWriteMask -> setUserWriteMask((UInteger) value.value().value());
+      case RolePermissions -> setRolePermissions((RolePermissionType[]) value.value().value());
+      case UserRolePermissions ->
           setUserRolePermissions((RolePermissionType[]) value.value().value());
-          break;
-        }
-      case AccessRestrictions:
-        {
+      case AccessRestrictions ->
           setAccessRestrictions(new AccessRestrictionType((UShort) value.value().value()));
-          break;
-        }
-      default:
-        throw new IllegalArgumentException("attributeId: " + attributeId);
+      default -> throw new IllegalArgumentException("attributeId: " + attributeId);
     }
   }
 
@@ -1386,5 +1359,142 @@ public abstract class UaNode implements Node {
     } else {
       return clazz.cast(o);
     }
+  }
+
+  /**
+   * Decode a structured value read from this node and check it against the declared structure type
+   * and ValueRank.
+   *
+   * <p>The result is null, an instance of {@code type}, an array of {@code type}, or a {@link
+   * Matrix} of {@code type}, whichever shape {@code valueRank} permits. A value that is already
+   * decoded is checked and returned as is.
+   *
+   * <pre>{@code
+   * Argument[] arguments =
+   *     (Argument[]) decodeValue(value.value().value(), Argument.class, ValueRanks.OneDimension);
+   * }</pre>
+   *
+   * @param value the value of a Variant, typically an ExtensionObject, an ExtensionObject array or
+   *     a Matrix of ExtensionObjects.
+   * @param type the declared structure type.
+   * @param valueRank the declared ValueRank, see {@link ValueRanks}.
+   * @return the decoded value, or null if {@code value} is null or a null Matrix.
+   * @throws IllegalArgumentException if the shape of {@code value} is not permitted by {@code
+   *     valueRank} or an element is not an instance of {@code type}.
+   */
+  protected @Nullable Object decodeValue(
+      @Nullable Object value, Class<? extends UaStructuredType> type, int valueRank) {
+
+    Object decoded = ExtensionObject.decodeValue(client.getStaticEncodingContext(), value);
+
+    return retype(checkValue(decoded, type, valueRank), type);
+  }
+
+  /**
+   * Check a structured value against the declared structure type and ValueRank and encode it for a
+   * write to this node.
+   *
+   * <p>{@code value} is null, an instance of {@code type}, an array of {@code type}, or a {@link
+   * Matrix} of {@code type}, whichever shape {@code valueRank} permits. An empty one-dimensional
+   * array is accepted for any ValueRank that permits arrays.
+   *
+   * <pre>{@code
+   * Object encoded = encodeValue(arguments, Argument.class, ValueRanks.OneDimension);
+   * writeAttributeAsync(AttributeId.Value, DataValue.valueOnly(Variant.of(encoded)));
+   * }</pre>
+   *
+   * @param value the value to write.
+   * @param type the declared structure type.
+   * @param valueRank the declared ValueRank, see {@link ValueRanks}.
+   * @return the encoded value, or null if {@code value} is null or a null Matrix.
+   * @throws IllegalArgumentException if the shape of {@code value} is not permitted by {@code
+   *     valueRank} or an element is not an instance of {@code type}.
+   */
+  protected @Nullable Object encodeValue(
+      @Nullable Object value, Class<? extends UaStructuredType> type, int valueRank) {
+
+    Object checked = checkValue(value, type, valueRank);
+
+    return ExtensionObject.encodeValue(client.getStaticEncodingContext(), checked);
+  }
+
+  private @Nullable Object checkValue(
+      @Nullable Object value, Class<? extends UaStructuredType> type, int valueRank) {
+
+    if (value == null || value instanceof Matrix matrix && matrix.isNull()) {
+      return null;
+    }
+
+    Object elements = value instanceof Matrix matrix ? matrix.getElements() : value;
+    int rank =
+        value instanceof Matrix matrix ? matrix.getValueRank() : ArrayUtil.getValueRank(value);
+    boolean empty = rank == 1 && Array.getLength(elements) == 0;
+
+    boolean permitted =
+        switch (valueRank) {
+          case ValueRanks.Any -> true;
+          case ValueRanks.Scalar -> rank == ValueRanks.Scalar;
+          case ValueRanks.ScalarOrOneDimension -> rank == ValueRanks.Scalar || rank == 1;
+          case ValueRanks.OneOrMoreDimensions -> rank >= 1;
+          default -> rank == valueRank || empty;
+        };
+
+    if (!permitted) {
+      throw new IllegalArgumentException(
+          "%s ValueRank=%d does not permit %s"
+              .formatted(describeValue(), valueRank, value.getClass().getTypeName()));
+    }
+
+    if (rank == ValueRanks.Scalar) {
+      checkElement(elements, type);
+    } else {
+      for (int i = 0; i < Array.getLength(elements); i++) {
+        checkElement(Array.get(elements, i), type);
+      }
+    }
+
+    return value;
+  }
+
+  /**
+   * Copy a checked array whose component type is a supertype of {@code type}, such as the {@code
+   * UaStructuredType[]} decoded from an empty or all-null array, into a {@code type[]}.
+   */
+  private static @Nullable Object retype(
+      @Nullable Object value, Class<? extends UaStructuredType> type) {
+
+    Object elements = value instanceof Matrix matrix ? matrix.getElements() : value;
+
+    if (!(elements instanceof Object[] array) || array.getClass().getComponentType() == type) {
+      return value;
+    }
+
+    @SuppressWarnings("unchecked")
+    Class<? extends UaStructuredType[]> arrayType =
+        (Class<? extends UaStructuredType[]>) type.arrayType();
+    UaStructuredType[] typed = Arrays.copyOf(array, array.length, arrayType);
+
+    if (value instanceof Matrix matrix) {
+      return new Matrix(
+          typed,
+          matrix.getDimensions(),
+          OpcUaDataType.ExtensionObject,
+          matrix.getDataTypeId().orElse(null));
+    } else {
+      return typed;
+    }
+  }
+
+  private void checkElement(@Nullable Object element, Class<? extends UaStructuredType> type) {
+    if (element != null && !type.isInstance(element)) {
+      throw new IllegalArgumentException(
+          "%s expected %s, received %s"
+              .formatted(describeValue(), type.getName(), element.getClass().getTypeName()));
+    }
+  }
+
+  private String describeValue() {
+    return "Value of %s (%s):"
+        .formatted(getBrowseName().getName(), getNodeId().toParseableString());
   }
 }

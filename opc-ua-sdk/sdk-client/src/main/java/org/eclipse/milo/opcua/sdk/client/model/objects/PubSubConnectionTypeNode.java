@@ -90,7 +90,10 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   @Override
   public void writePublisherId(Object value) throws UaException {
     try {
-      writePublisherIdAsync(value).get();
+      StatusCode statusCode = writePublisherIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -162,7 +165,10 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   @Override
   public void writeConnectionProperties(KeyValuePair[] value) throws UaException {
     try {
-      writeConnectionPropertiesAsync(value).get();
+      StatusCode statusCode = writeConnectionPropertiesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -238,7 +244,10 @@ public class PubSubConnectionTypeNode extends BaseObjectTypeNode implements PubS
   @Override
   public void writeTransportProfileUri(String value) throws UaException {
     try {
-      writeTransportProfileUriAsync(value).get();
+      StatusCode statusCode = writeTransportProfileUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

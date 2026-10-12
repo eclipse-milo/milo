@@ -88,7 +88,10 @@ public class ISrClassTypeNode extends BaseInterfaceTypeNode implements ISrClassT
   @Override
   public void writeId(UByte value) throws UaException {
     try {
-      writeIdAsync(value).get();
+      StatusCode statusCode = writeIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -157,7 +160,10 @@ public class ISrClassTypeNode extends BaseInterfaceTypeNode implements ISrClassT
   @Override
   public void writePriority(UByte value) throws UaException {
     try {
-      writePriorityAsync(value).get();
+      StatusCode statusCode = writePriorityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -227,7 +233,10 @@ public class ISrClassTypeNode extends BaseInterfaceTypeNode implements ISrClassT
   @Override
   public void writeVid(UShort value) throws UaException {
     try {
-      writeVidAsync(value).get();
+      StatusCode statusCode = writeVidAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

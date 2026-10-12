@@ -25,6 +25,20 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 
+/**
+ * Legacy Event instance factory, retained with frozen behavior for compatibility.
+ *
+ * <p>Known limitation, kept as-is rather than fixed: {@link #createEvent} casts the created node to
+ * {@link BaseEventTypeNode}, so creating an event of a custom type whose Java class is not
+ * registered throws {@link ClassCastException} after the event's nodes were already stored, leaving
+ * them behind in the private node manager.
+ *
+ * @deprecated use {@link org.eclipse.milo.opcua.sdk.server.nodes.instantiation.EventInstantiator}
+ *     (obtained from {@code OpcUaServer.getEventInstantiator()}), which validates the expected Java
+ *     class at plan time instead of casting after creation. See {@code
+ *     docs/features/node-instantiation-migration.md}.
+ */
+@Deprecated
 public class EventFactory extends AbstractLifecycle {
 
   private final NodeManager<UaNode> nodeManager = new UaNodeManager();

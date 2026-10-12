@@ -92,7 +92,10 @@ public class AuditDeleteReferencesEventTypeNode extends AuditNodeManagementEvent
   @Override
   public void writeReferencesToDelete(DeleteReferencesItem[] value) throws UaException {
     try {
-      writeReferencesToDeleteAsync(value).get();
+      StatusCode statusCode = writeReferencesToDeleteAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

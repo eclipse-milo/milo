@@ -105,7 +105,10 @@ public class ConditionVariableTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeSourceTimestamp(DateTime value) throws UaException {
     try {
-      writeSourceTimestampAsync(value).get();
+      StatusCode statusCode = writeSourceTimestampAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

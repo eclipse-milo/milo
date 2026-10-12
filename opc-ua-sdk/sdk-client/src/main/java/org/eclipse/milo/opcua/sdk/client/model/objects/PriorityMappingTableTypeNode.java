@@ -92,7 +92,10 @@ public class PriorityMappingTableTypeNode extends BaseObjectTypeNode
   @Override
   public void writePriorityMapppingEntries(PriorityMappingEntryType[] value) throws UaException {
     try {
-      writePriorityMapppingEntriesAsync(value).get();
+      StatusCode statusCode = writePriorityMapppingEntriesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

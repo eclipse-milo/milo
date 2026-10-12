@@ -104,7 +104,10 @@ public class ServerDiagnosticsSummaryTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeServerViewCount(UInteger value) throws UaException {
     try {
-      writeServerViewCountAsync(value).get();
+      StatusCode statusCode = writeServerViewCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -174,7 +177,10 @@ public class ServerDiagnosticsSummaryTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeCurrentSessionCount(UInteger value) throws UaException {
     try {
-      writeCurrentSessionCountAsync(value).get();
+      StatusCode statusCode = writeCurrentSessionCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -247,7 +253,10 @@ public class ServerDiagnosticsSummaryTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeCumulatedSessionCount(UInteger value) throws UaException {
     try {
-      writeCumulatedSessionCountAsync(value).get();
+      StatusCode statusCode = writeCumulatedSessionCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -321,7 +330,10 @@ public class ServerDiagnosticsSummaryTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeSecurityRejectedSessionCount(UInteger value) throws UaException {
     try {
-      writeSecurityRejectedSessionCountAsync(value).get();
+      StatusCode statusCode = writeSecurityRejectedSessionCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -396,7 +408,10 @@ public class ServerDiagnosticsSummaryTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeRejectedSessionCount(UInteger value) throws UaException {
     try {
-      writeRejectedSessionCountAsync(value).get();
+      StatusCode statusCode = writeRejectedSessionCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -470,7 +485,10 @@ public class ServerDiagnosticsSummaryTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeSessionTimeoutCount(UInteger value) throws UaException {
     try {
-      writeSessionTimeoutCountAsync(value).get();
+      StatusCode statusCode = writeSessionTimeoutCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -543,7 +561,10 @@ public class ServerDiagnosticsSummaryTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeSessionAbortCount(UInteger value) throws UaException {
     try {
-      writeSessionAbortCountAsync(value).get();
+      StatusCode statusCode = writeSessionAbortCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -616,7 +637,10 @@ public class ServerDiagnosticsSummaryTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writePublishingIntervalCount(UInteger value) throws UaException {
     try {
-      writePublishingIntervalCountAsync(value).get();
+      StatusCode statusCode = writePublishingIntervalCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -691,7 +715,10 @@ public class ServerDiagnosticsSummaryTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeCurrentSubscriptionCount(UInteger value) throws UaException {
     try {
-      writeCurrentSubscriptionCountAsync(value).get();
+      StatusCode statusCode = writeCurrentSubscriptionCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -766,7 +793,10 @@ public class ServerDiagnosticsSummaryTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeCumulatedSubscriptionCount(UInteger value) throws UaException {
     try {
-      writeCumulatedSubscriptionCountAsync(value).get();
+      StatusCode statusCode = writeCumulatedSubscriptionCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -841,7 +871,10 @@ public class ServerDiagnosticsSummaryTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeSecurityRejectedRequestsCount(UInteger value) throws UaException {
     try {
-      writeSecurityRejectedRequestsCountAsync(value).get();
+      StatusCode statusCode = writeSecurityRejectedRequestsCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -916,7 +949,10 @@ public class ServerDiagnosticsSummaryTypeNode extends BaseDataVariableTypeNode
   @Override
   public void writeRejectedRequestsCount(UInteger value) throws UaException {
     try {
-      writeRejectedRequestsCountAsync(value).get();
+      StatusCode statusCode = writeRejectedRequestsCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -143,34 +143,20 @@ final class DoubleConversions {
 
   @Nullable
   static Object explicitConversion(@NonNull Double d, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case Boolean:
-        return doubleToBoolean(d);
-      case Byte:
-        return doubleToByte(d);
-      case Float:
-        return doubleToFloat(d);
-      case Int16:
-        return doubleToInt16(d);
-      case Int32:
-        return doubleToInt32(d);
-      case Int64:
-        return doubleToInt64(d);
-      case SByte:
-        return doubleToSByte(d);
-      case String:
-        return doubleToString(d);
-      case UInt16:
-        return doubleToUInt16(d);
-      case UInt32:
-        return doubleToUInt32(d);
-      case UInt64:
-        return doubleToUInt64(d);
-      default:
-        return implicitConversion(d, targetType);
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case Boolean -> doubleToBoolean(d);
+      case Byte -> doubleToByte(d);
+      case Float -> doubleToFloat(d);
+      case Int16 -> doubleToInt16(d);
+      case Int32 -> doubleToInt32(d);
+      case Int64 -> doubleToInt64(d);
+      case SByte -> doubleToSByte(d);
+      case String -> doubleToString(d);
+      case UInt16 -> doubleToUInt16(d);
+      case UInt32 -> doubleToUInt32(d);
+      case UInt64 -> doubleToUInt64(d);
+      default -> implicitConversion(d, targetType);
+    };
   }
 
   @Nullable

@@ -23,7 +23,9 @@ import org.eclipse.milo.opcua.sdk.server.model.variables.SessionDiagnosticsVaria
 import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnosticsArrayTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnosticsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstanceDeclaration;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.StagedGraph;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
@@ -50,6 +52,12 @@ class SessionsDiagnosticsSummaryObjectTest {
     assertDoesNotThrow(() -> new QualifiedName(1, browseName));
   }
 
+  /**
+   * The staged-graph hook must converge with the legacy post-hoc patch: security diagnostics
+   * Variables and their fields carry the standard security array's RolePermissions,
+   * UserRolePermissions, and AccessRestrictions, while ordinary SessionDiagnostics Variables retain
+   * their separate standard permissions.
+   */
   @Test
   void securityDiagnosticsAccessControlProtectsOnlySecurityDiagnosticsSubtree() {
     var summaryNode = mock(SessionsDiagnosticsSummaryTypeNode.class);
@@ -58,6 +66,7 @@ class SessionsDiagnosticsSummaryObjectTest {
     var securityField = mock(UaVariableNode.class);
     var ordinaryDiagnostics = mock(SessionDiagnosticsVariableTypeNode.class);
     var ordinaryField = mock(UaVariableNode.class);
+    var graph = mock(StagedGraph.class);
     var rolePermissions =
         new RolePermissionType[] {
           new RolePermissionType(
@@ -73,13 +82,13 @@ class SessionsDiagnosticsSummaryObjectTest {
     when(securityArray.getRolePermissions()).thenReturn(rolePermissions);
     when(securityArray.getAccessRestrictions()).thenReturn(accessRestrictions);
 
-    NodeFactory.InstantiationCallback callback =
+    InstantiationRequest.OnNode hook =
         SessionsDiagnosticsSummaryObject.securityDiagnosticsAccessControl(summaryNode);
 
-    callback.onVariableAdded(null, securityDiagnostics, NodeIds.SessionSecurityDiagnosticsType);
-    callback.onVariableAdded(securityDiagnostics, securityField, NodeIds.BaseDataVariableType);
-    callback.onVariableAdded(null, ordinaryDiagnostics, NodeIds.SessionDiagnosticsVariableType);
-    callback.onVariableAdded(ordinaryDiagnostics, ordinaryField, NodeIds.BaseDataVariableType);
+    hook.accept(mock(InstanceDeclaration.class), securityDiagnostics, null, graph);
+    hook.accept(mock(InstanceDeclaration.class), securityField, securityDiagnostics, graph);
+    hook.accept(mock(InstanceDeclaration.class), ordinaryDiagnostics, null, graph);
+    hook.accept(mock(InstanceDeclaration.class), ordinaryField, ordinaryDiagnostics, graph);
 
     verify(securityDiagnostics).setRolePermissions(rolePermissions);
     verify(securityDiagnostics).setUserRolePermissions(null);

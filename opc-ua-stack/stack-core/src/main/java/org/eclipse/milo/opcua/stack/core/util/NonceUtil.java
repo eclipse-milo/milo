@@ -117,7 +117,7 @@ public class NonceUtil {
   }
 
   /**
-   * @return {@code true} is nonce generation uses a {@link SecureRandom} instance.
+   * @return {@code true} if nonce generation uses a {@link SecureRandom} instance.
    */
   public static boolean isSecureRandomEnabled() {
     return SECURE_RANDOM_ENABLED;
@@ -180,11 +180,7 @@ public class NonceUtil {
    * @return the minimum nonce length for use with {@code securityPolicy}.
    */
   private static int getNonceLength(SecurityPolicy securityPolicy) {
-    return switch (securityPolicy) {
-      case Basic128Rsa15 -> 16;
-      case Basic256, Basic256Sha256, Aes128_Sha256_RsaOaep, Aes256_Sha256_RsaPss -> 32;
-      default -> 0;
-    };
+    return securityPolicy.getProfile().secureChannelNonceLength();
   }
 
   /**
@@ -218,7 +214,7 @@ public class NonceUtil {
    * Validate that {@code nonce} is at least {@code minimumLength} and is non-zeroes.
    *
    * @param nonce the nonce to validate.
-   * @param minimumLength the minimum required nonce length
+   * @param minimumLength the minimum required nonce length.
    * @throws UaException if nonce validation failed.
    */
   public static void validateNonce(ByteString nonce, int minimumLength) throws UaException {

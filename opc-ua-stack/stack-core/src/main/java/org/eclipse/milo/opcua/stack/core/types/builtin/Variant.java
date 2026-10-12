@@ -56,12 +56,12 @@ public record Variant(@Nullable Object value) {
   public Optional<ExpandedNodeId> getDataTypeId() {
     if (value == null) return Optional.empty();
 
-    if (value instanceof UaStructuredType) {
-      return Optional.of(((UaStructuredType) value).getTypeId());
-    } else if (value instanceof UaEnumeratedType) {
-      return Optional.of(((UaEnumeratedType) value).getTypeId());
-    } else if (value instanceof Matrix) {
-      return ((Matrix) value).getDataTypeId();
+    if (value instanceof UaStructuredType structuredType) {
+      return Optional.of(structuredType.getTypeId());
+    } else if (value instanceof UaEnumeratedType enumeratedType) {
+      return Optional.of(enumeratedType.getTypeId());
+    } else if (value instanceof Matrix matrix) {
+      return matrix.getDataTypeId();
     } else {
       Class<?> clazz = value.getClass().isArray() ? ArrayUtil.getType(value) : value.getClass();
 

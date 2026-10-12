@@ -91,7 +91,10 @@ public class HistoricalEventConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeStartOfArchive(DateTime value) throws UaException {
     try {
-      writeStartOfArchiveAsync(value).get();
+      StatusCode statusCode = writeStartOfArchiveAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -161,7 +164,10 @@ public class HistoricalEventConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeStartOfOnlineArchive(DateTime value) throws UaException {
     try {
-      writeStartOfOnlineArchiveAsync(value).get();
+      StatusCode statusCode = writeStartOfOnlineArchiveAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -237,7 +243,10 @@ public class HistoricalEventConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeSortByEventFields(SimpleAttributeOperand[] value) throws UaException {
     try {
-      writeSortByEventFieldsAsync(value).get();
+      StatusCode statusCode = writeSortByEventFieldsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

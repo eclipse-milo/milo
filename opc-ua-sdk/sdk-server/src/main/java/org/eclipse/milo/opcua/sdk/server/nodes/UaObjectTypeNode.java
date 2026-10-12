@@ -10,9 +10,6 @@
 
 package org.eclipse.milo.opcua.sdk.server.nodes;
 
-import static org.eclipse.milo.opcua.sdk.core.Reference.HAS_COMPONENT_PREDICATE;
-import static org.eclipse.milo.opcua.sdk.core.Reference.HAS_ORDERED_COMPONENT_PREDICATE;
-
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +37,7 @@ import org.jspecify.annotations.Nullable;
 
 public class UaObjectTypeNode extends UaNode implements ObjectTypeNode {
 
-  private Boolean isAbstract;
+  private volatile Boolean isAbstract;
 
   /** Construct a {@link UaObjectTypeNode} using only attributes defined prior to OPC UA 1.04. */
   public UaObjectTypeNode(
@@ -110,7 +107,7 @@ public class UaObjectTypeNode extends UaNode implements ObjectTypeNode {
   }
 
   @Override
-  public synchronized Object getAttribute(AttributeId attributeId) {
+  public Object getAttribute(AttributeId attributeId) {
     if (attributeId == AttributeId.IsAbstract) {
       return isAbstract;
     } else {
@@ -131,7 +128,7 @@ public class UaObjectTypeNode extends UaNode implements ObjectTypeNode {
   @Nullable
   public UaMethodNode findMethodNode(NodeId methodId) {
     return getReferences().stream()
-        .filter(HAS_COMPONENT_PREDICATE.or(HAS_ORDERED_COMPONENT_PREDICATE))
+        .filter(reference -> MethodReferences.isForwardComponent(getNodeContext(), reference))
         .flatMap(r -> getManagedNode(r.getTargetNodeId()).stream())
         .filter(n -> (n instanceof UaMethodNode) && Objects.equals(n.getNodeId(), methodId))
         .map(UaMethodNode.class::cast)
@@ -141,7 +138,7 @@ public class UaObjectTypeNode extends UaNode implements ObjectTypeNode {
 
   public List<UaMethodNode> getMethodNodes() {
     return getReferences().stream()
-        .filter(HAS_COMPONENT_PREDICATE.or(HAS_ORDERED_COMPONENT_PREDICATE))
+        .filter(reference -> MethodReferences.isForwardComponent(getNodeContext(), reference))
         .flatMap(r -> getManagedNode(r.getTargetNodeId()).stream())
         .filter(n -> (n instanceof UaMethodNode))
         .map(UaMethodNode.class::cast)

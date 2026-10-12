@@ -89,7 +89,10 @@ public class BaseLogEventTypeNode extends BaseEventTypeNode implements BaseLogEv
   @Override
   public void writeConditionClassId(NodeId value) throws UaException {
     try {
-      writeConditionClassIdAsync(value).get();
+      StatusCode statusCode = writeConditionClassIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -162,7 +165,10 @@ public class BaseLogEventTypeNode extends BaseEventTypeNode implements BaseLogEv
   @Override
   public void writeConditionClassName(LocalizedText value) throws UaException {
     try {
-      writeConditionClassNameAsync(value).get();
+      StatusCode statusCode = writeConditionClassNameAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -236,7 +242,10 @@ public class BaseLogEventTypeNode extends BaseEventTypeNode implements BaseLogEv
   @Override
   public void writeErrorCode(StatusCode value) throws UaException {
     try {
-      writeErrorCodeAsync(value).get();
+      StatusCode statusCode = writeErrorCodeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -306,7 +315,10 @@ public class BaseLogEventTypeNode extends BaseEventTypeNode implements BaseLogEv
   @Override
   public void writeErrorCodeNode(NodeId value) throws UaException {
     try {
-      writeErrorCodeNodeAsync(value).get();
+      StatusCode statusCode = writeErrorCodeNodeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -377,7 +389,10 @@ public class BaseLogEventTypeNode extends BaseEventTypeNode implements BaseLogEv
   @Override
   public void writeTraceContext(TraceContextDataType value) throws UaException {
     try {
-      writeTraceContextAsync(value).get();
+      StatusCode statusCode = writeTraceContextAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

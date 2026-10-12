@@ -26,8 +26,8 @@ import org.jspecify.annotations.Nullable;
 
 public class UaDataTypeNode extends UaNode implements DataTypeNode {
 
-  private Boolean isAbstract;
-  private DataTypeDefinition dataTypeDefinition;
+  private volatile Boolean isAbstract;
+  private volatile DataTypeDefinition dataTypeDefinition;
 
   /** Construct a {@link UaDataTypeNode} using only attributes defined prior to OPC UA 1.04. */
   public UaDataTypeNode(
@@ -109,7 +109,7 @@ public class UaDataTypeNode extends UaNode implements DataTypeNode {
   }
 
   @Override
-  public synchronized Object getAttribute(AttributeId attributeId) {
+  public Object getAttribute(AttributeId attributeId) {
     if (attributeId == AttributeId.IsAbstract) {
       return isAbstract;
     } else if (attributeId == AttributeId.DataTypeDefinition) {
@@ -149,8 +149,7 @@ public class UaDataTypeNode extends UaNode implements DataTypeNode {
    * @return the value of the EnumStrings Property, if it exists.
    * @see DataTypeNodeProperties#EnumStrings
    */
-  @Nullable
-  public LocalizedText[] getEnumStrings() {
+  public LocalizedText @Nullable [] getEnumStrings() {
     return getProperty(DataTypeNodeProperties.EnumStrings).orElse(null);
   }
 
@@ -160,8 +159,7 @@ public class UaDataTypeNode extends UaNode implements DataTypeNode {
    * @return the value of the EnumValues Property, if it exists.
    * @see DataTypeNodeProperties#EnumValues
    */
-  @Nullable
-  public EnumValueType[] getEnumValues() {
+  public EnumValueType @Nullable [] getEnumValues() {
     return getProperty(DataTypeNodeProperties.EnumValues).orElse(null);
   }
 
@@ -171,8 +169,7 @@ public class UaDataTypeNode extends UaNode implements DataTypeNode {
    * @return the value of the OptionSetValues Property, if it exists.
    * @see DataTypeNodeProperties#OptionSetValues
    */
-  @Nullable
-  public LocalizedText[] getOptionSetValues() {
+  public LocalizedText @Nullable [] getOptionSetValues() {
     return getProperty(DataTypeNodeProperties.OptionSetValues).orElse(null);
   }
 

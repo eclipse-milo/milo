@@ -802,27 +802,28 @@ class OpcUaJsonEncoderTest {
 
     try (var encoder = new OpcUaJsonEncoder(context)) {
       var byteStringXo =
-          ExtensionObject.of(ByteString.of(new byte[] {0x00, 0x01, 0x02, 0x03}), new NodeId(2, 42));
+          ExtensionObject.of(
+              ByteString.of(new byte[] {0x00, 0x01, 0x02, 0x03}), new NodeId(0, 889));
 
-      var xmlElementXo = ExtensionObject.of(new XmlElement("<foo>bar</foo>"), new NodeId(2, 42));
+      var xmlElementXo = ExtensionObject.of(new XmlElement("<foo>bar</foo>"), new NodeId(0, 888));
 
       var jsonStringXo = ExtensionObject.of("{\"foo\":\"bar\",\"baz\":42}", new NodeId(2, 42));
 
       encoder.encodeExtensionObject(null, jsonStringXo);
       assertEquals(
-          "{\"UaTypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"UaBody\":{\"foo\":\"bar\",\"baz\":42}}",
+          "{\"UaTypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"foo\":\"bar\",\"baz\":42}",
           encoder.getOutputString());
 
       encoder.reset();
       encoder.encodeExtensionObject(null, xmlElementXo);
       assertEquals(
-          "{\"UaTypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"UaEncoding\":2,\"UaBody\":\"<foo>bar</foo>\"}",
+          "{\"UaTypeId\":\"i=887\",\"UaEncoding\":2,\"UaBody\":\"PGZvbz5iYXI8L2Zvbz4=\"}",
           encoder.getOutputString());
 
       encoder.reset();
       encoder.encodeExtensionObject(null, byteStringXo);
       assertEquals(
-          "{\"UaTypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"UaEncoding\":1,\"UaBody\":\"AAECAw==\"}",
+          "{\"UaTypeId\":\"i=887\",\"UaEncoding\":1,\"UaBody\":\"AAECAw==\"}",
           encoder.getOutputString());
 
       encoder.reset();
@@ -849,7 +850,7 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue);
       assertEquals(
           String.format(
-              "{\"Value\":{\"UaType\":12,\"Value\":\"foo\"},\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+              "{\"UaType\":12,\"Value\":\"foo\",\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
               isoNow, isoNow),
           encoder.getOutputString());
 
@@ -867,7 +868,7 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue.copy(b -> b.setStatus(StatusCode.GOOD)));
       assertEquals(
           String.format(
-              "{\"Value\":{\"UaType\":12,\"Value\":\"foo\"},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+              "{\"UaType\":12,\"Value\":\"foo\",\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
               isoNow, isoNow),
           encoder.getOutputString());
 
@@ -876,7 +877,7 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue.copy(b -> b.setSourceTime(null)));
       assertEquals(
           String.format(
-              "{\"Value\":{\"UaType\":12,\"Value\":\"foo\"},\"Status\":{\"Code\":3080192},\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+              "{\"UaType\":12,\"Value\":\"foo\",\"Status\":{\"Code\":3080192},\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
               isoNow),
           encoder.getOutputString());
 
@@ -885,7 +886,7 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue.copy(b -> b.setSourcePicoseconds(null)));
       assertEquals(
           String.format(
-              "{\"Value\":{\"UaType\":12,\"Value\":\"foo\"},\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+              "{\"UaType\":12,\"Value\":\"foo\",\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
               isoNow, isoNow),
           encoder.getOutputString());
 
@@ -894,7 +895,7 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue.copy(b -> b.setServerTime(null)));
       assertEquals(
           String.format(
-              "{\"Value\":{\"UaType\":12,\"Value\":\"foo\"},\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerPicoseconds\":200}",
+              "{\"UaType\":12,\"Value\":\"foo\",\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerPicoseconds\":200}",
               isoNow),
           encoder.getOutputString());
 
@@ -903,21 +904,14 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDataValue(null, allFieldsValue.copy(b -> b.setServerPicoseconds(null)));
       assertEquals(
           String.format(
-              "{\"Value\":{\"UaType\":12,\"Value\":\"foo\"},\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\"}",
+              "{\"UaType\":12,\"Value\":\"foo\",\"Status\":{\"Code\":3080192},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\"}",
               isoNow, isoNow),
           encoder.getOutputString());
 
-      // omit all fields
+      // all fields omitted: a null DataValue outside a structure
       encoder.reset();
       encoder.encodeDataValue(null, new DataValue(Variant.NULL_VALUE, StatusCode.GOOD, null));
-      assertEquals("", encoder.getOutputString());
-
-      // omit all fields while embedded in object
-      encoder.reset();
-      encoder.jsonWriter.beginObject();
-      encoder.encodeDataValue("foo", new DataValue(Variant.NULL_VALUE, StatusCode.GOOD, null));
-      encoder.jsonWriter.endObject();
-      assertEquals("{}", encoder.getOutputString());
+      assertEquals("null", encoder.getOutputString());
     }
   }
 
@@ -1025,7 +1019,7 @@ class OpcUaJsonEncoderTest {
 
       encoder.encodeMessage(null, message);
       assertEquals(
-          "{\"UaTypeId\":\"i=15257\",\"UaBody\":{\"RequestHeader\":{\"Timestamp\":\"1601-01-01T00:00:00Z\",\"AuditEntryId\":\"foo\"},\"TimestampsToReturn\":2,\"NodesToRead\":[{\"NodeId\":\"i=1\",\"AttributeId\":13}]}}",
+          "{\"UaTypeId\":\"i=629\",\"RequestHeader\":{\"Timestamp\":\"1601-01-01T00:00:00Z\",\"AuditEntryId\":\"foo\"},\"TimestampsToReturn\":2,\"NodesToRead\":[{\"NodeId\":\"i=1\",\"AttributeId\":13}]}",
           encoder.getOutputString());
     }
   }
@@ -1137,7 +1131,7 @@ class OpcUaJsonEncoderTest {
   void encodeBooleanArray() throws Exception {
     try (var encoder = new OpcUaJsonEncoder(context)) {
       encoder.encodeBooleanArray(null, null);
-      assertEquals("", encoder.getOutputString());
+      assertEquals("null", encoder.getOutputString());
 
       encoder.reset();
       encoder.encodeBooleanArray(null, new Boolean[] {});
@@ -1161,7 +1155,7 @@ class OpcUaJsonEncoderTest {
       encoder.jsonWriter.beginObject();
       encoder.encodeBooleanArray("foo", null);
       encoder.jsonWriter.endObject();
-      assertEquals("{}", encoder.getOutputString());
+      assertEquals("{\"foo\":null}", encoder.getOutputString());
     }
   }
 

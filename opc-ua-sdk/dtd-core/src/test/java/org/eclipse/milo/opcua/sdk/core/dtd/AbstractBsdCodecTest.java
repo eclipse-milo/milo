@@ -129,43 +129,21 @@ public abstract class AbstractBsdCodecTest {
 
     LOGGER.debug("originalValue:\t{}", originalValue);
     ByteBuf buffer = Unpooled.buffer();
-    codec.encodeBinary(
-        context, new OpcUaBinaryEncoder(context).setBuffer(buffer), wrap(type, originalValue));
+    try {
+      codec.encodeBinary(
+          context, new OpcUaBinaryEncoder(context).setBuffer(buffer), wrap(type, originalValue));
 
-    ByteBuf encodedValue = buffer.copy();
-    LOGGER.debug("encodedValue:\t{}", ByteBufUtil.hexDump(encodedValue));
+      LOGGER.debug("encodedValue:\t{}", ByteBufUtil.hexDump(buffer));
 
-    Object decodedValue =
-        codec.decodeBinary(context, new OpcUaBinaryDecoder(context).setBuffer(buffer));
-    assertEquals(originalValue, unwrap(decodedValue));
-    LOGGER.debug("decodedValue:\t{}", decodedValue);
-  }
-
-  /**
-   * A weaker version of {@link #assertRoundTrip(String, Object, BinaryDataTypeCodec)} for values
-   * that don't implement equals and hashcode or values that contain members not implementing equals
-   * and hashcode.
-   *
-   * <p>Relies on toString() values to be implemented at all levels instead... not great, but since
-   * the built-in structs don't implement equals/hashcode it's what we have.
-   */
-  protected void assertRoundTripUsingToString(
-      String type, Object originalValue, BinaryDataTypeCodec codec) {
-
-    LOGGER.debug("--- assertRoundTrip Type: {} ---", type);
-
-    LOGGER.debug("originalValue:\t{}", originalValue);
-    ByteBuf buffer = Unpooled.buffer();
-    codec.encodeBinary(
-        context, new OpcUaBinaryEncoder(context).setBuffer(buffer), wrap(type, originalValue));
-
-    ByteBuf encodedValue = buffer.copy();
-    LOGGER.debug("encodedValue:\t{}", ByteBufUtil.hexDump(encodedValue));
-
-    Object decodedValue =
-        codec.decodeBinary(context, new OpcUaBinaryDecoder(context).setBuffer(buffer));
-    assertEquals(originalValue.toString(), unwrap(decodedValue).toString());
-    LOGGER.debug("decodedValue:\t{}", decodedValue);
+      Object decodedValue =
+          codec.decodeBinary(context, new OpcUaBinaryDecoder(context).setBuffer(buffer));
+      assertEquals(0, buffer.readableBytes(), "decoder must consume the complete structure");
+      assertEquals(originalValue.getClass(), unwrap(decodedValue).getClass());
+      assertEquals(originalValue, unwrap(decodedValue));
+      LOGGER.debug("decodedValue:\t{}", decodedValue);
+    } finally {
+      buffer.release();
+    }
   }
 
   private UaStructuredType wrap(String type, Object value) {

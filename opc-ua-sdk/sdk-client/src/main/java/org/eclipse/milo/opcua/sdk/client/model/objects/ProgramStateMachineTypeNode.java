@@ -93,7 +93,10 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   @Override
   public void writeCreatable(Boolean value) throws UaException {
     try {
-      writeCreatableAsync(value).get();
+      StatusCode statusCode = writeCreatableAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -163,7 +166,10 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   @Override
   public void writeDeletable(Boolean value) throws UaException {
     try {
-      writeDeletableAsync(value).get();
+      StatusCode statusCode = writeDeletableAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -233,7 +239,10 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   @Override
   public void writeAutoDelete(Boolean value) throws UaException {
     try {
-      writeAutoDeleteAsync(value).get();
+      StatusCode statusCode = writeAutoDeleteAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -303,7 +312,10 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   @Override
   public void writeRecycleCount(Integer value) throws UaException {
     try {
-      writeRecycleCountAsync(value).get();
+      StatusCode statusCode = writeRecycleCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -373,7 +385,10 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   @Override
   public void writeInstanceCount(UInteger value) throws UaException {
     try {
-      writeInstanceCountAsync(value).get();
+      StatusCode statusCode = writeInstanceCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -443,7 +458,10 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   @Override
   public void writeMaxInstanceCount(UInteger value) throws UaException {
     try {
-      writeMaxInstanceCountAsync(value).get();
+      StatusCode statusCode = writeMaxInstanceCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -516,7 +534,10 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   @Override
   public void writeMaxRecycleCount(UInteger value) throws UaException {
     try {
-      writeMaxRecycleCountAsync(value).get();
+      StatusCode statusCode = writeMaxRecycleCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -586,7 +607,10 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   @Override
   public void writeCurrentState(LocalizedText value) throws UaException {
     try {
-      writeCurrentStateAsync(value).get();
+      StatusCode statusCode = writeCurrentStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -656,7 +680,10 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   @Override
   public void writeLastTransition(LocalizedText value) throws UaException {
     try {
-      writeLastTransitionAsync(value).get();
+      StatusCode statusCode = writeLastTransitionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -728,7 +755,10 @@ public class ProgramStateMachineTypeNode extends FiniteStateMachineTypeNode
   @Override
   public void writeProgramDiagnostic(ProgramDiagnostic2DataType value) throws UaException {
     try {
-      writeProgramDiagnosticAsync(value).get();
+      StatusCode statusCode = writeProgramDiagnosticAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

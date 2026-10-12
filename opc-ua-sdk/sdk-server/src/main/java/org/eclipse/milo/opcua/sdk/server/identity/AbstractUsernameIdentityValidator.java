@@ -11,14 +11,18 @@
 package org.eclipse.milo.opcua.sdk.server.identity;
 
 import java.nio.charset.StandardCharsets;
+import java.security.KeyPair;
 import java.security.MessageDigest;
+import java.security.cert.X509Certificate;
 import java.util.Set;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity.UsernameIdentity;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
 import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.UserTokenSecurityPolicyRules;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
@@ -26,6 +30,14 @@ import org.eclipse.milo.opcua.stack.core.types.structured.UserNameIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * Base validator for username/password user identity tokens.
+ *
+ * <p>This class owns the OPC UA token-level work before application authentication runs: resolving
+ * the user-token security policy, decrypting or validating the password secret, checking the
+ * session nonce for encrypted tokens, and enforcing configured password length limits. Subclasses
+ * only decide whether the resulting username and password identify a valid user.
+ */
 public abstract class AbstractUsernameIdentityValidator extends AbstractIdentityValidator {
 
   @Override
@@ -46,13 +58,17 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
       throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
     }
 
+    SecurityPolicy securityPolicy = getTokenSecurityPolicy(session, policy);
+
+    if (securityPolicy.getProfile().usesEnhancedUserTokenSecret()) {
+      return validateEnhancedUsernameToken(session, token, securityPolicy, username);
+    }
+
     SecurityAlgorithm algorithm;
 
     String algorithmUri = token.getEncryptionAlgorithm();
 
     if (algorithmUri == null || algorithmUri.isEmpty()) {
-      SecurityPolicy securityPolicy = session.getSecurityConfiguration().getSecurityPolicy();
-
       algorithm = securityPolicy.getAsymmetricEncryptionAlgorithm();
     } else {
       try {
@@ -60,8 +76,6 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
       } catch (UaException e) {
         throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
       }
-
-      SecurityPolicy securityPolicy = SecurityPolicy.fromUri(policy.getSecurityPolicyUri());
 
       // Don't allow the Client to specify a different algorithm than the one defined by the
       // SecurityPolicy in the UserTokenPolicy.
@@ -81,7 +95,7 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
         throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
       }
 
-      if (plainTextBytes.length < 4) {
+      if (plainTextBytes.length < Integer.BYTES) {
         throw new UaException(StatusCodes.Bad_IdentityTokenInvalid, "invalid token data");
       }
 
@@ -132,6 +146,103 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
 
       return authenticateUsernameOrThrow(session, username, password);
     }
+  }
+
+  private UsernameIdentity validateEnhancedUsernameToken(
+      Session session, UserNameIdentityToken token, SecurityPolicy securityPolicy, String username)
+      throws UaException {
+
+    // UA Part 4, Table 188: for SecureChannelEnhancement policies the client sets
+    // encryptionAlgorithm to null/empty and servers ignore any value. Routing to this path is
+    // already driven by the resolved token-policy profile (usesEnhancedUserTokenSecret), so this
+    // field is not consulted for routing. For back-compat with older Milo clients that incorrectly
+    // sent the policy URI, a non-empty value is tolerated only when it matches the policy URI.
+    String algorithmUri = token.getEncryptionAlgorithm();
+    if (algorithmUri != null
+        && !algorithmUri.isEmpty()
+        && !securityPolicy.getUri().equals(algorithmUri)) {
+      throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
+    }
+
+    KeyPair receiverEphemeralKeyPair =
+        session
+            .getUserTokenEphemeralKeyPair()
+            .orElseThrow(
+                () ->
+                    new UaException(
+                        StatusCodes.Bad_IdentityTokenInvalid,
+                        "missing enhanced user-token key material"));
+
+    ByteString receiverPublicKey =
+        session
+            .getUserTokenEphemeralPublicKey()
+            .orElseThrow(
+                () ->
+                    new UaException(
+                        StatusCodes.Bad_IdentityTokenInvalid,
+                        "missing enhanced user-token public key"));
+
+    X509Certificate clientCertificate = session.getSecurityConfiguration().getClientCertificate();
+
+    ByteString passwordBytes;
+    try {
+      passwordBytes =
+          EccEncryptedSecret.decrypt(
+              securityPolicy.getProfile(),
+              receiverEphemeralKeyPair,
+              receiverPublicKey,
+              clientCertificate,
+              session.getLastNonce(),
+              token.getPassword(),
+              session
+                  .getServer()
+                  .getConfig()
+                  .getLimits()
+                  .getMaxEccEncryptedSecretSigningTimeSkew());
+    } catch (UaException e) {
+      if (e.getStatusCode().getValue() == StatusCodes.Bad_NonceInvalid) {
+        throw new UaException(StatusCodes.Bad_UserAccessDenied, e);
+      } else {
+        throw e;
+      }
+    } finally {
+      session.clearUserTokenEphemeralKeyPair();
+    }
+
+    if (passwordBytes.length()
+        > session.getServer().getConfig().getLimits().getMaxPasswordLength().longValue()) {
+      throw new UaException(
+          StatusCodes.Bad_EncodingLimitsExceeded, "password length exceeds limits");
+    }
+
+    String password = new String(passwordBytes.bytesOrEmpty(), StandardCharsets.UTF_8);
+
+    return authenticateUsernameOrThrow(session, username, password);
+  }
+
+  private SecurityPolicy getTokenSecurityPolicy(Session session, UserTokenPolicy policy)
+      throws UaException {
+
+    String securityPolicyUri = policy.getSecurityPolicyUri();
+    boolean explicitlySpecified = securityPolicyUri != null && !securityPolicyUri.isEmpty();
+
+    SecurityPolicy securityPolicy;
+
+    if (securityPolicyUri == null || securityPolicyUri.isEmpty()) {
+      securityPolicy = session.getSecurityConfiguration().getSecurityPolicy();
+    } else {
+      securityPolicy = SecurityPolicy.fromUri(securityPolicyUri);
+    }
+
+    UserTokenSecurityPolicyRules.requireSecuredChannelForEnhancedSecret(
+        session.getSecurityConfiguration().getSecurityMode(), securityPolicy);
+    UserTokenSecurityPolicyRules.requireSamePublicKeyAlgorithmAsChannel(
+        session.getSecurityConfiguration().getSecurityMode(),
+        session.getSecurityConfiguration().getSecurityPolicy(),
+        securityPolicy,
+        explicitlySpecified);
+
+    return securityPolicy;
   }
 
   private UsernameIdentity authenticateUsernameOrThrow(

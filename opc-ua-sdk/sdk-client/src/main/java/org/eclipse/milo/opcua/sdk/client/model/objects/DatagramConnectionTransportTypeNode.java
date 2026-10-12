@@ -90,7 +90,10 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   @Override
   public void writeDiscoveryAnnounceRate(UInteger value) throws UaException {
     try {
-      writeDiscoveryAnnounceRateAsync(value).get();
+      StatusCode statusCode = writeDiscoveryAnnounceRateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -164,7 +167,10 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   @Override
   public void writeDiscoveryMaxMessageSize(UInteger value) throws UaException {
     try {
-      writeDiscoveryMaxMessageSizeAsync(value).get();
+      StatusCode statusCode = writeDiscoveryMaxMessageSizeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -238,7 +244,10 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   @Override
   public void writeQosCategory(String value) throws UaException {
     try {
-      writeQosCategoryAsync(value).get();
+      StatusCode statusCode = writeQosCategoryAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -310,7 +319,10 @@ public class DatagramConnectionTransportTypeNode extends ConnectionTransportType
   @Override
   public void writeDatagramQos(QosDataType[] value) throws UaException {
     try {
-      writeDatagramQosAsync(value).get();
+      StatusCode statusCode = writeDatagramQosAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

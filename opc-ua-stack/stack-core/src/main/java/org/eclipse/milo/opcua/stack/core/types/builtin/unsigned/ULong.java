@@ -113,38 +113,7 @@ public final class ULong extends UNumber implements Comparable<ULong> {
    *     unsigned long</code>.
    */
   private ULong(String value) throws NumberFormatException {
-    if (value == null) {
-      throw new NumberFormatException("null");
-    }
-
-    int length = value.length();
-
-    if (length == 0) {
-      throw new NumberFormatException("Empty input string");
-    }
-
-    if (value.charAt(0) == '-') {
-      throw new NumberFormatException(
-          String.format("Illegal leading minus sign on unsigned string %s", value));
-    }
-
-    if (length <= 18) {
-      this.value = Long.parseLong(value, 10);
-      return;
-    }
-
-    final long first = Long.parseLong(value.substring(0, length - 1), 10);
-    final int second = Character.digit(value.charAt(length - 1), 10);
-    if (second < 0) {
-      throw new NumberFormatException("Bad digit at end of " + value);
-    }
-    long result = first * 10 + second;
-    if (compare(result, first) < 0) {
-      throw new NumberFormatException(
-          String.format("String value %s exceeds range of unsigned long", value));
-    }
-
-    this.value = result;
+    this.value = Long.parseUnsignedLong(value);
   }
 
   @Override
@@ -160,7 +129,10 @@ public final class ULong extends UNumber implements Comparable<ULong> {
   @Override
   public float floatValue() {
     if (value < 0) {
-      return ((float) (value & Long.MAX_VALUE)) + Long.MAX_VALUE;
+      // Halve the value so it fits the signed range, keeping the bit shifted out as a sticky bit so
+      // the conversion still sees a value that is not exactly halfway, then scale back by a power
+      // of two, which is exact. Masking the sign bit off and adding it back would round twice.
+      return ((float) ((value >>> 1) | (value & 1))) * 2.0f;
     } else {
       return value;
     }
@@ -169,7 +141,8 @@ public final class ULong extends UNumber implements Comparable<ULong> {
   @Override
   public double doubleValue() {
     if (value < 0) {
-      return ((double) (value & Long.MAX_VALUE)) + Long.MAX_VALUE;
+      // Halved and made sticky for the reason given in floatValue().
+      return ((double) ((value >>> 1) | (value & 1))) * 2.0;
     } else {
       return value;
     }
@@ -182,8 +155,8 @@ public final class ULong extends UNumber implements Comparable<ULong> {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof ULong) {
-      return value == ((ULong) obj).value;
+    if (obj instanceof ULong that) {
+      return value == that.value;
     }
 
     return false;
@@ -220,7 +193,8 @@ public final class ULong extends UNumber implements Comparable<ULong> {
 
   public ULong add(long val) throws NumberFormatException {
     if (val < 0) {
-      return subtract(Math.abs(val));
+      // valueOf masks, so -Long.MIN_VALUE is 2^63 here rather than an overflow
+      return subtract(valueOf(-val));
     }
     final long result = value + val;
     if (value < 0 && result >= 0) {
@@ -233,11 +207,7 @@ public final class ULong extends UNumber implements Comparable<ULong> {
     if (this.compareTo(val) < 0) {
       throw new NumberFormatException();
     }
-    final long result = value - val.value;
-    if (value < 0 && result >= 0) {
-      throw new NumberFormatException();
-    }
-    return valueOf(result);
+    return valueOf(value - val.value);
   }
 
   public ULong subtract(final int val) {
@@ -246,15 +216,12 @@ public final class ULong extends UNumber implements Comparable<ULong> {
 
   public ULong subtract(final long val) {
     if (val < 0) {
-      return add(-val);
+      // valueOf masks, so -Long.MIN_VALUE is 2^63 here rather than an overflow
+      return add(valueOf(-val));
     }
     if (compare(value, val) < 0) {
       throw new NumberFormatException();
     }
-    final long result = value - val;
-    if (value < 0 && result >= 0) {
-      throw new NumberFormatException();
-    }
-    return valueOf(result);
+    return valueOf(value - val);
   }
 }

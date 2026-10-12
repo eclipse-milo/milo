@@ -91,7 +91,10 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   @Override
   public void writeClientCertificate(ByteString value) throws UaException {
     try {
-      writeClientCertificateAsync(value).get();
+      StatusCode statusCode = writeClientCertificateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -164,7 +167,10 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   @Override
   public void writeClientCertificateThumbprint(String value) throws UaException {
     try {
-      writeClientCertificateThumbprintAsync(value).get();
+      StatusCode statusCode = writeClientCertificateThumbprintAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -246,7 +252,10 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   @Override
   public void writeRequestType(SecurityTokenRequestType value) throws UaException {
     try {
-      writeRequestTypeAsync(value).get();
+      StatusCode statusCode = writeRequestTypeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -324,7 +333,10 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   @Override
   public void writeSecurityPolicyUri(String value) throws UaException {
     try {
-      writeSecurityPolicyUriAsync(value).get();
+      StatusCode statusCode = writeSecurityPolicyUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -405,7 +417,10 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   @Override
   public void writeSecurityMode(MessageSecurityMode value) throws UaException {
     try {
-      writeSecurityModeAsync(value).get();
+      StatusCode statusCode = writeSecurityModeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -483,7 +498,10 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   @Override
   public void writeRequestedLifetime(Double value) throws UaException {
     try {
-      writeRequestedLifetimeAsync(value).get();
+      StatusCode statusCode = writeRequestedLifetimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -556,7 +574,10 @@ public class AuditOpenSecureChannelEventTypeNode extends AuditChannelEventTypeNo
   @Override
   public void writeCertificateErrorEventId(ByteString value) throws UaException {
     try {
-      writeCertificateErrorEventIdAsync(value).get();
+      StatusCode statusCode = writeCertificateErrorEventIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

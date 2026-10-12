@@ -10,7 +10,11 @@
 
 package org.eclipse.milo.opcua.sdk.client.typetree;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -18,12 +22,8 @@ import org.junit.jupiter.api.TestInstance;
 public class ObjectTypeTreeBuilderTest extends AbstractClientServerTest {
 
   @Test
-  void build() throws Exception {
-    ObjectTypeTreeBuilder.build(client);
-  }
-
-  @Test
   void buildAsync() throws Exception {
-    ObjectTypeTreeBuilder.buildAsync(client).get();
+    var tree = ObjectTypeTreeBuilder.buildAsync(client).get(10, TimeUnit.SECONDS);
+    assertTrue(tree.isSubtypeOf(NodeIds.FolderType, NodeIds.BaseObjectType));
   }
 }

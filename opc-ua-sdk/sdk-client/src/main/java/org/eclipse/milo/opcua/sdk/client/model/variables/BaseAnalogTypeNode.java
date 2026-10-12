@@ -108,7 +108,10 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   @Override
   public void writeInstrumentRange(Range value) throws UaException {
     try {
-      writeInstrumentRangeAsync(value).get();
+      StatusCode statusCode = writeInstrumentRangeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -181,7 +184,10 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   @Override
   public void writeInstrumentNumberRange(NumberRange value) throws UaException {
     try {
-      writeInstrumentNumberRangeAsync(value).get();
+      StatusCode statusCode = writeInstrumentNumberRangeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -258,7 +264,10 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   @Override
   public void writeEuRange(Range value) throws UaException {
     try {
-      writeEuRangeAsync(value).get();
+      StatusCode statusCode = writeEuRangeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -330,7 +339,10 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   @Override
   public void writeEuNumberRange(NumberRange value) throws UaException {
     try {
-      writeEuNumberRangeAsync(value).get();
+      StatusCode statusCode = writeEuNumberRangeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -403,7 +415,10 @@ public class BaseAnalogTypeNode extends DataItemTypeNode implements BaseAnalogTy
   @Override
   public void writeEngineeringUnits(EUInformation value) throws UaException {
     try {
-      writeEngineeringUnitsAsync(value).get();
+      StatusCode statusCode = writeEngineeringUnitsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

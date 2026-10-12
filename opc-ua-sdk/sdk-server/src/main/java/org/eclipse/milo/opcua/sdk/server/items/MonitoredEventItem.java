@@ -25,6 +25,7 @@ import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.events.EventContentFilter;
 import org.eclipse.milo.opcua.sdk.server.events.FilterContext;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.ConditionTypeNode;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.Subscription;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -55,13 +56,34 @@ import org.slf4j.LoggerFactory;
 
 public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements EventItem {
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(MonitoredEventItem.class);
 
   private volatile EventFilter filter;
   private volatile EventFilterResult filterResult;
-  private volatile boolean filterResultGood;
+
+  /**
+   * True when the installed filter's where clause validated without error and can be evaluated.
+   *
+   * <p>Select clause errors do not affect this flag. Part 4 §7.22.3 requires the event to be
+   * delivered with a null value in each field whose select clause failed validation; {@link
+   * EventContentFilter#select} produces that null.
+   */
+  private volatile boolean whereClauseGood;
 
   private final AtomicBoolean eventOverflow = new AtomicBoolean(false);
+
+  /**
+   * True while the queue may contain notifications derived from ConditionType-descendant events.
+   * Guarded by this item's monitor; cleared when the queue fully drains.
+   */
+  private boolean queuedConditionEvents = false;
+
+  /**
+   * True when a notification that may have derived from a ConditionType-descendant event was
+   * discarded and the ConditionManager's {@code onConditionEventOverflow} has not yet been invoked.
+   * Guarded by this item's monitor.
+   */
+  private boolean conditionEventDiscarded = false;
 
   private final FilterContext filterContext;
 
@@ -108,17 +130,33 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
   @Override
   public void onEvent(BaseEventTypeNode eventNode) {
     try {
-      if (filterResultGood) {
+      if (whereClauseGood) {
         ContentFilter whereClause = filter.getWhereClause();
 
         boolean matches = EventContentFilter.evaluate(filterContext, whereClause, eventNode);
 
         if (matches) {
-          enqueue(selectEventFields(eventNode));
+          enqueueEvent(selectEventFields(eventNode), eventNode instanceof ConditionTypeNode);
         }
       }
     } catch (Exception e) {
-      logger.error("Filter evaluation failed: {}", e.getMessage(), e);
+      LOGGER.error("Filter evaluation failed: {}", e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Deliver a ConditionRefresh marker event (RefreshStart, RefreshEnd, or RefreshRequired) to this
+   * item: select clauses are evaluated but the where clause is bypassed, as Part 9 §4.5 requires
+   * marker events be delivered regardless of the item's filter.
+   *
+   * <p>Used only by ConditionRefresh/ConditionRefresh2 execution and RefreshRequired delivery; all
+   * other delivery goes through {@link #onEvent(BaseEventTypeNode)}.
+   *
+   * @param eventNode the marker event to deliver.
+   */
+  public synchronized void onRefreshMarker(BaseEventTypeNode eventNode) {
+    if (whereClauseGood) {
+      enqueueEvent(selectEventFields(eventNode), false);
     }
   }
 
@@ -135,9 +173,24 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
 
   @Override
   protected synchronized void enqueue(Variant[] value) {
+    // Base-class path (queue-size modification re-enqueues drained values); whether the values
+    // derived from condition events is unknown, so carry the current approximation forward.
+    enqueueEvent(value, queuedConditionEvents);
+  }
+
+  private synchronized void enqueueEvent(Variant[] value, boolean conditionDerived) {
     if (queue.size() < queue.maxSize()) {
       queue.add(value);
     } else {
+      // A queued notification is discarded. If it may have derived from a condition event the
+      // client's condition state is now stale: flag it so a RefreshRequired marker is delivered
+      // once the queue has capacity again (§5.11.4). The discarded notification's provenance is
+      // not tracked per-entry; "the queue held a condition-derived notification" over-approximates
+      // it, which at worst prompts a redundant refresh.
+      if (conditionDerived || queuedConditionEvents) {
+        conditionEventDiscarded = true;
+      }
+
       if (getQueueSize() > 1) {
         eventOverflow.set(true);
 
@@ -155,10 +208,16 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
         queue.set(queue.maxSize() - 1, value);
       }
     }
+
+    if (conditionDerived) {
+      queuedConditionEvents = true;
+    }
   }
 
   @Override
   public synchronized boolean getNotifications(List<UaStructuredType> notifications, int max) {
+    boolean more;
+
     if (eventOverflow.compareAndSet(true, false)) {
       Variant[] eventFields = generateOverflowEventFields();
 
@@ -166,17 +225,33 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
         // insert overflow event at beginning
         notifications.add(wrapQueueValue(eventFields));
 
-        return super.getNotifications(notifications, max);
+        more = super.getNotifications(notifications, max);
       } else {
         // insert overflow event at end
-        boolean more = super.getNotifications(notifications, max);
+        more = super.getNotifications(notifications, max);
         notifications.add(wrapQueueValue(eventFields));
-
-        return more;
       }
     } else {
-      return super.getNotifications(notifications, max);
+      more = super.getNotifications(notifications, max);
     }
+
+    if (queue.isEmpty()) {
+      queuedConditionEvents = false;
+    }
+
+    if (conditionEventDiscarded && queue.size() < queue.maxSize()) {
+      conditionEventDiscarded = false;
+
+      // A RefreshRequired marker is delivered by the ConditionManager (§5.11.4); the default
+      // no-op applies to managers that don't track condition state.
+      server.getConditionManager().onConditionEventOverflow(this);
+
+      // The marker (if any) is enqueued after super.getNotifications computed 'more'; reflect the
+      // now-pending marker so the subscription re-publishes it promptly rather than next interval.
+      more = more && queue.isEmpty();
+    }
+
+    return more;
   }
 
   @NonNull
@@ -188,7 +263,7 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
 
       overflowEvent =
           server
-              .getEventFactory()
+              .getEventInstantiator()
               .createEvent(new NodeId(1, eventId), NodeIds.EventQueueOverflowEventType);
 
       overflowEvent.setBrowseName(new QualifiedName(1, "EventQueueOverflow"));
@@ -209,7 +284,7 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
 
       return selectEventFields(overflowEvent);
     } catch (UaException e) {
-      logger.error("Error creating overflow event: {}", e.getMessage(), e);
+      LOGGER.error("Error creating overflow event: {}", e.getMessage(), e);
 
       return new Variant[0];
     } finally {
@@ -231,17 +306,12 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
 
       filterResult = EventContentFilter.validate(filterContext, this.filter);
 
-      StatusCode[] selectClauseResults =
-          requireNonNullElse(filterResult.getSelectClauseResults(), new StatusCode[0]);
-
-      boolean selectClauseGood = Stream.of(selectClauseResults).allMatch(StatusCode::isGood);
-
       ContentFilterElementResult[] elementResults =
           requireNonNullElse(
               filterResult.getWhereClauseResult().getElementResults(),
               new ContentFilterElementResult[0]);
 
-      boolean whereClauseGood =
+      whereClauseGood =
           Stream.of(elementResults)
               .allMatch(
                   elementResult ->
@@ -250,10 +320,8 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
                                   requireNonNullElse(
                                       elementResult.getOperandStatusCodes(), new StatusCode[0]))
                               .allMatch(StatusCode::isGood));
-
-      filterResultGood = selectClauseGood && whereClauseGood;
     } else {
-      filterResultGood = false;
+      whereClauseGood = false;
 
       throw new UaException(StatusCodes.Bad_MonitoredItemFilterUnsupported);
     }

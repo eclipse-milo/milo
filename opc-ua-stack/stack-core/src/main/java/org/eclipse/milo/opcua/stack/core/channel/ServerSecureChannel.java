@@ -22,12 +22,26 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 
+/**
+ * Server-side {@link SecureChannel} state used by the OPC UA TCP server transport.
+ *
+ * <p>The server channel is populated as the server receives and accepts OpenSecureChannel requests.
+ * The opening handshake installs the selected security policy, client and server nonces,
+ * application-instance certificates, channel id, and eventually {@link ChannelSecurity} token/key
+ * material for symmetric chunks.
+ *
+ * <p>For symmetric traffic, the server sends with server keys and receives with client keys. The
+ * {@link #getEncryptionKeys(ChannelSecurity.SecurityKeys)} and {@link
+ * #getDecryptionKeys(ChannelSecurity.SecurityKeys)} implementations provide that role-specific
+ * mapping for the shared chunk codecs.
+ */
 public class ServerSecureChannel extends DefaultAttributeMap implements SecureChannel {
 
   private volatile long channelId = 0;
   private volatile ChannelSecurity channelSecurity;
   private volatile ByteString localNonce = ByteString.NULL_VALUE;
   private volatile ByteString remoteNonce = ByteString.NULL_VALUE;
+  private volatile ByteString channelThumbprint = ByteString.NULL_VALUE;
 
   private volatile KeyPair keyPair;
   private volatile X509Certificate localCertificate;
@@ -49,6 +63,16 @@ public class ServerSecureChannel extends DefaultAttributeMap implements SecureCh
 
   public void setRemoteNonce(ByteString remoteNonce) {
     this.remoteNonce = remoteNonce;
+  }
+
+  /**
+   * Store the SecureChannel-enhancement thumbprint produced by the first OpenSecureChannel
+   * response.
+   *
+   * @param channelThumbprint the channel thumbprint used by later session signatures.
+   */
+  public void setChannelThumbprint(ByteString channelThumbprint) {
+    this.channelThumbprint = channelThumbprint;
   }
 
   public void setChannelSecurity(ChannelSecurity channelSecurity) {
@@ -123,6 +147,11 @@ public class ServerSecureChannel extends DefaultAttributeMap implements SecureCh
   @Override
   public ChannelSecurity getChannelSecurity() {
     return channelSecurity;
+  }
+
+  @Override
+  public ByteString getChannelThumbprint() {
+    return channelThumbprint;
   }
 
   @Override

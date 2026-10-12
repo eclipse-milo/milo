@@ -65,14 +65,12 @@ jobs:
 
           exit 1
 
-      - name: Set up Maven Central Repository
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          server-id: central
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
+          overwrite-settings: false
 
       - name: Install GPG secret key
         run: |
@@ -80,7 +78,7 @@ jobs:
           gpg --list-secret-keys --keyid-format LONG
 
       - name: Publish package
-        run: mvn -B clean deploy -P release
+        run: mvn -B --settings .github/maven-settings.xml clean deploy -P release
         env:
           MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}

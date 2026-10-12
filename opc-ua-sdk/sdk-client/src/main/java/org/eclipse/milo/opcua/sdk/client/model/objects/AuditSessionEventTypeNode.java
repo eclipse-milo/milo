@@ -88,7 +88,10 @@ public class AuditSessionEventTypeNode extends AuditSecurityEventTypeNode
   @Override
   public void writeSessionId(NodeId value) throws UaException {
     try {
-      writeSessionIdAsync(value).get();
+      StatusCode statusCode = writeSessionIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

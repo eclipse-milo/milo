@@ -10,26 +10,102 @@
 
 package org.eclipse.milo.opcua.stack.core.encoding.xml;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.StringReader;
 import java.util.Base64;
+import java.util.HexFormat;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
+import org.eclipse.milo.opcua.stack.core.types.structured.Range;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class OpcUaXmlDecoderTest {
+
+  // Part 6 §5.3.1.16: a Types.xsd ByteString body carries binary data even in an XML document.
+  @ParameterizedTest
+  @ValueSource(strings = {"", "\n  <!-- payload -->\n  "})
+  void extensionObjectByteStringBodyDecodesAsBinary(String spacing) throws Exception {
+    String xml =
+        "<ExtensionObject xmlns=\"http://opcfoundation.org/UA/2008/02/Types.xsd\">"
+            + "<TypeId><Identifier>i=886</Identifier></TypeId><Body>"
+            + spacing
+            + "<ByteString>AAAAAAAA8D8AAAAAAAAAQA==</ByteString>"
+            + spacing
+            + "</Body></ExtensionObject>";
+
+    try (var decoder = new OpcUaXmlDecoder(DefaultEncodingContext.INSTANCE, xml)) {
+      ExtensionObject.Binary decoded =
+          assertInstanceOf(ExtensionObject.Binary.class, decoder.decodeVariantValue());
+      assertEquals(NodeIds.Range_Encoding_DefaultBinary, decoded.getEncodingOrTypeId());
+      assertArrayEquals(
+          HexFormat.of().parseHex("000000000000f03f0000000000000040"), decoded.getBody().bytes());
+      Range range = assertInstanceOf(Range.class, decoded.decode(DefaultEncodingContext.INSTANCE));
+      assertEquals(1.0, range.getLow());
+      assertEquals(2.0, range.getHigh());
+    }
+  }
+
+  @Test
+  void extensionObjectXmlBodyRetainsRangeStructure() throws Exception {
+    String xml =
+        """
+        <ExtensionObject xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">
+          <TypeId><Identifier>i=885</Identifier></TypeId>
+          <Body>
+            <Range><Low>1.0</Low><High>2.0</High></Range>
+          </Body>
+        </ExtensionObject>
+        """;
+
+    try (var decoder = new OpcUaXmlDecoder(DefaultEncodingContext.INSTANCE, xml)) {
+      ExtensionObject.Xml decoded =
+          assertInstanceOf(ExtensionObject.Xml.class, decoder.decodeVariantValue());
+      assertEquals(NodeIds.Range_Encoding_DefaultXml, decoded.getEncodingOrTypeId());
+      Range range = assertInstanceOf(Range.class, decoded.decode(DefaultEncodingContext.INSTANCE));
+      assertEquals(1.0, range.getLow());
+      assertEquals(2.0, range.getHigh());
+    }
+  }
+
+  // Only the Types.xsd namespace identifies ByteString as the binary body marker.
+  @ParameterizedTest
+  @ValueSource(strings = {"urn:custom", ""})
+  void extensionObjectByteStringInOtherNamespaceRemainsXml(String namespace) throws Exception {
+    String xml =
+        """
+        <ExtensionObject xmlns="http://opcfoundation.org/UA/2008/02/Types.xsd">
+          <TypeId><Identifier>i=886</Identifier></TypeId>
+          <Body><ByteString xmlns="%s">AAAAAAAA8D8AAAAAAAAAQA==</ByteString></Body>
+        </ExtensionObject>
+        """
+            .formatted(namespace);
+
+    try (var decoder = new OpcUaXmlDecoder(DefaultEncodingContext.INSTANCE, xml)) {
+      ExtensionObject.Xml decoded =
+          assertInstanceOf(ExtensionObject.Xml.class, decoder.decodeVariantValue());
+      assertEquals(NodeIds.Range_Encoding_DefaultBinary, decoded.getEncodingOrTypeId());
+      assertNotNull(decoded.getBody().getFragment());
+    }
+  }
 
   @ParameterizedTest
   @MethodSource("decodeBooleanProvider")
@@ -161,6 +237,20 @@ public class OpcUaXmlDecoderTest {
     assertEquals(expectedByteString, decodedByteString);
   }
 
+  // Golden encoder fixtures independently protect all six decoded DataValue components.
+  @ParameterizedTest
+  @MethodSource("dataValueGoldenArguments")
+  void decodeDataValueGoldenXml(DataValue expected, String xml) throws Exception {
+    try (var decoder = new OpcUaXmlDecoder(DefaultEncodingContext.INSTANCE, xml)) {
+      assertEquals(expected, decoder.decodeDataValue("Test"));
+    }
+  }
+
+  static Stream<Arguments> dataValueGoldenArguments() {
+    return org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments.dataValueArguments()
+        .filter(arguments -> arguments.get()[0] != null);
+  }
+
   @Test
   void decodeVariantValue() throws Exception {
     String xml =
@@ -181,7 +271,16 @@ public class OpcUaXmlDecoderTest {
     OpcUaXmlDecoder decoder =
         new OpcUaXmlDecoder(DefaultEncodingContext.INSTANCE).setInput(new StringReader(xml));
 
-    assertNotNull(decoder.decodeVariantValue());
+    var values = assertInstanceOf(ExtensionObject[].class, decoder.decodeVariantValue());
+    assertEquals(1, values.length);
+    var argument =
+        assertInstanceOf(Argument.class, values[0].decode(DefaultEncodingContext.INSTANCE));
+    assertEquals("BreakLockStatus", argument.getName());
+    assertEquals(NodeIds.Int32, argument.getDataType());
+    assertEquals(-1, argument.getValueRank());
+    assertNotNull(argument.getArrayDimensions());
+    assertEquals(0, argument.getArrayDimensions().length);
+    assertEquals(LocalizedText.NULL_VALUE, argument.getDescription());
   }
 
   @Test
@@ -700,10 +799,10 @@ public class OpcUaXmlDecoderTest {
         Arguments.of(standardXml, "ByteString", testByteString),
 
         // Test case 2: XML with empty content
-        Arguments.of(emptyXml, "ByteString", nullByteString),
+        Arguments.of(emptyXml, "ByteString", ByteString.of(new byte[0])),
 
         // Test case 3: XML with only whitespace content
-        Arguments.of(whitespaceXml, "ByteString", nullByteString),
+        Arguments.of(whitespaceXml, "ByteString", ByteString.of(new byte[0])),
 
         // Test case 4: Standard XML with non-matching field name
         Arguments.of(standardXml, "NonMatchingField", nullByteString));

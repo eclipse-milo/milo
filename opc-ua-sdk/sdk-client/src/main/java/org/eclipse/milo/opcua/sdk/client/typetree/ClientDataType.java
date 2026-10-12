@@ -16,6 +16,7 @@ import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.structured.DataTypeDefinition;
+import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -51,7 +52,15 @@ class ClientDataType implements DataType {
 
     this.browseName = browseName;
     this.nodeId = nodeId;
-    this.binaryEncodingId = binaryEncodingId;
+    // Keep codec registration and decoded values on the same effective encoding ID, even when
+    // a server omits its HasEncoding references.
+    NodeId effectiveEncodingId = binaryEncodingId;
+    if ((effectiveEncodingId == null || effectiveEncodingId.isNull())
+        && dataTypeDefinition instanceof StructureDefinition definition) {
+      effectiveEncodingId = definition.getDefaultEncodingId();
+    }
+    this.binaryEncodingId =
+        effectiveEncodingId == null || effectiveEncodingId.isNull() ? null : effectiveEncodingId;
     this.xmlEncodingId = xmlEncodingId;
     this.jsonEncodingId = jsonEncodingId;
     this.dataTypeDefinition = dataTypeDefinition;

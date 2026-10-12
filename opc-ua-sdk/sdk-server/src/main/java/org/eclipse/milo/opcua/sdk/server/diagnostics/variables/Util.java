@@ -78,6 +78,17 @@ class Util {
     return buildBrowseNamePath(parentNode.orElse(null), browseNames);
   }
 
+  /**
+   * Creates a filter that answers Value reads from {@code get} while diagnostics are enabled.
+   *
+   * <p>While diagnostics are disabled, the Value is null with status {@link
+   * StatusCodes#Bad_OutOfService}. The node's access levels still allow reading, so the status
+   * reports that the diagnostics source is off rather than that the node is unreadable.
+   *
+   * @param diagnosticsEnabled the current state of the ServerDiagnostics EnabledFlag.
+   * @param get supplies the Value while diagnostics are enabled.
+   * @return a filter for the Value attribute of a diagnostics Variable.
+   */
   static AttributeFilter diagnosticValueFilter(
       AtomicBoolean diagnosticsEnabled, Function<AttributeFilterContext, DataValue> get) {
 
@@ -87,7 +98,7 @@ class Util {
             return get.apply(ctx);
           } else {
             return new DataValue(
-                Variant.NULL_VALUE, new StatusCode(StatusCodes.Bad_NotReadable), DateTime.now());
+                Variant.NULL_VALUE, new StatusCode(StatusCodes.Bad_OutOfService), DateTime.now());
           }
         });
   }

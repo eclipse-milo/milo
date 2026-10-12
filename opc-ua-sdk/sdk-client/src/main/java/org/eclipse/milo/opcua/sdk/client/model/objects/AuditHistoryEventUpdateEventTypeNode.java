@@ -92,7 +92,10 @@ public class AuditHistoryEventUpdateEventTypeNode extends AuditHistoryUpdateEven
   @Override
   public void writeUpdatedNode(NodeId value) throws UaException {
     try {
-      writeUpdatedNodeAsync(value).get();
+      StatusCode statusCode = writeUpdatedNodeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -170,7 +173,10 @@ public class AuditHistoryEventUpdateEventTypeNode extends AuditHistoryUpdateEven
   @Override
   public void writePerformInsertReplace(PerformUpdateType value) throws UaException {
     try {
-      writePerformInsertReplaceAsync(value).get();
+      StatusCode statusCode = writePerformInsertReplaceAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -253,7 +259,10 @@ public class AuditHistoryEventUpdateEventTypeNode extends AuditHistoryUpdateEven
   @Override
   public void writeFilter(EventFilter value) throws UaException {
     try {
-      writeFilterAsync(value).get();
+      StatusCode statusCode = writeFilterAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -326,7 +335,10 @@ public class AuditHistoryEventUpdateEventTypeNode extends AuditHistoryUpdateEven
   @Override
   public void writeNewValues(HistoryEventFieldList[] value) throws UaException {
     try {
-      writeNewValuesAsync(value).get();
+      StatusCode statusCode = writeNewValuesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -400,7 +412,10 @@ public class AuditHistoryEventUpdateEventTypeNode extends AuditHistoryUpdateEven
   @Override
   public void writeOldValues(HistoryEventFieldList[] value) throws UaException {
     try {
-      writeOldValuesAsync(value).get();
+      StatusCode statusCode = writeOldValuesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

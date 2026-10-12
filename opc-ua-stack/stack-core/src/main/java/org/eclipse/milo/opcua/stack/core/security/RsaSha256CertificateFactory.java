@@ -22,6 +22,16 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 
+/**
+ * RSA SHA-256-only {@link CertificateFactory} base class.
+ *
+ * <p>Subclasses provide the RSA certificate chain for generated key pairs. This class accepts only
+ * {@link NodeIds#RsaSha256ApplicationCertificateType}.
+ *
+ * @deprecated use {@link AbstractCertificateFactory} for factories that need current ECC
+ *     application certificate helpers.
+ */
+@Deprecated
 public abstract class RsaSha256CertificateFactory implements CertificateFactory {
 
   private static final int DEFAULT_KEY_LENGTH = 2048;

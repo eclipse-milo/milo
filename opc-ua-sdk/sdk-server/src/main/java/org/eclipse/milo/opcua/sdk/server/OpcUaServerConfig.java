@@ -15,12 +15,16 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController;
+import org.eclipse.milo.opcua.sdk.server.access.DefaultAccessController;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnosticsAccessMode;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.X509IdentityValidator;
+import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTarget;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
@@ -55,6 +59,19 @@ public interface OpcUaServerConfig {
    * @return the {@link EndpointConfig}s for this server.
    */
   Set<EndpointConfig> getEndpoints();
+
+  /**
+   * Get the server-side Reverse Connect targets registered when the server starts.
+   *
+   * <p>These targets are loaded into the server's runtime target manager during construction.
+   * Additional targets may be registered later with {@link
+   * OpcUaServer#addReverseConnectTarget(ReverseConnectTarget)}.
+   *
+   * @return the initial server-side Reverse Connect targets for this server.
+   */
+  default Set<ReverseConnectTarget> getReverseConnectTargets() {
+    return Set.of();
+  }
 
   /**
    * Get the application name for the server.
@@ -119,6 +136,19 @@ public interface OpcUaServerConfig {
   Optional<RoleMapper> getRoleMapper();
 
   /**
+   * Get the factory that creates the server's {@link AccessController}, if one was configured.
+   *
+   * <p>{@link OpcUaServer} calls it once, during construction, with itself, and authorizes every
+   * service request with the controller it returns. Without one the server uses a {@link
+   * DefaultAccessController}.
+   *
+   * @return the factory, if one was configured.
+   */
+  default Optional<Function<OpcUaServer, AccessController>> getAccessControllerFactory() {
+    return Optional.empty();
+  }
+
+  /**
    * Get the authorization mode for Session security diagnostics and the diagnostics enabled flag.
    *
    * @return the configured access mode.
@@ -166,6 +196,7 @@ public interface OpcUaServerConfig {
     var builder = new OpcUaServerConfigBuilder();
 
     builder.setEndpoints(config.getEndpoints());
+    builder.setReverseConnectTargets(config.getReverseConnectTargets());
     builder.setApplicationName(config.getApplicationName());
     builder.setApplicationUri(config.getApplicationUri());
     builder.setProductUri(config.getProductUri());
@@ -175,6 +206,7 @@ public interface OpcUaServerConfig {
     builder.setIdentityValidator(config.getIdentityValidator());
     builder.setCertificateManager(config.getCertificateManager());
     config.getRoleMapper().ifPresent(builder::setRoleMapper);
+    config.getAccessControllerFactory().ifPresent(builder::setAccessControllerFactory);
     builder.setSessionSecurityDiagnosticsAccessMode(
         config.getSessionSecurityDiagnosticsAccessMode());
     builder.setExecutor(config.getExecutor());

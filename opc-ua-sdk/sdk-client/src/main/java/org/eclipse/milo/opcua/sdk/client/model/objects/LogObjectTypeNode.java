@@ -88,7 +88,10 @@ public class LogObjectTypeNode extends BaseObjectTypeNode implements LogObjectTy
   @Override
   public void writeMaxRecords(UInteger value) throws UaException {
     try {
-      writeMaxRecordsAsync(value).get();
+      StatusCode statusCode = writeMaxRecordsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class LogObjectTypeNode extends BaseObjectTypeNode implements LogObjectTy
   @Override
   public void writeMaxStorageDuration(Double value) throws UaException {
     try {
-      writeMaxStorageDurationAsync(value).get();
+      StatusCode statusCode = writeMaxStorageDurationAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -231,7 +237,10 @@ public class LogObjectTypeNode extends BaseObjectTypeNode implements LogObjectTy
   @Override
   public void writeMinimumSeverity(UShort value) throws UaException {
     try {
-      writeMinimumSeverityAsync(value).get();
+      StatusCode statusCode = writeMinimumSeverityAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

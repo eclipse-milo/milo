@@ -184,7 +184,7 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
   protected abstract Optional<AddressSpaceFragment> getAddressSpace(NodeId nodeId);
 
   private AddressSpaceFragment getAddressSpaceInternal(NodeId nodeId) {
-    return getAddressSpace(nodeId).orElse(new EmptyAddressSpaceFragment(server));
+    return getAddressSpace(nodeId).orElseGet(() -> new EmptyAddressSpaceFragment(server));
   }
 
   // region ViewServices
@@ -517,6 +517,16 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
   }
 
   @Override
+  public void onDataItemsTransferred(List<DataItem> dataItems) {
+    Map<AddressSpace, List<DataItem>> byAddressSpace =
+        dataItems.stream()
+            .collect(
+                groupingBy(item -> getAddressSpaceInternal(item.getReadValueId().getNodeId())));
+
+    byAddressSpace.forEach(AddressSpace::onDataItemsTransferred);
+  }
+
+  @Override
   public void onEventItemsCreated(List<EventItem> eventItems) {
     Map<AddressSpace, List<EventItem>> byAddressSpace =
         eventItems.stream()
@@ -573,13 +583,13 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
             return requestedNewNodeId
                 .toNodeId(namespaceTable)
                 .map(this::getAddressSpaceInternal)
-                .orElse(new EmptyAddressSpaceFragment(server));
+                .orElseGet(() -> new EmptyAddressSpaceFragment(server));
           } else {
             return addNodesItem
                 .getParentNodeId()
                 .toNodeId(namespaceTable)
                 .map(this::getAddressSpaceInternal)
-                .orElse(new EmptyAddressSpaceFragment(server));
+                .orElseGet(() -> new EmptyAddressSpaceFragment(server));
           }
         },
         (AddressSpace asx) ->

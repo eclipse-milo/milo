@@ -88,7 +88,10 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   @Override
   public void writeActiveState(LocalizedText value) throws UaException {
     try {
-      writeActiveStateAsync(value).get();
+      StatusCode statusCode = writeActiveStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   @Override
   public void writeHighHighState(LocalizedText value) throws UaException {
     try {
-      writeHighHighStateAsync(value).get();
+      StatusCode statusCode = writeHighHighStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -228,7 +234,10 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   @Override
   public void writeHighState(LocalizedText value) throws UaException {
     try {
-      writeHighStateAsync(value).get();
+      StatusCode statusCode = writeHighStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -298,7 +307,10 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   @Override
   public void writeLowState(LocalizedText value) throws UaException {
     try {
-      writeLowStateAsync(value).get();
+      StatusCode statusCode = writeLowStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -368,7 +380,10 @@ public class NonExclusiveLimitAlarmTypeNode extends LimitAlarmTypeNode
   @Override
   public void writeLowLowState(LocalizedText value) throws UaException {
     try {
-      writeLowLowStateAsync(value).get();
+      StatusCode statusCode = writeLowLowStateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

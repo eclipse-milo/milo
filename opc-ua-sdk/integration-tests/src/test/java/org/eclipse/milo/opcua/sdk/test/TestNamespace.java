@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.test;
 
+import static java.util.Objects.requireNonNull;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
@@ -24,8 +25,6 @@ import org.eclipse.milo.opcua.sdk.server.Lifecycle;
 import org.eclipse.milo.opcua.sdk.server.ManagedNamespaceWithLifecycle;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.UaNodeManager;
-import org.eclipse.milo.opcua.sdk.server.items.DataItem;
-import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
@@ -36,9 +35,9 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaDataTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
-import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
-import org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -75,16 +74,17 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestNamespace.class);
 
-  private final SubscriptionModel subscriptionModel;
-
   private volatile Thread eventThread;
   private volatile boolean keepPostingEvents = true;
 
+  /** Widened to public so tests can wire notifier hierarchies. */
+  @Override
+  public void registerEventNotifier(UaObjectNode area) {
+    super.registerEventNotifier(area);
+  }
+
   public TestNamespace(OpcUaServer server) {
     super(server, NAMESPACE_URI);
-
-    subscriptionModel = new SubscriptionModel(server, this);
-    getLifecycleManager().addLifecycle(subscriptionModel);
 
     getLifecycleManager()
         .addLifecycle(
@@ -145,28 +145,30 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
         .addStartupTask(
             () -> {
               try {
-                AnalogItemTypeNode node =
-                    (AnalogItemTypeNode)
-                        getNodeFactory()
-                            .createNode(
-                                newNodeId("TestAnalogValue"),
-                                NodeIds.AnalogItemType,
-                                new NodeFactory.InstantiationCallback() {
-                                  @Override
-                                  public boolean includeOptionalNode(
-                                      NodeId typeDefinitionId, QualifiedName browseName) {
-                                    return true;
-                                  }
-                                });
+                InstantiationRequest<AnalogItemTypeNode> request =
+                    InstantiationRequest.of(AnalogItemTypeNode.class, NodeIds.AnalogItemType)
+                        .nodeId(newNodeId("TestAnalogValue"))
+                        .browseName(newQualifiedName("TestAnalogValue"))
+                        .displayName(LocalizedText.english("TestAnalogValue"))
+                        .rootAttribute(AttributeId.DataType, NodeIds.Double)
+                        .value(new DataValue(new Variant(3.14d)))
+                        .includeAllOptionals()
+                        .target(getNodeManager())
+                        .onNode(
+                            (declaration, node, parent, graph) -> {
+                              if (declaration != null
+                                  && declaration
+                                      .browseName()
+                                      .equals(new QualifiedName(0, "EURange"))
+                                  && node instanceof UaVariableNode variableNode) {
 
-                node.setBrowseName(newQualifiedName("TestAnalogValue"));
-                node.setDisplayName(LocalizedText.english("TestAnalogValue"));
-                node.setDataType(NodeIds.Double);
-                node.setValue(new DataValue(new Variant(3.14d)));
+                                variableNode.setValue(
+                                    new DataValue(new Variant(new Range(0.0, 100.0))));
+                              }
+                            })
+                        .build();
 
-                node.setEuRange(new Range(0.0, 100.0));
-
-                getNodeManager().addNode(node);
+                getServer().getNodeInstantiator().instantiate(request);
               } catch (UaException e) {
                 throw new RuntimeException(e);
               }
@@ -300,7 +302,7 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
                           protected void validateInputArgumentValues(Variant[] inputArgumentValues)
                               throws InvalidArgumentException {
 
-                            int i = (int) inputArgumentValues[0].value();
+                            int i = (int) requireNonNull(inputArgumentValues[0].value());
 
                             if (i < 0) {
                               StatusCode[] inputArgumentResults = {
@@ -486,7 +488,7 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
                   try {
                     BaseEventTypeNode eventNode =
                         getServer()
-                            .getEventFactory()
+                            .getEventInstantiator()
                             .createEvent(newNodeId(UUID.randomUUID()), NodeIds.BaseEventType);
 
                     eventNode.setBrowseName(new QualifiedName(1, "foo"));
@@ -627,26 +629,6 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
             Reference.Direction.INVERSE));
 
     getNodeManager().addNode(dataTypeEncodingNode);
-  }
-
-  @Override
-  public void onDataItemsCreated(List<DataItem> dataItems) {
-    subscriptionModel.onDataItemsCreated(dataItems);
-  }
-
-  @Override
-  public void onDataItemsModified(List<DataItem> dataItems) {
-    subscriptionModel.onDataItemsModified(dataItems);
-  }
-
-  @Override
-  public void onDataItemsDeleted(List<DataItem> dataItems) {
-    subscriptionModel.onDataItemsDeleted(dataItems);
-  }
-
-  @Override
-  public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {
-    subscriptionModel.onMonitoringModeChanged(monitoredItems);
   }
 
   public void configure(BiConsumer<UaNodeContext, UaNodeManager> consumer) {
@@ -790,8 +772,7 @@ public class TestNamespace extends ManagedNamespaceWithLifecycle {
     }
 
     @Override
-    protected Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues)
-        throws UaException {
+    protected Variant[] invoke(InvocationContext invocationContext, Variant[] inputValues) {
       return new Variant[] {inputValues[0]};
     }
 

@@ -23,10 +23,13 @@ import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 /**
  * A shared, stack-wide, one-per-application-regardless-of-how-many-server-instances-you-have
@@ -52,7 +55,8 @@ public class RateLimitingHandler extends AbstractRemoteAddressFilter<InetSocketA
    * Stack.ConnectionLimits#RATE_LIMIT_WINDOW_MS}, {@link
    * Stack.ConnectionLimits#RATE_LIMIT_MAX_CONNECTIONS}, and {@link
    * Stack.ConnectionLimits#RATE_LIMIT_MAX_CONNECTIONS_PER_ADDRESS} will be locked in whenever the
-   * first invocation of this method occurs.
+   * first invocation of this method occurs. Those fields start from system properties; see {@link
+   * Stack.ConnectionLimits}.
    *
    * @return the shared {@link RateLimitingHandler} instance.
    */
@@ -82,6 +86,13 @@ public class RateLimitingHandler extends AbstractRemoteAddressFilter<InetSocketA
 
   private final Multiset<InetAddress> connections = ConcurrentHashMultiset.create();
 
+  /**
+   * The total number of live connections, tracked alongside {@link #connections} because {@link
+   * Multiset#size()} sums every entry, which is O(distinct addresses) on a path that now runs for
+   * every inbound connection.
+   */
+  private final AtomicInteger totalConnections = new AtomicInteger(0);
+
   private RateLimitingHandler(
       boolean enabled,
       int maxAttempts,
@@ -95,14 +106,29 @@ public class RateLimitingHandler extends AbstractRemoteAddressFilter<InetSocketA
     this.maxConnections = maxConnections;
     this.maxConnectionsPerAddress = maxConnectionsPerAddress;
 
-    logger.debug(
-        "enabled={}, maxAttempts={}, rateLimitWindowMs={}, maxConnections={},"
-            + " maxConnectionsPerAddress={}",
-        enabled,
-        maxAttempts,
-        rateLimitWindowMs,
-        maxConnections,
-        maxConnectionsPerAddress);
+    // A support log should be able to confirm limits that were changed with system properties.
+    Level level = anyLimitPropertySet() ? Level.INFO : Level.DEBUG;
+
+    logger
+        .atLevel(level)
+        .log(
+            "enabled={}, maxAttempts={}, rateLimitWindowMs={}, maxConnections={},"
+                + " maxConnectionsPerAddress={}",
+            enabled,
+            maxAttempts,
+            rateLimitWindowMs,
+            maxConnections,
+            maxConnectionsPerAddress);
+  }
+
+  private static boolean anyLimitPropertySet() {
+    return Stream.of(
+            Stack.ConnectionLimits.RATE_LIMIT_ENABLED_PROPERTY,
+            Stack.ConnectionLimits.RATE_LIMIT_MAX_ATTEMPTS_PROPERTY,
+            Stack.ConnectionLimits.RATE_LIMIT_WINDOW_MS_PROPERTY,
+            Stack.ConnectionLimits.RATE_LIMIT_MAX_CONNECTIONS_PROPERTY,
+            Stack.ConnectionLimits.RATE_LIMIT_MAX_CONNECTIONS_PER_ADDRESS_PROPERTY)
+        .anyMatch(name -> System.getProperty(name) != null);
   }
 
   @Override
@@ -111,6 +137,24 @@ public class RateLimitingHandler extends AbstractRemoteAddressFilter<InetSocketA
 
     if (!enabled || address.isLoopbackAddress()) {
       return true;
+    }
+
+    int connectionsTotal = totalConnections.get();
+    int connectionsFromAddress = connections.count(address);
+
+    // Checked for every connection, and before anything is recorded for the address: a rejected
+    // connection never reaches channelAccepted(), so nothing would remove its timestamps entry.
+    if (connectionsTotal >= maxConnections || connectionsFromAddress >= maxConnectionsPerAddress) {
+      logger.debug(
+          "Rejecting connection from {}. connectionsTotal={}, connectionsFromAddress={}",
+          isa,
+          connectionsTotal,
+          connectionsFromAddress);
+
+      long cumulativeConnectionsRejected = CUMULATIVE_CONNECTIONS_REJECTED.incrementAndGet();
+      logger.debug("cumulativeConnectionsRejected={}", cumulativeConnectionsRejected);
+
+      return false;
     }
 
     LinkedList<Long> attempts = timestamps.computeIfAbsent(address, ia -> new LinkedList<>());
@@ -132,15 +176,11 @@ public class RateLimitingHandler extends AbstractRemoteAddressFilter<InetSocketA
         attempts.removeFirst();
       }
 
-      int connectionsTotal = connections.size();
-      int connectionsFromAddress = connections.count(address);
-
-      boolean accept =
-          attemptsInWindow < maxAttempts
-              && connectionsTotal < maxConnections
-              && connectionsFromAddress < maxConnectionsPerAddress;
+      boolean accept = attemptsInWindow < maxAttempts;
 
       if (accept) {
+        admit(address);
+
         logger.debug(
             "Accepting connection from {}. window={}ms, attemptsInWindow={},"
                 + " connectionsTotal={}, connectionsFromAddress={}",
@@ -166,9 +206,21 @@ public class RateLimitingHandler extends AbstractRemoteAddressFilter<InetSocketA
       return accept;
     } else {
       attempts.addLast(now);
+      admit(address);
 
       return true;
     }
+  }
+
+  /**
+   * Records the connection while {@link #accept} still holds the lock, so that the checks above and
+   * this reservation cannot interleave with another admission. Netty calls {@link #channelAccepted}
+   * immediately after {@link #accept} returns true, and that is where the connection is released
+   * again.
+   */
+  private void admit(InetAddress address) {
+    connections.add(address);
+    totalConnections.incrementAndGet();
   }
 
   @Override
@@ -178,8 +230,6 @@ public class RateLimitingHandler extends AbstractRemoteAddressFilter<InetSocketA
     if (!enabled || address.isLoopbackAddress()) {
       return;
     }
-
-    connections.add(address);
 
     ctx.channel().closeFuture().addListener(new ChannelCloseListener(address, ctx));
   }
@@ -196,7 +246,9 @@ public class RateLimitingHandler extends AbstractRemoteAddressFilter<InetSocketA
 
     @Override
     public void operationComplete(ChannelFuture channelFuture) {
-      connections.remove(address);
+      if (connections.remove(address)) {
+        totalConnections.decrementAndGet();
+      }
 
       if (connections.count(address) == 0) {
         logger.debug("Scheduling timestamp removal for {}", address);

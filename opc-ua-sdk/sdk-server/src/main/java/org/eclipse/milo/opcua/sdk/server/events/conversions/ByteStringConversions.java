@@ -50,16 +50,11 @@ final class ByteStringConversions {
 
   @Nullable
   static Object explicitConversion(@NonNull ByteString bs, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case Guid:
-        return byteStringToGuid(bs);
-      case String:
-        return byteStringToString(bs);
-      default:
-        return implicitConversion(bs, targetType);
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case Guid -> byteStringToGuid(bs);
+      case String -> byteStringToString(bs);
+      default -> implicitConversion(bs, targetType);
+    };
   }
 
   @Nullable

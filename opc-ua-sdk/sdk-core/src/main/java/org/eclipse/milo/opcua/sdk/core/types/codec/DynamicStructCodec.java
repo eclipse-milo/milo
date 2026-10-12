@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.core.types.codec;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.eclipse.milo.opcua.sdk.core.types.DynamicStructType;
@@ -35,6 +36,7 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStructType> 
   private final Lazy<Map<StructureField, FieldUtil.FieldHint>> fieldHints = new Lazy<>();
 
   private final StructureDefinition definition;
+  private final String[] optionalFieldNames;
 
   private final DataType dataType;
   private final DataTypeTree dataTypeTree;
@@ -44,6 +46,11 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStructType> 
     this.dataTypeTree = dataTypeTree;
 
     this.definition = (StructureDefinition) requireNonNull(dataType.getDataTypeDefinition());
+    optionalFieldNames =
+        Arrays.stream(requireNonNullElse(definition.getFields(), new StructureField[0]))
+            .filter(StructureField::getIsOptional)
+            .map(StructureField::getName)
+            .toArray(String[]::new);
   }
 
   @Override
@@ -80,7 +87,7 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStructType> 
 
     long encodingMask = 0xFFFFFFFFL;
     if (definition.getStructureType() == StructureType.StructureWithOptionalFields) {
-      encodingMask = decoder.decodeUInt32("EncodingMask").longValue();
+      encodingMask = decoder.decodeEncodingMask(optionalFieldNames).longValue();
     }
 
     StructureField[] fields = requireNonNullElse(definition.getFields(), new StructureField[0]);
@@ -112,12 +119,14 @@ public class DynamicStructCodec extends GenericDataTypeCodec<DynamicStructType> 
     if (definition.getStructureType() == StructureType.StructureWithOptionalFields) {
       int optionalFieldIndex = 0;
       for (StructureField field : fields) {
-        if (field.getIsOptional()
-            && struct.getMembers().containsKey(requireNonNull(field.getName()))) {
-          encodingMask = encodingMask | (1L << optionalFieldIndex++);
+        if (field.getIsOptional()) {
+          if (struct.getMembers().containsKey(requireNonNull(field.getName()))) {
+            encodingMask |= 1L << optionalFieldIndex;
+          }
+          optionalFieldIndex++;
         }
       }
-      encoder.encodeUInt32("EncodingMask", UInteger.valueOf(encodingMask));
+      encoder.encodeEncodingMask(UInteger.valueOf(encodingMask));
     }
 
     if (definition.getStructureType() == StructureType.StructureWithOptionalFields) {

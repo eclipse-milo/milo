@@ -88,7 +88,10 @@ public class IVlanIdTypeNode extends BaseInterfaceTypeNode implements IVlanIdTyp
   @Override
   public void writeVlanId(UShort value) throws UaException {
     try {
-      writeVlanIdAsync(value).get();
+      StatusCode statusCode = writeVlanIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

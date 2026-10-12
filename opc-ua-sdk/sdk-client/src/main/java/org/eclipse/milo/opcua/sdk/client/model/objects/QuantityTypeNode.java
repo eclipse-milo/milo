@@ -90,7 +90,10 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   @Override
   public void writeSymbol(LocalizedText value) throws UaException {
     try {
-      writeSymbolAsync(value).get();
+      StatusCode statusCode = writeSymbolAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -162,7 +165,10 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   @Override
   public void writeAnnotation(AnnotationDataType[] value) throws UaException {
     try {
-      writeAnnotationAsync(value).get();
+      StatusCode statusCode = writeAnnotationAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -234,7 +240,10 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   @Override
   public void writeConversionService(String value) throws UaException {
     try {
-      writeConversionServiceAsync(value).get();
+      StatusCode statusCode = writeConversionServiceAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -308,7 +317,10 @@ public class QuantityTypeNode extends BaseObjectTypeNode implements QuantityType
   @Override
   public void writeDimension(QuantityDimension value) throws UaException {
     try {
-      writeDimensionAsync(value).get();
+      StatusCode statusCode = writeDimensionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

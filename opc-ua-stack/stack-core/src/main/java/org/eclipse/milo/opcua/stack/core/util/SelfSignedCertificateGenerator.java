@@ -13,12 +13,14 @@ package org.eclipse.milo.opcua.stack.core.util;
 import static java.util.Objects.requireNonNullElse;
 
 import java.math.BigInteger;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import java.security.spec.ECGenParameterSpec;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -72,6 +74,103 @@ public class SelfSignedCertificateGenerator {
     generator.initialize(length, new SecureRandom());
 
     return generator.generateKeyPair();
+  }
+
+  /**
+   * Generate an EC {@link KeyPair} for the named curve {@code curveName}.
+   *
+   * @param curveName the standard curve name, e.g. {@code secp256r1}.
+   * @return a {@link KeyPair} for {@code curveName}.
+   * @throws GeneralSecurityException if no provider supports EC generation for {@code curveName}.
+   */
+  public static KeyPair generateEcKeyPair(String curveName) throws GeneralSecurityException {
+    KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
+    generator.initialize(new ECGenParameterSpec(curveName), new SecureRandom());
+
+    return generator.generateKeyPair();
+  }
+
+  /**
+   * Generate a NIST P-256 EC {@link KeyPair}.
+   *
+   * @return a NIST P-256 {@link KeyPair}.
+   * @throws GeneralSecurityException if no provider supports NIST P-256 generation.
+   */
+  public static KeyPair generateNistP256KeyPair() throws GeneralSecurityException {
+    return generateEcKeyPair("secp256r1");
+  }
+
+  /**
+   * Generate a NIST P-384 EC {@link KeyPair}.
+   *
+   * @return a NIST P-384 {@link KeyPair}.
+   * @throws GeneralSecurityException if no provider supports NIST P-384 generation.
+   */
+  public static KeyPair generateNistP384KeyPair() throws GeneralSecurityException {
+    return generateEcKeyPair("secp384r1");
+  }
+
+  /**
+   * Generate a Brainpool P-256r1 EC {@link KeyPair}.
+   *
+   * @return a Brainpool P-256r1 {@link KeyPair}.
+   * @throws GeneralSecurityException if no provider supports Brainpool P-256r1 generation.
+   */
+  public static KeyPair generateBrainpoolP256r1KeyPair() throws GeneralSecurityException {
+    KeyPairGenerator generator = KeyPairGenerator.getInstance("EC", new BouncyCastleProvider());
+    generator.initialize(new ECGenParameterSpec("brainpoolP256r1"), new SecureRandom());
+
+    return generator.generateKeyPair();
+  }
+
+  /**
+   * Generate a Brainpool P-384r1 EC {@link KeyPair}.
+   *
+   * @return a Brainpool P-384r1 {@link KeyPair}.
+   * @throws GeneralSecurityException if no provider supports Brainpool P-384r1 generation.
+   */
+  public static KeyPair generateBrainpoolP384r1KeyPair() throws GeneralSecurityException {
+    KeyPairGenerator generator = KeyPairGenerator.getInstance("EC", new BouncyCastleProvider());
+    generator.initialize(new ECGenParameterSpec("brainpoolP384r1"), new SecureRandom());
+
+    return generator.generateKeyPair();
+  }
+
+  /**
+   * Generate an Ed25519 {@link KeyPair}.
+   *
+   * @return an Ed25519 {@link KeyPair}.
+   * @throws NoSuchAlgorithmException if no provider supports Ed25519 generation.
+   */
+  public static KeyPair generateEd25519KeyPair() throws NoSuchAlgorithmException {
+    KeyPairGenerator generator = KeyPairGenerator.getInstance("Ed25519");
+
+    return generator.generateKeyPair();
+  }
+
+  /**
+   * Generate an Ed448 {@link KeyPair}.
+   *
+   * @return an Ed448 {@link KeyPair}.
+   * @throws NoSuchAlgorithmException if no provider supports Ed448 generation.
+   */
+  public static KeyPair generateEd448KeyPair() throws NoSuchAlgorithmException {
+    KeyPairGenerator generator = KeyPairGenerator.getInstance("Ed448");
+
+    return generator.generateKeyPair();
+  }
+
+  /**
+   * Create a generator for ECC and Edwards-curve application instance certificates.
+   *
+   * <p>The generated certificates include only the ECC/Edwards application-certificate KeyUsage
+   * bits required by OPC UA Part 6 for self-signed certificates: {@code digitalSignature} and
+   * {@code keyCertSign}. ExtendedKeyUsage is omitted.
+   *
+   * @return a generator for ECC and Edwards-curve application instance certificates.
+   */
+  public static SelfSignedCertificateGenerator eccApplicationCertificateGenerator() {
+    return new EccApplicationCertificateGenerator();
   }
 
   public X509Certificate generateSelfSigned(
@@ -228,5 +327,24 @@ public class SelfSignedCertificateGenerator {
         Extension.authorityKeyIdentifier,
         false,
         new JcaX509ExtensionUtils().createAuthorityKeyIdentifier(keyPair.getPublic()));
+  }
+
+  private static final class EccApplicationCertificateGenerator
+      extends SelfSignedCertificateGenerator {
+
+    @Override
+    protected void addExtendedKeyUsage(X509v3CertificateBuilder certificateBuilder) {
+      // OPC 10000-6, 6.2.2 makes serverAuth/clientAuth ExtendedKeyUsage optional for ECC
+      // profiles, so omit the RSA/default EKU extension:
+      // https://reference.opcfoundation.org/specs/OPC-10000-6/6.2.2/
+    }
+
+    @Override
+    protected void addKeyUsage(X509v3CertificateBuilder certificateBuilder) throws CertIOException {
+      certificateBuilder.addExtension(
+          Extension.keyUsage,
+          false,
+          new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyCertSign));
+    }
   }
 }

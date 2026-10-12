@@ -146,10 +146,13 @@ public class AddressSpaceComposite implements AddressSpaceFragment {
   }
 
   private AddressSpaceFragment getAddressSpace(Predicate<AddressSpaceFragment> filter) {
-    return addressSpaces.stream()
-        .filter(filter)
-        .findFirst()
-        .orElse(new EmptyAddressSpaceFragment(server));
+    // Called once per operation in every request; a loop avoids building a Stream per lookup.
+    for (AddressSpaceFragment asx : addressSpaces) {
+      if (filter.test(asx)) {
+        return asx;
+      }
+    }
+    return new EmptyAddressSpaceFragment(server);
   }
 
   // region ViewServices
@@ -486,6 +489,21 @@ public class AddressSpaceComposite implements AddressSpaceFragment {
   }
 
   @Override
+  public void onDataItemsTransferred(List<DataItem> dataItems) {
+    Map<AddressSpace, List<DataItem>> byAddressSpace =
+        dataItems.stream()
+            .collect(
+                groupingBy(
+                    item ->
+                        getAddressSpace(
+                            asx ->
+                                asx.getFilter()
+                                    .filterOnDataItemsTransferred(server, item.getReadValueId()))));
+
+    byAddressSpace.forEach(AddressSpace::onDataItemsTransferred);
+  }
+
+  @Override
   public void onEventItemsCreated(List<EventItem> eventItems) {
     Map<AddressSpace, List<EventItem>> byAddressSpace =
         eventItems.stream()
@@ -648,143 +666,136 @@ public class AddressSpaceComposite implements AddressSpaceFragment {
       this.addressSpaces = addressSpaces;
     }
 
+    /** Whether any fragment's filter accepts the operation; a loop, called once per operation. */
+    private boolean anyFilter(Predicate<AddressSpaceFilter> test) {
+      for (AddressSpaceFragment asx : addressSpaces) {
+        if (test.test(asx.getFilter())) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     @Override
     public boolean filterBrowse(OpcUaServer server, NodeId nodeId) {
-      return addressSpaces.stream().anyMatch(asx -> asx.getFilter().filterBrowse(server, nodeId));
+      return anyFilter(filter -> filter.filterBrowse(server, nodeId));
     }
 
     @Override
     public boolean filterRegisterNode(OpcUaServer server, NodeId nodeId) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterRegisterNode(server, nodeId));
+      return anyFilter(filter -> filter.filterRegisterNode(server, nodeId));
     }
 
     @Override
     public boolean filterUnregisterNode(OpcUaServer server, NodeId nodeId) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterUnregisterNode(server, nodeId));
+      return anyFilter(filter -> filter.filterUnregisterNode(server, nodeId));
     }
 
     @Override
     public boolean filterRead(OpcUaServer server, ReadValueId readValueId) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterRead(server, readValueId));
+      return anyFilter(filter -> filter.filterRead(server, readValueId));
     }
 
     @Override
     public boolean filterWrite(OpcUaServer server, WriteValue writeValue) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterWrite(server, writeValue));
+      return anyFilter(filter -> filter.filterWrite(server, writeValue));
     }
 
     @Override
     public boolean filterHistoryRead(OpcUaServer server, HistoryReadValueId historyReadValueId) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterHistoryRead(server, historyReadValueId));
+      return anyFilter(filter -> filter.filterHistoryRead(server, historyReadValueId));
     }
 
     @Override
     public boolean filterHistoryUpdate(
         OpcUaServer server, HistoryUpdateDetails historyUpdateDetails) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterHistoryUpdate(server, historyUpdateDetails));
+      return anyFilter(filter -> filter.filterHistoryUpdate(server, historyUpdateDetails));
     }
 
     @Override
     public boolean filterCall(OpcUaServer server, CallMethodRequest callMethodRequest) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterCall(server, callMethodRequest));
+      return anyFilter(filter -> filter.filterCall(server, callMethodRequest));
     }
 
     @Override
     public boolean filterOnCreateDataItem(OpcUaServer server, ReadValueId readValueId) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterOnCreateDataItem(server, readValueId));
+      return anyFilter(filter -> filter.filterOnCreateDataItem(server, readValueId));
     }
 
     @Override
     public boolean filterOnModifyDataItem(OpcUaServer server, ReadValueId readValueId) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterOnModifyDataItem(server, readValueId));
+      return anyFilter(filter -> filter.filterOnModifyDataItem(server, readValueId));
     }
 
     @Override
     public boolean filterOnCreateEventItem(OpcUaServer server, ReadValueId readValueId) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterOnCreateEventItem(server, readValueId));
+      return anyFilter(filter -> filter.filterOnCreateEventItem(server, readValueId));
     }
 
     @Override
     public boolean filterOnModifyEventItem(OpcUaServer server, ReadValueId readValueId) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterOnModifyEventItem(server, readValueId));
+      return anyFilter(filter -> filter.filterOnModifyEventItem(server, readValueId));
     }
 
     @Override
     public boolean filterOnDataItemsCreated(OpcUaServer server, ReadValueId readValueId) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterOnDataItemsCreated(server, readValueId));
+      return anyFilter(filter -> filter.filterOnDataItemsCreated(server, readValueId));
     }
 
     @Override
     public boolean filterOnDataItemsModified(OpcUaServer server, ReadValueId readValueId) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterOnDataItemsModified(server, readValueId));
+      return anyFilter(filter -> filter.filterOnDataItemsModified(server, readValueId));
     }
 
     @Override
     public boolean filterOnDataItemsDeleted(OpcUaServer server, ReadValueId readValueId) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterOnDataItemsDeleted(server, readValueId));
+      return anyFilter(filter -> filter.filterOnDataItemsDeleted(server, readValueId));
+    }
+
+    @Override
+    public boolean filterOnDataItemsTransferred(OpcUaServer server, ReadValueId readValueId) {
+      return anyFilter(filter -> filter.filterOnDataItemsTransferred(server, readValueId));
     }
 
     @Override
     public boolean filterOnEventItemsCreated(OpcUaServer server, ReadValueId readValueId) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterOnEventItemsCreated(server, readValueId));
+      return anyFilter(filter -> filter.filterOnEventItemsCreated(server, readValueId));
     }
 
     @Override
     public boolean filterOnEventItemsModified(OpcUaServer server, ReadValueId readValueId) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterOnEventItemsModified(server, readValueId));
+      return anyFilter(filter -> filter.filterOnEventItemsModified(server, readValueId));
     }
 
     @Override
     public boolean filterOnEventItemsDeleted(OpcUaServer server, ReadValueId readValueId) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterOnEventItemsDeleted(server, readValueId));
+      return anyFilter(filter -> filter.filterOnEventItemsDeleted(server, readValueId));
     }
 
     @Override
     public boolean filterOnMonitoringModeChanged(OpcUaServer server, ReadValueId readValueId) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterOnMonitoringModeChanged(server, readValueId));
+      return anyFilter(filter -> filter.filterOnMonitoringModeChanged(server, readValueId));
     }
 
     @Override
     public boolean filterAddNodes(OpcUaServer server, AddNodesItem addNodesItem) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterAddNodes(server, addNodesItem));
+      return anyFilter(filter -> filter.filterAddNodes(server, addNodesItem));
     }
 
     @Override
     public boolean filterDeleteNodes(OpcUaServer server, DeleteNodesItem deleteNodesItem) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterDeleteNodes(server, deleteNodesItem));
+      return anyFilter(filter -> filter.filterDeleteNodes(server, deleteNodesItem));
     }
 
     @Override
     public boolean filterAddReferences(OpcUaServer server, AddReferencesItem addReferencesItem) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterAddReferences(server, addReferencesItem));
+      return anyFilter(filter -> filter.filterAddReferences(server, addReferencesItem));
     }
 
     @Override
     public boolean filterDeleteReferences(
         OpcUaServer server, DeleteReferencesItem deleteReferencesItem) {
-      return addressSpaces.stream()
-          .anyMatch(asx -> asx.getFilter().filterDeleteReferences(server, deleteReferencesItem));
+      return anyFilter(filter -> filter.filterDeleteReferences(server, deleteReferencesItem));
     }
   }
 

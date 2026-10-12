@@ -54,6 +54,34 @@ public interface UaDecoder {
 
   UInteger decodeUInt32(String field) throws UaSerializationException;
 
+  /**
+   * Decodes the optional-field presence mask before reading the structure's fields.
+   *
+   * <p>Encodings without a numeric mask derive the bits from member presence. A present member with
+   * a null or default value still sets its bit. Other encodings read {@code EncodingMask}.
+   *
+   * @param optionalFieldNames the unique optional-field names in definition order, excluding
+   *     mandatory fields; at most 32 names, with the first name corresponding to bit zero.
+   * @return the optional-field presence mask.
+   */
+  default UInteger decodeEncodingMask(String... optionalFieldNames)
+      throws UaSerializationException {
+    return decodeUInt32("EncodingMask");
+  }
+
+  /**
+   * Decodes the union selector before reading its member.
+   *
+   * <p>Encodings without a numeric selector derive it from member presence. Other encodings read
+   * {@code SwitchField}. Codecs must reject selectors outside their definition's range.
+   *
+   * @param fieldNames the unique union-member names in definition order.
+   * @return the one-based member position, or zero for no member.
+   */
+  default UInteger decodeSwitchField(String... fieldNames) throws UaSerializationException {
+    return decodeUInt32("SwitchField");
+  }
+
   ULong decodeUInt64(String field) throws UaSerializationException;
 
   Float decodeFloat(String field) throws UaSerializationException;
@@ -160,12 +188,42 @@ public interface UaDecoder {
   UaStructuredType @Nullable [] decodeStructArray(String field, ExpandedNodeId dataTypeId)
       throws UaSerializationException;
 
+  /**
+   * Decodes a Matrix of built-in values with the given {@code dataType}.
+   *
+   * <p>A null Matrix decodes to {@link Matrix#ofNull()}. None of the Matrix methods return {@code
+   * null}, so callers may invoke {@link Matrix#transform} on the result without a null check.
+   *
+   * @param field the field name, or {@code null} when the encoding has no field names.
+   * @param dataType the built-in type of the Matrix elements.
+   * @return the decoded Matrix; {@link Matrix#ofNull()} for a null Matrix.
+   */
   Matrix decodeMatrix(String field, OpcUaDataType dataType) throws UaSerializationException;
 
+  /**
+   * Decodes a Matrix of enumeration values as their {@link Integer} wire values.
+   *
+   * @param field the field name, or {@code null} when the encoding has no field names.
+   * @return the decoded Matrix; {@link Matrix#ofNull()} for a null Matrix, never {@code null}.
+   */
   Matrix decodeEnumMatrix(String field) throws UaSerializationException;
 
+  /**
+   * Decodes a Matrix of structures using the codec registered for {@code dataTypeId}.
+   *
+   * @param field the field name, or {@code null} when the encoding has no field names.
+   * @param dataTypeId the DataType of the Matrix elements.
+   * @return the decoded Matrix; {@link Matrix#ofNull()} for a null Matrix, never {@code null}.
+   */
   Matrix decodeStructMatrix(String field, NodeId dataTypeId) throws UaSerializationException;
 
+  /**
+   * Decodes a Matrix of structures using the codec registered for {@code dataTypeId}.
+   *
+   * @param field the field name, or {@code null} when the encoding has no field names.
+   * @param dataTypeId the DataType of the Matrix elements.
+   * @return the decoded Matrix; {@link Matrix#ofNull()} for a null Matrix, never {@code null}.
+   */
   Matrix decodeStructMatrix(String field, ExpandedNodeId dataTypeId)
       throws UaSerializationException;
 }

@@ -10,25 +10,19 @@
 
 package org.eclipse.milo.opcua.sdk.core.typetree;
 
-import static java.util.Objects.requireNonNullElse;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Comparator;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class AbstractVariableTypeTreeTest extends AbstractClientServerTest {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(AbstractVariableTypeTreeTest.class);
 
   private VariableTypeTree variableTypeTree;
 
@@ -38,25 +32,6 @@ public abstract class AbstractVariableTypeTreeTest extends AbstractClientServerT
   }
 
   protected abstract VariableTypeTree getVariableTypeTree() throws UaException;
-
-  @Test
-  public void testGetTree() {
-    variableTypeTree
-        .getRoot()
-        .traverseWithDepth(
-            (variableType, depth) -> {
-              StringBuilder indent = new StringBuilder();
-              for (int i = 0; i < depth; i++) {
-                indent.append("\t");
-              }
-              LOGGER.debug("{}{}", indent, variableType.getBrowseName().toParseableString());
-            },
-            (o1, o2) -> {
-              String name1 = requireNonNullElse(o1.getValue().getBrowseName().name(), "");
-              String name2 = requireNonNullElse(o2.getValue().getBrowseName().name(), "");
-              return Comparator.<String>naturalOrder().compare(name1, name2);
-            });
-  }
 
   @Test
   public void testIsSubtype() {

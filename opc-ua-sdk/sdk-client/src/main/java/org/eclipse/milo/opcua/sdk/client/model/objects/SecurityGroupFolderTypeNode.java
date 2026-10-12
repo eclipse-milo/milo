@@ -87,7 +87,10 @@ public class SecurityGroupFolderTypeNode extends FolderTypeNode implements Secur
   @Override
   public void writeSupportedSecurityPolicyUris(String[] value) throws UaException {
     try {
-      writeSupportedSecurityPolicyUrisAsync(value).get();
+      StatusCode statusCode = writeSupportedSecurityPolicyUrisAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

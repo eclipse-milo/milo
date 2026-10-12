@@ -92,7 +92,10 @@ public class HistoricalExternalEventSourceTypeNode extends BaseObjectTypeNode
   @Override
   public void writeServer(String value) throws UaException {
     try {
-      writeServerAsync(value).get();
+      StatusCode statusCode = writeServerAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -162,7 +165,10 @@ public class HistoricalExternalEventSourceTypeNode extends BaseObjectTypeNode
   @Override
   public void writeEndpointUrl(String value) throws UaException {
     try {
-      writeEndpointUrlAsync(value).get();
+      StatusCode statusCode = writeEndpointUrlAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -240,7 +246,10 @@ public class HistoricalExternalEventSourceTypeNode extends BaseObjectTypeNode
   @Override
   public void writeSecurityMode(MessageSecurityMode value) throws UaException {
     try {
-      writeSecurityModeAsync(value).get();
+      StatusCode statusCode = writeSecurityModeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -318,7 +327,10 @@ public class HistoricalExternalEventSourceTypeNode extends BaseObjectTypeNode
   @Override
   public void writeSecurityPolicyUri(String value) throws UaException {
     try {
-      writeSecurityPolicyUriAsync(value).get();
+      StatusCode statusCode = writeSecurityPolicyUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -392,7 +404,10 @@ public class HistoricalExternalEventSourceTypeNode extends BaseObjectTypeNode
   @Override
   public void writeIdentityTokenPolicy(UserTokenPolicy value) throws UaException {
     try {
-      writeIdentityTokenPolicyAsync(value).get();
+      StatusCode statusCode = writeIdentityTokenPolicyAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -468,7 +483,10 @@ public class HistoricalExternalEventSourceTypeNode extends BaseObjectTypeNode
   @Override
   public void writeTransportProfileUri(String value) throws UaException {
     try {
-      writeTransportProfileUriAsync(value).get();
+      StatusCode statusCode = writeTransportProfileUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -542,7 +560,10 @@ public class HistoricalExternalEventSourceTypeNode extends BaseObjectTypeNode
   @Override
   public void writeHistoricalEventFilter(EventFilter value) throws UaException {
     try {
-      writeHistoricalEventFilterAsync(value).get();
+      StatusCode statusCode = writeHistoricalEventFilterAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

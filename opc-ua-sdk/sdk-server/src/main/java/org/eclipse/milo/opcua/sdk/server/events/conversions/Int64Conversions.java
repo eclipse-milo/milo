@@ -127,45 +127,27 @@ final class Int64Conversions {
 
   @Nullable
   static Object explicitConversion(@NonNull Long l, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case Boolean:
-        return int64ToBoolean(l);
-      case Byte:
-        return int64ToByte(l);
-      case Int16:
-        return int64ToInt16(l);
-      case Int32:
-        return int64ToInt32(l);
-      case SByte:
-        return int64ToSByte(l);
-      case StatusCode:
-        return int64ToStatusCode(l);
-      case String:
-        return int64ToString(l);
-      case UInt16:
-        return int64ToUInt16(l);
-      case UInt32:
-        return int64ToUInt32(l);
-      case UInt64:
-        return int64ToUInt64(l);
-      default:
-        return implicitConversion(l, targetType);
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case Boolean -> int64ToBoolean(l);
+      case Byte -> int64ToByte(l);
+      case Int16 -> int64ToInt16(l);
+      case Int32 -> int64ToInt32(l);
+      case SByte -> int64ToSByte(l);
+      case StatusCode -> int64ToStatusCode(l);
+      case String -> int64ToString(l);
+      case UInt16 -> int64ToUInt16(l);
+      case UInt32 -> int64ToUInt32(l);
+      case UInt64 -> int64ToUInt64(l);
+      default -> implicitConversion(l, targetType);
+    };
   }
 
   @Nullable
   static Object implicitConversion(@NonNull Long l, OpcUaDataType targetType) {
-    // @formatter:off
-    switch (targetType) {
-      case Double:
-        return int64ToDouble(l);
-      case Float:
-        return int64ToFloat(l);
-      default:
-        return null;
-    }
-    // @formatter:on
+    return switch (targetType) {
+      case Double -> int64ToDouble(l);
+      case Float -> int64ToFloat(l);
+      default -> null;
+    };
   }
 }

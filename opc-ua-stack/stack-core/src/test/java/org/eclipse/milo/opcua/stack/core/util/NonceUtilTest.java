@@ -26,16 +26,7 @@ public class NonceUtilTest {
     for (SecurityPolicy securityPolicy : SecurityPolicy.values()) {
       ByteString nonce = NonceUtil.generateNonce(securityPolicy);
 
-      switch (securityPolicy) {
-        case None:
-          assertEquals(0, nonce.length());
-          break;
-        case Basic128Rsa15:
-          assertEquals(16, nonce.length());
-          break;
-        default:
-          assertEquals(32, nonce.length());
-      }
+      assertEquals(securityPolicy.getProfile().secureChannelNonceLength(), nonce.length());
     }
   }
 

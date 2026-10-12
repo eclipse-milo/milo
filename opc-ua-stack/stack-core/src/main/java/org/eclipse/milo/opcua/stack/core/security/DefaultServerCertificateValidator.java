@@ -70,56 +70,67 @@ public class DefaultServerCertificateValidator implements CertificateValidator {
   public void validateCertificateChain(
       List<X509Certificate> certificateChain,
       @Nullable String applicationUri,
-      @Nullable String[] validHostnames)
+      String @Nullable [] validHostnames)
       throws UaException {
 
+    validateCertificateChain(certificateChain, applicationUri, validHostnames, null);
+  }
+
+  @Override
+  public void validateCertificateChain(
+      List<X509Certificate> certificateChain,
+      @Nullable String applicationUri,
+      String @Nullable [] validHostnames,
+      @Nullable SecurityPolicyProfile securityPolicyProfile)
+      throws UaException {
+
+    TrustListSnapshot trustListSnapshot = trustListManager.getSnapshot();
     PKIXCertPathBuilderResult certPathResult;
 
     try {
       certPathResult =
           buildTrustedCertPath(
               certificateChain,
-              trustListManager.getTrustedCertificates(),
-              trustListManager.getIssuerCertificates());
+              trustListSnapshot.trustedCertificates(),
+              trustListSnapshot.issuerCertificates());
     } catch (UaException e) {
       certificateChain.forEach(certificateQuarantine::addRejectedCertificate);
 
-      long statusCode = e.getStatusCode().value();
-
       LOGGER.debug("validateCertificateChain failed, underlying status: {}", e.getStatusCode(), e);
 
-      if (statusCode == StatusCodes.Bad_CertificateUntrusted) {
-        // servers need to report a less informative StatusCode if the
-        // certificate was not trusted, either explicitly or because it
-        // or one if its issuers was revoked.
-
-        throw new UaException(StatusCodes.Bad_SecurityChecksFailed);
-      } else {
-        throw new UaException(e.getStatusCode());
-      }
+      // Part 4 §6.1.3 and Part 6 §6.7.7 require a generic error until trust is established.
+      // In particular, path building can fail with a validity error for an untrusted certificate.
+      throw new UaException(StatusCodes.Bad_SecurityChecksFailed);
     }
 
     try {
       List<X509CRL> crls = new ArrayList<>();
-      crls.addAll(trustListManager.getTrustedCrls());
-      crls.addAll(trustListManager.getIssuerCrls());
+      crls.addAll(trustListSnapshot.trustedCrls());
+      crls.addAll(trustListSnapshot.issuerCrls());
 
       validateTrustedCertPath(
           certPathResult.getCertPath(),
           certPathResult.getTrustAnchor(),
           crls,
           validationChecks,
-          true);
+          true,
+          securityPolicyProfile);
+
+      if (securityPolicyProfile != null) {
+        CertificateCompatibility.checkCompatible(
+            securityPolicyProfile, certificateChain.get(0), validationChecks);
+      }
     } catch (UaException e) {
       long statusCode = e.getStatusCode().value();
 
       LOGGER.debug("validateCertificateChain failed, underlying status: {}", e.getStatusCode(), e);
 
       if (statusCode == StatusCodes.Bad_CertificateRevoked
-          || statusCode == StatusCodes.Bad_CertificateIssuerRevoked) {
-        // servers need to report a less informative StatusCode if the
-        // certificate was not trusted, either explicitly or because it
-        // or one if its issuers was revoked.
+          || statusCode == StatusCodes.Bad_CertificateIssuerRevoked
+          || statusCode == StatusCodes.Bad_CertificateRevocationUnknown
+          || statusCode == StatusCodes.Bad_CertificateIssuerRevocationUnknown) {
+        // Part 4 §6.1.3 requires masking established revocation and recommends the same
+        // public status when revocation information is unavailable.
 
         throw new UaException(StatusCodes.Bad_SecurityChecksFailed);
       } else {

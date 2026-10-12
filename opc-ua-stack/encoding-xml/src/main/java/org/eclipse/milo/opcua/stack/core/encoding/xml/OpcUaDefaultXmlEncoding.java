@@ -61,9 +61,7 @@ public class OpcUaDefaultXmlEncoding implements DataTypeEncoding {
     }
 
     try (var encoder = new OpcUaXmlEncoder(context)) {
-      String xmlName =
-          OpcUaXmlEncoder.getXmlName(
-              OpcUaXmlEncoder.getNamespaceUri(context, struct.getTypeId()), struct);
+      String xmlName = OpcUaXmlEncoder.getXmlName(context, struct);
 
       encoder.encodeStruct(xmlName, struct, codec);
 

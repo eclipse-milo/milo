@@ -41,13 +41,13 @@ import org.eclipse.milo.opcua.sdk.server.AddressSpace.RevisedDataItemParameters;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.RevisedEventItemParameters;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.items.BaseMonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.EventItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredEventItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
-import org.eclipse.milo.opcua.sdk.server.servicesets.impl.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.helpers.BrowseHelper;
 import org.eclipse.milo.opcua.sdk.server.servicesets.impl.helpers.BrowsePathsHelper;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.PublishQueue.PendingPublish;
@@ -133,7 +133,7 @@ public class SubscriptionManager {
   private static final AtomicLong SUBSCRIPTION_IDS = new AtomicLong(0L);
   private static final QualifiedName EU_RANGE_BROWSE_NAME = new QualifiedName(0, "EURange");
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(SubscriptionManager.class);
   private final Map<UInteger, Subscription> subscriptions = new ConcurrentHashMap<>();
   private final List<Subscription> transferred = new CopyOnWriteArrayList<>();
   private final AtomicLong monitoredItemCount = new AtomicLong(0L);
@@ -167,6 +167,76 @@ public class SubscriptionManager {
 
   public List<Subscription> getSubscriptions() {
     return new ArrayList<>(subscriptions.values());
+  }
+
+  /**
+   * Check the read access of every data item in this Session's Subscriptions now, and apply each
+   * result to its item.
+   *
+   * <p>The server calls this when the Session's identity or endpoint changes, the two events that
+   * can change every answer for a Session at once, so the items stop enforcing answers for the
+   * previous user or channel whoever samples them (Part 4 §5.13.2.1). A {@link MonitoredDataItem}
+   * the Session may no longer read also drops the values queued for the previous user or channel,
+   * through {@link MonitoredDataItem#setReadAccessResultAfterSessionChange}. It is called from
+   * ActivateSession after the change is committed, so it never throws: a failure is logged and
+   * leaves the items' results as they were. An item that a TransferSubscriptions moved to another
+   * Session meanwhile is skipped, since the transfer applies the answer for its new Session itself,
+   * and so is any item this refresh reaches after the Session's identity or endpoint changed again,
+   * since that change runs a refresh of its own. An answer from this refresh never lands on an item
+   * after that later refresh's answer.
+   */
+  public void refreshReadAccess() {
+    try {
+      long accessEpoch = session.getAccessEpoch();
+
+      List<DataItem> dataItems =
+          subscriptions.values().stream()
+              .flatMap(subscription -> subscription.getMonitoredItems().values().stream())
+              .filter(item -> item instanceof DataItem)
+              .map(item -> (DataItem) item)
+              .toList();
+
+      if (dataItems.isEmpty()) {
+        return;
+      }
+
+      List<ReadValueId> readValueIds =
+          dataItems.stream().map(MonitoredItem::getReadValueId).distinct().toList();
+
+      Map<ReadValueId, AccessResult> results =
+          server.getAccessController().checkReadAccess(session, readValueIds);
+
+      for (DataItem item : dataItems) {
+        AccessResult result = results.get(item.getReadValueId());
+
+        if (result == null) {
+          continue;
+        }
+
+        if (item instanceof MonitoredDataItem dataItem) {
+          // MonitoredDataItem applies results under its own lock, so a later change's refresh,
+          // which bumps the epoch before it applies, either lands after this result or stops it.
+          // A new denial also drops the values queued for the previous user or channel.
+          synchronized (dataItem) {
+            if (isCheckedFor(dataItem, accessEpoch)) {
+              dataItem.setReadAccessResultAfterSessionChange(result);
+            }
+          }
+        } else {
+          item.setReadAccessResult(result, session, accessEpoch);
+        }
+      }
+    } catch (Throwable t) {
+      LOGGER.warn("Read access refresh failed for Session {}", session.getSessionId(), t);
+    }
+  }
+
+  /**
+   * Whether a refresh that checked at {@code accessEpoch} still answers for {@code item}: the item
+   * is still on this Session, and the Session's identity and endpoint have not changed since.
+   */
+  private boolean isCheckedFor(DataItem item, long accessEpoch) {
+    return item.getSession() == session && session.getAccessEpoch() == accessEpoch;
   }
 
   public CompletableFuture<CreateSubscriptionResponse> createSubscription(
@@ -265,8 +335,11 @@ public class SubscriptionManager {
 
         byMonitoredItemType(
             deletedItems,
-            dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
-            eventItems -> server.getAddressSpaceManager().onEventItemsDeleted(eventItems));
+            this::notifyDataItemsDeleted,
+            eventItems -> {
+              unregisterEventItems(eventItems);
+              server.getAddressSpaceManager().onEventItemsDeleted(eventItems);
+            });
 
         results[i] = StatusCode.GOOD;
 
@@ -344,19 +417,29 @@ public class SubscriptionManager {
                 session,
                 itemsToCreate.stream().map(MonitoredItemCreateRequest::getItemToMonitor).toList());
 
+    // Part 4 §5.13.2.1: a data item the user is denied read access to is still created, and the
+    // denial is reported in the Publish response instead. Other denials, such as an unmet
+    // AccessRestriction, fail the item here, and so does any denial of an event item, which has
+    // no sampled value to carry the denial.
     List<MonitoredItemCreateResult> results =
         GroupMapCollate.groupMapCollate(
             itemsToCreate,
-            createRequest -> accessResults.get(createRequest.getItemToMonitor()),
-            accessResult ->
+            createRequest ->
+                new CreateGroup(
+                    accessResults.get(createRequest.getItemToMonitor()),
+                    isEventItemRequest(createRequest)),
+            createGroup ->
                 group -> {
-                  if (accessResult instanceof AccessResult.Denied denied) {
+                  AccessResult accessResult = createGroup.accessResult();
+
+                  if (accessResult instanceof AccessResult.Denied denied
+                      && (createGroup.eventItem() || !isReadAccessDenial(denied))) {
                     var result =
                         new MonitoredItemCreateResult(
                             denied.statusCode(), uint(0), 0.0, uint(0), null);
                     return Collections.nCopies(group.size(), result);
                   } else {
-                    return createMonitoredItems(subscription, timestamps, group);
+                    return createMonitoredItems(subscription, timestamps, group, accessResult);
                   }
                 });
 
@@ -366,10 +449,31 @@ public class SubscriptionManager {
         header, results.toArray(new MonitoredItemCreateResult[0]), new DiagnosticInfo[0]);
   }
 
+  /**
+   * How a group of create requests is handled: by its access result, null if the controller
+   * returned none, and by item kind.
+   */
+  private record CreateGroup(@Nullable AccessResult accessResult, boolean eventItem) {}
+
+  private static boolean isEventItemRequest(MonitoredItemCreateRequest request) {
+    return AttributeId.EventNotifier.uid().equals(request.getItemToMonitor().getAttributeId());
+  }
+
+  /**
+   * Whether {@code denied} is one of the read-access denials that Part 4 §5.13.2.1 says must be
+   * reported in the Publish response rather than fail CreateMonitoredItems.
+   */
+  private static boolean isReadAccessDenial(AccessResult.Denied denied) {
+    long code = denied.statusCode().getValue();
+
+    return code == StatusCodes.Bad_UserAccessDenied || code == StatusCodes.Bad_NotReadable;
+  }
+
   private List<MonitoredItemCreateResult> createMonitoredItems(
       Subscription subscription,
       TimestampsToReturn timestamps,
-      List<MonitoredItemCreateRequest> requests) {
+      List<MonitoredItemCreateRequest> requests,
+      @Nullable AccessResult readAccessResult) {
 
     // Split requests by filter type to enable targeted attribute reading.
     // Only Percent Deadband requests on Value attributes need the expensive TypeDefinition +
@@ -433,6 +537,13 @@ public class SubscriptionManager {
         BaseMonitoredItem<?> monitoredItem =
             createMonitoredItem(request, subscription, timestamps, attributesResponse);
 
+        // Seed the item with the create-time check so a denial is queued before anything
+        // samples it. A controller that answered nothing leaves the item allowed, as before
+        // the check was seeded; whatever samples it re-checks from here on.
+        if (monitoredItem instanceof MonitoredDataItem dataItem && readAccessResult != null) {
+          dataItem.setReadAccessResult(readAccessResult);
+        }
+
         // getFilterResult() can throw while encoding the filter result, so it must be
         // called before the item is added to monitoredItems; otherwise a failure would
         // commit an item to the subscription after its quota reservation is released.
@@ -452,7 +563,7 @@ public class SubscriptionManager {
         if (e instanceof UaException ue) {
           statusCode = ue.getStatusCode();
         } else {
-          logger.error("Unexpected error creating MonitoredItem", e);
+          LOGGER.error("Unexpected error creating MonitoredItem", e);
           statusCode = new StatusCode(StatusCodes.Bad_InternalError);
         }
 
@@ -470,8 +581,11 @@ public class SubscriptionManager {
 
     byMonitoredItemType(
         monitoredItems,
-        dataItems -> server.getAddressSpaceManager().onDataItemsCreated(dataItems),
-        eventItems -> server.getAddressSpaceManager().onEventItemsCreated(eventItems));
+        this::notifyDataItemsCreated,
+        eventItems -> {
+          registerEventItems(eventItems);
+          server.getAddressSpaceManager().onEventItemsCreated(eventItems);
+        });
 
     return results;
   }
@@ -491,7 +605,7 @@ public class SubscriptionManager {
 
       return false;
     } catch (UaSerializationException e) {
-      logger.debug("Failed to decode filter when checking for Percent Deadband", e);
+      LOGGER.debug("Failed to decode filter when checking for Percent Deadband", e);
       return false;
     }
   }
@@ -536,7 +650,7 @@ public class SubscriptionManager {
         filter = validateDataItemFilter(filterObject, attributeId, attributes);
       }
     } catch (UaSerializationException e) {
-      logger.debug("error decoding MonitoringFilter", e);
+      LOGGER.debug("error decoding MonitoringFilter", e);
 
       throw new UaException(StatusCodes.Bad_MonitoredItemFilterInvalid, e);
     }
@@ -613,7 +727,7 @@ public class SubscriptionManager {
 
       filter = validateEventItemFilter(filterObject);
     } catch (UaSerializationException e) {
-      logger.debug("error decoding MonitoringFilter", e);
+      LOGGER.debug("error decoding MonitoringFilter", e);
 
       throw new UaException(StatusCodes.Bad_MonitoredItemFilterInvalid, e);
     }
@@ -821,7 +935,10 @@ public class SubscriptionManager {
     byMonitoredItemType(
         monitoredItems,
         dataItems -> server.getAddressSpaceManager().onDataItemsModified(dataItems),
-        eventItems -> server.getAddressSpaceManager().onEventItemsModified(eventItems));
+        eventItems -> {
+          registerEventItems(eventItems);
+          server.getAddressSpaceManager().onEventItemsModified(eventItems);
+        });
 
     /*
      * AddressSpaces have been notified; send the response.
@@ -875,7 +992,7 @@ public class SubscriptionManager {
 
         filter = validateEventItemFilter(filterObject);
       } catch (UaSerializationException e) {
-        logger.debug("error decoding MonitoringFilter", e);
+        LOGGER.debug("error decoding MonitoringFilter", e);
 
         throw new UaException(StatusCodes.Bad_MonitoredItemFilterInvalid, e);
       }
@@ -943,7 +1060,7 @@ public class SubscriptionManager {
           }
         }
       } catch (UaSerializationException e) {
-        logger.debug("error decoding MonitoringFilter", e);
+        LOGGER.debug("error decoding MonitoringFilter", e);
 
         throw new UaException(StatusCodes.Bad_MonitoredItemFilterInvalid, e);
       }
@@ -1214,7 +1331,7 @@ public class SubscriptionManager {
       var helper = new BrowsePathsHelper(() -> Optional.of(session), server);
       response = helper.translateBrowsePaths(request);
     } catch (UaException e) {
-      logger.warn("Failed to translate EURange browse paths", e);
+      LOGGER.warn("Failed to translate EURange browse paths", e);
       return Collections.emptyMap();
     }
 
@@ -1316,8 +1433,11 @@ public class SubscriptionManager {
 
     byMonitoredItemType(
         deletedItems,
-        dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
-        eventItems -> server.getAddressSpaceManager().onEventItemsDeleted(eventItems));
+        this::notifyDataItemsDeleted,
+        eventItems -> {
+          unregisterEventItems(eventItems);
+          server.getAddressSpaceManager().onEventItemsDeleted(eventItems);
+        });
 
     /*
      * Build and return results.
@@ -1368,8 +1488,31 @@ public class SubscriptionManager {
     }
 
     /*
-     * Notify AddressSpace of the items whose MonitoringMode has been modified.
+     * Toggle EventNotifier registration for EventItems whose sampling state changed with the
+     * MonitoringMode.
      */
+
+    for (MonitoredItem item : modified) {
+      if (item instanceof EventItem eventItem) {
+        if (eventItem.isSamplingEnabled()) {
+          server.getEventNotifier().register(eventItem);
+        } else {
+          server.getEventNotifier().unregister(eventItem);
+        }
+      }
+    }
+
+    /*
+     * Notify the server's DataItemListeners and then the AddressSpaces of the items whose
+     * MonitoringMode has been modified.
+     */
+
+    List<DataItem> modifiedDataItems =
+        modified.stream().filter(DataItem.class::isInstance).map(DataItem.class::cast).toList();
+
+    if (!modifiedDataItems.isEmpty()) {
+      server.getDataItemListener().onMonitoringModeChanged(modifiedDataItems);
+    }
 
     server.getAddressSpaceManager().onMonitoringModeChanged(modified);
 
@@ -1402,14 +1545,14 @@ public class SubscriptionManager {
         Subscription subscription = subscriptions.get(subscriptionId);
 
         if (subscription == null) {
-          logger.debug(
+          LOGGER.debug(
               "Can't acknowledge sequenceNumber={} on subscriptionId={}; id not valid for this"
                   + " session",
               sequenceNumber,
               subscriptionId);
           results[i] = new StatusCode(StatusCodes.Bad_SubscriptionIdInvalid);
         } else {
-          logger.debug(
+          LOGGER.debug(
               "Acknowledging sequenceNumber={} on subscriptionId={}",
               sequenceNumber,
               subscriptionId);
@@ -1556,8 +1699,11 @@ public class SubscriptionManager {
 
         byMonitoredItemType(
             deletedItems,
-            dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
-            eventItems -> server.getAddressSpaceManager().onEventItemsDeleted(eventItems));
+            this::notifyDataItemsDeleted,
+            eventItems -> {
+              unregisterEventItems(eventItems);
+              server.getAddressSpaceManager().onEventItemsDeleted(eventItems);
+            });
 
         monitoredItemCount.getAndUpdate(count -> count - deletedItems.size());
         server.getMonitoredItemCount().getAndUpdate(count -> count - deletedItems.size());
@@ -1645,8 +1791,11 @@ public class SubscriptionManager {
 
             byMonitoredItemType(
                 monitoredItems.values(),
-                dataItems -> server.getAddressSpaceManager().onDataItemsDeleted(dataItems),
-                eventItems -> server.getAddressSpaceManager().onEventItemsDeleted(eventItems));
+                this::notifyDataItemsDeleted,
+                eventItems -> {
+                  unregisterEventItems(eventItems);
+                  server.getAddressSpaceManager().onEventItemsDeleted(eventItems);
+                });
 
             monitoredItemCount.getAndUpdate(count -> count - monitoredItems.size());
             server.getMonitoredItemCount().getAndUpdate(count -> count - monitoredItems.size());
@@ -1654,6 +1803,46 @@ public class SubscriptionManager {
             monitoredItems.clear();
           }
         });
+  }
+
+  /**
+   * Register or unregister {@code eventItems} with the Server's {@link
+   * org.eclipse.milo.opcua.sdk.server.EventNotifier} according to each item's sampling state.
+   *
+   * <p>Registration is SDK-owned and idempotent, for items from all namespaces; the {@code
+   * AddressSpace.onEventItems*} callbacks are lifecycle notifications only.
+   */
+  private void registerEventItems(List<EventItem> eventItems) {
+    for (EventItem item : eventItems) {
+      if (item.isSamplingEnabled()) {
+        server.getEventNotifier().register(item);
+      } else {
+        server.getEventNotifier().unregister(item);
+      }
+    }
+  }
+
+  /** Unregister {@code eventItems} from the Server's EventNotifier. */
+  private void unregisterEventItems(List<EventItem> eventItems) {
+    eventItems.forEach(item -> server.getEventNotifier().unregister(item));
+  }
+
+  /**
+   * Notify the server's {@link org.eclipse.milo.opcua.sdk.server.DataItemListener}s and then the
+   * owning AddressSpaces that {@code dataItems} were created.
+   */
+  private void notifyDataItemsCreated(List<DataItem> dataItems) {
+    server.getDataItemListener().onDataItemsCreated(dataItems);
+    server.getAddressSpaceManager().onDataItemsCreated(dataItems);
+  }
+
+  /**
+   * Notify the server's {@link org.eclipse.milo.opcua.sdk.server.DataItemListener}s and then the
+   * owning AddressSpaces that {@code dataItems} were deleted.
+   */
+  private void notifyDataItemsDeleted(List<DataItem> dataItems) {
+    server.getDataItemListener().onDataItemsDeleted(dataItems);
+    server.getAddressSpaceManager().onDataItemsDeleted(dataItems);
   }
 
   /**
@@ -1686,8 +1875,7 @@ public class SubscriptionManager {
         dataItemConsumer.accept(dataItems);
       }
     } catch (Throwable t) {
-      LoggerFactory.getLogger(SubscriptionManager.class)
-          .error("Uncaught Throwable in dataItemConsumer", t);
+      LOGGER.error("Uncaught Throwable in dataItemConsumer", t);
     }
 
     try {
@@ -1695,8 +1883,7 @@ public class SubscriptionManager {
         eventItemConsumer.accept(eventItems);
       }
     } catch (Throwable t) {
-      LoggerFactory.getLogger(SubscriptionManager.class)
-          .error("Uncaught Throwable in eventItemConsumer", t);
+      LOGGER.error("Uncaught Throwable in eventItemConsumer", t);
     }
   }
 

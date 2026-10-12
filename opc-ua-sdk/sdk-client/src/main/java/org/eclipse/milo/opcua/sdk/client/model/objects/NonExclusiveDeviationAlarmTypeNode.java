@@ -88,7 +88,10 @@ public class NonExclusiveDeviationAlarmTypeNode extends NonExclusiveLimitAlarmTy
   @Override
   public void writeSetpointNode(NodeId value) throws UaException {
     try {
-      writeSetpointNodeAsync(value).get();
+      StatusCode statusCode = writeSetpointNodeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -158,7 +161,10 @@ public class NonExclusiveDeviationAlarmTypeNode extends NonExclusiveLimitAlarmTy
   @Override
   public void writeBaseSetpointNode(NodeId value) throws UaException {
     try {
-      writeBaseSetpointNodeAsync(value).get();
+      StatusCode statusCode = writeBaseSetpointNodeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

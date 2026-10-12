@@ -29,6 +29,9 @@ import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.asn1.x509.CRLDistPoint;
+import org.bouncycastle.asn1.x509.DistributionPoint;
+import org.bouncycastle.asn1.x509.DistributionPointName;
 import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.GeneralName;
@@ -62,6 +65,8 @@ public class CaSignedCertificateBuilder {
   public static final String SA_SHA256_ECDSA = "SHA256withECDSA";
 
   private Period validityPeriod = Period.ofYears(3);
+  private @Nullable Date notBefore = null;
+  private @Nullable Date notAfter = null;
 
   private String commonName = "";
   private String organization = "";
@@ -73,6 +78,7 @@ public class CaSignedCertificateBuilder {
   private String applicationUri = null;
   private final List<String> dnsNames = new ArrayList<>();
   private final List<String> ipAddresses = new ArrayList<>();
+  private final List<String> crlDistributionPoints = new ArrayList<>();
   private String signatureAlgorithm = SA_SHA256_RSA;
 
   private boolean isCa = false;
@@ -120,6 +126,21 @@ public class CaSignedCertificateBuilder {
     return this;
   }
 
+  /**
+   * Set an explicit validity window, overriding {@link #setValidityPeriod(Period)}.
+   *
+   * <p>Use this to build certificates that are expired or not yet valid.
+   *
+   * @param notBefore the start of the validity period.
+   * @param notAfter the end of the validity period.
+   * @return this builder.
+   */
+  public CaSignedCertificateBuilder setValidity(Date notBefore, Date notAfter) {
+    this.notBefore = notBefore;
+    this.notAfter = notAfter;
+    return this;
+  }
+
   public CaSignedCertificateBuilder setCommonName(String commonName) {
     this.commonName = commonName;
     return this;
@@ -162,6 +183,17 @@ public class CaSignedCertificateBuilder {
 
   public CaSignedCertificateBuilder addIpAddress(String ipAddress) {
     ipAddresses.add(ipAddress);
+    return this;
+  }
+
+  /**
+   * Add a CRL distribution point URI to the certificate's CRLDistributionPoints extension.
+   *
+   * @param uri the URI a relying party may fetch the issuer's CRL from.
+   * @return this builder.
+   */
+  public CaSignedCertificateBuilder addCrlDistributionPoint(String uri) {
+    crlDistributionPoints.add(uri);
     return this;
   }
 
@@ -246,12 +278,18 @@ public class CaSignedCertificateBuilder {
    * @throws Exception if certificate generation fails
    */
   public X509Certificate build() throws Exception {
-    // Calculate start and end date based on validity period
+    // Calculate start and end date based on validity period unless a window was set explicitly
     LocalDate now = LocalDate.now();
     LocalDate expiration = now.plus(validityPeriod);
 
-    Date notBefore = Date.from(now.atStartOfDay(ZoneId.systemDefault()).toInstant());
-    Date notAfter = Date.from(expiration.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    Date notBefore =
+        this.notBefore != null
+            ? this.notBefore
+            : Date.from(now.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    Date notAfter =
+        this.notAfter != null
+            ? this.notAfter
+            : Date.from(expiration.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
     // Build subject name
     X500NameBuilder subjectNameBuilder = new X500NameBuilder();
@@ -345,6 +383,19 @@ public class CaSignedCertificateBuilder {
           Extension.subjectAlternativeName,
           false,
           new GeneralNames(generalNames.toArray(new GeneralName[] {})));
+    }
+
+    // CRL Distribution Points
+    if (!crlDistributionPoints.isEmpty()) {
+      DistributionPoint[] distributionPoints =
+          crlDistributionPoints.stream()
+              .map(uri -> new GeneralName(GeneralName.uniformResourceIdentifier, uri))
+              .map(name -> new DistributionPointName(new GeneralNames(name)))
+              .map(name -> new DistributionPoint(name, null, null))
+              .toArray(DistributionPoint[]::new);
+
+      certificateBuilder.addExtension(
+          Extension.cRLDistributionPoints, false, new CRLDistPoint(distributionPoints));
     }
 
     // Subject Key Identifier

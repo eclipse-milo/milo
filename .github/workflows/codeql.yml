@@ -15,7 +15,9 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - "main"
+      - "integration/1.2"
   schedule:
     - cron: '19 13 * * 5'
 

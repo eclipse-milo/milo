@@ -4,7 +4,9 @@ permissions:
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - "main"
+      - "integration/1.2"
 
 jobs:
   build:

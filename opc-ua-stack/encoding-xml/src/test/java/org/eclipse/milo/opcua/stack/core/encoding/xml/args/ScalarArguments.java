@@ -321,7 +321,7 @@ public class ScalarArguments {
         Arguments.of(
             ByteString.NULL_VALUE,
             """
-            <Test></Test>
+            <Test xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></Test>
             """),
         // null value
         Arguments.of(null, ""));
@@ -755,7 +755,7 @@ public class ScalarArguments {
         Arguments.of(
             XmlElement.NULL_VALUE,
             """
-            <Test></Test>
+            <Test xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"></Test>
             """),
         // null XmlElement
         Arguments.of(null, ""));

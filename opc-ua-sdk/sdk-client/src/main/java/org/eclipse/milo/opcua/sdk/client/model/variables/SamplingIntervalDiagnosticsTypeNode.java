@@ -104,7 +104,10 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
   @Override
   public void writeSamplingInterval(Double value) throws UaException {
     try {
-      writeSamplingIntervalAsync(value).get();
+      StatusCode statusCode = writeSamplingIntervalAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -177,7 +180,10 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
   @Override
   public void writeSampledMonitoredItemsCount(UInteger value) throws UaException {
     try {
-      writeSampledMonitoredItemsCountAsync(value).get();
+      StatusCode statusCode = writeSampledMonitoredItemsCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -252,7 +258,10 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
   @Override
   public void writeMaxSampledMonitoredItemsCount(UInteger value) throws UaException {
     try {
-      writeMaxSampledMonitoredItemsCountAsync(value).get();
+      StatusCode statusCode = writeMaxSampledMonitoredItemsCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -327,7 +336,10 @@ public class SamplingIntervalDiagnosticsTypeNode extends BaseDataVariableTypeNod
   @Override
   public void writeDisabledMonitoredItemsSamplingCount(UInteger value) throws UaException {
     try {
-      writeDisabledMonitoredItemsSamplingCountAsync(value).get();
+      StatusCode statusCode = writeDisabledMonitoredItemsSamplingCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -15,17 +15,21 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
+import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
@@ -34,6 +38,7 @@ import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
+import org.eclipse.milo.opcua.stack.core.encoding.json.OpcUaJsonEncoder.Encoding;
 import org.eclipse.milo.opcua.stack.core.types.UaMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -55,9 +60,21 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * Decodes OPC UA JSON values, including unordered COMPACT structures.
+ *
+ * <p>Structure members and buffered Variant/ExtensionObject bodies reject duplicate names. Unread
+ * structure members are rejected; built-in value decoders retain their unknown-field rules. Input
+ * is bounded in UTF-16 code units by the context's maximum message size (or the default message
+ * size when unlimited). Buffered JSON containers obey the maximum recursion depth.
+ */
 public class OpcUaJsonDecoder implements UaDecoder {
 
+  private Encoding encoding = Encoding.COMPACT;
+
   private String peekedNextName = null;
+  private JsonObject structureFields;
+  private boolean structureFieldSelected;
 
   JsonReader jsonReader;
   EncodingContext context;
@@ -72,7 +89,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
   public OpcUaJsonDecoder(EncodingContext context, Reader reader) {
     this.context = context;
-    this.jsonReader = new JsonReader(reader);
+    this.jsonReader = JsonValueBuffer.newReader(reader, context.getEncodingLimits());
   }
 
   @Override
@@ -80,15 +97,32 @@ public class OpcUaJsonDecoder implements UaDecoder {
     return context;
   }
 
+  /**
+   * Selects the representation read by this decoder; COMPACT is the default.
+   *
+   * <p>VERBOSE derives optional masks and union selectors from member names supplied by codecs
+   * through {@link #decodeEncodingMask} and {@link #decodeSwitchField}. Select the mode before
+   * decoding a value. Resetting the input retains the selected mode. RawData type inference is not
+   * supported.
+   *
+   * @param encoding the JSON encoding used by the input.
+   */
+  public void setEncoding(Encoding encoding) {
+    this.encoding = Objects.requireNonNull(encoding);
+  }
+
   public void reset(Reader reader) {
-    jsonReader = new JsonReader(reader);
+    jsonReader = JsonValueBuffer.newReader(reader, context.getEncodingLimits());
+    peekedNextName = null;
+    structureFields = null;
+    structureFieldSelected = false;
   }
 
   @Override
   public Boolean decodeBoolean(String field) throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return false;
@@ -101,7 +135,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
         throw new UaSerializationException(
             StatusCodes.Bad_DecodingError, "readBoolean: unexpected token: " + jsonReader.peek());
       }
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -110,7 +144,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   public Byte decodeSByte(String field) throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return (byte) 0;
@@ -123,7 +157,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
         throw new UaSerializationException(
             StatusCodes.Bad_DecodingError, "readSByte: unexpected token: " + jsonReader.peek());
       }
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -132,7 +166,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   public Short decodeInt16(String field) throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return (short) 0;
@@ -145,7 +179,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
         throw new UaSerializationException(
             StatusCodes.Bad_DecodingError, "readInt16: unexpected token: " + jsonReader.peek());
       }
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -154,7 +188,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   public Integer decodeInt32(String field) throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return 0;
@@ -167,7 +201,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
         throw new UaSerializationException(
             StatusCodes.Bad_DecodingError, "readInt32: unexpected token: " + jsonReader.peek());
       }
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -180,7 +214,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return 0L;
@@ -197,7 +231,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
         throw new UaSerializationException(
             StatusCodes.Bad_DecodingError, "readInt64: unexpected token: " + jsonReader.peek());
       }
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -206,7 +240,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   public UByte decodeByte(String field) throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return UByte.MIN;
@@ -219,7 +253,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
         throw new UaSerializationException(
             StatusCodes.Bad_DecodingError, "readByte: unexpected token: " + jsonReader.peek());
       }
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -228,7 +262,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   public UShort decodeUInt16(String field) throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return UShort.MIN;
@@ -241,7 +275,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
         throw new UaSerializationException(
             StatusCodes.Bad_DecodingError, "readUInt16: unexpected token: " + jsonReader.peek());
       }
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -250,7 +284,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   public UInteger decodeUInt32(String field) throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return UInteger.MIN;
@@ -263,8 +297,52 @@ public class OpcUaJsonDecoder implements UaDecoder {
         throw new UaSerializationException(
             StatusCodes.Bad_DecodingError, "readUInt32: unexpected token: " + jsonReader.peek());
       }
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
+    }
+  }
+
+  @Override
+  public UInteger decodeEncodingMask(String... optionalFieldNames) throws UaSerializationException {
+    if (encoding == Encoding.COMPACT) {
+      return UaDecoder.super.decodeEncodingMask(optionalFieldNames);
+    }
+    if (optionalFieldNames.length > 32) {
+      throw new IllegalArgumentException("An encoding mask supports at most 32 optional fields");
+    }
+    requireStructureHeader();
+    long mask = 0L;
+    for (int i = 0; i < optionalFieldNames.length; i++) {
+      if (structureFields.has(optionalFieldNames[i])) {
+        mask |= 1L << i;
+      }
+    }
+    return uint(mask);
+  }
+
+  @Override
+  public UInteger decodeSwitchField(String... fieldNames) throws UaSerializationException {
+    if (encoding == Encoding.COMPACT) {
+      return UaDecoder.super.decodeSwitchField(fieldNames);
+    }
+    requireStructureHeader();
+    int selector = 0;
+    for (int i = 0; i < fieldNames.length; i++) {
+      if (structureFields.has(fieldNames[i])) {
+        if (selector != 0) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_DecodingError, "Union contains more than one member");
+        }
+        selector = i + 1;
+      }
+    }
+    return uint(selector);
+  }
+
+  private void requireStructureHeader() {
+    if (structureFields == null || structureFieldSelected) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_DecodingError, "Decode structure headers before reading members");
     }
   }
 
@@ -276,7 +354,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return ULong.MIN;
@@ -293,7 +371,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
         throw new UaSerializationException(
             StatusCodes.Bad_DecodingError, "readUInt64: unexpected token: " + jsonReader.peek());
       }
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -308,7 +386,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return 0.0f;
@@ -332,7 +410,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
             throw new UaSerializationException(
                 StatusCodes.Bad_DecodingError, "readFloat: unexpected token: " + jsonReader.peek());
       };
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -347,7 +425,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return 0.0;
@@ -372,7 +450,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
                 StatusCodes.Bad_DecodingError,
                 "readDouble: unexpected token: " + jsonReader.peek());
       };
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -385,7 +463,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return null;
@@ -401,7 +479,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
         throw new UaSerializationException(
             StatusCodes.Bad_DecodingError, "readString: unexpected token: " + jsonReader.peek());
       }
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -418,7 +496,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return DateTime.MIN_VALUE;
@@ -444,7 +522,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
         throw new UaSerializationException(
             StatusCodes.Bad_DecodingError, "readDateTime: unexpected token: " + jsonReader.peek());
       }
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -453,7 +531,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   public UUID decodeGuid(String field) throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return null;
@@ -468,7 +546,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
         throw new UaSerializationException(
             StatusCodes.Bad_DecodingError, "readGuid: unexpected token: " + jsonReader.peek());
       }
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -482,7 +560,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return null;
@@ -494,12 +572,16 @@ public class OpcUaJsonDecoder implements UaDecoder {
         byte[] bs = Base64.getDecoder().decode(s);
 
         return ByteString.of(bs);
+      } else if (jsonReader.peek() == JsonToken.NULL) {
+        // ByteString is nullable (OPC 10000-6 Table 1); JSON null is a NULL ByteString.
+        jsonReader.nextNull();
+        return ByteString.NULL_VALUE;
       } else {
         throw new UaSerializationException(
             StatusCodes.Bad_DecodingError,
             "readByteString: unexpected token: " + jsonReader.peek());
       }
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -508,7 +590,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   public XmlElement decodeXmlElement(String field) throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return null;
@@ -524,7 +606,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
             StatusCodes.Bad_DecodingError,
             "readXmlElement: unexpected token: " + jsonReader.peek());
       }
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -533,7 +615,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   public NodeId decodeNodeId(String field) throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return NodeId.NULL_VALUE;
@@ -543,6 +625,8 @@ public class OpcUaJsonDecoder implements UaDecoder {
       String id = jsonReader.nextString();
       ExpandedNodeId xni = ExpandedNodeId.parse(id);
       return xni.toNodeId(getEncodingContext().getNamespaceTable()).orElse(new NodeId(0, id));
+    } catch (UaSerializationException e) {
+      throw e;
     } catch (Exception e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
@@ -552,7 +636,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   public ExpandedNodeId decodeExpandedNodeId(String field) throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return ExpandedNodeId.NULL_VALUE;
@@ -560,7 +644,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
       }
 
       return ExpandedNodeId.parse(jsonReader.nextString());
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -569,7 +653,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   public StatusCode decodeStatusCode(String field) throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return StatusCode.GOOD;
@@ -612,7 +696,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
         throw new UaSerializationException(
             StatusCodes.Bad_DecodingError, "readStatusCode: unexpected token: " + token);
       }
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -621,7 +705,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   public QualifiedName decodeQualifiedName(String field) throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return QualifiedName.NULL_VALUE;
@@ -657,18 +741,54 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
         return new QualifiedName(index, name);
       } else {
-        return new QualifiedName(0, s);
+        return parseQualifiedNameWithoutUri(s);
       }
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
+  }
+
+  /**
+   * Parse a QualifiedName string that does not use the {@code nsu=} form.
+   *
+   * <p>Part 6 §5.1.12, Table 7 defines {@code <short-index> ":" <name>}, where {@code
+   * <short-index>} is one or more ASCII digits. Names in namespace 0 may not start with that
+   * prefix, so a string without it is a namespace 0 name. Part 6 §5.4.2.14 permits this form when
+   * the encoder cannot map the NamespaceIndex to a URI, and requires the decoder to pass the index
+   * through, so the index is not checked against the NamespaceTable.
+   *
+   * @param s the non-empty QualifiedName string.
+   * @return the decoded QualifiedName.
+   * @throws UaSerializationException if the {@code <short-index>} is outside the UInt16 range.
+   */
+  private static QualifiedName parseQualifiedNameWithoutUri(String s) {
+    int colon = 0;
+    while (colon < s.length() && s.charAt(colon) >= '0' && s.charAt(colon) <= '9') {
+      colon++;
+    }
+
+    if (colon == 0 || colon == s.length() || s.charAt(colon) != ':') {
+      return new QualifiedName(0, s);
+    }
+
+    int index = 0;
+    for (int i = 0; i < colon; i++) {
+      index = index * 10 + (s.charAt(i) - '0');
+
+      if (index > UShort.MAX_VALUE) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError, "readQualifiedName: namespace index out of range: " + s);
+      }
+    }
+
+    return new QualifiedName(index, s.substring(colon + 1));
   }
 
   @Override
   public LocalizedText decodeLocalizedText(String field) throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return LocalizedText.NULL_VALUE;
@@ -698,15 +818,14 @@ public class OpcUaJsonDecoder implements UaDecoder {
             break;
           default:
             throw new UaSerializationException(
-                StatusCodes.Bad_DecodingError,
-                String.format("readLocalizedText: unexpected field: " + nextName));
+                StatusCodes.Bad_DecodingError, "readLocalizedText: unexpected field: " + nextName);
         }
       }
 
       jsonReader.endObject();
 
       return new LocalizedText(locale, text);
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -715,7 +834,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   public ExtensionObject decodeExtensionObject(String field) throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return null;
@@ -727,62 +846,69 @@ public class OpcUaJsonDecoder implements UaDecoder {
         return null;
       }
 
-      jsonReader.beginObject();
-
-      NodeId encodingId = null;
-      int encoding = 0;
-      // Buffer the body as a generic JsonElement so the encoding doesn't have to be known
-      // until the whole object has been read — JSON field order isn't guaranteed.
-      JsonElement bodyElement = null;
-
-      while (jsonReader.peek() == JsonToken.NAME) {
-        String nextName = nextName();
-        if (nextName == null) continue;
-
-        switch (nextName) {
-          case "UaTypeId":
-          case "TypeId":
-            encodingId = decodeNodeId(null);
-            break;
-          case "UaEncoding":
-          case "Encoding":
-            encoding = jsonReader.nextInt();
-            break;
-          case "UaBody":
-          case "Body":
-            bodyElement = JsonParser.parseReader(jsonReader);
-            break;
-          default:
-            throw new UaSerializationException(
-                StatusCodes.Bad_DecodingError,
-                String.format("readExtensionObject: unexpected field: " + nextName));
-        }
-      }
-
-      jsonReader.endObject();
-
-      if (encodingId == null) {
+      JsonElement value =
+          JsonValueBuffer.read(jsonReader, context.getEncodingLimits().getMaxRecursionDepth());
+      if (!value.isJsonObject()) {
         throw new UaSerializationException(
-            StatusCodes.Bad_DecodingError, "readExtensionObject: encodingId == null");
+            StatusCodes.Bad_DecodingError, "Expected ExtensionObject object");
+      }
+      JsonObject object = value.getAsJsonObject();
+      if (object.isEmpty()) return null;
+
+      JsonElement type = object.remove("UaTypeId");
+      if (type == null || !type.isJsonPrimitive() || !type.getAsJsonPrimitive().isString()) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError, "ExtensionObject UaTypeId must be a NodeId string");
+      }
+      NodeId typeId = new OpcUaJsonDecoder(context, type.toString()).decodeNodeId(null);
+      if (typeId.isNull()) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError, "ExtensionObject UaTypeId is null");
       }
 
-      return switch (encoding) {
-        case 0 ->
-            ExtensionObject.of(bodyElement == null ? "null" : bodyElement.toString(), encodingId);
-        case 1 -> {
-          String base64 = bodyElement == null ? "" : bodyElement.getAsString();
-          yield ExtensionObject.of(ByteString.of(Base64.getDecoder().decode(base64)), encodingId);
-        }
-        case 2 -> {
-          String xml = bodyElement == null ? "" : bodyElement.getAsString();
-          yield ExtensionObject.of(new XmlElement(xml), encodingId);
-        }
-        default ->
-            throw new UaSerializationException(
-                StatusCodes.Bad_DecodingError,
-                "readExtensionObject: unexpected encoding: " + encoding);
-      };
-    } catch (IOException e) {
+      JsonElement bodyEncoding = object.remove("UaEncoding");
+      if (bodyEncoding == null) {
+        // UaBody is an ordinary native field here. Never unwrap an older Milo envelope.
+        return ExtensionObject.of(object.toString(), typeId);
+      }
+      if (!bodyEncoding.isJsonPrimitive() || !bodyEncoding.getAsJsonPrimitive().isNumber()) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError, "ExtensionObject UaEncoding must be 1 or 2");
+      }
+      int bodyFormat = bodyEncoding.getAsBigDecimal().intValueExact();
+      if (bodyFormat != 1 && bodyFormat != 2) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError, "Unsupported ExtensionObject UaEncoding: " + bodyFormat);
+      }
+      JsonElement body = object.remove("UaBody");
+      if (!object.isEmpty()
+          || body == null
+          || (!body.isJsonNull()
+              && (!body.isJsonPrimitive() || !body.getAsJsonPrimitive().isString()))) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError, "Invalid Binary/XML ExtensionObject envelope");
+      }
+      NodeId encodingId =
+          bodyFormat == 1
+              ? context.getDataTypeManager().getBinaryEncodingId(typeId)
+              : context.getDataTypeManager().getXmlEncodingId(typeId);
+      if (encodingId == null || encodingId.isNull()) {
+        throw new UaSerializationException(
+            StatusCodes.Bad_DecodingError, "ExtensionObject encoding is unresolved: " + typeId);
+      }
+      byte[] bytes = body.isJsonNull() ? null : Base64.getDecoder().decode(body.getAsString());
+      if (bodyFormat == 1) {
+        return ExtensionObject.of(ByteString.of(bytes), encodingId);
+      }
+      String xml =
+          bytes == null
+              ? null
+              : StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).toString();
+      return ExtensionObject.of(new XmlElement(xml), encodingId);
+    } catch (IOException
+        | IllegalStateException
+        | IllegalArgumentException
+        | ArithmeticException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -791,27 +917,30 @@ public class OpcUaJsonDecoder implements UaDecoder {
   public DataValue decodeDataValue(String field) throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
-          return null;
+          return DataValue.newValue().build();
         }
+      }
+
+      // Part 6, 5.1.2: a null DataValue has all fields set to their defaults.
+      if (jsonReader.peek() == JsonToken.NULL) {
+        jsonReader.nextNull();
+        return DataValue.newValue().build();
       }
 
       jsonReader.beginObject();
 
+      // Part 6, 5.4.2.18: the Variant fields share the DataValue object.
+      var variantFields = new VariantFields();
       DataValue.Builder b = DataValue.newValue();
-      b.setStatus(StatusCode.GOOD);
 
       while (jsonReader.peek() == JsonToken.NAME) {
         String nextName = nextName();
-        if (nextName == null) continue;
+        if (nextName == null || readVariantField(nextName, variantFields)) continue;
 
         switch (nextName) {
-          case "Value":
-            b.setValue(decodeVariant(null));
-            break;
-
           case "Status":
             b.setStatus(decodeStatusCode(null));
             break;
@@ -836,8 +965,10 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
       jsonReader.endObject();
 
+      b.setValue(readVariant(variantFields));
+
       return b.build();
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -846,7 +977,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
   public Variant decodeVariant(String field) throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return Variant.NULL_VALUE;
@@ -860,101 +991,145 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
       jsonReader.beginObject();
 
-      int typeId = 0;
-      JsonElement bodyElement = null;
-      int[] dimensions = null;
+      var fields = new VariantFields();
 
       while (jsonReader.peek() == JsonToken.NAME) {
         String nextName = nextName();
         if (nextName == null) continue;
 
-        switch (nextName) {
-          case "UaType":
-          case "Type":
-            typeId = jsonReader.nextInt();
-            break;
-          case "Value":
-          case "Body":
-            bodyElement = JsonParser.parseReader(jsonReader);
-            break;
-          case "Dimensions":
-            var dims = new ArrayList<Integer>();
-            jsonReader.beginArray();
-            while (jsonReader.peek() == JsonToken.NUMBER) {
-              dims.add(jsonReader.nextInt());
-            }
-            jsonReader.endArray();
-            dimensions = new int[dims.size()];
-            for (int i = 0; i < dims.size(); i++) {
-              dimensions[i] = dims.get(i);
-            }
-            break;
-        }
+        readVariantField(nextName, fields);
       }
 
       jsonReader.endObject();
 
-      if (bodyElement == null) {
-        return Variant.NULL_VALUE;
-      } else if (dimensions == null) {
-        // scalar or one-dimensional array value
-        JsonReader reader = jsonReader;
-        try {
-          jsonReader = new JsonReader(new StringReader(bodyElement.toString()));
+      return readVariant(fields);
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
+      throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
+    }
+  }
 
-          if (bodyElement.isJsonArray()) {
-            var elements = new ArrayList<>();
-            jsonReader.beginArray();
-            while (jsonReader.peek() != JsonToken.END_ARRAY) {
-              elements.add(readBuiltinTypeValue(null, typeId));
-            }
-            jsonReader.endArray();
-            Object value =
-                Array.newInstance(OpcUaDataType.getPrimitiveBackingClass(typeId), elements.size());
-            for (int i = 0; i < elements.size(); i++) {
-              Array.set(value, i, elements.get(i));
-            }
-            return new Variant(value);
-          } else {
-            Object value = readBuiltinTypeValue(null, typeId);
-            return new Variant(value);
-          }
-        } finally {
-          jsonReader = reader;
+  /** The Variant fields of a JSON object, collected in any order before the body is decoded. */
+  private static final class VariantFields {
+    int typeId = 0;
+    JsonElement body = null;
+    int[] dimensions = null;
+  }
+
+  /**
+   * Read the value of {@code name} into {@code fields} if it names a Variant field.
+   *
+   * @return {@code true} if the value was consumed.
+   */
+  private boolean readVariantField(String name, VariantFields fields) throws IOException {
+    switch (name) {
+      case "UaType":
+      case "Type":
+        fields.typeId = jsonReader.nextInt();
+        return true;
+      case "Value":
+      case "Body":
+        fields.body =
+            JsonValueBuffer.read(jsonReader, context.getEncodingLimits().getMaxRecursionDepth());
+        return true;
+      case "Dimensions":
+        var dims = new ArrayList<Integer>();
+        jsonReader.beginArray();
+        while (jsonReader.peek() == JsonToken.NUMBER) {
+          dims.add(jsonReader.nextInt());
         }
-      } else {
-        // multi-dimensional array value
-        JsonReader reader = jsonReader;
-        try {
-          jsonReader = new JsonReader(new StringReader(bodyElement.toString()));
+        jsonReader.endArray();
+        fields.dimensions = new int[dims.size()];
+        for (int i = 0; i < dims.size(); i++) {
+          fields.dimensions[i] = dims.get(i);
+        }
+        return true;
+      default:
+        return false;
+    }
+  }
 
+  private Variant readVariant(VariantFields fields) throws IOException {
+    JsonElement bodyElement = fields.body;
+    int typeId = fields.typeId;
+    int[] dimensions = fields.dimensions;
+
+    if (bodyElement == null) {
+      return Variant.NULL_VALUE;
+    } else if (typeId == 0) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_DecodingError, "Variant Value requires a UaType");
+    } else if (dimensions == null) {
+      // scalar or one-dimensional array value
+      JsonReader reader = jsonReader;
+      try {
+        jsonReader = new JsonReader(new StringReader(bodyElement.toString()));
+
+        if (bodyElement.isJsonArray()) {
           var elements = new ArrayList<>();
           jsonReader.beginArray();
           while (jsonReader.peek() != JsonToken.END_ARRAY) {
             elements.add(readBuiltinTypeValue(null, typeId));
           }
           jsonReader.endArray();
-
-          Object flatArray =
+          Object value =
               Array.newInstance(OpcUaDataType.getPrimitiveBackingClass(typeId), elements.size());
           for (int i = 0; i < elements.size(); i++) {
-            Array.set(flatArray, i, elements.get(i));
+            Array.set(value, i, elements.get(i));
           }
-
-          validateMatrixDimensions(flatArray, dimensions);
-
-          var matrix = new Matrix(flatArray, dimensions, OpcUaDataType.fromTypeId(typeId));
-
-          return new Variant(matrix);
-        } finally {
-          jsonReader = reader;
+          return new Variant(value);
+        } else {
+          Object value = readBuiltinTypeValue(null, typeId);
+          return new Variant(value);
         }
+      } finally {
+        jsonReader = reader;
       }
-    } catch (IOException e) {
-      throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
+    } else {
+      // multi-dimensional array value
+      JsonReader reader = jsonReader;
+      try {
+        jsonReader = new JsonReader(new StringReader(bodyElement.toString()));
+
+        var elements = new ArrayList<>();
+        jsonReader.beginArray();
+        while (jsonReader.peek() != JsonToken.END_ARRAY) {
+          elements.add(readBuiltinTypeValue(null, typeId));
+        }
+        jsonReader.endArray();
+
+        Object flatArray =
+            Array.newInstance(OpcUaDataType.getPrimitiveBackingClass(typeId), elements.size());
+        for (int i = 0; i < elements.size(); i++) {
+          Array.set(flatArray, i, elements.get(i));
+        }
+
+        if (dimensions.length == 0) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_DecodingError, "Variant Dimensions is empty");
+        }
+
+        checkMatrixElementCount(flatArray, dimensions);
+
+        if (dimensions.length == 1) {
+          // One dimension describes a one-dimensional array, as in OpcUaBinaryDecoder.
+          return new Variant(flatArray);
+        }
+
+        var matrix = new Matrix(flatArray, dimensions, OpcUaDataType.fromTypeId(typeId));
+
+        return new Variant(matrix);
+      } finally {
+        jsonReader = reader;
+      }
     }
   }
 
+  /**
+   * Validate the Array and Dimensions members of a structure field Matrix.
+   *
+   * <p>Both members must be present, Dimensions must have at least two entries (the minimum {@link
+   * Matrix} allows), and the product of Dimensions must equal the Array length.
+   */
   private void validateMatrixDimensions(Object flatArray, int[] dimensions)
       throws UaSerializationException {
     if (flatArray == null) {
@@ -966,6 +1141,23 @@ public class OpcUaJsonDecoder implements UaDecoder {
           StatusCodes.Bad_DecodingError, "matrix Dimensions is missing");
     }
 
+    if (dimensions.length < 2) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_DecodingError,
+          String.format(
+              "matrix must have at least 2 dimensions (dimensions=%s)",
+              Arrays.toString(dimensions)));
+    }
+
+    checkMatrixElementCount(flatArray, dimensions);
+  }
+
+  /**
+   * Validate that every dimension is non-negative, within the encoding limits, and that the product
+   * of {@code dimensions} equals the length of {@code flatArray}.
+   */
+  private void checkMatrixElementCount(Object flatArray, int[] dimensions)
+      throws UaSerializationException {
     int maxMessageSize = context.getEncodingLimits().getMaxMessageSize();
     int flatArrayLength = Array.getLength(flatArray);
     int expectedLength = 1;
@@ -1044,11 +1236,16 @@ public class OpcUaJsonDecoder implements UaDecoder {
   public DiagnosticInfo decodeDiagnosticInfo(String field) throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return DiagnosticInfo.NULL_VALUE;
         }
+      }
+
+      if (jsonReader.peek() == JsonToken.NULL) {
+        jsonReader.nextNull();
+        return null;
       }
 
       jsonReader.beginObject();
@@ -1100,25 +1297,43 @@ public class OpcUaJsonDecoder implements UaDecoder {
           additionalInfo,
           innerStatusCode,
           innerDiagnosticInfo);
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
 
   @Override
   public UaMessageType decodeMessage(String field) throws UaSerializationException {
-    try {
-      ExtensionObject xo = decodeExtensionObject(field);
-
-      return (UaMessageType) xo.decode(context);
-    } catch (ClassCastException e) {
-      throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
+    ExtensionObject value = decodeExtensionObject(field);
+    UaStructuredType decoded;
+    if (value instanceof ExtensionObject.Json json) {
+      var decoder = new OpcUaJsonDecoder(context, json.getBody());
+      decoder.setEncoding(encoding);
+      decoded = decoder.decodeStruct(null, json.getEncodingOrTypeId());
+    } else if (value != null) {
+      decoded = value.decode(context);
+    } else {
+      throw new UaSerializationException(StatusCodes.Bad_DecodingError, "Message is null");
     }
+    if (decoded instanceof UaMessageType message) return message;
+    throw new UaSerializationException(StatusCodes.Bad_DecodingError, "Not a message: " + decoded);
   }
 
   @Override
   public Integer decodeEnum(String field) {
-    return decodeInt32(field);
+    if (encoding == Encoding.COMPACT) {
+      return decodeInt32(field);
+    }
+    String value = decodeString(field);
+    if (value == null) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_DecodingError, "Missing enumeration value");
+    }
+    try {
+      return Integer.parseInt(value.substring(value.lastIndexOf('_') + 1));
+    } catch (NumberFormatException e) {
+      throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
+    }
   }
 
   @Override
@@ -1127,39 +1342,11 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
     DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
 
-    if (codec != null) {
-      try {
-        if (field != null) {
-          String nextName = nextName();
-          if (!field.equals(nextName)) {
-            // CompactEncoding omits default-valued and NULL struct members (Part 6, §5.4.6,
-            // Table 45). Restore the peeked name and return the default (null), mirroring the
-            // other field decoders, instead of failing the whole structure.
-            this.peekedNextName = nextName;
-            return null;
-          }
-        }
-
-        // VerboseEncoding represents a NULL struct member as JSON null (Part 6, §5.4.6, Table 45).
-        if (jsonReader.peek() == JsonToken.NULL) {
-          jsonReader.nextNull();
-          return null;
-        }
-
-        UaStructuredType value;
-
-        jsonReader.beginObject();
-        value = codec.decode(context, this);
-        jsonReader.endObject();
-
-        return value;
-      } catch (IOException e) {
-        throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
-      }
-    } else {
+    if (codec == null) {
       throw new UaSerializationException(
           StatusCodes.Bad_DecodingError, "readStruct: no codec registered: " + dataTypeId);
     }
+    return decodeStruct(field, codec);
   }
 
   @Override
@@ -1182,11 +1369,9 @@ public class OpcUaJsonDecoder implements UaDecoder {
       throws UaSerializationException {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
-          // CompactEncoding omits default-valued and NULL struct members (Part 6, §5.4.6,
-          // Table 45). Restore the peeked name and return the default (null), mirroring the
-          // other field decoders, instead of failing the whole structure.
+          // Part 6 §5.4.6 permits omitted null structure members in COMPACT encoding.
           this.peekedNextName = nextName;
           return null;
         }
@@ -1198,14 +1383,36 @@ public class OpcUaJsonDecoder implements UaDecoder {
         return null;
       }
 
-      UaStructuredType value;
+      JsonReader parentReader = jsonReader;
+      JsonObject parentFields = structureFields;
+      boolean parentFieldSelected = structureFieldSelected;
+      String parentPeekedName = peekedNextName;
+      try {
+        JsonElement value =
+            JsonValueBuffer.read(jsonReader, context.getEncodingLimits().getMaxRecursionDepth());
+        if (!value.isJsonObject()) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_DecodingError, "Expected structure object");
+        }
+        structureFields = value.getAsJsonObject();
+        structureFieldSelected = false;
+        peekedNextName = null;
 
-      jsonReader.beginObject();
-      value = codec.decode(context, this);
-      jsonReader.endObject();
-
-      return value;
-    } catch (IOException e) {
+        UaStructuredType decoded = codec.decode(context, this);
+        requireFieldConsumed();
+        if (!structureFields.isEmpty()) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_DecodingError,
+              "Unexpected structure field: " + structureFields.keySet().iterator().next());
+        }
+        return decoded;
+      } finally {
+        jsonReader = parentReader;
+        structureFields = parentFields;
+        structureFieldSelected = parentFieldSelected;
+        peekedNextName = parentPeekedName;
+      }
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -1338,7 +1545,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
   @Override
   public Integer[] decodeEnumArray(String field) throws UaSerializationException {
-    return decodeInt32Array(field);
+    return decodeArray(field, this::decodeEnum, Integer.class);
   }
 
   @Override
@@ -1353,11 +1560,16 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return null;
         }
+      }
+
+      if (jsonReader.peek() == JsonToken.NULL) {
+        jsonReader.nextNull();
+        return null;
       }
 
       var elements = new ArrayList<>();
@@ -1374,7 +1586,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
       }
 
       return (UaStructuredType[]) array;
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -1389,7 +1601,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
                 () ->
                     new UaSerializationException(
                         StatusCodes.Bad_DecodingError,
-                        "readStructArray: no codec registered: " + dataTypeId));
+                        "readStructArray: namespace not registered: " + dataTypeId));
 
     return decodeStructArray(field, localDataTypeId);
   }
@@ -1399,11 +1611,16 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return null;
         }
+      }
+
+      if (jsonReader.peek() == JsonToken.NULL) {
+        jsonReader.nextNull();
+        return null;
       }
 
       var elements = new ArrayList<T>();
@@ -1421,16 +1638,21 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
       //noinspection unchecked
       return (T[]) array;
-    } catch (IOException e) {
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
 
   @Override
   public Matrix decodeMatrix(String field, OpcUaDataType dataType) throws UaSerializationException {
+    return decodeMatrix(field, dataType, f -> readBuiltinTypeValue(f, dataType.getTypeId()));
+  }
+
+  private Matrix decodeMatrix(
+      String field, OpcUaDataType dataType, Function<String, ?> elementDecoder) {
     try {
       if (field != null) {
-        String nextName = nextName();
+        String nextName = nextName(field);
         if (!field.equals(nextName)) {
           this.peekedNextName = nextName;
           return Matrix.ofNull();
@@ -1444,12 +1666,102 @@ public class OpcUaJsonDecoder implements UaDecoder {
 
       if (jsonReader.peek() != JsonToken.BEGIN_OBJECT) {
         throw new UaSerializationException(
-            StatusCodes.Bad_DecodingError,
-            String.format("readMatrix: unexpected token: %s", jsonReader.peek()));
+            StatusCodes.Bad_DecodingError, "readMatrix: unexpected token: " + jsonReader.peek());
       }
 
       jsonReader.beginObject();
+
+      int[] dimensions = null;
+      Object flatArray = null;
+
+      while (jsonReader.peek() == JsonToken.NAME) {
+        String nextName = nextName();
+        if (nextName == null) continue;
+
+        switch (nextName) {
+          case "Array":
+            {
+              var elements = new ArrayList<>();
+              jsonReader.beginArray();
+              while (jsonReader.peek() != JsonToken.END_ARRAY) {
+                elements.add(elementDecoder.apply(null));
+              }
+              jsonReader.endArray();
+
+              flatArray =
+                  Array.newInstance(
+                      OpcUaDataType.getPrimitiveBackingClass(dataType.getTypeId()),
+                      elements.size());
+
+              for (int i = 0; i < elements.size(); i++) {
+                Array.set(flatArray, i, elements.get(i));
+              }
+            }
+            break;
+          case "Dimensions":
+            {
+              var dims = new ArrayList<Integer>();
+              jsonReader.beginArray();
+              while (jsonReader.peek() == JsonToken.NUMBER) {
+                dims.add(jsonReader.nextInt());
+              }
+              jsonReader.endArray();
+              dimensions = new int[dims.size()];
+              for (int i = 0; i < dims.size(); i++) {
+                dimensions[i] = dims.get(i);
+              }
+            }
+            break;
+          default:
+            throw new UaSerializationException(
+                StatusCodes.Bad_DecodingError, "readMatrix: unexpected field: " + nextName);
+        }
+      }
+
+      jsonReader.endObject();
+
+      validateMatrixDimensions(flatArray, dimensions);
+
+      return new Matrix(flatArray, dimensions, dataType);
+    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
+      throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
+    }
+  }
+
+  @Override
+  public Matrix decodeEnumMatrix(String field) throws UaSerializationException {
+    return decodeMatrix(field, OpcUaDataType.Int32, this::decodeEnum);
+  }
+
+  @Override
+  public Matrix decodeStructMatrix(String field, NodeId dataTypeId)
+      throws UaSerializationException {
+    DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
+
+    if (codec != null) {
       try {
+        if (field != null) {
+          String nextName = nextName(field);
+          if (!field.equals(nextName)) {
+            // Part 6 §5.4.6 permits omitted null structure members in COMPACT encoding.
+            this.peekedNextName = nextName;
+            return Matrix.ofNull();
+          }
+        }
+
+        if (jsonReader.peek() == JsonToken.NULL) {
+          jsonReader.nextNull();
+          return Matrix.ofNull();
+        }
+
+        if (jsonReader.peek() != JsonToken.BEGIN_OBJECT) {
+          throw new UaSerializationException(
+              StatusCodes.Bad_DecodingError,
+              "decodeStructMatrix: unexpected token: " + jsonReader.peek());
+        }
+
+        jsonReader.beginObject();
+
         int[] dimensions = null;
         Object flatArray = null;
 
@@ -1463,14 +1775,11 @@ public class OpcUaJsonDecoder implements UaDecoder {
                 var elements = new ArrayList<>();
                 jsonReader.beginArray();
                 while (jsonReader.peek() != JsonToken.END_ARRAY) {
-                  elements.add(readBuiltinTypeValue(null, dataType.getTypeId()));
+                  elements.add(decodeStruct(null, codec));
                 }
                 jsonReader.endArray();
 
-                flatArray =
-                    Array.newInstance(
-                        OpcUaDataType.getPrimitiveBackingClass(dataType.getTypeId()),
-                        elements.size());
+                flatArray = Array.newInstance(codec.getType(), elements.size());
 
                 for (int i = 0; i < elements.size(); i++) {
                   Array.set(flatArray, i, elements.get(i));
@@ -1494,108 +1803,17 @@ public class OpcUaJsonDecoder implements UaDecoder {
             default:
               throw new UaSerializationException(
                   StatusCodes.Bad_DecodingError,
-                  String.format("readLocalizedText: unexpected field: " + nextName));
+                  "decodeStructMatrix: unexpected field: " + nextName);
           }
         }
+
+        jsonReader.endObject();
 
         validateMatrixDimensions(flatArray, dimensions);
 
-        return new Matrix(flatArray, dimensions, dataType);
-      } finally {
-        jsonReader.endObject();
-      }
-    } catch (IOException e) {
-      throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
-    }
-  }
-
-  @Override
-  public Matrix decodeEnumMatrix(String field) throws UaSerializationException {
-    return decodeMatrix(field, OpcUaDataType.Int32);
-  }
-
-  @Override
-  public Matrix decodeStructMatrix(String field, NodeId dataTypeId)
-      throws UaSerializationException {
-    DataTypeCodec codec = context.getDataTypeManager().getCodec(dataTypeId);
-
-    if (codec != null) {
-      try {
-        if (field != null) {
-          String nextName = nextName();
-          if (!field.equals(nextName)) {
-            throw new UaSerializationException(
-                StatusCodes.Bad_DecodingError,
-                String.format("readStruct: %s != %s", field, nextName));
-          }
-        }
-
-        if (jsonReader.peek() == JsonToken.NULL) {
-          jsonReader.nextNull();
-          return Matrix.ofNull();
-        }
-
-        if (jsonReader.peek() != JsonToken.BEGIN_OBJECT) {
-          throw new UaSerializationException(
-              StatusCodes.Bad_DecodingError,
-              String.format("readMatrix: unexpected token: %s", jsonReader.peek()));
-        }
-
-        jsonReader.beginObject();
-        try {
-          int[] dimensions = null;
-          Object flatArray = null;
-
-          while (jsonReader.peek() == JsonToken.NAME) {
-            String nextName = nextName();
-            if (nextName == null) continue;
-
-            switch (nextName) {
-              case "Array":
-                {
-                  var elements = new ArrayList<>();
-                  jsonReader.beginArray();
-                  while (jsonReader.peek() != JsonToken.END_ARRAY) {
-                    elements.add(decodeStruct(null, codec));
-                  }
-                  jsonReader.endArray();
-
-                  flatArray = Array.newInstance(codec.getType(), elements.size());
-
-                  for (int i = 0; i < elements.size(); i++) {
-                    Array.set(flatArray, i, elements.get(i));
-                  }
-                }
-                break;
-              case "Dimensions":
-                {
-                  var dims = new ArrayList<Integer>();
-                  jsonReader.beginArray();
-                  while (jsonReader.peek() == JsonToken.NUMBER) {
-                    dims.add(jsonReader.nextInt());
-                  }
-                  jsonReader.endArray();
-                  dimensions = new int[dims.size()];
-                  for (int i = 0; i < dims.size(); i++) {
-                    dimensions[i] = dims.get(i);
-                  }
-                }
-                break;
-              default:
-                throw new UaSerializationException(
-                    StatusCodes.Bad_DecodingError,
-                    String.format("readLocalizedText: unexpected field: " + nextName));
-            }
-          }
-
-          validateMatrixDimensions(flatArray, dimensions);
-
-          return new Matrix(
-              flatArray, dimensions, OpcUaDataType.ExtensionObject, dataTypeId.expanded());
-        } finally {
-          jsonReader.endObject();
-        }
-      } catch (IOException e) {
+        return new Matrix(
+            flatArray, dimensions, OpcUaDataType.ExtensionObject, dataTypeId.expanded());
+      } catch (IOException | IllegalStateException | IllegalArgumentException e) {
         throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
       }
     } else {
@@ -1617,6 +1835,27 @@ public class OpcUaJsonDecoder implements UaDecoder {
                         "decodeStructMatrix: namespace not registered: " + dataTypeId));
 
     return decodeStructMatrix(field, localDataTypeId);
+  }
+
+  // Codec reads select members only within the current structure. Built-in object decoders use
+  // nextName() to iterate their own value reader, so child names cannot escape into this scope.
+  private String nextName(String field) throws IOException {
+    if (structureFields == null) return nextName();
+
+    requireFieldConsumed();
+    JsonElement value = structureFields.remove(field);
+    if (value == null) return null;
+
+    jsonReader = new JsonReader(new StringReader(value.toString()));
+    structureFieldSelected = true;
+    return field;
+  }
+
+  private void requireFieldConsumed() throws IOException {
+    if (structureFieldSelected && jsonReader.peek() != JsonToken.END_DOCUMENT) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_DecodingError, "Structure field was not completely decoded");
+    }
   }
 
   /**

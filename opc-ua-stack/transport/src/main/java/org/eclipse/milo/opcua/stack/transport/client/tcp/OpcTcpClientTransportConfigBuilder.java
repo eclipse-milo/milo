@@ -90,6 +90,14 @@ public class OpcTcpClientTransportConfigBuilder {
    * Set a {@link Consumer} that will be given a chance to customize the {@link ChannelPipeline}
    * used by this transport.
    *
+   * <p>The customizer runs after the UASC response and acknowledge handlers have been installed, so
+   * handlers it adds with {@code pipeline.addLast(...)} sit at the tail of the pipeline. This
+   * applies to both the standard outbound path and the reverse-connect path. As a consequence,
+   * outbound writes initiated by the acknowledge handler (such as the client {@code Hello}) travel
+   * toward the head of the pipeline and do <i>not</i> pass through customizer-installed handlers.
+   * Customizers that need to observe outbound writes from the acknowledge handler must reach into
+   * the pipeline explicitly (for example via {@code pipeline.addFirst(...)}).
+   *
    * @param channelPipelineCustomizer a {@link Consumer} that will be given a chance to customize
    *     the {@link ChannelPipeline} used by this transport.
    * @return this {@link OpcTcpClientTransportConfigBuilder}.

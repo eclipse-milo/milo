@@ -18,7 +18,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 
-public class TestCertificateFactory extends RsaSha256CertificateFactory {
+public class TestCertificateFactory extends AbstractCertificateFactory {
 
   @Override
   public KeyPair createKeyPair(NodeId nodeId) {

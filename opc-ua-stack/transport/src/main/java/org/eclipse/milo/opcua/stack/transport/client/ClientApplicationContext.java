@@ -10,16 +10,22 @@
 
 package org.eclipse.milo.opcua.stack.transport.client;
 
-import java.security.KeyPair;
-import java.security.cert.X509Certificate;
 import java.util.Optional;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * What a client application supplies to a client transport: the endpoint to connect to, the local
+ * certificate identity to present on secured connections, the validator for the server's
+ * certificate, and encoding and timeout settings.
+ */
 public interface ClientApplicationContext {
 
   /**
@@ -30,31 +36,18 @@ public interface ClientApplicationContext {
   EndpointDescription getEndpoint();
 
   /**
-   * Get the client {@link KeyPair}, if configured.
+   * Get the client certificate identity to present for {@code securityPolicyProfile}.
    *
-   * <p>A KeyPair is required for secured connections.
+   * <p>A secured connection cannot proceed without an identity; the transport fails
+   * OpenSecureChannel with {@code Bad_ConfigurationError} when this returns empty for a policy
+   * other than {@code None}.
    *
-   * @return the client {@link KeyPair}, if configured.
+   * @param securityPolicyProfile the selected endpoint security-policy profile.
+   * @return the selected identity, or empty when the client has none for the profile.
+   * @throws UaException if identity selection fails while evaluating candidates.
    */
-  Optional<KeyPair> getKeyPair();
-
-  /**
-   * Get the client application instance certificate, if configured.
-   *
-   * <p>An application instance certificate is required for secured connections.
-   *
-   * @return the client application instance certificate, if configured.
-   */
-  Optional<X509Certificate> getCertificate();
-
-  /**
-   * Get the client application instance certificate chain, if configured.
-   *
-   * <p>An application instance certificate chain is required for secured connections.
-   *
-   * @return the client application instance certificate chain, if configured.
-   */
-  Optional<X509Certificate[]> getCertificateChain();
+  Optional<CertificateIdentity> getCertificateIdentity(SecurityPolicyProfile securityPolicyProfile)
+      throws UaException;
 
   /**
    * Get the client's {@link CertificateValidator}.

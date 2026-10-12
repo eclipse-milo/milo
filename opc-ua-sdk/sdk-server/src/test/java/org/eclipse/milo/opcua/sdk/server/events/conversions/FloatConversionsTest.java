@@ -72,18 +72,36 @@ public class FloatConversionsTest extends AbstractConversionTest<Float> {
 
       case Int32:
         {
+          // 3e9f, 1e15f and 1e30f are outside the Int32 range and must convert to null rather
+          // than saturate at Integer.MAX_VALUE. Note that (float) Integer.MAX_VALUE itself rounds
+          // up to 2^31 and is therefore out of range too; 2147483520f is the largest float that
+          // still fits.
           return new Conversion[] {
             c(0.0f, 0),
             c(0.4f, 0),
             c(0.5f, 1),
             c((float) Integer.MIN_VALUE, Integer.MIN_VALUE),
-            c((float) Integer.MAX_VALUE, Integer.MAX_VALUE),
+            c(2147483520f, 2147483520),
+            c((float) Integer.MAX_VALUE, null, targetType),
+            c(3e9f, null, targetType),
+            c(1e15f, null, targetType),
+            c(1e30f, null, targetType)
           };
         }
 
       case Int64:
         {
-          return new Conversion[] {c(0.0f, 0L), c(0.4f, 0L), c(0.5f, 1L)};
+          // Int64 holds every finite float below 2^63, so 1e15f must keep its exact value
+          // (999999986991104) instead of saturating at Integer.MAX_VALUE.
+          return new Conversion[] {
+            c(0.0f, 0L),
+            c(0.4f, 0L),
+            c(0.5f, 1L),
+            c(3e9f, 3_000_000_000L),
+            c(1e15f, 999_999_986_991_104L),
+            c((float) Long.MIN_VALUE, Long.MIN_VALUE),
+            c(1e30f, null, targetType)
+          };
         }
 
       case SByte:
@@ -119,15 +137,26 @@ public class FloatConversionsTest extends AbstractConversionTest<Float> {
 
       case UInt32:
         {
+          // UInt32 reaches 4294967295, so 3e9f is in range; 1e15f is not.
           return new Conversion[] {
-            c(0.0f, uint(0)), c(0.4f, uint(0)), c(0.5f, uint(1)), c(-1.0f, null, targetType)
+            c(0.0f, uint(0)),
+            c(0.4f, uint(0)),
+            c(0.5f, uint(1)),
+            c(3e9f, uint(3_000_000_000L)),
+            c(-1.0f, null, targetType),
+            c(1e15f, null, targetType)
           };
         }
 
       case UInt64:
         {
           return new Conversion[] {
-            c(0.0f, ulong(0)), c(0.4f, ulong(0)), c(0.5f, ulong(1)), c(-1.0f, null, targetType)
+            c(0.0f, ulong(0)),
+            c(0.4f, ulong(0)),
+            c(0.5f, ulong(1)),
+            c(3e9f, ulong(3_000_000_000L)),
+            c(1e15f, ulong(999_999_986_991_104L)),
+            c(-1.0f, null, targetType)
           };
         }
 

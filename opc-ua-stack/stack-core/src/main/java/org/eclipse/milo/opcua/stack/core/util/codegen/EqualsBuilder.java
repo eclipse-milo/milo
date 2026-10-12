@@ -259,7 +259,12 @@ public class EqualsBuilder {
       return this;
     }
     if (lhs.getClass().isArray()) {
-      if (lhs instanceof boolean[]) {
+      if (lhs instanceof Object[] && rhs instanceof Object[]) {
+        // Reference arrays compare by content, even when their component types differ.
+        append((Object[]) lhs, (Object[]) rhs);
+      } else if (lhs.getClass() != rhs.getClass()) {
+        result = false;
+      } else if (lhs instanceof boolean[]) {
         append((boolean[]) lhs, (boolean[]) rhs);
       } else if (lhs instanceof byte[]) {
         append((byte[]) lhs, (byte[]) rhs);
@@ -273,10 +278,8 @@ public class EqualsBuilder {
         append((long[]) lhs, (long[]) rhs);
       } else if (lhs instanceof float[]) {
         append((float[]) lhs, (float[]) rhs);
-      } else if (lhs instanceof double[]) {
-        append((double[]) lhs, (double[]) rhs);
       } else {
-        append((Object[]) lhs, (Object[]) rhs);
+        append((double[]) lhs, (double[]) rhs);
       }
     } else {
       result = lhs.equals(rhs);

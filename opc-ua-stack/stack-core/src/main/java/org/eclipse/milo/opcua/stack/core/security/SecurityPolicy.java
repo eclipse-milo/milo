@@ -13,135 +13,322 @@ package org.eclipse.milo.opcua.stack.core.security;
 import java.util.Optional;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Public identifiers for OPC UA SecurityPolicy URIs recognized by the stack.
+ *
+ * <p>Use {@link #fromUri(String)} to resolve a URI received from configuration, endpoints, or
+ * SecureChannel headers. Use {@link #getProfile()} when policy metadata is needed.
+ *
+ * <p><b>Legacy vs. enhanced policies.</b> The original RSA-era policies ({@link #None}, {@link
+ * #Basic128Rsa15}, {@link #Basic256}, {@link #Basic256Sha256}, {@link #Aes128_Sha256_RsaOaep},
+ * {@link #Aes256_Sha256_RsaPss}) carry the full set of legacy algorithm axes, so {@link
+ * #getSymmetricSignatureAlgorithm()}, {@link #getSymmetricEncryptionAlgorithm()}, {@link
+ * #getKeyDerivationAlgorithm()}, and {@link #getCertificateSignatureAlgorithm()} return non-null
+ * values for them. The newer enhanced policies describe their behavior through profile axes
+ * instead, so the symmetric-signature, symmetric-encryption, and key-derivation getters return
+ * {@code null} for every ECC and RSA-DH policy. The certificate-signature getter returns {@code
+ * null} only for the ECC policies; the RSA-DH policies still authenticate with RSA application
+ * certificates and so return {@link SecurityAlgorithm#Sha256} from it. Code that enumerates {@link
+ * #values()} and reads the nullable legacy getters should first filter with {@link #isLegacy()}, or
+ * use the {@link Optional}-returning {@code find...Algorithm()} accessors, to avoid {@code
+ * NullPointerException} on the enhanced constants.
+ */
+@SuppressWarnings("HttpUrlsUsage")
 public enum SecurityPolicy {
 
-  /** A suite of algorithms that do not provide any security settings. */
-  None(
-      "http://opcfoundation.org/UA/SecurityPolicy#None",
-      SecurityAlgorithm.None,
-      SecurityAlgorithm.None,
-      SecurityAlgorithm.None,
-      SecurityAlgorithm.None,
-      SecurityAlgorithm.None,
-      SecurityAlgorithm.None,
-      SecurityAlgorithm.None),
+  /** A policy that does not provide message signing, encryption, or key agreement. */
+  None("http://opcfoundation.org/UA/SecurityPolicy#None"),
 
   /**
-   * A suite of algorithms that use RSA for asymmetric encryption and AES-128 for symmetric
-   * encryption.
+   * A legacy RSA policy that uses RSA-SHA1 signatures, RSA15 asymmetric encryption, and AES-128
+   * symmetric encryption.
    */
-  Basic128Rsa15(
-      "http://opcfoundation.org/UA/SecurityPolicy#Basic128Rsa15",
-      SecurityAlgorithm.HmacSha1,
-      SecurityAlgorithm.Aes128,
-      SecurityAlgorithm.RsaSha1,
-      SecurityAlgorithm.Rsa15,
-      SecurityAlgorithm.KwRsa15,
-      SecurityAlgorithm.PSha1,
-      SecurityAlgorithm.Sha1),
+  Basic128Rsa15("http://opcfoundation.org/UA/SecurityPolicy#Basic128Rsa15"),
 
-  Basic256(
-      "http://opcfoundation.org/UA/SecurityPolicy#Basic256",
-      SecurityAlgorithm.HmacSha1,
-      SecurityAlgorithm.Aes256,
-      SecurityAlgorithm.RsaSha1,
-      SecurityAlgorithm.RsaOaepSha1,
-      SecurityAlgorithm.KwRsaOaep,
-      SecurityAlgorithm.PSha1,
-      SecurityAlgorithm.Sha1),
+  /**
+   * A legacy RSA policy that uses RSA-SHA1 signatures, RSA-OAEP asymmetric encryption, and AES-256
+   * symmetric encryption.
+   */
+  Basic256("http://opcfoundation.org/UA/SecurityPolicy#Basic256"),
 
-  Basic256Sha256(
-      "http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256",
-      SecurityAlgorithm.HmacSha256,
-      SecurityAlgorithm.Aes256,
-      SecurityAlgorithm.RsaSha256,
-      SecurityAlgorithm.RsaOaepSha1,
-      SecurityAlgorithm.KwRsaOaep,
-      SecurityAlgorithm.PSha256,
-      SecurityAlgorithm.Sha256),
+  /**
+   * An RSA policy that uses RSA-SHA256 signatures, RSA-OAEP asymmetric encryption, and AES-256
+   * symmetric encryption.
+   */
+  Basic256Sha256("http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256"),
 
-  Aes128_Sha256_RsaOaep(
-      "http://opcfoundation.org/UA/SecurityPolicy#Aes128_Sha256_RsaOaep",
-      SecurityAlgorithm.HmacSha256,
-      SecurityAlgorithm.Aes128,
-      SecurityAlgorithm.RsaSha256,
-      SecurityAlgorithm.RsaOaepSha1,
-      null, // N/A
-      SecurityAlgorithm.PSha256,
-      SecurityAlgorithm.Sha256),
+  /**
+   * An RSA policy that uses RSA-SHA256 signatures, RSA-OAEP asymmetric encryption, and AES-128
+   * symmetric encryption.
+   */
+  Aes128_Sha256_RsaOaep("http://opcfoundation.org/UA/SecurityPolicy#Aes128_Sha256_RsaOaep"),
 
-  Aes256_Sha256_RsaPss(
-      "http://opcfoundation.org/UA/SecurityPolicy#Aes256_Sha256_RsaPss",
-      SecurityAlgorithm.HmacSha256,
-      SecurityAlgorithm.Aes256,
-      SecurityAlgorithm.RsaSha256Pss,
-      SecurityAlgorithm.RsaOaepSha256,
-      null, // N/A
-      SecurityAlgorithm.PSha256,
-      SecurityAlgorithm.Sha256);
+  /**
+   * An RSA policy that uses RSA-PSS SHA256 signatures, RSA-OAEP-SHA256 asymmetric encryption, and
+   * AES-256 symmetric encryption.
+   */
+  Aes256_Sha256_RsaPss("http://opcfoundation.org/UA/SecurityPolicy#Aes256_Sha256_RsaPss"),
+
+  /**
+   * An ECC policy that uses NIST P-256 ECDSA authentication, P-256 ECDH key agreement, and AES-GCM
+   * chunk protection.
+   */
+  ECC_nistP256_AesGcm("http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP256_AesGcm"),
+
+  /**
+   * An ECC policy that uses NIST P-256 ECDSA authentication, P-256 ECDH key agreement, and
+   * ChaCha20-Poly1305 chunk protection.
+   */
+  ECC_nistP256_ChaChaPoly("http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP256_ChaChaPoly"),
+
+  /**
+   * An ECC policy that uses NIST P-384 ECDSA authentication, P-384 ECDH key agreement, and AES-GCM
+   * chunk protection.
+   */
+  ECC_nistP384_AesGcm("http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP384_AesGcm"),
+
+  /**
+   * An ECC policy that uses NIST P-384 ECDSA authentication, P-384 ECDH key agreement, and
+   * ChaCha20-Poly1305 chunk protection.
+   */
+  ECC_nistP384_ChaChaPoly("http://opcfoundation.org/UA/SecurityPolicy#ECC_nistP384_ChaChaPoly"),
+
+  /**
+   * An ECC policy that uses Brainpool P-256r1 ECDSA authentication, Brainpool P-256r1 ECDH key
+   * agreement, and AES-GCM chunk protection.
+   */
+  ECC_brainpoolP256r1_AesGcm(
+      "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP256r1_AesGcm"),
+
+  /**
+   * An ECC policy that uses Brainpool P-256r1 ECDSA authentication, Brainpool P-256r1 ECDH key
+   * agreement, and ChaCha20-Poly1305 chunk protection.
+   */
+  ECC_brainpoolP256r1_ChaChaPoly(
+      "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP256r1_ChaChaPoly"),
+
+  /**
+   * An ECC policy that uses Ed25519 authentication, X25519 key agreement, and AES-GCM chunk
+   * protection.
+   */
+  ECC_curve25519_AesGcm("http://opcfoundation.org/UA/SecurityPolicy#ECC_curve25519_AesGcm"),
+
+  /**
+   * An ECC policy that uses Ed25519 authentication, X25519 key agreement, and ChaCha20-Poly1305
+   * chunk protection.
+   */
+  ECC_curve25519_ChaChaPoly("http://opcfoundation.org/UA/SecurityPolicy#ECC_curve25519_ChaChaPoly"),
+
+  /**
+   * An ECC policy that uses Ed448 authentication, X448 key agreement, and AES-GCM chunk protection.
+   */
+  ECC_curve448_AesGcm("http://opcfoundation.org/UA/SecurityPolicy#ECC_curve448_AesGcm"),
+
+  /**
+   * An ECC policy that uses Ed448 authentication, X448 key agreement, and ChaCha20-Poly1305 chunk
+   * protection.
+   */
+  ECC_curve448_ChaChaPoly("http://opcfoundation.org/UA/SecurityPolicy#ECC_curve448_ChaChaPoly"),
+
+  /**
+   * An ECC policy that uses Brainpool P-384r1 ECDSA authentication, Brainpool P-384r1 ECDH key
+   * agreement, and ChaCha20-Poly1305 chunk protection.
+   */
+  ECC_brainpoolP384r1_ChaChaPoly(
+      "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP384r1_ChaChaPoly"),
+
+  /**
+   * An ECC policy that uses Brainpool P-384r1 ECDSA authentication, Brainpool P-384r1 ECDH key
+   * agreement, and AES-GCM chunk protection.
+   */
+  ECC_brainpoolP384r1_AesGcm(
+      "http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP384r1_AesGcm"),
+
+  /**
+   * An RSA-DH policy that uses RSA-SHA256 authentication, RFC 7919 ffdhe3072 key agreement, and
+   * AES-GCM chunk protection.
+   */
+  RSA_DH_AesGcm("http://opcfoundation.org/UA/SecurityPolicy#RSA_DH_AesGcm"),
+
+  /**
+   * An RSA-DH policy that uses RSA-SHA256 authentication, RFC 7919 ffdhe3072 key agreement, and
+   * ChaCha20-Poly1305 chunk protection.
+   */
+  RSA_DH_ChaChaPoly("http://opcfoundation.org/UA/SecurityPolicy#RSA_DH_ChaChaPoly");
 
   private final String securityPolicyUri;
-  private final SecurityAlgorithm symmetricSignatureAlgorithm;
-  private final SecurityAlgorithm symmetricEncryptionAlgorithm;
-  private final SecurityAlgorithm asymmetricSignatureAlgorithm;
-  private final SecurityAlgorithm asymmetricEncryptionAlgorithm;
-  private final SecurityAlgorithm asymmetricKeyWrapAlgorithm;
-  private final SecurityAlgorithm keyDerivationAlgorithm;
-  private final SecurityAlgorithm certificateSignatureAlgorithm;
 
-  SecurityPolicy(
-      String securityPolicyUri,
-      SecurityAlgorithm symmetricSignatureAlgorithm,
-      SecurityAlgorithm symmetricEncryptionAlgorithm,
-      SecurityAlgorithm asymmetricSignatureAlgorithm,
-      SecurityAlgorithm asymmetricEncryptionAlgorithm,
-      SecurityAlgorithm asymmetricKeyWrapAlgorithm,
-      SecurityAlgorithm keyDerivationAlgorithm,
-      SecurityAlgorithm certificateSignatureAlgorithm) {
-
+  SecurityPolicy(String securityPolicyUri) {
     this.securityPolicyUri = securityPolicyUri;
-    this.symmetricSignatureAlgorithm = symmetricSignatureAlgorithm;
-    this.symmetricEncryptionAlgorithm = symmetricEncryptionAlgorithm;
-    this.asymmetricSignatureAlgorithm = asymmetricSignatureAlgorithm;
-    this.asymmetricEncryptionAlgorithm = asymmetricEncryptionAlgorithm;
-    this.asymmetricKeyWrapAlgorithm = asymmetricKeyWrapAlgorithm;
-    this.keyDerivationAlgorithm = keyDerivationAlgorithm;
-    this.certificateSignatureAlgorithm = certificateSignatureAlgorithm;
   }
 
   public String getUri() {
     return securityPolicyUri;
   }
 
-  public SecurityAlgorithm getSymmetricSignatureAlgorithm() {
-    return symmetricSignatureAlgorithm;
+  /**
+   * Get the profile metadata for this security policy.
+   *
+   * @return the registered profile for this security policy.
+   */
+  public SecurityPolicyProfile getProfile() {
+    return SecurityPolicyProfiles.get(this);
   }
 
-  public SecurityAlgorithm getSymmetricEncryptionAlgorithm() {
-    return symmetricEncryptionAlgorithm;
+  /**
+   * Indicate whether this is a legacy RSA-era policy that exposes non-null legacy algorithm axes.
+   *
+   * <p>The legacy policies are {@link #None}, {@link #Basic128Rsa15}, {@link #Basic256}, {@link
+   * #Basic256Sha256}, {@link #Aes128_Sha256_RsaOaep}, and {@link #Aes256_Sha256_RsaPss}. For these
+   * constants the nullable getters ({@link #getSymmetricSignatureAlgorithm()}, {@link
+   * #getSymmetricEncryptionAlgorithm()}, {@link #getKeyDerivationAlgorithm()}, {@link
+   * #getCertificateSignatureAlgorithm()}) are guaranteed non-null. For every enhanced policy the
+   * symmetric-signature, symmetric-encryption, and key-derivation getters return {@code null}; the
+   * certificate-signature getter returns {@code null} only for the ECC policies, while the RSA-DH
+   * policies return {@link SecurityAlgorithm#Sha256} from it. Filter with this predicate before
+   * reading those getters when enumerating {@link #values()}.
+   *
+   * @return {@code true} if this is a legacy RSA-era policy whose legacy algorithm getters are
+   *     non-null; {@code false} for the ECC and RSA-DH policies.
+   */
+  public boolean isLegacy() {
+    return !getProfile().secureChannelEnhancements();
   }
 
+  /**
+   * Get the legacy symmetric signature algorithm for this policy.
+   *
+   * @return the symmetric signature algorithm. {@link SecurityPolicy#None} returns {@link
+   *     SecurityAlgorithm#None}; secured policies return {@code null} when they do not use a legacy
+   *     symmetric signature algorithm.
+   * @see #findSymmetricSignatureAlgorithm()
+   */
+  public @Nullable SecurityAlgorithm getSymmetricSignatureAlgorithm() {
+    return getProfile().symmetricSignatureAlgorithm();
+  }
+
+  /**
+   * Get the legacy symmetric signature algorithm for this policy as an optional.
+   *
+   * @return the symmetric signature algorithm, or empty when this policy does not use a legacy
+   *     symmetric signature algorithm.
+   */
+  public Optional<SecurityAlgorithm> findSymmetricSignatureAlgorithm() {
+    return Optional.ofNullable(getSymmetricSignatureAlgorithm());
+  }
+
+  /**
+   * Get the legacy symmetric encryption algorithm for this policy.
+   *
+   * @return the symmetric encryption algorithm. {@link SecurityPolicy#None} returns {@link
+   *     SecurityAlgorithm#None}; secured policies return {@code null} when they do not use a legacy
+   *     symmetric encryption algorithm.
+   * @see #findSymmetricEncryptionAlgorithm()
+   */
+  public @Nullable SecurityAlgorithm getSymmetricEncryptionAlgorithm() {
+    return getProfile().symmetricEncryptionAlgorithm();
+  }
+
+  /**
+   * Get the legacy symmetric encryption algorithm for this policy as an optional.
+   *
+   * @return the symmetric encryption algorithm, or empty when this policy does not use a legacy
+   *     symmetric encryption algorithm.
+   */
+  public Optional<SecurityAlgorithm> findSymmetricEncryptionAlgorithm() {
+    return Optional.ofNullable(getSymmetricEncryptionAlgorithm());
+  }
+
+  /**
+   * Get the asymmetric signature algorithm for this policy.
+   *
+   * @return the asymmetric signature algorithm. {@link SecurityPolicy#None} returns {@link
+   *     SecurityAlgorithm#None}; secured policies return {@link SecurityAlgorithm#None} when
+   *     signing is described by profile metadata instead.
+   */
   public SecurityAlgorithm getAsymmetricSignatureAlgorithm() {
-    return asymmetricSignatureAlgorithm;
+    return getProfile().asymmetricSignatureAlgorithm();
   }
 
+  /**
+   * Get the asymmetric encryption algorithm for this policy.
+   *
+   * @return the asymmetric encryption algorithm. {@link SecurityPolicy#None} returns {@link
+   *     SecurityAlgorithm#None}; secured policies return {@link SecurityAlgorithm#None} when no OPN
+   *     encryption algorithm applies.
+   */
   public SecurityAlgorithm getAsymmetricEncryptionAlgorithm() {
-    return asymmetricEncryptionAlgorithm;
+    return getProfile().asymmetricEncryptionAlgorithm();
   }
 
-  public SecurityAlgorithm getAsymmetricKeyWrapAlgorithm() {
-    return asymmetricKeyWrapAlgorithm;
+  /**
+   * Get the asymmetric key-wrap algorithm for this policy.
+   *
+   * @return the asymmetric key-wrap algorithm. {@link SecurityPolicy#None} returns {@link
+   *     SecurityAlgorithm#None}; secured policies return {@code null} when they do not use
+   *     asymmetric key wrapping.
+   */
+  public @Nullable SecurityAlgorithm getAsymmetricKeyWrapAlgorithm() {
+    return getProfile().asymmetricKeyWrapAlgorithm();
   }
 
-  public SecurityAlgorithm getKeyDerivationAlgorithm() {
-    return keyDerivationAlgorithm;
+  /**
+   * Get the legacy key-derivation algorithm for this policy.
+   *
+   * @return the key-derivation algorithm. {@link SecurityPolicy#None} returns {@link
+   *     SecurityAlgorithm#None}; secured policies return {@code null} when they do not use a legacy
+   *     key-derivation algorithm.
+   * @see #findKeyDerivationAlgorithm()
+   */
+  public @Nullable SecurityAlgorithm getKeyDerivationAlgorithm() {
+    return getProfile().keyDerivationAlgorithm();
   }
 
-  public SecurityAlgorithm getCertificateSignatureAlgorithm() {
-    return certificateSignatureAlgorithm;
+  /**
+   * Get the legacy key-derivation algorithm for this policy as an optional.
+   *
+   * @return the key-derivation algorithm, or empty when this policy does not use a legacy
+   *     key-derivation algorithm.
+   */
+  public Optional<SecurityAlgorithm> findKeyDerivationAlgorithm() {
+    return Optional.ofNullable(getKeyDerivationAlgorithm());
   }
 
+  /**
+   * Get the legacy certificate signature algorithm for this policy.
+   *
+   * @return the certificate signature algorithm. {@link SecurityPolicy#None} returns {@link
+   *     SecurityAlgorithm#None}; secured policies return {@code null} when certificate
+   *     compatibility is described by profile metadata instead.
+   * @see #findCertificateSignatureAlgorithm()
+   */
+  public @Nullable SecurityAlgorithm getCertificateSignatureAlgorithm() {
+    return getProfile().certificateSignatureAlgorithm();
+  }
+
+  /**
+   * Get the legacy certificate signature algorithm for this policy as an optional.
+   *
+   * @return the certificate signature algorithm, or empty when certificate compatibility is
+   *     described by profile metadata instead.
+   */
+  public Optional<SecurityAlgorithm> findCertificateSignatureAlgorithm() {
+    return Optional.ofNullable(getCertificateSignatureAlgorithm());
+  }
+
+  /**
+   * Resolve a security policy URI.
+   *
+   * <p>Only the AEAD-suffixed ECC URIs (e.g. {@code #ECC_nistP256_AesGcm}) are recognized; the
+   * deprecated OPC UA 1.05 suffix-less ECC URIs (e.g. {@code #ECC_nistP256}) are deliberately not
+   * exposed and are treated as unknown. See the package documentation for the full supported set.
+   *
+   * @param securityPolicyUri the policy URI to resolve.
+   * @return the matching security policy.
+   * @throws UaException if {@code securityPolicyUri} is unknown.
+   */
   public static SecurityPolicy fromUri(String securityPolicyUri) throws UaException {
     for (SecurityPolicy securityPolicy : values()) {
       if (securityPolicy.getUri().equals(securityPolicyUri)) {
@@ -153,6 +340,12 @@ public enum SecurityPolicy {
         StatusCodes.Bad_SecurityPolicyRejected, "unknown securityPolicyUri: " + securityPolicyUri);
   }
 
+  /**
+   * Resolve a security policy URI without throwing for unknown policies.
+   *
+   * @param securityPolicyUri the policy URI to resolve.
+   * @return the matching policy, or an empty optional when the URI is unknown.
+   */
   public static Optional<SecurityPolicy> fromUriSafe(String securityPolicyUri) {
     try {
       return Optional.of(fromUri(securityPolicyUri));

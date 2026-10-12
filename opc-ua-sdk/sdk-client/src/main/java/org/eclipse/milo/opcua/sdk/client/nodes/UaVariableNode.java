@@ -442,8 +442,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
    * @return the {@link UInteger} array read from the server.
    * @throws UaException if a service- or operation-level error occurs.
    */
-  @Nullable
-  public UInteger[] readArrayDimensions() throws UaException {
+  public UInteger @Nullable [] readArrayDimensions() throws UaException {
     DataValue value = readAttribute(AttributeId.ArrayDimensions);
     StatusCode statusCode = value.statusCode();
 
@@ -1096,55 +1095,17 @@ public class UaVariableNode extends UaNode implements VariableNode {
   @Override
   protected void setAttributeValue(AttributeId attributeId, DataValue value) {
     switch (attributeId) {
-      case Value:
-        {
-          setValue(value);
-          break;
-        }
-      case DataType:
-        {
-          setDataType((NodeId) value.value().value());
-          break;
-        }
-      case ValueRank:
-        {
-          setValueRank((Integer) value.value().value());
-          break;
-        }
-      case ArrayDimensions:
-        {
-          setArrayDimensions((UInteger[]) value.value().value());
-          break;
-        }
-      case AccessLevel:
-        {
-          setAccessLevel((UByte) value.value().value());
-          break;
-        }
-      case UserAccessLevel:
-        {
-          setUserAccessLevel((UByte) value.value().value());
-          break;
-        }
-      case MinimumSamplingInterval:
-        {
-          setMinimumSamplingInterval((Double) value.value().value());
-          break;
-        }
-      case Historizing:
-        {
-          setHistorizing((Boolean) value.value().value());
-          break;
-        }
-      case AccessLevelEx:
-        {
+      case Value -> setValue(value);
+      case DataType -> setDataType((NodeId) value.value().value());
+      case ValueRank -> setValueRank((Integer) value.value().value());
+      case ArrayDimensions -> setArrayDimensions((UInteger[]) value.value().value());
+      case AccessLevel -> setAccessLevel((UByte) value.value().value());
+      case UserAccessLevel -> setUserAccessLevel((UByte) value.value().value());
+      case MinimumSamplingInterval -> setMinimumSamplingInterval((Double) value.value().value());
+      case Historizing -> setHistorizing((Boolean) value.value().value());
+      case AccessLevelEx ->
           setAccessLevelEx(new AccessLevelExType((UInteger) value.value().value()));
-          break;
-        }
-      default:
-        {
-          super.setAttributeValue(attributeId, value);
-        }
+      default -> super.setAttributeValue(attributeId, value);
     }
   }
 }

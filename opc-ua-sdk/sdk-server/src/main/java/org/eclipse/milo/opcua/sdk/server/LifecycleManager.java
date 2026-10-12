@@ -11,6 +11,8 @@
 package org.eclipse.milo.opcua.sdk.server;
 
 import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -22,6 +24,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * <p>The order that sub-Lifecycles are shutdown can be controlled with the optional {@link
  * ShutdownOrder} parameter provided in {@link LifecycleManager#LifecycleManager(ShutdownOrder)}.
+ *
+ * <p>If a child fails during startup, successfully started children are shut down in reverse order.
+ * Cleanup failures are suppressed on the original startup failure. The failing child remains
+ * responsible for cleaning up resources acquired by its own incomplete startup.
  */
 public final class LifecycleManager extends AbstractLifecycle {
 
@@ -48,7 +54,24 @@ public final class LifecycleManager extends AbstractLifecycle {
 
   @Override
   protected void onStartup() {
-    lifecycles.forEach(Lifecycle::startup);
+    List<Lifecycle> started = new ArrayList<>();
+    try {
+      for (Lifecycle lifecycle : lifecycles) {
+        lifecycle.startup();
+        started.add(lifecycle);
+      }
+    } catch (Throwable startupFailure) {
+      for (int i = started.size() - 1; i >= 0; i--) {
+        try {
+          started.get(i).shutdown();
+        } catch (Throwable cleanupFailure) {
+          if (cleanupFailure != startupFailure) {
+            startupFailure.addSuppressed(cleanupFailure);
+          }
+        }
+      }
+      throw startupFailure;
+    }
   }
 
   @Override

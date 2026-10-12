@@ -10,8 +10,10 @@
 
 package org.eclipse.milo.opcua.stack.core.types.builtin;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.StringJoiner;
+import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
@@ -20,6 +22,7 @@ import org.eclipse.milo.opcua.stack.core.types.DataTypeEncoding;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 @NullMarked
@@ -218,6 +221,126 @@ public abstract sealed class ExtensionObject
     }
 
     return xos;
+  }
+
+  /**
+   * Encode the structured values contained in a Variant value, whatever its shape.
+   *
+   * <p>A {@link UaStructuredType} is encoded to an ExtensionObject. A {@link UaStructuredType}
+   * array is encoded element by element to an ExtensionObject array of the same length, and null
+   * elements stay null. A {@link Matrix} of structured values is encoded to a Matrix of
+   * ExtensionObjects with the same dimensions and datatype id. Any other value, including null, a
+   * null Matrix, and a value that is already encoded, is returned unchanged.
+   *
+   * <pre>{@code
+   * Object encoded = ExtensionObject.encodeValue(context, new Argument[] {argument, null});
+   * client.writeValue(nodeId, DataValue.valueOnly(Variant.of(encoded)));
+   * }</pre>
+   *
+   * @param context an {@link EncodingContext}.
+   * @param value the value to encode.
+   * @return {@code value} with its structured elements encoded in the default binary encoding.
+   * @throws UaSerializationException if encoding fails.
+   */
+  public static @Nullable Object encodeValue(EncodingContext context, @Nullable Object value)
+      throws UaSerializationException {
+
+    if (value instanceof UaStructuredType struct) {
+      return encode(context, struct);
+    } else if (value instanceof UaStructuredType[] structs) {
+      return encodeElements(context, structs);
+    } else if (value instanceof Matrix matrix
+        && matrix.getElements() instanceof UaStructuredType[] structs) {
+      return new Matrix(
+          encodeElements(context, structs),
+          matrix.getDimensions(),
+          OpcUaDataType.ExtensionObject,
+          matrix.getDataTypeId().orElse(null));
+    } else {
+      return value;
+    }
+  }
+
+  /**
+   * Decode the ExtensionObjects contained in a Variant value, whatever its shape.
+   *
+   * <p>An ExtensionObject is decoded to its {@link UaStructuredType}. An ExtensionObject array is
+   * decoded element by element to an array of the same length, and null elements stay null. The
+   * array is typed by the decoded elements' class when they all share one, otherwise it is a {@code
+   * UaStructuredType[]}. A {@link Matrix} of ExtensionObjects is decoded to a Matrix of structured
+   * values with the same dimensions and datatype id. Any other value, including null, a null
+   * Matrix, and a value that is already decoded, is returned unchanged.
+   *
+   * <pre>{@code
+   * DataValue value = client.readValue(0.0, TimestampsToReturn.Neither, nodeId);
+   * Argument[] arguments = (Argument[]) ExtensionObject.decodeValue(context, value.value().value());
+   * }</pre>
+   *
+   * @param context an {@link EncodingContext}.
+   * @param value the value to decode.
+   * @return {@code value} with its ExtensionObjects decoded.
+   * @throws UaSerializationException if decoding fails.
+   */
+  public static @Nullable Object decodeValue(EncodingContext context, @Nullable Object value)
+      throws UaSerializationException {
+
+    if (value instanceof ExtensionObject xo) {
+      return xo.decode(context);
+    } else if (value instanceof ExtensionObject[] xos) {
+      return decodeElements(context, xos);
+    } else if (value instanceof Matrix matrix
+        && matrix.getElements() instanceof ExtensionObject[] xos) {
+      return new Matrix(
+          decodeElements(context, xos),
+          matrix.getDimensions(),
+          OpcUaDataType.ExtensionObject,
+          matrix.getDataTypeId().orElse(null));
+    } else {
+      return value;
+    }
+  }
+
+  private static @Nullable ExtensionObject[] encodeElements(
+      EncodingContext context, @Nullable UaStructuredType[] structs) {
+
+    var xos = new @Nullable ExtensionObject[structs.length];
+
+    for (int i = 0; i < structs.length; i++) {
+      UaStructuredType struct = structs[i];
+      if (struct != null) {
+        xos[i] = encode(context, struct);
+      }
+    }
+
+    return xos;
+  }
+
+  private static @Nullable UaStructuredType[] decodeElements(
+      EncodingContext context, @Nullable ExtensionObject[] xos) {
+
+    var structs = new @Nullable UaStructuredType[xos.length];
+    Class<?> elementType = null;
+
+    for (int i = 0; i < xos.length; i++) {
+      ExtensionObject xo = xos[i];
+      if (xo != null) {
+        UaStructuredType struct = xo.decode(context);
+        structs[i] = struct;
+        elementType =
+            elementType == null || elementType == struct.getClass()
+                ? struct.getClass()
+                : UaStructuredType.class;
+      }
+    }
+
+    if (elementType == null || elementType == UaStructuredType.class) {
+      return structs;
+    } else {
+      @SuppressWarnings("unchecked")
+      Class<? extends UaStructuredType[]> arrayType =
+          (Class<? extends UaStructuredType[]>) elementType.arrayType();
+      return Arrays.copyOf(structs, structs.length, arrayType);
+    }
   }
 
   /**

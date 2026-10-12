@@ -12,12 +12,22 @@ package org.eclipse.milo.opcua.stack.core.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,8 +38,192 @@ public class ExecutionQueueTest {
 
   private final ExecutorService executor = Executors.newCachedThreadPool();
 
+  @AfterEach
+  void tearDown() {
+    executor.shutdownNow();
+  }
+
+  // Delivery ownership cannot be lost when a configured bounded executor is temporarily full.
   @Test
-  public void testSubmitIsLinearWhenConcurrencyIs1() {
+  void rejectedSubmissionCompletesInline() {
+    ExecutionQueue queue =
+        new ExecutionQueue(
+            task -> {
+              throw new RejectedExecutionException("saturated");
+            });
+    AtomicInteger completed = new AtomicInteger();
+    queue.submit(completed::incrementAndGet);
+    queue.submit(completed::incrementAndGet);
+    assertEquals(2, completed.get());
+  }
+
+  // A worker must finish its backlog even if the executor rejects subsequent submissions.
+  @Test
+  void executorRejectionWhileDrainingDoesNotLoseQueuedTasks() {
+    AtomicReference<Runnable> worker = new AtomicReference<>();
+    ExecutionQueue queue =
+        new ExecutionQueue(
+            task -> {
+              if (!worker.compareAndSet(null, task)) {
+                throw new RejectedExecutionException("saturated");
+              }
+            });
+    List<Integer> completed = new ArrayList<>();
+    queue.submit(() -> completed.add(1));
+    queue.submit(() -> completed.add(2));
+    queue.submit(() -> completed.add(3));
+    worker.get().run();
+    queue.submit(() -> completed.add(4));
+    assertEquals(List.of(1, 2, 3, 4), completed);
+  }
+
+  // A custom executor may translate rejection to another runtime exception. Its reserved worker
+  // must still finish, and later submissions must acquire a fresh worker normally.
+  @Test
+  void executorFailureDuringInitialDispatchDoesNotStrandLaterSubmissions() {
+    AtomicInteger dispatches = new AtomicInteger();
+    ExecutionQueue queue =
+        new ExecutionQueue(
+            task -> {
+              if (dispatches.getAndIncrement() == 0) {
+                throw new IllegalStateException("executor unavailable");
+              }
+              task.run();
+            });
+    List<Integer> completed = new ArrayList<>();
+    queue.submit(() -> completed.add(1));
+    queue.submit(() -> completed.add(2));
+    assertEquals(List.of(1, 2), completed);
+    assertEquals(2, dispatches.get());
+  }
+
+  // Failure to dispatch a continuation cannot retain the running flag or worker reservation.
+  @Test
+  void executorFailureDuringContinuationDoesNotStrandLaterSubmissions() {
+    AtomicReference<Runnable> worker = new AtomicReference<>();
+    ExecutionQueue queue =
+        new ExecutionQueue(
+            task -> {
+              if (!worker.compareAndSet(null, task)) {
+                throw new IllegalStateException("executor unavailable");
+              }
+            });
+    List<Integer> completed = new ArrayList<>();
+    queue.submit(() -> completed.add(1));
+    queue.submit(() -> completed.add(2));
+    queue.submit(() -> completed.add(3));
+    worker.get().run();
+    queue.submit(() -> completed.add(4));
+    assertEquals(List.of(1, 2, 3, 4), completed);
+  }
+
+  // An executor decorator can throw after running a worker. Retrying that completed worker must
+  // not release its reservation twice and permit a later callback to overtake a blocked callback.
+  @Test
+  void executorFailureAfterRunningWorkerPreservesSerialExecution() throws Exception {
+    ExecutionQueue queue =
+        new ExecutionQueue(
+            task -> {
+              task.run();
+              throw new IllegalStateException("executor failed after execution");
+            });
+    AtomicInteger completed = new AtomicInteger();
+    queue.submit(completed::incrementAndGet);
+    assertEquals(1, completed.get());
+
+    CountDownLatch firstStarted = new CountDownLatch(1);
+    CountDownLatch releaseFirst = new CountDownLatch(1);
+    try {
+      var first =
+          executor.submit(
+              () ->
+                  queue.submit(
+                      () -> {
+                        firstStarted.countDown();
+                        try {
+                          assertTrue(releaseFirst.await(5, TimeUnit.SECONDS));
+                        } catch (InterruptedException e) {
+                          Thread.currentThread().interrupt();
+                          throw new AssertionError(e);
+                        }
+                      }));
+      assertTrue(firstStarted.await(5, TimeUnit.SECONDS));
+      queue.submit(completed::incrementAndGet);
+      assertEquals(1, completed.get(), "the second callback must wait for the first callback");
+      releaseFirst.countDown();
+      first.get(5, TimeUnit.SECONDS);
+      assertEquals(2, completed.get());
+      queue.submit(completed::incrementAndGet);
+      assertEquals(3, completed.get());
+    } finally {
+      releaseFirst.countDown();
+    }
+  }
+
+  // Direct executors and nested submissions must not recurse once per queued task.
+  @Test
+  void reentrantSubmissionWithDirectExecutorDrainsWithoutRecursion() {
+    ExecutionQueue queue = new ExecutionQueue(Runnable::run);
+    AtomicInteger completed = new AtomicInteger();
+    Runnable producer =
+        new Runnable() {
+          @Override
+          public void run() {
+            if (completed.incrementAndGet() < 100_000) {
+              queue.submit(this);
+            }
+          }
+        };
+    queue.submit(producer);
+    assertEquals(100_000, completed.get());
+  }
+
+  // A FIFO executor can run unrelated tasks between batches from a busy queue.
+  @Test
+  void fifoExecutorRunsOtherTasksBetweenBatches() {
+    Queue<Runnable> executorTasks = new ArrayDeque<>();
+    ExecutionQueue queue = new ExecutionQueue(executorTasks::add);
+    List<String> completed = new ArrayList<>();
+    queue.submit(() -> completed.add("first"));
+    queue.submit(() -> completed.add("second"));
+    queue.submit(() -> completed.add("third"));
+    executorTasks.add(() -> completed.add("other"));
+    while (!executorTasks.isEmpty()) {
+      executorTasks.remove().run();
+    }
+    assertEquals(List.of("first", "second", "other", "third"), completed);
+  }
+
+  // Rejection fallback must not hold the queue lock across application callbacks.
+  @Test
+  void rejectedWorkerDoesNotBlockConcurrentSubmissionWhileCallbackRuns() throws Exception {
+    ExecutionQueue queue =
+        new ExecutionQueue(
+            task -> {
+              throw new RejectedExecutionException("saturated");
+            });
+    ExecutorService submitter = Executors.newSingleThreadExecutor();
+    AtomicInteger completed = new AtomicInteger();
+    try {
+      queue.submit(
+          () -> {
+            try {
+              submitter
+                  .submit(() -> queue.submit(completed::incrementAndGet))
+                  .get(5, TimeUnit.SECONDS);
+              completed.incrementAndGet();
+            } catch (Exception e) {
+              throw new AssertionError(e);
+            }
+          });
+      assertEquals(2, completed.get());
+    } finally {
+      submitter.shutdownNow();
+    }
+  }
+
+  @Test
+  public void testSubmitIsLinearWhenConcurrencyIs1() throws Exception {
     ExecutionQueue queue = new ExecutionQueue(executor, 1);
 
     AtomicBoolean failed = new AtomicBoolean(false);
@@ -48,6 +242,10 @@ public class ExecutionQueueTest {
           });
     }
 
+    CompletableFuture<Void> drained = new CompletableFuture<>();
+    queue.submit(() -> drained.complete(null));
+    drained.get(30, TimeUnit.SECONDS);
+    assertEquals(1_000_000, n.get());
     assertFalse(failed.get());
   }
 
@@ -66,7 +264,7 @@ public class ExecutionQueueTest {
           });
     }
 
-    latch.await();
+    assertTrue(latch.await(30, TimeUnit.SECONDS));
     assertEquals(100000, count.get());
   }
 }

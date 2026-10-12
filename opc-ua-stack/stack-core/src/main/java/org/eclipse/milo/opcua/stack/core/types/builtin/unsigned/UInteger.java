@@ -216,8 +216,8 @@ public final class UInteger extends UNumber implements Comparable<UInteger> {
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
-    if (obj instanceof UInteger) {
-      return value == ((UInteger) obj).value;
+    if (obj instanceof UInteger that) {
+      return value == that.value;
     }
 
     return false;

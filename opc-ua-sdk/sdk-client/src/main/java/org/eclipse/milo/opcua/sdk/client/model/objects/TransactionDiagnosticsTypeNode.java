@@ -91,7 +91,10 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   @Override
   public void writeStartTime(DateTime value) throws UaException {
     try {
-      writeStartTimeAsync(value).get();
+      StatusCode statusCode = writeStartTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -161,7 +164,10 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   @Override
   public void writeEndTime(DateTime value) throws UaException {
     try {
-      writeEndTimeAsync(value).get();
+      StatusCode statusCode = writeEndTimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -231,7 +237,10 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   @Override
   public void writeResult(StatusCode value) throws UaException {
     try {
-      writeResultAsync(value).get();
+      StatusCode statusCode = writeResultAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -301,7 +310,10 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   @Override
   public void writeAffectedTrustLists(NodeId[] value) throws UaException {
     try {
-      writeAffectedTrustListsAsync(value).get();
+      StatusCode statusCode = writeAffectedTrustListsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -374,7 +386,10 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   @Override
   public void writeAffectedCertificateGroups(NodeId[] value) throws UaException {
     try {
-      writeAffectedCertificateGroupsAsync(value).get();
+      StatusCode statusCode = writeAffectedCertificateGroupsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -450,7 +465,10 @@ public class TransactionDiagnosticsTypeNode extends BaseObjectTypeNode
   @Override
   public void writeErrors(TransactionErrorType[] value) throws UaException {
     try {
-      writeErrorsAsync(value).get();
+      StatusCode statusCode = writeErrorsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

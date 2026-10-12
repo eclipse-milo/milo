@@ -22,6 +22,19 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 
+/**
+ * Legacy instance-declaration hierarchy, retained with frozen behavior for compatibility. It
+ * filters members to the Mandatory and Optional modelling rules, does not recurse into member
+ * types, and caches globally per JVM.
+ *
+ * @deprecated use {@link
+ *     org.eclipse.milo.opcua.sdk.server.nodes.instantiation.TypeInstantiationModel} compiled by
+ *     {@link org.eclipse.milo.opcua.sdk.server.nodes.instantiation.TypeModelCompiler} (cached
+ *     per-server via {@code OpcUaServer.getTypeModelCache()}), which is fully inherited at every
+ *     depth and classifies every modelling rule. See {@code
+ *     docs/features/node-instantiation-migration.md}.
+ */
+@Deprecated
 public class InstanceDeclarationHierarchy {
 
   private final NodeId typeId;

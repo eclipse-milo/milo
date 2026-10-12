@@ -96,7 +96,10 @@ public class ServerUnitTypeNode extends UnitTypeNode implements ServerUnitType {
   @Override
   public void writeConversionLimit(ConversionLimitEnum value) throws UaException {
     try {
-      writeConversionLimitAsync(value).get();
+      StatusCode statusCode = writeConversionLimitAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

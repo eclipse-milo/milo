@@ -41,6 +41,37 @@ import org.eclipse.milo.opcua.stack.core.util.Tree;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Legacy type-instantiation factory, retained with frozen behavior for compatibility.
+ *
+ * <p>Known limitations, kept as-is rather than fixed (each is a documented behavior of this
+ * implementation; the replacement corrects all of them):
+ *
+ * <ul>
+ *   <li>Excluding an optional member still creates and stores its mandatory descendants,
+ *       unreachable from the instance root.
+ *   <li>A member typed as a subtype of its declaring type is instantiated without the
+ *       supertype-declared mandatory members of that subtype.
+ *   <li>When a type declares a child with the same BrowseName as an on-declaration override, the
+ *       type's entry wins and the override's attributes are discarded.
+ *   <li>Optional Methods are created unconditionally; {@link
+ *       InstantiationCallback#includeOptionalNode} is never consulted for them.
+ *   <li>Instantiating over an existing NodeId silently replaces the node and leaves the previous
+ *       node's reference rows in place.
+ *   <li>Attribute propagation from declarations is incomplete: MinimumSamplingInterval,
+ *       Historizing, AccessLevelEx, RolePermissions, UserRolePermissions, and AccessRestrictions
+ *       are not copied.
+ *   <li>The instance-declaration-hierarchy cache is JVM-global, so servers with colliding type
+ *       NodeIds can observe each other's cached hierarchies.
+ * </ul>
+ *
+ * @deprecated use {@link org.eclipse.milo.opcua.sdk.server.nodes.instantiation.NodeInstantiator}
+ *     (obtained from {@code OpcUaServer.getNodeInstantiator()}) and {@link
+ *     org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest}. See {@code
+ *     docs/features/node-instantiation-migration.md} for a mapping of every legacy pattern to the
+ *     new API.
+ */
+@Deprecated
 public class NodeFactory {
 
   private static final Cache<NodeId, InstanceDeclarationHierarchy> IDH_CACHE =
@@ -113,13 +144,18 @@ public class NodeFactory {
     return createNode(rootNodeId, localTypeDefinitionId, instantiationCallback);
   }
 
+  /**
+   * @deprecated use {@link org.eclipse.milo.opcua.sdk.server.nodes.instantiation.NodeInstantiator}
+   *     and inspect the returned {@code InstantiationResult} instead of a node tree.
+   */
+  @Deprecated
   public Tree<UaNode> createNodeTree(
       NodeId rootNodeId, NodeId typeDefinitionId, InstantiationCallback instantiationCallback)
       throws UaException {
 
     AddressSpaceManager addressSpaceManager = context.getServer().getAddressSpaceManager();
 
-    if (!addressSpaceManager.getManagedNode(typeDefinitionId).isPresent()) {
+    if (addressSpaceManager.getManagedNode(typeDefinitionId).isEmpty()) {
       throw new UaException(
           StatusCodes.Bad_NodeIdUnknown, "unknown type definition: " + typeDefinitionId);
     }
@@ -397,6 +433,14 @@ public class NodeFactory {
         .orElse(ExpandedNodeId.NULL_VALUE);
   }
 
+  /**
+   * @deprecated the replacement API configures optional-member selection declaratively on {@code
+   *     InstantiationRequest} (include/exclude paths, {@code includeAllOptionals}, or a selection
+   *     predicate) and replaces the added-node callbacks with {@code onNode} and {@code bindMethod}
+   *     hooks that run against the staged graph before publication. See {@code
+   *     docs/features/node-instantiation-migration.md}.
+   */
+  @Deprecated
   public interface InstantiationCallback {
 
     /**

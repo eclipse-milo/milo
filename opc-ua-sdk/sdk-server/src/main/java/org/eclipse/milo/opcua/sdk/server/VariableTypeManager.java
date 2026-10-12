@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.AttributeSnapshot;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -22,6 +23,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.jspecify.annotations.Nullable;
 
 public class VariableTypeManager {
 
@@ -33,8 +35,42 @@ public class VariableTypeManager {
       Class<? extends UaVariableNode> nodeClass,
       VariableNodeConstructor variableNodeConstructor) {
 
-    typeDefinitions.put(
-        typeDefinition, new VariableTypeDefinition(nodeClass, variableNodeConstructor));
+    typeDefinitions.compute(
+        typeDefinition,
+        (id, prev) ->
+            new VariableTypeDefinition(
+                nodeClass,
+                variableNodeConstructor,
+                prev != null ? prev.snapshotConstructor : null));
+  }
+
+  /**
+   * Register {@code nodeClass} and a snapshot-consuming constructor for {@code typeDefinition}.
+   *
+   * <p>Unlike the tuple-signature forms, a {@link SnapshotConstructor} receives the full planned
+   * {@link AttributeSnapshot}, so attributes added to the model in future versions propagate
+   * without constructor signature changes. Registrations made through this overload are used by the
+   * node-instantiation engine; the legacy {@code NodeFactory} lookup path ({@link
+   * #getNodeConstructor(NodeId)}) does not see them and falls back to its default construction.
+   *
+   * <p>Each overload replaces only its own constructor form: registering a snapshot constructor for
+   * a type that already has a tuple registration (or vice versa) keeps the other form intact, so
+   * neither lookup path silently loses its typed construction.
+   *
+   * @param typeDefinition the {@link NodeId} of the VariableType.
+   * @param nodeClass the Java class instances of the type are constructed as.
+   * @param snapshotConstructor the snapshot-consuming constructor.
+   */
+  public void registerVariableType(
+      NodeId typeDefinition,
+      Class<? extends UaVariableNode> nodeClass,
+      SnapshotConstructor snapshotConstructor) {
+
+    typeDefinitions.compute(
+        typeDefinition,
+        (id, prev) ->
+            new VariableTypeDefinition(
+                nodeClass, prev != null ? prev.nodeConstructor : null, snapshotConstructor));
   }
 
   public void registerVariableType(
@@ -43,30 +79,28 @@ public class VariableTypeManager {
       LegacyVariableNodeConstructor variableNodeConstructor) {
 
     VariableNodeConstructor adapted =
-        new VariableNodeConstructor() {
-          @Override
-          public UaVariableNode apply(
-              UaNodeContext context,
-              NodeId nodeId,
-              QualifiedName browseName,
-              LocalizedText displayName,
-              LocalizedText description,
-              UInteger writeMask,
-              UInteger userWriteMask,
-              RolePermissionType[] rolePermissions,
-              RolePermissionType[] userRolePermissions,
-              AccessRestrictionType accessRestrictions,
-              DataValue value,
-              NodeId dataType,
-              Integer valueRank,
-              UInteger[] arrayDimensions) {
-
-            return variableNodeConstructor.apply(
+        (context,
+            nodeId,
+            browseName,
+            displayName,
+            description,
+            writeMask,
+            userWriteMask,
+            rolePermissions,
+            userRolePermissions,
+            accessRestrictions,
+            value,
+            dataType,
+            valueRank,
+            arrayDimensions) ->
+            variableNodeConstructor.apply(
                 context, nodeId, browseName, displayName, description, writeMask, userWriteMask);
-          }
-        };
 
-    typeDefinitions.put(typeDefinition, new VariableTypeDefinition(nodeClass, adapted));
+    typeDefinitions.compute(
+        typeDefinition,
+        (id, prev) ->
+            new VariableTypeDefinition(
+                nodeClass, adapted, prev != null ? prev.snapshotConstructor : null));
   }
 
   public Optional<VariableNodeConstructor> getNodeConstructor(NodeId typeDefinition) {
@@ -75,17 +109,44 @@ public class VariableTypeManager {
     return Optional.ofNullable(def).map(d -> d.nodeConstructor);
   }
 
-  private static class VariableTypeDefinition {
-    final Class<? extends UaVariableNode> nodeClass;
-    final VariableNodeConstructor nodeConstructor;
+  /**
+   * Get the full registration for {@code typeDefinition}, if one exists: the registered Java class
+   * plus whichever constructor form the registration supplied.
+   *
+   * <p>This is the node-instantiation engine's lookup: exposing the {@link Class} enables plan-time
+   * expected-class checks and nearest-registered-ancestor fallback along the {@code HasSubtype}
+   * chain. At least one of {@link RegisteredVariableType#nodeConstructor()} and {@link
+   * RegisteredVariableType#snapshotConstructor()} is non-null; both are when the type was
+   * registered through both overload forms.
+   *
+   * @param typeDefinition the {@link NodeId} of the VariableType.
+   * @return the registration, if one exists.
+   */
+  public Optional<RegisteredVariableType> getRegisteredType(NodeId typeDefinition) {
+    VariableTypeDefinition def = typeDefinitions.get(typeDefinition);
 
-    private VariableTypeDefinition(
-        Class<? extends UaVariableNode> nodeClass, VariableNodeConstructor nodeConstructor) {
-
-      this.nodeClass = nodeClass;
-      this.nodeConstructor = nodeConstructor;
-    }
+    return Optional.ofNullable(def)
+        .map(
+            d -> new RegisteredVariableType(d.nodeClass, d.nodeConstructor, d.snapshotConstructor));
   }
+
+  private record VariableTypeDefinition(
+      Class<? extends UaVariableNode> nodeClass,
+      @Nullable VariableNodeConstructor nodeConstructor,
+      @Nullable SnapshotConstructor snapshotConstructor) {}
+
+  /**
+   * A VariableType registration: the Java class instances are constructed as, plus the constructor
+   * form(s) the registrations supplied (at least one is non-null).
+   *
+   * @param nodeClass the registered Java class.
+   * @param nodeConstructor the tuple-signature constructor, if registered with one.
+   * @param snapshotConstructor the snapshot-consuming constructor, if registered with one.
+   */
+  public record RegisteredVariableType(
+      Class<? extends UaVariableNode> nodeClass,
+      @Nullable VariableNodeConstructor nodeConstructor,
+      @Nullable SnapshotConstructor snapshotConstructor) {}
 
   @FunctionalInterface
   public interface VariableNodeConstructor {
@@ -118,5 +179,32 @@ public class VariableTypeManager {
         LocalizedText description,
         UInteger writeMask,
         UInteger userWriteMask);
+  }
+
+  /**
+   * Constructs a {@link UaVariableNode} from the planned {@link AttributeSnapshot} instead of a
+   * fixed attribute tuple, so newly modeled attributes propagate without signature changes.
+   *
+   * <p>The constructor owns attribute application with one exception: the instantiation engine
+   * applies nothing after a snapshot constructor returns — any planned attribute the constructor
+   * does not read from {@code attributes} and set on the node is dropped — except Value, which the
+   * engine always overwrites with the declaration's value re-stamped at apply time (or the
+   * Bad_NoValue convention when unset). A constructor-computed initial Value does not survive.
+   * (Tuple-signature registrations, by contrast, receive an engine overlay of the attributes their
+   * signature cannot carry.)
+   */
+  @FunctionalInterface
+  public interface SnapshotConstructor {
+
+    /**
+     * Construct an instance node.
+     *
+     * @param context the {@link UaNodeContext} the node is constructed with.
+     * @param nodeId the instance {@link NodeId}.
+     * @param attributes the effective attributes planned for the instance, absent/null/value
+     *     distinction preserved.
+     * @return the constructed node.
+     */
+    UaVariableNode apply(UaNodeContext context, NodeId nodeId, AttributeSnapshot attributes);
   }
 }

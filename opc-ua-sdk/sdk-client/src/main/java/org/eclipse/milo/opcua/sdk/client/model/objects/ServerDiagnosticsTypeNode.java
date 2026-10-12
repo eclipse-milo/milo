@@ -94,7 +94,10 @@ public class ServerDiagnosticsTypeNode extends BaseObjectTypeNode implements Ser
   @Override
   public void writeEnabledFlag(Boolean value) throws UaException {
     try {
-      writeEnabledFlagAsync(value).get();
+      StatusCode statusCode = writeEnabledFlagAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

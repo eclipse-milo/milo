@@ -88,7 +88,10 @@ public class TemporaryFileTransferTypeNode extends BaseObjectTypeNode
   @Override
   public void writeClientProcessingTimeout(Double value) throws UaException {
     try {
-      writeClientProcessingTimeoutAsync(value).get();
+      StatusCode statusCode = writeClientProcessingTimeoutAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

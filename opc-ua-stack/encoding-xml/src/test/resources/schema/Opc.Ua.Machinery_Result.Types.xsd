@@ -1,0 +1,123 @@
+<xs:schema elementFormDefault="qualified" targetNamespace="http://opcfoundation.org/UA/Machinery/Result/Types.xsd" xmlns:tns="http://opcfoundation.org/UA/Machinery/Result/Types.xsd" xmlns:ua="http://opcfoundation.org/UA/2008/02/Types.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:import namespace="http://opcfoundation.org/UA/2008/02/Types.xsd"/>
+    <xs:simpleType name="ResultEvaluationEnum">
+        <xs:annotation>
+            <xs:documentation>Indicates whether a result was in tolerance</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Undefined_0"/>
+            <xs:enumeration value="OK_1"/>
+            <xs:enumeration value="NotOK_2"/>
+            <xs:enumeration value="NotDecidable_3"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:element name="ResultEvaluationEnum" type="tns:ResultEvaluationEnum"/>
+    <xs:complexType name="ListOfResultEvaluationEnum">
+        <xs:sequence>
+            <xs:element name="ResultEvaluationEnum" minOccurs="0" type="tns:ResultEvaluationEnum" maxOccurs="unbounded" nillable="true"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element name="ListOfResultEvaluationEnum" type="tns:ListOfResultEvaluationEnum" nillable="true"/>
+    <xs:complexType name="BaseResultTransferOptionsDataType">
+        <xs:annotation>
+            <xs:documentation>Abstract type containing information which file should be provided.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="ResultId" minOccurs="0" type="xs:string" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element name="BaseResultTransferOptionsDataType" type="tns:BaseResultTransferOptionsDataType"/>
+    <xs:complexType name="ListOfBaseResultTransferOptionsDataType">
+        <xs:sequence>
+            <xs:element name="BaseResultTransferOptionsDataType" minOccurs="0" type="tns:BaseResultTransferOptionsDataType" maxOccurs="unbounded" nillable="true"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element name="ListOfBaseResultTransferOptionsDataType" type="tns:ListOfBaseResultTransferOptionsDataType" nillable="true"/>
+    <xs:complexType name="ResultTransferOptionsDataType">
+        <xs:annotation>
+            <xs:documentation>Contains information which file should be provided.</xs:documentation>
+        </xs:annotation>
+        <xs:complexContent mixed="false">
+            <xs:extension base="ua:ExtensionObject">
+                <xs:sequence/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:element name="ResultTransferOptionsDataType" type="tns:ResultTransferOptionsDataType"/>
+    <xs:complexType name="ListOfResultTransferOptionsDataType">
+        <xs:sequence>
+            <xs:element name="ResultTransferOptionsDataType" minOccurs="0" type="tns:ResultTransferOptionsDataType" maxOccurs="unbounded" nillable="true"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element name="ListOfResultTransferOptionsDataType" type="tns:ListOfResultTransferOptionsDataType" nillable="true"/>
+    <xs:complexType name="ProcessingTimesDataType">
+        <xs:annotation>
+            <xs:documentation>Contains measured times that were generated during the execution of a recipe.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="EncodingMask" minOccurs="0" type="xs:unsignedInt"/>
+            <xs:element name="StartTime" minOccurs="0" type="xs:dateTime" maxOccurs="1"/>
+            <xs:element name="EndTime" minOccurs="0" type="xs:dateTime" maxOccurs="1"/>
+            <xs:element name="AcquisitionDuration" minOccurs="0" type="xs:double" maxOccurs="1"/>
+            <xs:element name="ProcessingDuration" minOccurs="0" type="xs:double" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element name="ProcessingTimesDataType" type="tns:ProcessingTimesDataType"/>
+    <xs:complexType name="ListOfProcessingTimesDataType">
+        <xs:sequence>
+            <xs:element name="ProcessingTimesDataType" minOccurs="0" type="tns:ProcessingTimesDataType" maxOccurs="unbounded" nillable="true"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element name="ListOfProcessingTimesDataType" type="tns:ListOfProcessingTimesDataType" nillable="true"/>
+    <xs:complexType name="ResultDataType">
+        <xs:annotation>
+            <xs:documentation>Contains fields that were created during the execution of a recipe.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="ResultMetaData" minOccurs="0" type="ua:ExtensionObject" maxOccurs="1"/>
+            <xs:element name="ResultContent" minOccurs="0" type="ua:ListOfVariant" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element name="ResultDataType" type="tns:ResultDataType"/>
+    <xs:complexType name="ListOfResultDataType">
+        <xs:sequence>
+            <xs:element name="ResultDataType" minOccurs="0" type="tns:ResultDataType" maxOccurs="unbounded" nillable="true"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element name="ListOfResultDataType" type="tns:ListOfResultDataType" nillable="true"/>
+    <xs:complexType name="ResultMetaDataType">
+        <xs:annotation>
+            <xs:documentation>Meta data of a result, describing the result.</xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="EncodingMask" minOccurs="0" type="xs:unsignedInt"/>
+            <xs:element name="ResultId" minOccurs="0" type="xs:string" maxOccurs="1"/>
+            <xs:element name="HasTransferableDataOnFile" minOccurs="0" type="xs:boolean" maxOccurs="1"/>
+            <xs:element name="IsPartial" minOccurs="0" type="xs:boolean" maxOccurs="1"/>
+            <xs:element name="IsSimulated" minOccurs="0" type="xs:boolean" maxOccurs="1"/>
+            <xs:element name="ResultState" minOccurs="0" type="xs:int" maxOccurs="1"/>
+            <xs:element name="StepId" minOccurs="0" type="xs:string" maxOccurs="1"/>
+            <xs:element name="PartId" minOccurs="0" type="xs:string" maxOccurs="1"/>
+            <xs:element name="ExternalRecipeId" minOccurs="0" type="xs:string" maxOccurs="1"/>
+            <xs:element name="InternalRecipeId" minOccurs="0" type="xs:string" maxOccurs="1"/>
+            <xs:element name="ProductId" minOccurs="0" type="xs:string" maxOccurs="1"/>
+            <xs:element name="ExternalConfigurationId" minOccurs="0" type="xs:string" maxOccurs="1"/>
+            <xs:element name="InternalConfigurationId" minOccurs="0" type="xs:string" maxOccurs="1"/>
+            <xs:element name="JobId" minOccurs="0" type="xs:string" maxOccurs="1"/>
+            <xs:element name="CreationTime" minOccurs="0" type="xs:dateTime" maxOccurs="1"/>
+            <xs:element name="ProcessingTimes" minOccurs="0" type="tns:ProcessingTimesDataType" maxOccurs="1"/>
+            <xs:element name="ResultUri" minOccurs="0" type="ua:ListOfString" maxOccurs="1"/>
+            <xs:element name="ResultEvaluation" minOccurs="0" type="tns:ResultEvaluationEnum" maxOccurs="1"/>
+            <xs:element name="ResultEvaluationCode" minOccurs="0" type="xs:long" maxOccurs="1"/>
+            <xs:element name="ResultEvaluationDetails" minOccurs="0" type="ua:LocalizedText" maxOccurs="1"/>
+            <xs:element name="FileFormat" minOccurs="0" type="ua:ListOfString" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element name="ResultMetaDataType" type="tns:ResultMetaDataType"/>
+    <xs:complexType name="ListOfResultMetaDataType">
+        <xs:sequence>
+            <xs:element name="ResultMetaDataType" minOccurs="0" type="tns:ResultMetaDataType" maxOccurs="unbounded" nillable="true"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element name="ListOfResultMetaDataType" type="tns:ListOfResultMetaDataType" nillable="true"/>
+</xs:schema>

@@ -88,7 +88,10 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxPubSubConnections(UInteger value) throws UaException {
     try {
-      writeMaxPubSubConnectionsAsync(value).get();
+      StatusCode statusCode = writeMaxPubSubConnectionsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -162,7 +165,10 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxWriterGroups(UInteger value) throws UaException {
     try {
-      writeMaxWriterGroupsAsync(value).get();
+      StatusCode statusCode = writeMaxWriterGroupsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -232,7 +238,10 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxReaderGroups(UInteger value) throws UaException {
     try {
-      writeMaxReaderGroupsAsync(value).get();
+      StatusCode statusCode = writeMaxReaderGroupsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -302,7 +311,10 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxDataSetWriters(UInteger value) throws UaException {
     try {
-      writeMaxDataSetWritersAsync(value).get();
+      StatusCode statusCode = writeMaxDataSetWritersAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -375,7 +387,10 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxDataSetReaders(UInteger value) throws UaException {
     try {
-      writeMaxDataSetReadersAsync(value).get();
+      StatusCode statusCode = writeMaxDataSetReadersAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -448,7 +463,10 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxFieldsPerDataSet(UInteger value) throws UaException {
     try {
-      writeMaxFieldsPerDataSetAsync(value).get();
+      StatusCode statusCode = writeMaxFieldsPerDataSetAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -521,7 +539,10 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxDataSetWritersPerGroup(UInteger value) throws UaException {
     try {
-      writeMaxDataSetWritersPerGroupAsync(value).get();
+      StatusCode statusCode = writeMaxDataSetWritersPerGroupAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -595,7 +616,10 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxSecurityGroups(UInteger value) throws UaException {
     try {
-      writeMaxSecurityGroupsAsync(value).get();
+      StatusCode statusCode = writeMaxSecurityGroupsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -668,7 +692,10 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxPushTargets(UInteger value) throws UaException {
     try {
-      writeMaxPushTargetsAsync(value).get();
+      StatusCode statusCode = writeMaxPushTargetsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -738,7 +765,10 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxPublishedDataSets(UInteger value) throws UaException {
     try {
-      writeMaxPublishedDataSetsAsync(value).get();
+      StatusCode statusCode = writeMaxPublishedDataSetsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -812,7 +842,10 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxStandaloneSubscribedDataSets(UInteger value) throws UaException {
     try {
-      writeMaxStandaloneSubscribedDataSetsAsync(value).get();
+      StatusCode statusCode = writeMaxStandaloneSubscribedDataSetsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -887,7 +920,10 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxNetworkMessageSizeDatagram(UInteger value) throws UaException {
     try {
-      writeMaxNetworkMessageSizeDatagramAsync(value).get();
+      StatusCode statusCode = writeMaxNetworkMessageSizeDatagramAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -961,7 +997,10 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxNetworkMessageSizeBroker(UInteger value) throws UaException {
     try {
-      writeMaxNetworkMessageSizeBrokerAsync(value).get();
+      StatusCode statusCode = writeMaxNetworkMessageSizeBrokerAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1035,7 +1074,10 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeSupportSecurityKeyPull(Boolean value) throws UaException {
     try {
-      writeSupportSecurityKeyPullAsync(value).get();
+      StatusCode statusCode = writeSupportSecurityKeyPullAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1109,7 +1151,10 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeSupportSecurityKeyPush(Boolean value) throws UaException {
     try {
-      writeSupportSecurityKeyPushAsync(value).get();
+      StatusCode statusCode = writeSupportSecurityKeyPushAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1183,7 +1228,10 @@ public class PubSubCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeSupportSecurityKeyServer(Boolean value) throws UaException {
     try {
-      writeSupportSecurityKeyServerAsync(value).get();
+      StatusCode statusCode = writeSupportSecurityKeyServerAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

@@ -18,21 +18,36 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.StringReader;
 import java.lang.reflect.Array;
+import java.time.Instant;
+import java.util.UUID;
+import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.UaEnumeratedType;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ThreeDVector;
 import org.eclipse.milo.opcua.stack.core.types.structured.XVType;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
@@ -216,6 +231,43 @@ public class OpcUaXmlDecoderMatrixTest {
     assertEquals(original, decoded);
   }
 
+  // Matrix accepts an Object[] flat array, which generic codecs such as JsonStructCodec build.
+  // Every element must make the trip, not an empty Elements or a null Matrix.
+  @Test
+  void objectArrayInt32MatrixValueRoundTrips() throws Exception {
+    Matrix original = new Matrix(new Object[] {1, 2}, new int[] {1, 2}, OpcUaDataType.Int32);
+
+    String encoded = encode(e -> e.encodeMatrix("Test", original));
+
+    Matrix decoded;
+    try (var decoder = new OpcUaXmlDecoder(context)) {
+      decoder.setInput(new StringReader(encoded));
+      decoded = decoder.decodeMatrix("Test", OpcUaDataType.Int32);
+    }
+
+    assertEquals(new Matrix(new Integer[] {1, 2}, new int[] {1, 2}, OpcUaDataType.Int32), decoded);
+  }
+
+  @Test
+  void objectArrayEnumMatrixValueRoundTrips() throws Exception {
+    Matrix original =
+        new Matrix(
+            new Object[] {ApplicationType.Server, ApplicationType.Client},
+            new int[] {1, 2},
+            OpcUaDataType.Int32);
+
+    String encoded = encode(e -> e.encodeEnumMatrix("Test", original));
+
+    Matrix decoded;
+    try (var decoder = new OpcUaXmlDecoder(context)) {
+      decoder.setInput(new StringReader(encoded));
+      decoded = decoder.decodeEnumMatrix("Test");
+    }
+
+    // Enumerations reduce to their Int32 values: Server is 0 and Client is 1.
+    assertEquals(new Matrix(new Integer[] {0, 1}, new int[] {1, 2}, OpcUaDataType.Int32), decoded);
+  }
+
   @Test
   void decodesIndentedMatrixXml() throws Exception {
     // Pretty-printed XML (e.g. copied from a UANodeSet) has whitespace text nodes between elements.
@@ -362,6 +414,104 @@ public class OpcUaXmlDecoderMatrixTest {
           () -> decoder.decodeStructMatrix("Test", XVType.TYPE_ID),
           "decodeStructMatrix(..., XVType.TYPE_ID) must reject ThreeDVector elements");
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Null elements keep their positions, as a structure field and inside a Variant.
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Part 6 §5.3.1.17 requires a decoder to reject a Matrix whose element count doesn't match its
+   * Dimensions, so a null element must be written in place. Each comes back as its type's null
+   * value, wherever it sits in the flat array.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("nullElementCases")
+  void matrixFieldWithNullElementsRoundTrips(
+      OpcUaDataType dataType, Object sample, @Nullable Object decodedNull) throws Exception {
+
+    Matrix original = withNullsAtStartMiddleAndEnd(dataType, sample, null);
+
+    String encoded = encode(e -> e.encodeMatrix("Test", original));
+
+    Matrix decoded;
+    try (var decoder = new OpcUaXmlDecoder(context)) {
+      decoder.setInput(new StringReader(encoded));
+      decoded = decoder.decodeMatrix("Test", dataType);
+    }
+
+    assertEquals(withNullsAtStartMiddleAndEnd(dataType, sample, decodedNull), decoded);
+  }
+
+  // A Variant holding such a Matrix, an XML Value attribute for example, writes it the same way.
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("nullElementCases")
+  void matrixVariantWithNullElementsRoundTrips(
+      OpcUaDataType dataType, Object sample, @Nullable Object decodedNull) throws Exception {
+
+    Matrix original = withNullsAtStartMiddleAndEnd(dataType, sample, null);
+
+    String encoded = encode(e -> e.encodeVariant("Test", new Variant(original)));
+
+    Variant decoded;
+    try (var decoder = new OpcUaXmlDecoder(context)) {
+      decoder.setInput(new StringReader(encoded));
+      decoded = decoder.decodeVariant("Test");
+    }
+
+    assertEquals(withNullsAtStartMiddleAndEnd(dataType, sample, decodedNull), decoded.value());
+  }
+
+  /** Each nullable type with a sample value and the value its null element decodes to. */
+  static Stream<Arguments> nullElementCases() {
+    return Stream.of(
+        Arguments.of(OpcUaDataType.String, "a", null),
+        Arguments.of(
+            OpcUaDataType.DateTime,
+            new DateTime(Instant.parse("2026-01-02T03:04:05Z")),
+            DateTime.NULL_VALUE),
+        Arguments.of(
+            OpcUaDataType.Guid,
+            UUID.fromString("72962B91-FA75-4AE6-8D28-B404DC7DAF63"),
+            new UUID(0L, 0L)),
+        Arguments.of(
+            OpcUaDataType.ByteString, ByteString.of(new byte[] {1, 2, 3}), ByteString.NULL_VALUE),
+        Arguments.of(OpcUaDataType.XmlElement, XmlElement.of("<a>b</a>"), XmlElement.NULL_VALUE),
+        Arguments.of(OpcUaDataType.NodeId, new NodeId(0, 85), NodeId.NULL_VALUE),
+        Arguments.of(
+            OpcUaDataType.ExpandedNodeId, new NodeId(0, 85).expanded(), ExpandedNodeId.NULL_VALUE),
+        Arguments.of(
+            OpcUaDataType.StatusCode,
+            new StatusCode(StatusCodes.Bad_UnexpectedError),
+            StatusCode.GOOD),
+        Arguments.of(
+            OpcUaDataType.QualifiedName, new QualifiedName(0, "q"), QualifiedName.NULL_VALUE),
+        Arguments.of(
+            OpcUaDataType.LocalizedText, LocalizedText.english("t"), LocalizedText.NULL_VALUE),
+        Arguments.of(
+            OpcUaDataType.ExtensionObject,
+            ExtensionObject.of(ByteString.of(new byte[] {1, 2}), new NodeId(0, 1234)),
+            ExtensionObject.of(XmlElement.NULL_VALUE, NodeId.NULL_VALUE)),
+        Arguments.of(
+            OpcUaDataType.DataValue,
+            new DataValue(new Variant(1), StatusCode.GOOD, null),
+            new DataValue(Variant.NULL_VALUE, StatusCode.GOOD, null)),
+        Arguments.of(OpcUaDataType.Variant, new Variant(1), Variant.NULL_VALUE),
+        Arguments.of(
+            OpcUaDataType.DiagnosticInfo,
+            new DiagnosticInfo(1, 2, 3, 4, "info", null, null),
+            DiagnosticInfo.NULL_VALUE));
+  }
+
+  /** A 1 x 5 Matrix of {@code [n, sample, n, sample, n]}, where {@code n} is {@code nullValue}. */
+  private static Matrix withNullsAtStartMiddleAndEnd(
+      OpcUaDataType dataType, Object sample, @Nullable Object nullValue) {
+
+    Object elements = Array.newInstance(dataType.getBackingClass(), 5);
+    for (int i = 0; i < 5; i++) {
+      Array.set(elements, i, i % 2 == 0 ? nullValue : sample);
+    }
+    return new Matrix(elements, new int[] {1, 5}, dataType);
   }
 
   // ---------------------------------------------------------------------------

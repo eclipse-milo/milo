@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.stack.core;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableBiMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -81,6 +82,7 @@ public enum OpcUaDataType {
   private static final BiMap<Integer, Class<?>> BACKING_CLASSES_BY_ID;
   private static final BiMap<NodeId, Class<?>> BACKING_CLASSES_BY_NODE_ID;
   private static final BiMap<NodeId, OpcUaDataType> DATA_TYPES_BY_NODE_ID;
+  private static final Map<Integer, OpcUaDataType> DATA_TYPES_BY_ID;
   private static final Map<Class<?>, Integer> PRIMITIVE_BUILTIN_TYPES;
   private static final Map<Integer, Class<?>> PRIMITIVE_BUILTIN_TYPES_INVERSE;
 
@@ -88,16 +90,19 @@ public enum OpcUaDataType {
     ImmutableBiMap.Builder<Integer, Class<?>> builder = ImmutableBiMap.builder();
     ImmutableBiMap.Builder<NodeId, Class<?>> builder2 = ImmutableBiMap.builder();
     ImmutableBiMap.Builder<NodeId, OpcUaDataType> builder3 = ImmutableBiMap.builder();
+    Map<Integer, OpcUaDataType> dataTypesById = new HashMap<>();
 
     for (OpcUaDataType dataType : values()) {
       builder.put(dataType.getTypeId(), dataType.getBackingClass());
       builder2.put(dataType.getNodeId(), dataType.getBackingClass());
       builder3.put(dataType.getNodeId(), dataType);
+      dataTypesById.put(dataType.typeId, dataType);
     }
 
     BACKING_CLASSES_BY_ID = builder.build();
     BACKING_CLASSES_BY_NODE_ID = builder2.build();
     DATA_TYPES_BY_NODE_ID = builder3.build();
+    DATA_TYPES_BY_ID = Map.copyOf(dataTypesById);
 
     HashBiMap<Class<?>, Integer> primitiveBuiltinTypes = HashBiMap.create();
     primitiveBuiltinTypes.put(boolean.class, 1);
@@ -149,13 +154,7 @@ public enum OpcUaDataType {
   }
 
   public static @Nullable OpcUaDataType fromTypeId(int typeId) {
-    // TODO turn this into a lookup
-    for (OpcUaDataType dataType : values()) {
-      if (dataType.typeId == typeId) {
-        return dataType;
-      }
-    }
-    return null;
+    return DATA_TYPES_BY_ID.get(typeId);
   }
 
   @Nullable

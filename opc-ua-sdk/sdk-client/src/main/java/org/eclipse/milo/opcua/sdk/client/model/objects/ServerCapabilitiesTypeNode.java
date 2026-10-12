@@ -91,7 +91,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeServerProfileArray(String[] value) throws UaException {
     try {
-      writeServerProfileArrayAsync(value).get();
+      StatusCode statusCode = writeServerProfileArrayAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -164,7 +167,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeLocaleIdArray(String[] value) throws UaException {
     try {
-      writeLocaleIdArrayAsync(value).get();
+      StatusCode statusCode = writeLocaleIdArrayAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -234,7 +240,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMinSupportedSampleRate(Double value) throws UaException {
     try {
-      writeMinSupportedSampleRateAsync(value).get();
+      StatusCode statusCode = writeMinSupportedSampleRateAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -308,7 +317,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxBrowseContinuationPoints(UShort value) throws UaException {
     try {
-      writeMaxBrowseContinuationPointsAsync(value).get();
+      StatusCode statusCode = writeMaxBrowseContinuationPointsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -382,7 +394,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxQueryContinuationPoints(UShort value) throws UaException {
     try {
-      writeMaxQueryContinuationPointsAsync(value).get();
+      StatusCode statusCode = writeMaxQueryContinuationPointsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -456,7 +471,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxHistoryContinuationPoints(UShort value) throws UaException {
     try {
-      writeMaxHistoryContinuationPointsAsync(value).get();
+      StatusCode statusCode = writeMaxHistoryContinuationPointsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -530,7 +548,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxLogObjectContinuationPoints(UShort value) throws UaException {
     try {
-      writeMaxLogObjectContinuationPointsAsync(value).get();
+      StatusCode statusCode = writeMaxLogObjectContinuationPointsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -607,7 +628,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeSoftwareCertificates(SignedSoftwareCertificate[] value) throws UaException {
     try {
-      writeSoftwareCertificatesAsync(value).get();
+      StatusCode statusCode = writeSoftwareCertificatesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -683,7 +707,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxArrayLength(UInteger value) throws UaException {
     try {
-      writeMaxArrayLengthAsync(value).get();
+      StatusCode statusCode = writeMaxArrayLengthAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -753,7 +780,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxStringLength(UInteger value) throws UaException {
     try {
-      writeMaxStringLengthAsync(value).get();
+      StatusCode statusCode = writeMaxStringLengthAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -823,7 +853,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxByteStringLength(UInteger value) throws UaException {
     try {
-      writeMaxByteStringLengthAsync(value).get();
+      StatusCode statusCode = writeMaxByteStringLengthAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -896,7 +929,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxSessions(UInteger value) throws UaException {
     try {
-      writeMaxSessionsAsync(value).get();
+      StatusCode statusCode = writeMaxSessionsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -966,7 +1002,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxSubscriptions(UInteger value) throws UaException {
     try {
-      writeMaxSubscriptionsAsync(value).get();
+      StatusCode statusCode = writeMaxSubscriptionsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1039,7 +1078,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxMonitoredItems(UInteger value) throws UaException {
     try {
-      writeMaxMonitoredItemsAsync(value).get();
+      StatusCode statusCode = writeMaxMonitoredItemsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1112,7 +1154,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxSubscriptionsPerSession(UInteger value) throws UaException {
     try {
-      writeMaxSubscriptionsPerSessionAsync(value).get();
+      StatusCode statusCode = writeMaxSubscriptionsPerSessionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1186,7 +1231,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxMonitoredItemsPerSubscription(UInteger value) throws UaException {
     try {
-      writeMaxMonitoredItemsPerSubscriptionAsync(value).get();
+      StatusCode statusCode = writeMaxMonitoredItemsPerSubscriptionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1261,7 +1309,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxSelectClauseParameters(UInteger value) throws UaException {
     try {
-      writeMaxSelectClauseParametersAsync(value).get();
+      StatusCode statusCode = writeMaxSelectClauseParametersAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1335,7 +1386,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxWhereClauseParameters(UInteger value) throws UaException {
     try {
-      writeMaxWhereClauseParametersAsync(value).get();
+      StatusCode statusCode = writeMaxWhereClauseParametersAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1409,7 +1463,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxMonitoredItemsQueueSize(UInteger value) throws UaException {
     try {
-      writeMaxMonitoredItemsQueueSizeAsync(value).get();
+      StatusCode statusCode = writeMaxMonitoredItemsQueueSizeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -1483,7 +1540,10 @@ public class ServerCapabilitiesTypeNode extends BaseObjectTypeNode
   @Override
   public void writeConformanceUnits(QualifiedName[] value) throws UaException {
     try {
-      writeConformanceUnitsAsync(value).get();
+      StatusCode statusCode = writeConformanceUnitsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

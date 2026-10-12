@@ -87,7 +87,10 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   @Override
   public void writeSecurityGroupId(String value) throws UaException {
     try {
-      writeSecurityGroupIdAsync(value).get();
+      StatusCode statusCode = writeSecurityGroupIdAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -157,7 +160,10 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   @Override
   public void writeKeyLifetime(Double value) throws UaException {
     try {
-      writeKeyLifetimeAsync(value).get();
+      StatusCode statusCode = writeKeyLifetimeAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -227,7 +233,10 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   @Override
   public void writeSecurityPolicyUri(String value) throws UaException {
     try {
-      writeSecurityPolicyUriAsync(value).get();
+      StatusCode statusCode = writeSecurityPolicyUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -300,7 +309,10 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   @Override
   public void writeMaxFutureKeyCount(UInteger value) throws UaException {
     try {
-      writeMaxFutureKeyCountAsync(value).get();
+      StatusCode statusCode = writeMaxFutureKeyCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -373,7 +385,10 @@ public class SecurityGroupTypeNode extends BaseObjectTypeNode implements Securit
   @Override
   public void writeMaxPastKeyCount(UInteger value) throws UaException {
     try {
-      writeMaxPastKeyCountAsync(value).get();
+      StatusCode statusCode = writeMaxPastKeyCountAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

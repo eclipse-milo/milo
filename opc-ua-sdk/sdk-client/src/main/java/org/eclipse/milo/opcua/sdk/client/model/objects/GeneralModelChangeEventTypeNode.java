@@ -92,7 +92,10 @@ public class GeneralModelChangeEventTypeNode extends BaseModelChangeEventTypeNod
   @Override
   public void writeChanges(ModelChangeStructureDataType[] value) throws UaException {
     try {
-      writeChangesAsync(value).get();
+      StatusCode statusCode = writeChangesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

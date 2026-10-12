@@ -27,7 +27,6 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
-import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.junit.jupiter.api.Test;
 
@@ -94,14 +93,14 @@ class SessionSecurityDiagnosticsAccessModeTest {
 
   private static OpcUaServerConfig newConfig(SessionSecurityDiagnosticsAccessMode accessMode) {
     return OpcUaServerConfig.builder()
-        .setCertificateManager(new DefaultCertificateManager(new MemoryCertificateQuarantine()))
+        .setCertificateManager(new DefaultCertificateManager())
         .setSessionSecurityDiagnosticsAccessMode(accessMode)
         .build();
   }
 
   private static OpcUaServerConfig newConfig() {
     return OpcUaServerConfig.builder()
-        .setCertificateManager(new DefaultCertificateManager(new MemoryCertificateQuarantine()))
+        .setCertificateManager(new DefaultCertificateManager())
         .build();
   }
 

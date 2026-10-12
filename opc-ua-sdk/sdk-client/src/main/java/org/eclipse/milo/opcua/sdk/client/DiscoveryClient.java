@@ -14,21 +14,23 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.core.util.FutureUtils.failedFuture;
 
-import java.security.KeyPair;
-import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
+import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectConnection;
+import org.eclipse.milo.opcua.sdk.client.reverse.ReverseTcpClientTransport;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentity;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -67,17 +69,9 @@ public class DiscoveryClient {
           }
 
           @Override
-          public Optional<KeyPair> getKeyPair() {
-            return Optional.empty();
-          }
+          public Optional<CertificateIdentity> getCertificateIdentity(
+              SecurityPolicyProfile securityPolicyProfile) {
 
-          @Override
-          public Optional<X509Certificate> getCertificate() {
-            return Optional.empty();
-          }
-
-          @Override
-          public Optional<X509Certificate[]> getCertificateChain() {
             return Optional.empty();
           }
 
@@ -269,33 +263,34 @@ public class DiscoveryClient {
   public static CompletableFuture<List<EndpointDescription>> getEndpoints(
       String endpointUrl, Consumer<OpcTcpClientTransportConfigBuilder> customizer) {
 
-    String scheme = EndpointUtil.getScheme(endpointUrl);
-
     String profileUri;
-
-    switch (Objects.requireNonNullElse(scheme, "").toLowerCase()) {
-      case "opc.tcp":
-        profileUri = Stack.TCP_UASC_UABINARY_TRANSPORT_URI;
-        break;
-
-      case "http":
-      case "https":
-      case "opc.http":
-      case "opc.https":
-        profileUri = Stack.HTTPS_UABINARY_TRANSPORT_URI;
-        break;
-
-      case "opc.ws":
-      case "opc.wss":
-        profileUri = Stack.WSS_UASC_UABINARY_TRANSPORT_URI;
-        break;
-
-      default:
-        return failedFuture(
-            new UaException(StatusCodes.Bad_InternalError, "unsupported protocol: " + scheme));
+    try {
+      profileUri = transportProfileUri(endpointUrl);
+    } catch (UaException e) {
+      return failedFuture(e);
     }
 
     return getEndpoints(endpointUrl, profileUri, customizer);
+  }
+
+  /**
+   * Map the scheme of {@code endpointUrl} to the transport profile URI that GetEndpoints results
+   * are filtered by.
+   *
+   * @param endpointUrl the endpoint URL whose scheme selects the profile.
+   * @return the transport profile URI.
+   * @throws UaException if the scheme is not supported.
+   */
+  static String transportProfileUri(String endpointUrl) throws UaException {
+    String scheme = EndpointUtil.getScheme(endpointUrl);
+
+    return switch (Objects.requireNonNullElse(scheme, "").toLowerCase()) {
+      case "opc.tcp" -> Stack.TCP_UASC_UABINARY_TRANSPORT_URI;
+      case "http", "https", "opc.http", "opc.https" -> Stack.HTTPS_UABINARY_TRANSPORT_URI;
+      case "opc.ws", "opc.wss" -> Stack.WSS_UASC_UABINARY_TRANSPORT_URI;
+      default ->
+          throw new UaException(StatusCodes.Bad_InternalError, "unsupported protocol: " + scheme);
+    };
   }
 
   private static CompletableFuture<List<EndpointDescription>> getEndpoints(
@@ -303,16 +298,7 @@ public class DiscoveryClient {
       String profileUri,
       Consumer<OpcTcpClientTransportConfigBuilder> customizer) {
 
-    EndpointDescription endpoint =
-        new EndpointDescription(
-            endpointUrl,
-            null,
-            null,
-            MessageSecurityMode.None,
-            SecurityPolicy.None.getUri(),
-            null,
-            profileUri,
-            ubyte(0));
+    EndpointDescription endpoint = newDiscoveryEndpoint(endpointUrl, profileUri);
 
     OpcTcpClientTransportConfigBuilder configBuilder = OpcTcpClientTransportConfig.newBuilder();
     customizer.accept(configBuilder);
@@ -327,5 +313,109 @@ public class DiscoveryClient {
         .thenCompose(c -> c.getEndpoints(endpointUrl, new String[0], new String[] {profileUri}))
         .whenComplete((e, ex) -> discoveryClient.disconnectAsync())
         .thenApply(response -> Lists.ofNullable(response.getEndpoints()));
+  }
+
+  /**
+   * Query the GetEndpoints service over a claimed Reverse Connect channel.
+   *
+   * <p>This helper is for dynamic Reverse Connect applications that receive a server-opened socket
+   * before they have a usable {@link EndpointDescription}. It consumes {@code connection}, opens a
+   * provisional no-security UA-TCP discovery SecureChannel using the endpoint URL from {@code
+   * ReverseHello}, calls GetEndpoints, and disconnects the discovery transport when the request
+   * completes or fails.
+   *
+   * <p>The discovery connection is one-shot and is not reused for the production Session. Use the
+   * selected endpoint from the returned list to create a normal reverse {@link OpcUaClient} that
+   * waits for a later matching reverse connection.
+   *
+   * <p>If the claimed connection does not carry a usable endpoint URL, the returned future fails
+   * with {@link StatusCodes#Bad_TcpEndpointUrlInvalid} after the claimed channel is closed.
+   *
+   * @param connection the claimed Reverse Connect connection to consume for discovery.
+   * @return a List of {@link EndpointDescription}s returned by the GetEndpoints service.
+   */
+  public static CompletableFuture<List<EndpointDescription>> getEndpoints(
+      ReverseConnectConnection connection) {
+
+    return getEndpoints(connection, b -> {});
+  }
+
+  /**
+   * Query the GetEndpoints service over a claimed Reverse Connect channel.
+   *
+   * <p>This overload allows customization of the direct reverse TCP transport used for the
+   * provisional discovery SecureChannel. The supplied connection is still consumed exactly once and
+   * the helper disconnects the discovery transport on completion.
+   *
+   * <p>If the transport customizer throws a runtime exception, the claimed channel is closed and
+   * the returned future fails with that exception.
+   *
+   * @param connection the claimed Reverse Connect connection to consume for discovery.
+   * @param customizer a {@link Consumer} that accepts a {@link OpcTcpClientTransportConfigBuilder}
+   *     for customization.
+   * @return a List of {@link EndpointDescription}s returned by the GetEndpoints service.
+   */
+  public static CompletableFuture<List<EndpointDescription>> getEndpoints(
+      ReverseConnectConnection connection,
+      Consumer<OpcTcpClientTransportConfigBuilder> customizer) {
+
+    Objects.requireNonNull(connection, "connection");
+
+    String endpointUrl = connection.endpointUrl();
+    if (endpointUrl == null || endpointUrl.isBlank()) {
+      connection.close();
+      return failedFuture(
+          new UaException(
+              StatusCodes.Bad_TcpEndpointUrlInvalid, "ReverseHello endpointUrl is null or blank"));
+    }
+
+    OpcTcpClientTransportConfigBuilder configBuilder = OpcTcpClientTransportConfig.newBuilder();
+    DiscoveryClient discoveryClient;
+
+    try {
+      customizer.accept(configBuilder);
+      EndpointDescription endpoint =
+          newDiscoveryEndpoint(endpointUrl, Stack.TCP_UASC_UABINARY_TRANSPORT_URI);
+      OpcTcpClientTransportConfig config = configBuilder.build();
+      var transport = new ReverseTcpClientTransport(config, connection);
+      discoveryClient = new DiscoveryClient(endpoint, transport);
+    } catch (RuntimeException e) {
+      connection.close();
+      return failedFuture(e);
+    }
+
+    return discoveryClient
+        .connectAsync()
+        .thenCompose(
+            c ->
+                c.getEndpoints(
+                    endpointUrl,
+                    new String[0],
+                    new String[] {Stack.TCP_UASC_UABINARY_TRANSPORT_URI}))
+        .whenComplete((e, ex) -> discoveryClient.disconnectAsync())
+        .thenApply(response -> Lists.ofNullable(response.getEndpoints()));
+  }
+
+  /**
+   * Build the provisional no-security endpoint used by discovery helpers.
+   *
+   * <p>Discovery clients use this synthetic endpoint only to open a temporary SecureChannel for
+   * FindServers or GetEndpoints. It is not a selected production endpoint and carries no server
+   * identity or user-token policy information.
+   *
+   * @param endpointUrl the endpoint URL used for the discovery request and client Hello.
+   * @param profileUri the transport profile advertised for the temporary discovery channel.
+   * @return the provisional discovery endpoint.
+   */
+  static EndpointDescription newDiscoveryEndpoint(String endpointUrl, String profileUri) {
+    return new EndpointDescription(
+        endpointUrl,
+        null,
+        null,
+        MessageSecurityMode.None,
+        SecurityPolicy.None.getUri(),
+        null,
+        profileUri,
+        ubyte(0));
   }
 }

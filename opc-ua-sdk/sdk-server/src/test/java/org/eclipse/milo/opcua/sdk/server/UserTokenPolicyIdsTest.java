@@ -15,7 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 
 import java.security.cert.X509Certificate;
-import java.util.LinkedHashSet;
 import java.util.List;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
@@ -36,7 +35,7 @@ class UserTokenPolicyIdsTest {
     EndpointConfig emptyIdEndpoint = endpoint(SecurityPolicy.None, anonymousPolicy(""));
 
     UserTokenPolicyIds policyIds =
-        UserTokenPolicyIds.assign(new LinkedHashSet<>(List.of(nullIdEndpoint, emptyIdEndpoint)));
+        UserTokenPolicyIds.assign(List.of(nullIdEndpoint, emptyIdEndpoint));
 
     assertNull(policyIds.policiesFor(nullIdEndpoint)[0].getPolicyId());
     assertEquals("", policyIds.policiesFor(emptyIdEndpoint)[0].getPolicyId());
@@ -60,12 +59,11 @@ class UserTokenPolicyIdsTest {
 
     UserTokenPolicyIds policyIds =
         UserTokenPolicyIds.assign(
-            new LinkedHashSet<>(
-                List.of(
-                    noneEndpoint,
-                    secureEndpoint,
-                    securityPolicyCandidateEndpoint,
-                    tokenTypeCandidateEndpoint)));
+            List.of(
+                noneEndpoint,
+                secureEndpoint,
+                securityPolicyCandidateEndpoint,
+                tokenTypeCandidateEndpoint));
 
     assertEquals(configuredId, policyIds.policiesFor(noneEndpoint)[0].getPolicyId());
     assertEquals(tokenTypeCandidate + "-2", policyIds.policiesFor(secureEndpoint)[0].getPolicyId());

@@ -18,7 +18,6 @@ import org.eclipse.milo.opcua.sdk.client.AddressSpace.BrowseOptions;
 import org.eclipse.milo.opcua.sdk.client.model.objects.ServerTypeNode;
 import org.eclipse.milo.opcua.sdk.client.model.variables.ServerStatusTypeNode;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaNode;
-import org.eclipse.milo.opcua.sdk.client.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.ReferenceTypes;
@@ -28,33 +27,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.BrowseDirection;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class AddressSpaceTest extends AbstractClientServerTest {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(AddressSpaceTest.class);
-
-  @Test
-  public void browse() throws UaException {
-    AddressSpace addressSpace = client.getAddressSpace();
-
-    UaNode serverNode = addressSpace.getNode(NodeIds.Server);
-    List<? extends UaNode> nodes = addressSpace.browseNodes(serverNode);
-
-    nodes.forEach(
-        n -> {
-          LOGGER.debug(
-              "{} ({}) [{}]",
-              n.getBrowseName().toParseableString(),
-              n.getNodeId().toParseableString(),
-              n.getNodeClass());
-
-          if (n instanceof UaVariableNode) {
-            LOGGER.debug("└─ value = {}", ((UaVariableNode) n).getValue().value());
-          }
-        });
-  }
 
   @Test
   public void browseWithBrowseDirection() throws UaException {

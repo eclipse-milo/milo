@@ -88,7 +88,10 @@ public class KeyCredentialDeletedAuditEventTypeNode extends KeyCredentialAuditEv
   @Override
   public void writeResourceUri(String value) throws UaException {
     try {
-      writeResourceUriAsync(value).get();
+      StatusCode statusCode = writeResourceUriAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

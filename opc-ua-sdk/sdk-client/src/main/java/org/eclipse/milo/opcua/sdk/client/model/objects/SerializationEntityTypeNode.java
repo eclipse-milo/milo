@@ -93,7 +93,10 @@ public class SerializationEntityTypeNode extends BaseObjectTypeNode
   @Override
   public void writeIncludeReferenceTypes(NodeId[] value) throws UaException {
     try {
-      writeIncludeReferenceTypesAsync(value).get();
+      StatusCode statusCode = writeIncludeReferenceTypesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -167,7 +170,10 @@ public class SerializationEntityTypeNode extends BaseObjectTypeNode
   @Override
   public void writeExcludeReferenceTypes(NodeId[] value) throws UaException {
     try {
-      writeExcludeReferenceTypesAsync(value).get();
+      StatusCode statusCode = writeExcludeReferenceTypesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -241,7 +247,10 @@ public class SerializationEntityTypeNode extends BaseObjectTypeNode
   @Override
   public void writeSerializationDepth(UShort value) throws UaException {
     try {
-      writeSerializationDepthAsync(value).get();
+      StatusCode statusCode = writeSerializationDepthAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -314,7 +323,10 @@ public class SerializationEntityTypeNode extends BaseObjectTypeNode
   @Override
   public void writeConsiderSubElementSerializationProperties(Boolean value) throws UaException {
     try {
-      writeConsiderSubElementSerializationPropertiesAsync(value).get();
+      StatusCode statusCode = writeConsiderSubElementSerializationPropertiesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -391,7 +403,10 @@ public class SerializationEntityTypeNode extends BaseObjectTypeNode
   @Override
   public void writeCustomMetaDataProperties(KeyValuePair[] value) throws UaException {
     try {
-      writeCustomMetaDataPropertiesAsync(value).get();
+      StatusCode statusCode = writeCustomMetaDataPropertiesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -467,7 +482,10 @@ public class SerializationEntityTypeNode extends BaseObjectTypeNode
   @Override
   public void writeCustomMetaDataRef(NodeId value) throws UaException {
     try {
-      writeCustomMetaDataRefAsync(value).get();
+      StatusCode statusCode = writeCustomMetaDataRefAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -540,7 +558,10 @@ public class SerializationEntityTypeNode extends BaseObjectTypeNode
   @Override
   public void writeIncludeStatus(Boolean value) throws UaException {
     try {
-      writeIncludeStatusAsync(value).get();
+      StatusCode statusCode = writeIncludeStatusAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -610,7 +631,10 @@ public class SerializationEntityTypeNode extends BaseObjectTypeNode
   @Override
   public void writeIncludeSourceTimestamp(Boolean value) throws UaException {
     try {
-      writeIncludeSourceTimestampAsync(value).get();
+      StatusCode statusCode = writeIncludeSourceTimestampAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -684,7 +708,10 @@ public class SerializationEntityTypeNode extends BaseObjectTypeNode
   @Override
   public void writeIncludeDictionaryReference(Boolean value) throws UaException {
     try {
-      writeIncludeDictionaryReferenceAsync(value).get();
+      StatusCode statusCode = writeIncludeDictionaryReferenceAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -759,7 +786,10 @@ public class SerializationEntityTypeNode extends BaseObjectTypeNode
   @Override
   public void writeSerializedData(Structure value) throws UaException {
     try {
-      writeSerializedDataAsync(value).get();
+      StatusCode statusCode = writeSerializedDataAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

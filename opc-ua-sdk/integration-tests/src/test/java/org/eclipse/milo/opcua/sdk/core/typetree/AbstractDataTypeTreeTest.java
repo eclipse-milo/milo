@@ -10,13 +10,11 @@
 
 package org.eclipse.milo.opcua.sdk.core.typetree;
 
-import static java.util.Objects.requireNonNullElse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Comparator;
 import java.util.Objects;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -50,25 +48,6 @@ public abstract class AbstractDataTypeTreeTest extends AbstractClientServerTest 
   }
 
   protected abstract DataTypeTree getDataTypeTree() throws UaException;
-
-  @Test
-  public void testGetTree() {
-    dataTypeTree
-        .getRoot()
-        .traverseWithDepth(
-            (dataType, depth) -> {
-              StringBuilder indent = new StringBuilder();
-              for (int i = 0; i < depth; i++) {
-                indent.append("\t");
-              }
-              LOGGER.debug("{}{}", indent, dataType.getBrowseName().toParseableString());
-            },
-            (o1, o2) -> {
-              String name1 = requireNonNullElse(o1.getValue().getBrowseName().name(), "");
-              String name2 = requireNonNullElse(o2.getValue().getBrowseName().name(), "");
-              return Comparator.<String>naturalOrder().compare(name1, name2);
-            });
-  }
 
   @Test
   public void testGetBackingClass() {

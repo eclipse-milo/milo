@@ -1,0 +1,183 @@
+/*
+ * Copyright (c) 2026 the Eclipse Milo Authors
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
+package org.eclipse.milo.opcua.stack.core.types.builtin.unsigned;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.math.BigInteger;
+import java.util.Random;
+import java.util.function.Supplier;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+
+class ULongTest {
+
+  private static final BigInteger TWO_POW_64 = BigInteger.ONE.shiftLeft(64);
+
+  // Values at or above 2^63 have the sign bit set in the backing long. Subtracting from one of them
+  // used to throw whenever the result dropped below 2^63, which is a valid result.
+  @ParameterizedTest
+  @CsvSource({
+    "18446744073709551615, 18446744073709551615, 0",
+    "9223372036854775808, 9223372036854775808, 0",
+    "9223372036854775808, 1, 9223372036854775807",
+    "18446744073709551615, 9223372036854775808, 9223372036854775807",
+  })
+  void subtractReturnsResultsBelowTheSignedBoundary(
+      String minuend, String subtrahend, String expected) {
+    assertEquals(u(expected), u(minuend).subtract(u(subtrahend)));
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "9223372036854775808, 1, 9223372036854775807",
+    "18446744073709551615, 9223372036854775807, 9223372036854775808",
+  })
+  void subtractLongReturnsResultsBelowTheSignedBoundary(
+      String minuend, long subtrahend, String expected) {
+    assertEquals(u(expected), u(minuend).subtract(subtrahend));
+  }
+
+  // add(long) with a negative argument is a subtraction, so it hit the same bug.
+  @Test
+  void addNegativeLongSubtracts() {
+    assertEquals(u("9223372036854775807"), u("9223372036854775808").add(-1L));
+    assertEquals(u("0"), u("9223372036854775807").add(Long.MIN_VALUE + 1));
+  }
+
+  // Math.abs(Long.MIN_VALUE) is still negative, so add(long) and subtract(long) used to hand
+  // Long.MIN_VALUE back and forth until the stack overflowed.
+  @Test
+  void addAndSubtractAcceptLongMinValue() {
+    assertEquals(u("9223372036854775807"), ULong.MAX.add(Long.MIN_VALUE));
+    assertEquals(u("9223372036854775808"), ULong.MIN.subtract(Long.MIN_VALUE));
+    assertEquals(u("18446744073709551615"), u("9223372036854775807").subtract(Long.MIN_VALUE));
+  }
+
+  @Test
+  void addRejectsOverflow() {
+    assertThrows(NumberFormatException.class, () -> ULong.MAX.add(1));
+    assertThrows(NumberFormatException.class, () -> ULong.MAX.add(u("1")));
+    assertThrows(
+        NumberFormatException.class, () -> u("9223372036854775808").add(u("9223372036854775808")));
+    assertThrows(NumberFormatException.class, () -> ULong.MAX.subtract(Long.MIN_VALUE));
+  }
+
+  @Test
+  void subtractRejectsUnderflow() {
+    assertThrows(NumberFormatException.class, () -> ULong.MIN.subtract(1));
+    assertThrows(NumberFormatException.class, () -> u("1").subtract(u("2")));
+    assertThrows(NumberFormatException.class, () -> ULong.MIN.add(Long.MIN_VALUE));
+    assertThrows(NumberFormatException.class, () -> u("1").add(-2L));
+  }
+
+  // The named cases above pin the boundary; this checks the whole value space against BigInteger
+  // so the sign-bit handling cannot regress somewhere the named cases do not reach.
+  @Test
+  void arithmeticMatchesBigInteger() {
+    var random = new Random(1);
+
+    for (int i = 0; i < 10_000; i++) {
+      long a = random.nextLong();
+      long b = random.nextLong();
+      ULong ua = ULong.valueOf(a);
+      ULong ub = ULong.valueOf(b);
+
+      assertMatches(ua.toBigInteger().add(ub.toBigInteger()), () -> ua.add(ub));
+      assertMatches(ua.toBigInteger().subtract(ub.toBigInteger()), () -> ua.subtract(ub));
+      assertMatches(ua.toBigInteger().add(BigInteger.valueOf(b)), () -> ua.add(b));
+      assertMatches(ua.toBigInteger().subtract(BigInteger.valueOf(b)), () -> ua.subtract(b));
+    }
+  }
+
+  // A value at or above 2^63 has the sign bit set in the backing long. Masking the sign bit off,
+  // converting, and adding the bit back rounds twice, and the second rounding can land one ulp away
+  // from the value IEEE 754 requires. UInt64 to Double and UInt64 to Float are implicit conversions
+  // that UInt64Conversions performs by delegating here, so the error reaches ContentFilter and
+  // EventFilter comparisons against a large UInt64 operand.
+  @ParameterizedTest
+  @CsvSource({
+    "17230979562634597548, 1.7230979562634598E19, 1.723098E19",
+    "11716038989414409317, 1.171603898941441E19, 1.1716039E19",
+    "14167230856923196323, 1.4167230856923195E19, 1.416723E19",
+  })
+  void convertsToFloatingPointWithASingleRounding(
+      String value, double expectedDouble, float expectedFloat) {
+    assertEquals(expectedDouble, u(value).doubleValue());
+    assertEquals(expectedFloat, u(value).floatValue());
+  }
+
+  // The endpoints of the range and the signed boundary already converted correctly, so they guard
+  // against a fix that shifts values which were never wrong.
+  @ParameterizedTest
+  @CsvSource({
+    "0, 0.0, 0.0",
+    "1, 1.0, 1.0",
+    "9223372036854775807, 9.223372036854776E18, 9.223372E18",
+    "9223372036854775808, 9.223372036854776E18, 9.223372E18",
+    "18446744073709551615, 1.8446744073709552E19, 1.8446744E19",
+  })
+  void convertsBoundaryValuesToFloatingPointUnchanged(
+      String value, double expectedDouble, float expectedFloat) {
+    assertEquals(expectedDouble, u(value).doubleValue());
+    assertEquals(expectedFloat, u(value).floatValue());
+  }
+
+  // The named cases above pin a few points. BigInteger rounds once by construction, so comparing
+  // against it across the whole value space catches a regression the named cases do not reach.
+  @Test
+  void floatingPointConversionsMatchBigInteger() {
+    var random = new Random(2);
+
+    for (int i = 0; i < 10_000; i++) {
+      ULong value = ULong.valueOf(random.nextLong());
+      BigInteger exact = value.toBigInteger();
+
+      assertEquals(exact.doubleValue(), value.doubleValue(), () -> "doubleValue of " + value);
+      assertEquals(exact.floatValue(), value.floatValue(), () -> "floatValue of " + value);
+    }
+  }
+
+  // The old hand-written parser only caught some 20-digit overflows. The rest came back as an
+  // unrelated value, e.g. 90000000000000000000 was parsed as 16213023705161793536.
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "18446744073709551616",
+        "30000000000000000000",
+        "90000000000000000000",
+        "92233720368547758079"
+      })
+  void valueOfRejectsStringsAboveTheRange(String value) {
+    assertThrows(NumberFormatException.class, () -> ULong.valueOf(value));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"0", "9223372036854775808", "18446744073709551615"})
+  void valueOfAcceptsTheWholeRange(String value) {
+    assertEquals(new BigInteger(value), ULong.valueOf(value).toBigInteger());
+  }
+
+  private static void assertMatches(BigInteger expected, Supplier<ULong> operation) {
+    if (expected.signum() >= 0 && expected.compareTo(TWO_POW_64) < 0) {
+      assertEquals(expected, operation.get().toBigInteger());
+    } else {
+      assertThrows(NumberFormatException.class, operation::get, "expected " + expected);
+    }
+  }
+
+  private static ULong u(String value) {
+    return ULong.valueOf(value);
+  }
+}

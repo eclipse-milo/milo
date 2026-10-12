@@ -26,13 +26,17 @@ import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Random;
 import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
+import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.encoding.UaDecoder;
+import org.eclipse.milo.opcua.stack.core.encoding.UaEncoder;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference;
@@ -48,6 +52,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class OpcUaJsonDecoderTest {
 
@@ -212,6 +217,17 @@ class OpcUaJsonDecoderTest {
     decoder.jsonReader.beginObject();
     assertEquals(ULong.MIN, decoder.decodeUInt64("foo"));
     decoder.jsonReader.endObject();
+  }
+
+  // UInt64 is carried as a decimal string, so an out-of-range value must be rejected like the XML
+  // decoder rejects it, not decoded to an unrelated number.
+  @ParameterizedTest
+  @ValueSource(strings = {"90000000000000000000", "92233720368547758079"})
+  void decodeUInt64RejectsValuesAboveTheRange(String value) {
+    var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
+    decoder.reset(new StringReader(String.format("\"%s\"", value)));
+
+    assertThrows(UaSerializationException.class, () -> decoder.decodeUInt64(null));
   }
 
   @Test
@@ -656,23 +672,22 @@ class OpcUaJsonDecoderTest {
     var jsonStringXo = ExtensionObject.of("{\"foo\":\"bar\",\"baz\":42}", new NodeId(2, 42));
 
     var byteStringXo =
-        ExtensionObject.of(ByteString.of(new byte[] {0x00, 0x01, 0x02, 0x03}), new NodeId(2, 42));
+        ExtensionObject.of(ByteString.of(new byte[] {0x00, 0x01, 0x02, 0x03}), new NodeId(0, 889));
 
-    var xmlElementXo = ExtensionObject.of(new XmlElement("<foo>bar</foo>"), new NodeId(2, 42));
+    var xmlElementXo = ExtensionObject.of(new XmlElement("<foo>bar</foo>"), new NodeId(0, 888));
 
     decoder.reset(
         new StringReader(
-            "{\"TypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"Body\":{\"foo\":\"bar\",\"baz\":42}}"));
+            "{\"UaTypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"foo\":\"bar\",\"baz\":42}"));
     assertEquals(jsonStringXo, decoder.decodeExtensionObject(null));
 
     decoder.reset(
-        new StringReader(
-            "{\"TypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"Encoding\":1,\"Body\":\"AAECAw==\"}"));
+        new StringReader("{\"UaTypeId\":\"i=887\",\"UaEncoding\":1,\"UaBody\":\"AAECAw==\"}"));
     assertEquals(byteStringXo, decoder.decodeExtensionObject(null));
 
     decoder.reset(
         new StringReader(
-            "{\"TypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"Encoding\":2,\"Body\":\"<foo>bar</foo>\"}"));
+            "{\"UaTypeId\":\"i=887\",\"UaEncoding\":2,\"UaBody\":\"PGZvbz5iYXI8L2Zvbz4=\"}"));
     assertEquals(xmlElementXo, decoder.decodeExtensionObject(null));
 
     decoder.reset(new StringReader("null"));
@@ -680,7 +695,7 @@ class OpcUaJsonDecoderTest {
 
     decoder.reset(
         new StringReader(
-            "{\"foo\":{\"TypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"Body\":{\"foo\":\"bar\",\"baz\":42}}}"));
+            "{\"foo\":{\"UaTypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"foo\":\"bar\",\"baz\":42}}"));
     decoder.jsonReader.beginObject();
     assertEquals(jsonStringXo, decoder.decodeExtensionObject("foo"));
     decoder.jsonReader.endObject();
@@ -705,7 +720,7 @@ class OpcUaJsonDecoderTest {
     decoder.reset(
         new StringReader(
             String.format(
-                "{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+                "{\"UaType\":12,\"Value\":\"foo\",\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
                 isoNow, isoNow)));
     assertEquals(allFieldsValue, decoder.decodeDataValue(null));
 
@@ -722,7 +737,7 @@ class OpcUaJsonDecoderTest {
     decoder.reset(
         new StringReader(
             String.format(
-                "{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+                "{\"UaType\":12,\"Value\":\"foo\",\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
                 isoNow, isoNow)));
     assertEquals(
         allFieldsValue.copy(b -> b.setStatus(StatusCode.GOOD)), decoder.decodeDataValue(null));
@@ -731,7 +746,7 @@ class OpcUaJsonDecoderTest {
     decoder.reset(
         new StringReader(
             String.format(
-                "{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"Status\":3080192,\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+                "{\"UaType\":12,\"Value\":\"foo\",\"Status\":3080192,\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
                 isoNow)));
     assertEquals(allFieldsValue.copy(b -> b.setSourceTime(null)), decoder.decodeDataValue(null));
 
@@ -739,7 +754,7 @@ class OpcUaJsonDecoderTest {
     decoder.reset(
         new StringReader(
             String.format(
-                "{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
+                "{\"UaType\":12,\"Value\":\"foo\",\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}",
                 isoNow, isoNow)));
     assertEquals(
         allFieldsValue.copy(b -> b.setSourcePicoseconds(null)), decoder.decodeDataValue(null));
@@ -748,7 +763,7 @@ class OpcUaJsonDecoderTest {
     decoder.reset(
         new StringReader(
             String.format(
-                "{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerPicoseconds\":200}",
+                "{\"UaType\":12,\"Value\":\"foo\",\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerPicoseconds\":200}",
                 isoNow)));
     assertEquals(allFieldsValue.copy(b -> b.setServerTime(null)), decoder.decodeDataValue(null));
 
@@ -756,7 +771,7 @@ class OpcUaJsonDecoderTest {
     decoder.reset(
         new StringReader(
             String.format(
-                "{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\"}",
+                "{\"UaType\":12,\"Value\":\"foo\",\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\"}",
                 isoNow, isoNow)));
     assertEquals(
         allFieldsValue.copy(b -> b.setServerPicoseconds(null)), decoder.decodeDataValue(null));
@@ -769,7 +784,7 @@ class OpcUaJsonDecoderTest {
     decoder.reset(
         new StringReader(
             String.format(
-                "{\"foo\":{\"Value\":{\"Type\":12,\"Body\":\"foo\"},\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}}",
+                "{\"foo\":{\"UaType\":12,\"Value\":\"foo\",\"Status\":3080192,\"SourceTimestamp\":\"%s\",\"SourcePicoseconds\":100,\"ServerTimestamp\":\"%s\",\"ServerPicoseconds\":200}}",
                 isoNow, isoNow)));
     decoder.jsonReader.beginObject();
     assertEquals(allFieldsValue, decoder.decodeDataValue("foo"));
@@ -884,7 +899,7 @@ class OpcUaJsonDecoderTest {
 
     decoder.reset(
         new StringReader(
-            "{\"TypeId\":\"i=15257\",\"Body\":{\"RequestHeader\":{\"AuthenticationToken\":\"i=0\",\"Timestamp\":\"1601-01-01T00:00:00Z\",\"RequestHandle\":0,\"ReturnDiagnostics\":0,\"AuditEntryId\":\"foo\",\"TimeoutHint\":0,\"AdditionalHeader\":null},\"MaxAge\":0.0,\"TimestampsToReturn\":2,\"NodesToRead\":[{\"NodeId\":\"i=1\",\"AttributeId\":13,\"IndexRange\":null,\"DataEncoding\":null}]}}"));
+            "{\"UaTypeId\":\"i=629\",\"RequestHeader\":{\"AuthenticationToken\":\"i=0\",\"Timestamp\":\"1601-01-01T00:00:00Z\",\"RequestHandle\":0,\"ReturnDiagnostics\":0,\"AuditEntryId\":\"foo\",\"TimeoutHint\":0,\"AdditionalHeader\":null},\"MaxAge\":0.0,\"TimestampsToReturn\":2,\"NodesToRead\":[{\"NodeId\":\"i=1\",\"AttributeId\":13,\"IndexRange\":null,\"DataEncoding\":null}]}"));
     assertEquals(message, decoder.decodeMessage(null));
   }
 
@@ -1073,12 +1088,11 @@ class OpcUaJsonDecoderTest {
     var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
 
     var byteStringXo =
-        ExtensionObject.of(ByteString.of(new byte[] {0x00, 0x01, 0x02, 0x03}), new NodeId(2, 42));
+        ExtensionObject.of(ByteString.of(new byte[] {0x00, 0x01, 0x02, 0x03}), new NodeId(0, 889));
 
     // Body field appears BEFORE Encoding field.
     decoder.reset(
-        new StringReader(
-            "{\"TypeId\":\"nsu=urn:eclipse:milo:test2;i=42\",\"Body\":\"AAECAw==\",\"Encoding\":1}"));
+        new StringReader("{\"UaTypeId\":\"i=887\",\"UaBody\":\"AAECAw==\",\"UaEncoding\":1}"));
     assertEquals(byteStringXo, decoder.decodeExtensionObject(null));
   }
 
@@ -1107,6 +1121,117 @@ class OpcUaJsonDecoderTest {
     var decoder = new OpcUaJsonDecoder(context, new StringReader("\"nsu=urn:no-semicolon-here\""));
 
     assertThrows(UaSerializationException.class, () -> decoder.decodeQualifiedName(null));
+  }
+
+  /**
+   * Issue 2038: Part 6 §5.4.2.14 lets an encoder that cannot map a NamespaceIndex to a URI use the
+   * {@code <short-index>:<name>} form from Part 6 §5.1.12, Table 7, and requires the decoder to
+   * pass that NamespaceIndex to the application. Only the first prefix is the index; the rest is
+   * the name. The index does not need to be in the NamespaceTable.
+   */
+  @ParameterizedTest
+  @MethodSource("numericPrefixQualifiedNames")
+  void decodeQualifiedNameWithNumericPrefixUsesNamespaceIndex(String json, QualifiedName expected)
+      throws IOException {
+
+    var decoder = new OpcUaJsonDecoder(context, new StringReader(json));
+
+    assertEquals(expected, decoder.decodeQualifiedName(null));
+  }
+
+  static Stream<Arguments> numericPrefixQualifiedNames() {
+    return Stream.of(
+        Arguments.of("\"2:Name925224192\"", new QualifiedName(2, "Name925224192")),
+        Arguments.of("\"2:2:Name\"", new QualifiedName(2, "2:Name")),
+        Arguments.of("\"3:Hello:World\"", new QualifiedName(3, "Hello:World")),
+        Arguments.of("\"2:nsu=urn:test;Name\"", new QualifiedName(2, "nsu=urn:test;Name")),
+        Arguments.of("\"02:Name\"", new QualifiedName(2, "Name")),
+        Arguments.of("\"65535:Name\"", new QualifiedName(65535, "Name")));
+  }
+
+  /**
+   * Part 6 §5.1.12: a string without a {@code <short-index>:} or {@code nsu=} prefix is a name in
+   * namespace 0. A prefix counts as a {@code <short-index>} only if it is one or more ASCII digits
+   * followed by ':'; signs, whitespace, and non-ASCII digits keep the whole string as the name.
+   */
+  @ParameterizedTest
+  @MethodSource("unprefixedQualifiedNames")
+  void decodeQualifiedNameWithoutNumericPrefixUsesNamespaceZero(String name) throws IOException {
+    var decoder = new OpcUaJsonDecoder(context, new StringReader("\"" + name + "\""));
+
+    assertEquals(new QualifiedName(0, name), decoder.decodeQualifiedName(null));
+  }
+
+  static Stream<String> unprefixedQualifiedNames() {
+    return Stream.of(
+        "InputArguments",
+        "Hello:World",
+        "2Name",
+        "12345",
+        ":Name",
+        "a2:Name",
+        "+2:Name",
+        "-1:Name",
+        " 2:Name",
+        "٢:Name");
+  }
+
+  /**
+   * A {@code <short-index>} outside the UInt16 range cannot be a NamespaceIndex, and a namespace 0
+   * name may not start with digits followed by ':' (Part 6 §5.1.12), so the value is malformed.
+   */
+  @ParameterizedTest
+  @MethodSource("outOfRangeNumericPrefixQualifiedNames")
+  void decodeQualifiedNameWithOutOfRangeNumericPrefixIsRejected(String name) {
+    var decoder = new OpcUaJsonDecoder(context, new StringReader("\"" + name + "\""));
+
+    UaSerializationException e =
+        assertThrows(UaSerializationException.class, () -> decoder.decodeQualifiedName(null));
+    assertEquals(StatusCodes.Bad_DecodingError, e.getStatusCode().value());
+  }
+
+  static Stream<String> outOfRangeNumericPrefixQualifiedNames() {
+    return Stream.of("65536:Name", "99999999999:Name");
+  }
+
+  /**
+   * The {@code nsu=} form keeps its existing behavior: a known URI maps to its index, the name is
+   * not re-parsed for a numeric prefix, and an unknown URI decodes to namespace 0 with the raw
+   * string as the name (Part 6 §5.4.2.14).
+   */
+  @Test
+  void decodeQualifiedNameWithNamespaceUriIsUnchanged() throws IOException {
+    UShort index = context.getNamespaceTable().add("urn:test:namespace");
+    var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
+
+    decoder.reset(new StringReader("\"nsu=urn:test:namespace;2:Name\""));
+    assertEquals(new QualifiedName(index, "2:Name"), decoder.decodeQualifiedName(null));
+
+    decoder.reset(new StringReader("\"nsu=urn:unknown;Name\""));
+    assertEquals(new QualifiedName(0, "nsu=urn:unknown;Name"), decoder.decodeQualifiedName(null));
+  }
+
+  /**
+   * Issue 2038: the open62541 PubSub payload that exposed the bug. Scalar and array Variant values
+   * both decode their QualifiedNames through the same path, and a numeric prefix, a namespace URI,
+   * and an unprefixed name can appear in the same array.
+   */
+  @Test
+  void decodeVariantQualifiedNameWithNumericPrefix() throws IOException {
+    UShort index = context.getNamespaceTable().add("urn:test:namespace");
+    var decoder = new OpcUaJsonDecoder(context, new StringReader(""));
+
+    decoder.reset(new StringReader("{\"UaType\":20,\"Value\":\"2:Name925224192\"}"));
+    assertEquals(new Variant(new QualifiedName(2, "Name925224192")), decoder.decodeVariant(null));
+
+    decoder.reset(
+        new StringReader("{\"UaType\":20,\"Value\":[\"2:A\",\"nsu=urn:test:namespace;B\",\"C\"]}"));
+    assertEquals(
+        new Variant(
+            new QualifiedName[] {
+              new QualifiedName(2, "A"), new QualifiedName(index, "B"), new QualifiedName(0, "C")
+            }),
+        decoder.decodeVariant(null));
   }
 
   /**
@@ -1155,6 +1280,110 @@ class OpcUaJsonDecoderTest {
 
     assertEquals("Demo", decoded.getName());
     assertNull(decoded.getConfigurationVersion());
+  }
+
+  /**
+   * The CompactEncoding omits a NULL Matrix member (OPC 10000-6 §5.4.6, Table 45). Every Matrix
+   * decoder must return a null Matrix and restore the peeked name so the following member still
+   * decodes.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("matrixDecoders")
+  void decodeMatrix_omittedMember_restoresNameAndReturnsNullMatrix(
+      String name, BiFunction<OpcUaJsonDecoder, String, Matrix> decodeMatrix) throws IOException {
+
+    var decoder = new OpcUaJsonDecoder(context, new StringReader("{\"Other\":42}"));
+    decoder.jsonReader.beginObject();
+
+    // "Values" is absent; the next member is "Other".
+    assertEquals(Matrix.ofNull(), decodeMatrix.apply(decoder, "Values"));
+    // The peeked name was restored, so the following member still decodes.
+    assertEquals(42, decoder.decodeInt32("Other"));
+    decoder.jsonReader.endObject();
+  }
+
+  static Stream<Arguments> matrixDecoders() {
+    BiFunction<OpcUaJsonDecoder, String, Matrix> decodeMatrix =
+        (d, f) -> d.decodeMatrix(f, OpcUaDataType.Int32);
+    BiFunction<OpcUaJsonDecoder, String, Matrix> decodeEnumMatrix =
+        OpcUaJsonDecoder::decodeEnumMatrix;
+    BiFunction<OpcUaJsonDecoder, String, Matrix> decodeStructMatrixNodeId =
+        (d, f) ->
+            d.decodeStructMatrix(
+                f,
+                XVType.TYPE_ID.toNodeId(d.getEncodingContext().getNamespaceTable()).orElseThrow());
+    BiFunction<OpcUaJsonDecoder, String, Matrix> decodeStructMatrixExpandedNodeId =
+        (d, f) -> d.decodeStructMatrix(f, XVType.TYPE_ID);
+
+    return Stream.of(
+        Arguments.of("decodeMatrix", decodeMatrix),
+        Arguments.of("decodeEnumMatrix", decodeEnumMatrix),
+        Arguments.of("decodeStructMatrix(NodeId)", decodeStructMatrixNodeId),
+        Arguments.of("decodeStructMatrix(ExpandedNodeId)", decodeStructMatrixExpandedNodeId));
+  }
+
+  /**
+   * Milo's CompactEncoding omits a NULL structure Matrix member (OPC 10000-6 §5.4.6, Table 45), so
+   * the decoder must read the structure Milo wrote back to the same value.
+   */
+  @Test
+  void decodeStructMatrix_compactRoundTripOfNullMember() throws Exception {
+    var value = new StructMatrixHolder(Matrix.ofNull(), 42);
+
+    String json;
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encodeStruct(null, value, StructMatrixHolder.CODEC);
+      json = encoder.getOutputString();
+    }
+
+    assertEquals("{\"Other\":42}", json);
+    assertEquals(
+        value, new OpcUaJsonDecoder(context, json).decodeStruct(null, StructMatrixHolder.CODEC));
+  }
+
+  /** A structure with a structure Matrix member followed by a scalar member. */
+  private record StructMatrixHolder(Matrix points, int other) implements UaStructuredType {
+
+    static final DataTypeCodec CODEC =
+        new DataTypeCodec() {
+          @Override
+          public Class<?> getType() {
+            return StructMatrixHolder.class;
+          }
+
+          @Override
+          public UaStructuredType decode(EncodingContext context, UaDecoder decoder) {
+            return new StructMatrixHolder(
+                decoder.decodeStructMatrix("Points", XVType.TYPE_ID), decoder.decodeInt32("Other"));
+          }
+
+          @Override
+          public void encode(EncodingContext context, UaEncoder encoder, UaStructuredType value) {
+            var holder = (StructMatrixHolder) value;
+            encoder.encodeStructMatrix("Points", holder.points(), XVType.TYPE_ID);
+            encoder.encodeInt32("Other", holder.other());
+          }
+        };
+
+    @Override
+    public ExpandedNodeId getTypeId() {
+      return ExpandedNodeId.NULL_VALUE;
+    }
+
+    @Override
+    public ExpandedNodeId getBinaryEncodingId() {
+      return ExpandedNodeId.NULL_VALUE;
+    }
+
+    @Override
+    public ExpandedNodeId getXmlEncodingId() {
+      return ExpandedNodeId.NULL_VALUE;
+    }
+
+    @Override
+    public ExpandedNodeId getJsonEncodingId() {
+      return ExpandedNodeId.NULL_VALUE;
+    }
   }
 
   private static byte[] randomBytes16() {

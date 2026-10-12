@@ -107,7 +107,10 @@ public class BitFieldTypeNode extends BaseDataVariableTypeNode implements BitFie
   @Override
   public void writeBitFieldsDefinitions(BitFieldDefinition[] value) throws UaException {
     try {
-      writeBitFieldsDefinitionsAsync(value).get();
+      StatusCode statusCode = writeBitFieldsDefinitionsAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

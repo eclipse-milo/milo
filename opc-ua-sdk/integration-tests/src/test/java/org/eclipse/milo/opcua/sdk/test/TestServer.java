@@ -17,16 +17,16 @@ import static org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig.USER_TOKEN_POL
 import java.io.File;
 import java.nio.file.Files;
 import java.security.KeyPair;
-import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import java.util.function.Consumer;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
+import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigBuilder;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits;
 import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
@@ -36,13 +36,13 @@ import org.eclipse.milo.opcua.sdk.server.util.HostnameUtil;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
-import org.eclipse.milo.opcua.stack.core.security.DefaultApplicationGroup;
+import org.eclipse.milo.opcua.stack.core.security.AbstractCertificateFactory;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.DefaultServerCertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateStore;
 import org.eclipse.milo.opcua.stack.core.security.MemoryTrustListManager;
-import org.eclipse.milo.opcua.stack.core.security.RsaSha256CertificateFactory;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -59,26 +59,57 @@ public final class TestServer {
 
   private static TestCertificateMaterial certificateMaterial;
 
-  static {
-    // Required for SecurityPolicy.Aes256_Sha256_RsaPss
-    Security.addProvider(new BouncyCastleProvider());
-  }
-
   private final OpcUaServer opcUaServer;
+  private final X509Certificate clientCertificate;
+  private final X509Certificate[] clientCertificateChain;
+  private final KeyPair clientKeyPair;
   private final TestIdentityCertificate identityCert1;
   private final TestIdentityCertificate identityCert2;
 
   private TestServer(
       OpcUaServer opcUaServer,
+      X509Certificate clientCertificate,
+      X509Certificate[] clientCertificateChain,
+      KeyPair clientKeyPair,
       TestIdentityCertificate identityCert1,
       TestIdentityCertificate identityCert2) {
     this.opcUaServer = opcUaServer;
+    this.clientCertificate = clientCertificate;
+    this.clientCertificateChain = clientCertificateChain;
+    this.clientKeyPair = clientKeyPair;
     this.identityCert1 = identityCert1;
     this.identityCert2 = identityCert2;
   }
 
   public OpcUaServer getServer() {
     return opcUaServer;
+  }
+
+  /**
+   * Get the test client certificate trusted by this server.
+   *
+   * @return the trusted test client certificate.
+   */
+  public X509Certificate getClientCertificate() {
+    return clientCertificate;
+  }
+
+  /**
+   * Get the test client certificate chain trusted by this server.
+   *
+   * @return the trusted test client certificate chain.
+   */
+  public X509Certificate[] getClientCertificateChain() {
+    return clientCertificateChain;
+  }
+
+  /**
+   * Get the key pair for the test client certificate trusted by this server.
+   *
+   * @return the trusted test client key pair.
+   */
+  public KeyPair getClientKeyPair() {
+    return clientKeyPair;
   }
 
   public TestIdentityCertificate getIdentityCertificate1() {
@@ -96,7 +127,18 @@ public final class TestServer {
   }
 
   public static TestServer create(OpcUaServerConfigLimits limits) throws Exception {
-    return create(TestPortAllocator.allocatePort(), limits);
+    return create(limits, configBuilder -> {});
+  }
+
+  public static TestServer create(Consumer<OpcUaServerConfigBuilder> customizeConfig)
+      throws Exception {
+    return create(new OpcUaServerConfigLimits() {}, customizeConfig);
+  }
+
+  public static TestServer create(
+      OpcUaServerConfigLimits limits, Consumer<OpcUaServerConfigBuilder> customizeConfig)
+      throws Exception {
+    return create(TestPortAllocator.allocatePort(), limits, customizeConfig);
   }
 
   public static TestServer create(int port) throws Exception {
@@ -104,15 +146,26 @@ public final class TestServer {
   }
 
   public static TestServer create(int port, OpcUaServerConfigLimits limits) throws Exception {
+    return create(port, limits, configBuilder -> {});
+  }
+
+  public static TestServer create(
+      int port, OpcUaServerConfigLimits limits, Consumer<OpcUaServerConfigBuilder> customizeConfig)
+      throws Exception {
     TestCertificateMaterial certificates = getCertificateMaterial();
     KeyStoreLoader loader = certificates.keyStoreLoader();
+    KeyPair clientKeyPair = certificates.clientKeyPair();
+    X509Certificate clientCertificate = certificates.clientCertificate();
+    X509Certificate[] clientCertificateChain = certificates.clientCertificateChain();
 
     var trustListManager = new MemoryTrustListManager();
+    trustListManager.addTrustedCertificate(clientCertificate);
+
     var certificateStore = new MemoryCertificateStore();
     var certificateQuarantine = new MemoryCertificateQuarantine();
 
     var certificateFactory =
-        new RsaSha256CertificateFactory() {
+        new AbstractCertificateFactory() {
           @Override
           protected KeyPair createRsaSha256KeyPair() {
             return loader.getServerKeyPair();
@@ -128,10 +181,12 @@ public final class TestServer {
         new DefaultServerCertificateValidator(trustListManager, certificateQuarantine);
 
     var defaultGroup =
-        DefaultApplicationGroup.createAndInitialize(
-            trustListManager, certificateStore, certificateFactory, certificateValidator);
+        new DefaultCertificateGroup(
+            trustListManager, certificateStore, certificateQuarantine, certificateValidator);
 
-    var certificateManager = new DefaultCertificateManager(certificateQuarantine, defaultGroup);
+    certificateFactory.createMissingCertificates(defaultGroup);
+
+    var certificateManager = new DefaultCertificateManager(defaultGroup);
 
     TestIdentityCertificate identityCert1 = certificates.identityCert1();
     TestIdentityCertificate identityCert2 = certificates.identityCert2();
@@ -186,7 +241,7 @@ public final class TestServer {
 
     Set<EndpointConfig> endpointConfigurations = createEndpointConfigs(certificate, port);
 
-    OpcUaServerConfig serverConfig =
+    OpcUaServerConfigBuilder configBuilder =
         OpcUaServerConfig.builder()
             .setApplicationUri(applicationUri)
             .setApplicationName(LocalizedText.english("Eclipse Milo OPC UA Example Server"))
@@ -206,8 +261,11 @@ public final class TestServer {
                     usernameIdentityValidator,
                     x509IdentityValidator))
             .setProductUri("urn:eclipse:milo:example-server")
-            .setLimits(limits)
-            .build();
+            .setLimits(limits);
+
+    customizeConfig.accept(configBuilder);
+
+    OpcUaServerConfig serverConfig = configBuilder.build();
 
     OpcUaServer opcUaServer =
         new OpcUaServer(
@@ -223,7 +281,13 @@ public final class TestServer {
               }
             });
 
-    return new TestServer(opcUaServer, identityCert1, identityCert2);
+    return new TestServer(
+        opcUaServer,
+        clientCertificate,
+        clientCertificateChain,
+        clientKeyPair,
+        identityCert1,
+        identityCert2);
   }
 
   private static synchronized TestCertificateMaterial getCertificateMaterial() throws Exception {
@@ -236,12 +300,27 @@ public final class TestServer {
 
       KeyStoreLoader loader = new KeyStoreLoader().load(securityTempDir);
 
+      KeyPair clientKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+      SelfSignedCertificateBuilder clientCertBuilder =
+          new SelfSignedCertificateBuilder(clientKeyPair);
+      clientCertBuilder.setCommonName("TestClient");
+      clientCertBuilder.setApplicationUri("urn:eclipse:milo:test:reverse:client");
+      X509Certificate clientCertificate = clientCertBuilder.build();
+      X509Certificate[] clientCertificateChain = new X509Certificate[] {clientCertificate};
+
       TestIdentityCertificate identityCert1 =
           createIdentityCertificate("TestIdentity1", "urn:eclipse:milo:test:identity1");
       TestIdentityCertificate identityCert2 =
           createIdentityCertificate("TestIdentity2", "urn:eclipse:milo:test:identity2");
 
-      certificateMaterial = new TestCertificateMaterial(loader, identityCert1, identityCert2);
+      certificateMaterial =
+          new TestCertificateMaterial(
+              loader,
+              clientCertificate,
+              clientCertificateChain,
+              clientKeyPair,
+              identityCert1,
+              identityCert2);
     }
 
     return certificateMaterial;
@@ -259,6 +338,9 @@ public final class TestServer {
 
   private record TestCertificateMaterial(
       KeyStoreLoader keyStoreLoader,
+      X509Certificate clientCertificate,
+      X509Certificate[] clientCertificateChain,
+      KeyPair clientKeyPair,
       TestIdentityCertificate identityCert1,
       TestIdentityCertificate identityCert2) {}
 

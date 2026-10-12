@@ -122,6 +122,23 @@ public interface OpcUaServerConfigLimits {
   }
 
   /**
+   * Get the maximum allowed SigningTime skew, in milliseconds, for enhanced (ECC/RSA-DH)
+   * username-token {@code EccEncryptedSecret} payloads.
+   *
+   * <p>The enhanced username-token path validates the SigningTime carried in the encrypted secret
+   * against this window and rejects activations whose timestamp differs from the server clock by
+   * more than this many milliseconds. OPC UA Part 4 defines no normative freshness window for this
+   * timestamp; the window only bounds replay exposure, and replay is already bounded by the
+   * per-activation server-nonce echo. Deployments with clock-skewed clients that lack an RTC/NTP
+   * can raise this limit to avoid spurious {@code Bad_InvalidTimestamp} rejections.
+   *
+   * @return the maximum allowed enhanced username-token SigningTime skew, in milliseconds.
+   */
+  default long getMaxEccEncryptedSecretSigningTimeSkew() {
+    return TimeUnit.MILLISECONDS.convert(5, TimeUnit.MINUTES);
+  }
+
+  /**
    * Get the maximum number of MonitoredItems, across all Sessions, that can be created.
    *
    * @return the maximum number of MonitoredItems, across all Sessions, that can be created.

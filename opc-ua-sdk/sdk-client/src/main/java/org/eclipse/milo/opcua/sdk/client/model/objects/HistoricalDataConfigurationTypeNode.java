@@ -90,7 +90,10 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeStepped(Boolean value) throws UaException {
     try {
-      writeSteppedAsync(value).get();
+      StatusCode statusCode = writeSteppedAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -160,7 +163,10 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeDefinition(String value) throws UaException {
     try {
-      writeDefinitionAsync(value).get();
+      StatusCode statusCode = writeDefinitionAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -230,7 +236,10 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxTimeInterval(Double value) throws UaException {
     try {
-      writeMaxTimeIntervalAsync(value).get();
+      StatusCode statusCode = writeMaxTimeIntervalAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -300,7 +309,10 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMinTimeInterval(Double value) throws UaException {
     try {
-      writeMinTimeIntervalAsync(value).get();
+      StatusCode statusCode = writeMinTimeIntervalAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -370,7 +382,10 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeExceptionDeviation(Double value) throws UaException {
     try {
-      writeExceptionDeviationAsync(value).get();
+      StatusCode statusCode = writeExceptionDeviationAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -451,7 +466,10 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeExceptionDeviationFormat(ExceptionDeviationFormat value) throws UaException {
     try {
-      writeExceptionDeviationFormatAsync(value).get();
+      StatusCode statusCode = writeExceptionDeviationFormatAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -533,7 +551,10 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeStartOfArchive(DateTime value) throws UaException {
     try {
-      writeStartOfArchiveAsync(value).get();
+      StatusCode statusCode = writeStartOfArchiveAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -603,7 +624,10 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeStartOfOnlineArchive(DateTime value) throws UaException {
     try {
-      writeStartOfOnlineArchiveAsync(value).get();
+      StatusCode statusCode = writeStartOfOnlineArchiveAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -677,7 +701,10 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeServerTimestampSupported(Boolean value) throws UaException {
     try {
-      writeServerTimestampSupportedAsync(value).get();
+      StatusCode statusCode = writeServerTimestampSupportedAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -751,7 +778,10 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxTimeStoredValues(Double value) throws UaException {
     try {
-      writeMaxTimeStoredValuesAsync(value).get();
+      StatusCode statusCode = writeMaxTimeStoredValuesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -824,7 +854,10 @@ public class HistoricalDataConfigurationTypeNode extends BaseObjectTypeNode
   @Override
   public void writeMaxCountStoredValues(UInteger value) throws UaException {
     try {
-      writeMaxCountStoredValuesAsync(value).get();
+      StatusCode statusCode = writeMaxCountStoredValuesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

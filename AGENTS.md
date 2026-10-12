@@ -27,10 +27,27 @@ SDK for building OPC UA applications.
 | `mise exec -- mvn -q clean verify`   | Full build with tests and formatting check |
 | `mise exec -- mvn -q spotless:apply` | Fix code formatting issues                 |
 
-Before running any tests, read `.claude/docs/running-tests.md` for module targeting flags and invocation patterns.
+Before running any tests, read `.claude/docs/running-tests.md` for module targeting flags and
+invocation patterns, and `.claude/docs/test-documentation-and-quality-guidelines.md` for test
+quality expectations.
+
+## Documentation
+
+Before adding or updating Java/Kotlin documentation, read
+`.claude/docs/documentation-guidelines.md`.
+
+When creating a new Java package, substantially changing a package's responsibilities, or touching a
+package whose data flow, lifecycle, runtime boundaries, or collaboration model are non-obvious, add
+or update a `package-info.java` file. Prefer high-level, onboarding-focused package documentation
+that explains how the package fits together, even when the package is not being annotated with
+`@NullMarked`.
+
+Keep class and method docs caller-focused. Use package docs for the broader mental model: ownership,
+data flow, validation layers, runtime boundaries, invariants, and extension guidance.
 
 ## Additional Resources
 
+- Testing patterns: `.claude/docs/running-tests.md`
 - Test documentation and quality: `.claude/docs/test-documentation-and-quality-guidelines.md`
 - Java conventions: `.claude/docs/java-coding-conventions.md`
 - Dependencies: `.claude/docs/dependencies.md`

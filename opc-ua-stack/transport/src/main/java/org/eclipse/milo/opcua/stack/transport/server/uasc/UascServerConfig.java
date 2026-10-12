@@ -10,19 +10,9 @@
 
 package org.eclipse.milo.opcua.stack.transport.server.uasc;
 
-import java.util.concurrent.ExecutorService;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 
 public interface UascServerConfig {
-
-  /**
-   * Get the {@link ExecutorService} to use when dispatching inbound {@link UascServiceRequest}s
-   * that arrive while on the Netty event loop thread.
-   *
-   * @return the {@link ExecutorService} to use when dispatching inbound {@link
-   *     UascServiceRequest}s.
-   */
-  ExecutorService getExecutor();
 
   /**
    * Get the deadline, in milliseconds, that a "Hello" message must arrive by after the underlying

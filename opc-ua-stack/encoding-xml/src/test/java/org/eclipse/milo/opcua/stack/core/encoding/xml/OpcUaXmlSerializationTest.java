@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
+import org.eclipse.milo.opcua.stack.core.encoding.xml.args.ScalarArguments;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
@@ -483,11 +484,6 @@ public class OpcUaXmlSerializationTest {
   @MethodSource("xmlElementArguments")
   @ParameterizedTest
   void xmlElementSerialization(XmlElement value) throws Exception {
-    // Skip test for null or empty fragments as they're not properly handled in XML encoding
-    if (value.getFragment() == null || value.getFragment().isEmpty()) {
-      return;
-    }
-
     String encoded;
     try (var encoder = new OpcUaXmlEncoder(new DefaultEncodingContext())) {
       encoder.encodeXmlElement("Test", value);
@@ -502,6 +498,12 @@ public class OpcUaXmlSerializationTest {
       decoder.setInput(new StringReader(encoded));
 
       decoded = decoder.decodeXmlElement("Test");
+    }
+
+    // Null and empty fragments carry distinct values but cannot be compared as XML documents.
+    if (value.getFragment() == null || value.getFragment().isEmpty()) {
+      assertEquals(value.getFragment(), decoded.getFragment());
+      return;
     }
 
     Diff diff =
@@ -720,17 +722,13 @@ public class OpcUaXmlSerializationTest {
       decoded = decoder.decodeDataValue("Test");
     }
 
-    // Compare only the value and status code, not the timestamps
-    // because timestamps may be lost or have different precision
-    assertEquals(value.getValue(), decoded.getValue());
-    assertEquals(value.getStatusCode(), decoded.getStatusCode());
+    assertEquals(value, decoded);
   }
 
   private static Stream<Arguments> dataValueArguments() {
-    return Stream.of(
-        Arguments.of(new DataValue(new Variant(123))),
-        Arguments.of(new DataValue(Variant.NULL_VALUE, StatusCode.GOOD)),
-        Arguments.of(new DataValue(new Variant("hello"), StatusCode.GOOD)));
+    return ScalarArguments.dataValueArguments()
+        .filter(arguments -> arguments.get()[0] != null)
+        .map(arguments -> Arguments.of(arguments.get()[0]));
   }
 
   @MethodSource("variantArguments")

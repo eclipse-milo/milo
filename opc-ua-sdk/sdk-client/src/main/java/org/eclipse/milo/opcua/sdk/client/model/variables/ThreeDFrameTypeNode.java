@@ -107,7 +107,10 @@ public class ThreeDFrameTypeNode extends FrameTypeNode implements ThreeDFrameTyp
   @Override
   public void writeCartesianCoordinates(ThreeDCartesianCoordinates value) throws UaException {
     try {
-      writeCartesianCoordinatesAsync(value).get();
+      StatusCode statusCode = writeCartesianCoordinatesAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {
@@ -185,7 +188,10 @@ public class ThreeDFrameTypeNode extends FrameTypeNode implements ThreeDFrameTyp
   @Override
   public void writeOrientation(ThreeDOrientation value) throws UaException {
     try {
-      writeOrientationAsync(value).get();
+      StatusCode statusCode = writeOrientationAsync(value).get();
+      if (statusCode != null && !statusCode.isGood()) {
+        throw new UaException(statusCode);
+      }
     } catch (ExecutionException e) {
       throw new UaException(e.getCause());
     } catch (InterruptedException e) {

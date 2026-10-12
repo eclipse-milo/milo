@@ -189,6 +189,11 @@ public abstract class SimpleAddressSpaceFilter implements AddressSpaceFilter {
   }
 
   @Override
+  public boolean filterOnDataItemsTransferred(OpcUaServer server, ReadValueId readValueId) {
+    return filterMonitoredItem(readValueId.getNodeId());
+  }
+
+  @Override
   public boolean filterOnEventItemsCreated(OpcUaServer server, ReadValueId readValueId) {
     return filterMonitoredItem(readValueId.getNodeId());
   }

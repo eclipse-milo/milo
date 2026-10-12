@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import org.eclipse.milo.opcua.sdk.core.Reference;
+import org.eclipse.milo.opcua.sdk.server.items.DataItem;
+import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
@@ -22,7 +24,13 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaServerNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.factories.NodeFactory;
+import org.eclipse.milo.opcua.sdk.server.sampling.AddressSpaceSamplingGroup;
+import org.eclipse.milo.opcua.sdk.server.sampling.SamplingGroup;
+import org.eclipse.milo.opcua.sdk.server.sampling.SamplingGroupFactory;
+import org.eclipse.milo.opcua.sdk.server.sampling.SamplingManager;
+import org.eclipse.milo.opcua.sdk.server.sampling.SamplingManagerConfig;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
@@ -30,15 +38,28 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ViewDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * An {@link AddressSpace} backed by a {@link UaNodeManager}, with the service implementations that
+ * reading, writing, browsing, and calling its Nodes need.
+ *
+ * <p>Data MonitoredItems are sampled by a {@link SamplingManager} of this AddressSpace's own, which
+ * the four data item callbacks forward to by default; see {@link #getSamplingManager()}. The
+ * sampling interval of a created or modified item is revised to the one that manager samples at, so
+ * the client is told the interval in effect. A subclass that samples some other way overrides the
+ * four callbacks instead, and {@link #reviseSamplingInterval} to select intervals per item if its
+ * sampler supports other intervals.
+ */
 public abstract class ManagedAddressSpace implements AddressSpace {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -48,6 +69,9 @@ public abstract class ManagedAddressSpace implements AddressSpace {
 
   private final OpcUaServer server;
   private final UaNodeManager nodeManager;
+
+  private final Object samplingManagerLock = new Object();
+  private volatile @Nullable SamplingManager samplingManager;
 
   public ManagedAddressSpace(OpcUaServer server) {
     this(server, new UaNodeManager());
@@ -74,6 +98,13 @@ public abstract class ManagedAddressSpace implements AddressSpace {
     nodeFactory = createNodeFactory();
   }
 
+  /**
+   * @deprecated the legacy {@link NodeFactory} is replaced by {@link
+   *     org.eclipse.milo.opcua.sdk.server.nodes.instantiation.NodeInstantiator}, obtained from
+   *     {@code getServer().getNodeInstantiator()} and targeted at {@link #getNodeManager()}. See
+   *     {@code docs/features/node-instantiation-migration.md}.
+   */
+  @Deprecated
   protected NodeFactory createNodeFactory() {
     return new NodeFactory(nodeContext);
   }
@@ -86,12 +117,190 @@ public abstract class ManagedAddressSpace implements AddressSpace {
     return nodeContext;
   }
 
+  /**
+   * @deprecated the legacy {@link NodeFactory} is replaced by {@link
+   *     org.eclipse.milo.opcua.sdk.server.nodes.instantiation.NodeInstantiator}, obtained from
+   *     {@code getServer().getNodeInstantiator()} and targeted at {@link #getNodeManager()}. See
+   *     {@code docs/features/node-instantiation-migration.md}.
+   */
+  @Deprecated
   public NodeFactory getNodeFactory() {
     return nodeFactory;
   }
 
   public UaNodeManager getNodeManager() {
     return nodeManager;
+  }
+
+  /**
+   * Get the {@link SamplingManager} that samples this AddressSpace's data MonitoredItems.
+   *
+   * <p>It is created on first use from {@link #samplingGroupFactory()} and {@link
+   * #samplingManagerConfig()}, and the default {@code onDataItems*} and {@code
+   * onMonitoringModeChanged} callbacks forward to it. {@link ManagedAddressSpaceWithLifecycle},
+   * {@link ManagedAddressSpaceFragmentWithLifecycle}, and {@link ManagedNamespaceWithLifecycle}
+   * start it after their registration and every lifecycle the subclass adds, and stop it before any
+   * of them; a {@code ManagedAddressSpace} without one of those lifecycles must start and stop it
+   * itself, since items that arrive before it starts are kept but not sampled.
+   *
+   * <p>Configure this manager through the two hooks rather than wiring another {@link
+   * SamplingManager} beside it: {@link #onCreateDataItem} and {@link #onModifyDataItem} revise
+   * sampling intervals with this manager's configuration, so a manager wired separately would
+   * sample at intervals other than the ones the client is told.
+   *
+   * @return the {@link SamplingManager} for this AddressSpace.
+   */
+  public SamplingManager getSamplingManager() {
+    SamplingManager manager = samplingManager;
+
+    if (manager == null) {
+      synchronized (samplingManagerLock) {
+        manager = samplingManager;
+
+        if (manager == null) {
+          manager = new SamplingManager(server, samplingGroupFactory(), samplingManagerConfig());
+          samplingManager = manager;
+        }
+      }
+    }
+
+    return manager;
+  }
+
+  /**
+   * Start {@code lifecycleManager}, then {@link #getSamplingManager()}, so sampling begins after
+   * every lifecycle the subclass added, and a {@link SamplingGroup} can use what they started. If
+   * sampling fails to start, {@code lifecycleManager} is shut down again before the failure
+   * propagates, so nothing stays registered.
+   */
+  final void startupWithSampling(LifecycleManager lifecycleManager) {
+    lifecycleManager.startup();
+
+    try {
+      getSamplingManager().startup();
+    } catch (Throwable t) {
+      try {
+        lifecycleManager.shutdown();
+      } catch (Throwable cleanupFailure) {
+        t.addSuppressed(cleanupFailure);
+      }
+      throw t;
+    }
+  }
+
+  /**
+   * Stop {@link #getSamplingManager()}, if it was started, then {@code lifecycleManager}, so no
+   * sampling cycle runs on what the subclass's lifecycles release.
+   */
+  final void shutdownWithSampling(LifecycleManager lifecycleManager) {
+    try {
+      SamplingManager manager = samplingManager;
+
+      if (manager != null && manager.isRunning()) {
+        manager.shutdown();
+      }
+    } finally {
+      lifecycleManager.shutdown();
+    }
+  }
+
+  /**
+   * The factory {@link #getSamplingManager()} creates its groups with.
+   *
+   * <p>The default creates an {@link AddressSpaceSamplingGroup} that reads through this
+   * AddressSpace. Override to sample with a {@link SamplingGroup} of your own.
+   *
+   * @return the {@link SamplingGroupFactory} for this AddressSpace's groups.
+   */
+  protected SamplingGroupFactory samplingGroupFactory() {
+    return (server, intervalMillis) -> new AddressSpaceSamplingGroup(server, this, intervalMillis);
+  }
+
+  /**
+   * The configuration {@link #getSamplingManager()} is created with.
+   *
+   * <p>The default is {@link SamplingManagerConfig#defaults()}. Override to change, for example,
+   * the minimum sampling interval or the {@link
+   * org.eclipse.milo.opcua.sdk.server.sampling.ReadAccessPolicy}.
+   *
+   * @return the {@link SamplingManagerConfig} for this AddressSpace's sampling.
+   */
+  protected SamplingManagerConfig samplingManagerConfig() {
+    return SamplingManagerConfig.defaults();
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Revises the sampling interval with {@link #reviseSamplingInterval}, by default to the one
+   * {@link #getSamplingManager()} samples at. The queue size is returned as requested.
+   */
+  @Override
+  public RevisedDataItemParameters onCreateDataItem(
+      ReadValueId itemToMonitor, Double requestedSamplingInterval, UInteger requestedQueueSize) {
+
+    return new RevisedDataItemParameters(
+        reviseSamplingInterval(itemToMonitor, requestedSamplingInterval), requestedQueueSize);
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Revises the sampling interval the same way as {@link #onCreateDataItem}, so an item whose
+   * interval a ModifyMonitoredItems changes is told the interval it is sampled at from then on.
+   */
+  @Override
+  public RevisedDataItemParameters onModifyDataItem(
+      ReadValueId itemToModify, Double requestedSamplingInterval, UInteger requestedQueueSize) {
+
+    return new RevisedDataItemParameters(
+        reviseSamplingInterval(itemToModify, requestedSamplingInterval), requestedQueueSize);
+  }
+
+  /**
+   * Revise a requested sampling interval for {@link #onCreateDataItem} and {@link
+   * #onModifyDataItem}.
+   *
+   * <p>The default returns the interval {@link #getSamplingManager()} samples at: rounded up to the
+   * next interval its {@link SamplingManagerConfig} supports, and never faster than requested (Part
+   * 4 §7.21). A subclass that samples its items some other way overrides this to return an interval
+   * its own sampler supports for the given Node and Attribute.
+   *
+   * <p>A subclass that returns zero for report-by-exception must also route that item to its own
+   * push implementation through the data-item callbacks. The sampling manager only supports
+   * periodic sampling. To preserve a client's zero request for a Variable's Value, set the
+   * Variable's MinimumSamplingInterval to zero and configure the server's minimum to allow zero.
+   * With the Variable's default MinimumSamplingInterval of -1, a zero request becomes the
+   * Subscription's publishing interval before this hook is called.
+   *
+   * @param itemToMonitor the Node, Attribute, index range, and data encoding being monitored.
+   * @param requestedSamplingInterval the requested sampling interval, in milliseconds, after the
+   *     server's limits and the Node's MinimumSamplingInterval have been applied.
+   * @return the revised sampling interval, in milliseconds.
+   */
+  protected double reviseSamplingInterval(
+      ReadValueId itemToMonitor, double requestedSamplingInterval) {
+    return getSamplingManager().getConfig().reviseSamplingInterval(requestedSamplingInterval);
+  }
+
+  @Override
+  public void onDataItemsCreated(List<DataItem> dataItems) {
+    getSamplingManager().onDataItemsCreated(dataItems);
+  }
+
+  @Override
+  public void onDataItemsModified(List<DataItem> dataItems) {
+    getSamplingManager().onDataItemsModified(dataItems);
+  }
+
+  @Override
+  public void onDataItemsDeleted(List<DataItem> dataItems) {
+    getSamplingManager().onDataItemsDeleted(dataItems);
+  }
+
+  @Override
+  public void onMonitoringModeChanged(List<MonitoredItem> monitoredItems) {
+    getSamplingManager().onMonitoringModeChanged(monitoredItems);
   }
 
   @Override
@@ -146,11 +355,15 @@ public abstract class ManagedAddressSpace implements AddressSpace {
                 readValueId.getIndexRange(),
                 readValueId.getDataEncoding());
 
-        logger.debug(
-            "read: nodeId={}, attributeId={}, value={}",
-            node.getNodeId(),
-            AttributeId.from(readValueId.getAttributeId()).map(Object::toString).orElse("unknown"),
-            value);
+        if (logger.isDebugEnabled()) {
+          logger.debug(
+              "read: nodeId={}, attributeId={}, value={}",
+              node.getNodeId(),
+              AttributeId.from(readValueId.getAttributeId())
+                  .map(Object::toString)
+                  .orElse("unknown"),
+              value);
+        }
 
         results.add(value);
       } else {
@@ -180,12 +393,14 @@ public abstract class ManagedAddressSpace implements AddressSpace {
 
         results.add(result);
 
-        logger.debug(
-            "write: nodeId={}, attributeId={}, value={}, result={}",
-            node.getNodeId(),
-            AttributeId.from(writeValue.getAttributeId()).map(Object::toString).orElse("unknown"),
-            writeValue.getValue().value(),
-            result);
+        if (logger.isDebugEnabled()) {
+          logger.debug(
+              "write: nodeId={}, attributeId={}, value={}, result={}",
+              node.getNodeId(),
+              AttributeId.from(writeValue.getAttributeId()).map(Object::toString).orElse("unknown"),
+              writeValue.getValue().value(),
+              result);
+        }
       } else {
         results.add(new StatusCode(StatusCodes.Bad_NodeIdUnknown));
       }
@@ -218,11 +433,10 @@ public abstract class ManagedAddressSpace implements AddressSpace {
               new CallMethodResult(
                   e.getStatusCode(), new StatusCode[0], new DiagnosticInfo[0], new Variant[0]));
         } catch (Throwable t) {
-          LoggerFactory.getLogger(getClass())
-              .error(
-                  "Uncaught Throwable invoking method handler for methodId={}.",
-                  request.getMethodId(),
-                  t);
+          logger.error(
+              "Uncaught Throwable invoking method handler for methodId={}.",
+              request.getMethodId(),
+              t);
 
           results.add(
               new CallMethodResult(
@@ -264,18 +478,90 @@ public abstract class ManagedAddressSpace implements AddressSpace {
             .getNode(objectId)
             .orElseThrow(() -> new UaException(StatusCodes.Bad_NodeIdUnknown));
 
+    // ObjectTypes are valid targets for type-level Methods, so they cannot be rejected
+    // unconditionally. Validate modelled Methods before consulting ConditionManager; otherwise an
+    // instance Method called on its type node could reach a handler and return an unrelated error.
+    if (node instanceof UaObjectTypeNode objectTypeNode) {
+      validateObjectTypeMethodCall(objectTypeNode, methodId);
+    }
+
+    MethodInvocationHandler conditionHandler =
+        server.getConditionManager().findMethodInvocationHandler(objectId, methodId).orElse(null);
+    if (conditionHandler != null) {
+      return conditionHandler;
+    }
+
     UaMethodNode methodNode = null;
 
     if (node instanceof UaObjectNode objectNode) {
       methodNode = objectNode.findMethodNode(methodId);
+
+      if (methodNode == null) {
+        methodNode = server.getConditionManager().findMethodNode(objectId, methodId).orElse(null);
+      }
     } else if (node instanceof UaObjectTypeNode objectTypeNode) {
       methodNode = objectTypeNode.findMethodNode(methodId);
     }
 
     if (methodNode != null) {
-      return methodNode.getInvocationHandler();
+      return methodNode.getInvocationHandler(objectId);
     } else {
       throw new UaException(StatusCodes.Bad_MethodInvalid);
     }
+  }
+
+  /*
+   * Part 4 §5.12.2 permits an ObjectType as ObjectId only when the Method has no ModellingRule. A
+   * Method with a ModellingRule is an InstanceDeclaration, for which generic Call processing
+   * returns Bad_MethodInvalid. Part 9 §§5.5.6 and 5.7.3 specialize that result to Bad_NodeIdInvalid
+   * when a Condition instance Method such as AddComment or Acknowledge is called on a Condition
+   * type node.
+   */
+  private void validateObjectTypeMethodCall(UaObjectTypeNode objectTypeNode, NodeId methodId)
+      throws UaException {
+
+    UaNode requestedNode = server.getAddressSpaceManager().getManagedNode(methodId).orElse(null);
+
+    if (requestedNode instanceof UaMethodNode requestedMethod
+        && requestedMethod.getModellingRuleNode().isPresent()) {
+
+      long statusCode =
+          isConditionType(objectTypeNode.getNodeId()) && isConditionInstanceMethod(requestedMethod)
+              ? StatusCodes.Bad_NodeIdInvalid
+              : StatusCodes.Bad_MethodInvalid;
+
+      throw new UaException(statusCode);
+    }
+  }
+
+  /*
+   * Derive Condition ownership from the Method's inverse ComponentOf reference instead of keeping
+   * a list of Method NodeIds. This also covers inherited and vendor-defined Methods declared by a
+   * subtype of ConditionType.
+   */
+  private boolean isConditionInstanceMethod(UaMethodNode methodNode) {
+    return methodNode.getReferences().stream()
+        .filter(
+            reference ->
+                reference.isInverse()
+                    && (reference.getReferenceTypeId().equals(NodeIds.HasComponent)
+                        || server
+                            .getReferenceTypeTree()
+                            .isSubtypeOf(reference.getReferenceTypeId(), NodeIds.HasComponent)))
+        .flatMap(
+            reference ->
+                server
+                    .getAddressSpaceManager()
+                    .getManagedNode(reference.getTargetNodeId())
+                    .stream())
+        .filter(UaObjectTypeNode.class::isInstance)
+        .map(UaObjectTypeNode.class::cast)
+        .anyMatch(typeNode -> isConditionType(typeNode.getNodeId()));
+  }
+
+  private boolean isConditionType(NodeId typeId) {
+    // TypeTree.isSubtypeOf() does not consider a type to be a subtype of itself.
+    return NodeIds.ConditionType.equals(typeId)
+        || server.getObjectTypeTree().isSubtypeOf(typeId, NodeIds.ConditionType);
   }
 }

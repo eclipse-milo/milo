@@ -12,14 +12,12 @@ package org.eclipse.milo.opcua.sdk.core.types.codec;
 
 import static java.util.Objects.requireNonNull;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import org.eclipse.milo.opcua.sdk.core.types.DynamicEnumType;
-import org.eclipse.milo.opcua.sdk.core.types.DynamicStructType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -50,6 +48,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.StructureType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
 import org.eclipse.milo.opcua.stack.core.types.structured.StructureField;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /** Field serialization logic shared by {@link DynamicStructCodec} and {@link DynamicUnionCodec}. */
@@ -93,22 +92,18 @@ class FieldUtil {
       if (value instanceof ExtensionObject xo) {
         return eagerlyDecodeExtensionObject(decoder, xo);
       } else if (value instanceof ExtensionObject[] xos) {
-        Object decodedArray = null;
-        for (int i = 0; i < xos.length; i++) {
-          Object decoded = eagerlyDecodeExtensionObject(decoder, xos[i]);
-          if (decodedArray == null) {
-            decodedArray = Array.newInstance(decoded.getClass(), xos.length);
-          }
-          Array.set(decodedArray, i, decoded);
-        }
-        if (decodedArray != null) {
-          return decodedArray;
-        }
+        return Arrays.stream(xos)
+            .map(xo -> eagerlyDecodeExtensionObject(decoder, xo))
+            .toArray(UaStructuredType[]::new);
       } else if (value instanceof Matrix matrix) {
         Class<?> elementType = matrix.getElementType().orElse(Object.class);
 
         if (elementType == ExtensionObject.class) {
-          return matrix.transform(o -> eagerlyDecodeExtensionObject(decoder, (ExtensionObject) o));
+          return matrix.transform(
+              o -> eagerlyDecodeExtensionObject(decoder, (ExtensionObject) o),
+              UaStructuredType.class,
+              OpcUaDataType.ExtensionObject,
+              NodeIds.Structure.expanded());
         }
       }
     } catch (Exception e) {
@@ -124,8 +119,12 @@ class FieldUtil {
     return value;
   }
 
-  private static UaStructuredType eagerlyDecodeExtensionObject(
-      UaDecoder decoder, ExtensionObject xo) {
+  private static @Nullable UaStructuredType eagerlyDecodeExtensionObject(
+      UaDecoder decoder, @Nullable ExtensionObject xo) {
+    if (xo == null || xo.isNull()) {
+      return null;
+    }
+
     int depth = EAGER_DECODE_DEPTH.get();
     int maxDepth = decoder.getEncodingContext().getEncodingLimits().getMaxRecursionDepth();
 
@@ -137,7 +136,7 @@ class FieldUtil {
 
     EAGER_DECODE_DEPTH.set(depth + 1);
     try {
-      return xo.decode(decoder.getEncodingContext());
+      return decodeExtensionObject(decoder, xo);
     } finally {
       if (depth == 0) {
         EAGER_DECODE_DEPTH.remove();
@@ -145,6 +144,18 @@ class FieldUtil {
         EAGER_DECODE_DEPTH.set(depth);
       }
     }
+  }
+
+  private static @Nullable UaStructuredType decodeExtensionObject(
+      UaDecoder decoder, @Nullable ExtensionObject xo) {
+    return xo == null || xo.isNull() ? null : xo.decode(decoder.getEncodingContext());
+  }
+
+  private static ExtensionObject encodeExtensionObject(
+      UaEncoder encoder, @Nullable UaStructuredType value) {
+    return value == null
+        ? ExtensionObject.of(ByteString.NULL_VALUE, NodeId.NULL_VALUE)
+        : ExtensionObject.encode(encoder.getEncodingContext(), value);
   }
 
   private static Object _decodeFieldValue(
@@ -172,7 +183,7 @@ class FieldUtil {
         if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(definition, field)) {
           ExtensionObject xo = decoder.decodeExtensionObject(fieldName);
 
-          return xo.decode(decoder.getEncodingContext());
+          return decodeExtensionObject(decoder, xo);
         } else {
           return decoder.decodeStruct(fieldName, dataTypeId);
         }
@@ -192,9 +203,11 @@ class FieldUtil {
         if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(definition, field)) {
           ExtensionObject[] xos = decoder.decodeExtensionObjectArray(fieldName);
 
-          return Arrays.stream(xos)
-              .map(xo -> (DynamicStructType) xo.decode(decoder.getEncodingContext()))
-              .toArray(DynamicStructType[]::new);
+          return xos == null
+              ? null
+              : Arrays.stream(xos)
+                  .map(xo -> decodeExtensionObject(decoder, xo))
+                  .toArray(UaStructuredType[]::new);
         } else {
           return decoder.decodeStructArray(fieldName, dataTypeId);
         }
@@ -216,14 +229,16 @@ class FieldUtil {
         if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(definition, field)) {
           Matrix matrix = decoder.decodeMatrix(fieldName, OpcUaDataType.ExtensionObject);
 
-          return matrix.transform(
-              o -> {
-                ExtensionObject xo = (ExtensionObject) o;
-                return xo.decode(decoder.getEncodingContext());
-              },
-              UaStructuredType.class,
-              OpcUaDataType.ExtensionObject,
-              dataTypeId.expanded());
+          return matrix == null
+              ? null
+              : matrix.transform(
+                  o -> {
+                    ExtensionObject xo = (ExtensionObject) o;
+                    return decodeExtensionObject(decoder, xo);
+                  },
+                  UaStructuredType.class,
+                  OpcUaDataType.ExtensionObject,
+                  dataTypeId.expanded());
         } else {
           return decoder.decodeStructMatrix(fieldName, dataTypeId);
         }
@@ -241,7 +256,7 @@ class FieldUtil {
       StructureDefinition definition,
       StructureField field,
       Map<StructureField, FieldHint> fieldHints,
-      Object value) {
+      @Nullable Object value) {
 
     String fieldName = requireNonNull(field.getName());
     NodeId dataTypeId = field.getDataType();
@@ -266,8 +281,8 @@ class FieldUtil {
         encoder.encodeEnum(fieldName, (UaEnumeratedType) value);
       } else if (fieldHint instanceof FieldHint.Struct) {
         if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(definition, field)) {
-          DynamicStructType structValue = (DynamicStructType) value;
-          ExtensionObject xo = ExtensionObject.encode(encoder.getEncodingContext(), structValue);
+          UaStructuredType structValue = (UaStructuredType) value;
+          ExtensionObject xo = encodeExtensionObject(encoder, structValue);
           encoder.encodeExtensionObject(fieldName, xo);
         } else {
           encoder.encodeStruct(fieldName, (UaStructuredType) value, dataTypeId);
@@ -282,7 +297,7 @@ class FieldUtil {
 
           ExtensionObject[] xos =
               Arrays.stream(structuredTypes)
-                  .map(s -> ExtensionObject.encode(encoder.getEncodingContext(), s))
+                  .map(s -> encodeExtensionObject(encoder, s))
                   .toArray(ExtensionObject[]::new);
 
           encodeBuiltinDataTypeArray(encoder, fieldName, hint.dataType, xos);
@@ -293,12 +308,14 @@ class FieldUtil {
         encoder.encodeEnumArray(fieldName, (UaEnumeratedType[]) value);
       } else if (fieldHint instanceof FieldHint.Struct) {
         if (dataTypeId.equals(NodeIds.Structure) || fieldAllowsSubtyping(definition, field)) {
-          DynamicStructType[] structArray = (DynamicStructType[]) value;
+          UaStructuredType[] structArray = (UaStructuredType[]) value;
 
           ExtensionObject[] xoArray =
-              Arrays.stream(structArray)
-                  .map(s -> ExtensionObject.encode(encoder.getEncodingContext(), s))
-                  .toArray(ExtensionObject[]::new);
+              structArray == null
+                  ? null
+                  : Arrays.stream(structArray)
+                      .map(s -> encodeExtensionObject(encoder, s))
+                      .toArray(ExtensionObject[]::new);
 
           encoder.encodeExtensionObjectArray(fieldName, xoArray);
         } else {
@@ -308,7 +325,7 @@ class FieldUtil {
         throw new IllegalArgumentException("hint: " + fieldHint);
       }
     } else if (valueRank > 1) {
-      Matrix matrix = (Matrix) value;
+      Matrix matrix = value == null ? Matrix.ofNull() : (Matrix) value;
 
       if (fieldHint instanceof FieldHint.Builtin hint) {
         if (hint.dataType == OpcUaDataType.ExtensionObject
@@ -317,7 +334,7 @@ class FieldUtil {
 
           Matrix xoMatrix =
               matrix.transform(
-                  o -> ExtensionObject.encode(encoder.getEncodingContext(), (UaStructuredType) o),
+                  o -> encodeExtensionObject(encoder, (UaStructuredType) o),
                   ExtensionObject.class,
                   OpcUaDataType.ExtensionObject);
 
@@ -332,8 +349,8 @@ class FieldUtil {
           Matrix xoMatrix =
               matrix.transform(
                   o -> {
-                    DynamicStructType structValue = (DynamicStructType) o;
-                    return ExtensionObject.encode(encoder.getEncodingContext(), structValue);
+                    UaStructuredType structValue = (UaStructuredType) o;
+                    return encodeExtensionObject(encoder, structValue);
                   },
                   ExtensionObject.class,
                   OpcUaDataType.ExtensionObject);
@@ -463,84 +480,33 @@ class FieldUtil {
       UaEncoder encoder, String fieldName, OpcUaDataType dataType, Object value) {
 
     switch (dataType) {
-      case Boolean:
-        encoder.encodeBoolean(fieldName, (Boolean) value);
-        break;
-      case SByte:
-        encoder.encodeSByte(fieldName, (Byte) value);
-        break;
-      case Byte:
-        encoder.encodeByte(fieldName, (UByte) value);
-        break;
-      case Int16:
-        encoder.encodeInt16(fieldName, (Short) value);
-        break;
-      case UInt16:
-        encoder.encodeUInt16(fieldName, (UShort) value);
-        break;
-      case Int32:
-        encoder.encodeInt32(fieldName, (Integer) value);
-        break;
-      case UInt32:
-        encoder.encodeUInt32(fieldName, (UInteger) value);
-        break;
-      case Int64:
-        encoder.encodeInt64(fieldName, (Long) value);
-        break;
-      case UInt64:
-        encoder.encodeUInt64(fieldName, (ULong) value);
-        break;
-      case Float:
-        encoder.encodeFloat(fieldName, (Float) value);
-        break;
-      case Double:
-        encoder.encodeDouble(fieldName, (Double) value);
-        break;
-      case String:
-        encoder.encodeString(fieldName, (String) value);
-        break;
-      case DateTime:
-        encoder.encodeDateTime(fieldName, (DateTime) value);
-        break;
-      case Guid:
-        encoder.encodeGuid(fieldName, (UUID) value);
-        break;
-      case ByteString:
-        encoder.encodeByteString(fieldName, (ByteString) value);
-        break;
-      case XmlElement:
-        encoder.encodeXmlElement(fieldName, (XmlElement) value);
-        break;
-      case NodeId:
-        encoder.encodeNodeId(fieldName, (NodeId) value);
-        break;
-      case ExpandedNodeId:
-        encoder.encodeExpandedNodeId(fieldName, (ExpandedNodeId) value);
-        break;
-      case StatusCode:
-        encoder.encodeStatusCode(fieldName, (StatusCode) value);
-        break;
-      case QualifiedName:
-        encoder.encodeQualifiedName(fieldName, (QualifiedName) value);
-        break;
-      case LocalizedText:
-        encoder.encodeLocalizedText(fieldName, (LocalizedText) value);
-        break;
-      case ExtensionObject:
-        encoder.encodeExtensionObject(fieldName, (ExtensionObject) value);
-        break;
-      case DataValue:
-        encoder.encodeDataValue(fieldName, (DataValue) value);
-        break;
-      case Variant:
-        encoder.encodeVariant(fieldName, (Variant) value);
-        break;
-      case DiagnosticInfo:
-        encoder.encodeDiagnosticInfo(fieldName, (DiagnosticInfo) value);
-        break;
-      default:
-        // Shouldn't happen
-        throw new RuntimeException("unhandled BuiltinDataType: " + dataType);
+      case Boolean -> encoder.encodeBoolean(fieldName, (Boolean) value);
+      case SByte -> encoder.encodeSByte(fieldName, (Byte) value);
+      case Byte -> encoder.encodeByte(fieldName, (UByte) value);
+      case Int16 -> encoder.encodeInt16(fieldName, (Short) value);
+      case UInt16 -> encoder.encodeUInt16(fieldName, (UShort) value);
+      case Int32 -> encoder.encodeInt32(fieldName, (Integer) value);
+      case UInt32 -> encoder.encodeUInt32(fieldName, (UInteger) value);
+      case Int64 -> encoder.encodeInt64(fieldName, (Long) value);
+      case UInt64 -> encoder.encodeUInt64(fieldName, (ULong) value);
+      case Float -> encoder.encodeFloat(fieldName, (Float) value);
+      case Double -> encoder.encodeDouble(fieldName, (Double) value);
+      case String -> encoder.encodeString(fieldName, (String) value);
+      case DateTime -> encoder.encodeDateTime(fieldName, (DateTime) value);
+      case Guid -> encoder.encodeGuid(fieldName, (UUID) value);
+      case ByteString -> encoder.encodeByteString(fieldName, (ByteString) value);
+      case XmlElement -> encoder.encodeXmlElement(fieldName, (XmlElement) value);
+      case NodeId -> encoder.encodeNodeId(fieldName, (NodeId) value);
+      case ExpandedNodeId -> encoder.encodeExpandedNodeId(fieldName, (ExpandedNodeId) value);
+      case StatusCode -> encoder.encodeStatusCode(fieldName, (StatusCode) value);
+      case QualifiedName -> encoder.encodeQualifiedName(fieldName, (QualifiedName) value);
+      case LocalizedText -> encoder.encodeLocalizedText(fieldName, (LocalizedText) value);
+      case ExtensionObject -> encoder.encodeExtensionObject(fieldName, (ExtensionObject) value);
+      case DataValue -> encoder.encodeDataValue(fieldName, (DataValue) value);
+      case Variant -> encoder.encodeVariant(fieldName, (Variant) value);
+      case DiagnosticInfo -> encoder.encodeDiagnosticInfo(fieldName, (DiagnosticInfo) value);
+      // Shouldn't happen
+      default -> throw new RuntimeException("unhandled BuiltinDataType: " + dataType);
     }
   }
 
@@ -548,84 +514,34 @@ class FieldUtil {
       UaEncoder encoder, String fieldName, OpcUaDataType dataType, Object value) {
 
     switch (dataType) {
-      case Boolean:
-        encoder.encodeBooleanArray(fieldName, (Boolean[]) value);
-        break;
-      case SByte:
-        encoder.encodeSByteArray(fieldName, (Byte[]) value);
-        break;
-      case Byte:
-        encoder.encodeByteArray(fieldName, (UByte[]) value);
-        break;
-      case Int16:
-        encoder.encodeInt16Array(fieldName, (Short[]) value);
-        break;
-      case UInt16:
-        encoder.encodeUInt16Array(fieldName, (UShort[]) value);
-        break;
-      case Int32:
-        encoder.encodeInt32Array(fieldName, (Integer[]) value);
-        break;
-      case UInt32:
-        encoder.encodeUInt32Array(fieldName, (UInteger[]) value);
-        break;
-      case Int64:
-        encoder.encodeInt64Array(fieldName, (Long[]) value);
-        break;
-      case UInt64:
-        encoder.encodeUInt64Array(fieldName, (ULong[]) value);
-        break;
-      case Float:
-        encoder.encodeFloatArray(fieldName, (Float[]) value);
-        break;
-      case Double:
-        encoder.encodeDoubleArray(fieldName, (Double[]) value);
-        break;
-      case String:
-        encoder.encodeStringArray(fieldName, (String[]) value);
-        break;
-      case DateTime:
-        encoder.encodeDateTimeArray(fieldName, (DateTime[]) value);
-        break;
-      case Guid:
-        encoder.encodeGuidArray(fieldName, (UUID[]) value);
-        break;
-      case ByteString:
-        encoder.encodeByteStringArray(fieldName, (ByteString[]) value);
-        break;
-      case XmlElement:
-        encoder.encodeXmlElementArray(fieldName, (XmlElement[]) value);
-        break;
-      case NodeId:
-        encoder.encodeNodeIdArray(fieldName, (NodeId[]) value);
-        break;
-      case ExpandedNodeId:
-        encoder.encodeExpandedNodeIdArray(fieldName, (ExpandedNodeId[]) value);
-        break;
-      case StatusCode:
-        encoder.encodeStatusCodeArray(fieldName, (StatusCode[]) value);
-        break;
-      case QualifiedName:
-        encoder.encodeQualifiedNameArray(fieldName, (QualifiedName[]) value);
-        break;
-      case LocalizedText:
-        encoder.encodeLocalizedTextArray(fieldName, (LocalizedText[]) value);
-        break;
-      case ExtensionObject:
-        encoder.encodeExtensionObjectArray(fieldName, (ExtensionObject[]) value);
-        break;
-      case DataValue:
-        encoder.encodeDataValueArray(fieldName, (DataValue[]) value);
-        break;
-      case Variant:
-        encoder.encodeVariantArray(fieldName, (Variant[]) value);
-        break;
-      case DiagnosticInfo:
-        encoder.encodeDiagnosticInfoArray(fieldName, (DiagnosticInfo[]) value);
-        break;
-      default:
-        // Shouldn't happen
-        throw new RuntimeException("unhandled BuiltinDataType: " + dataType);
+      case Boolean -> encoder.encodeBooleanArray(fieldName, (Boolean[]) value);
+      case SByte -> encoder.encodeSByteArray(fieldName, (Byte[]) value);
+      case Byte -> encoder.encodeByteArray(fieldName, (UByte[]) value);
+      case Int16 -> encoder.encodeInt16Array(fieldName, (Short[]) value);
+      case UInt16 -> encoder.encodeUInt16Array(fieldName, (UShort[]) value);
+      case Int32 -> encoder.encodeInt32Array(fieldName, (Integer[]) value);
+      case UInt32 -> encoder.encodeUInt32Array(fieldName, (UInteger[]) value);
+      case Int64 -> encoder.encodeInt64Array(fieldName, (Long[]) value);
+      case UInt64 -> encoder.encodeUInt64Array(fieldName, (ULong[]) value);
+      case Float -> encoder.encodeFloatArray(fieldName, (Float[]) value);
+      case Double -> encoder.encodeDoubleArray(fieldName, (Double[]) value);
+      case String -> encoder.encodeStringArray(fieldName, (String[]) value);
+      case DateTime -> encoder.encodeDateTimeArray(fieldName, (DateTime[]) value);
+      case Guid -> encoder.encodeGuidArray(fieldName, (UUID[]) value);
+      case ByteString -> encoder.encodeByteStringArray(fieldName, (ByteString[]) value);
+      case XmlElement -> encoder.encodeXmlElementArray(fieldName, (XmlElement[]) value);
+      case NodeId -> encoder.encodeNodeIdArray(fieldName, (NodeId[]) value);
+      case ExpandedNodeId -> encoder.encodeExpandedNodeIdArray(fieldName, (ExpandedNodeId[]) value);
+      case StatusCode -> encoder.encodeStatusCodeArray(fieldName, (StatusCode[]) value);
+      case QualifiedName -> encoder.encodeQualifiedNameArray(fieldName, (QualifiedName[]) value);
+      case LocalizedText -> encoder.encodeLocalizedTextArray(fieldName, (LocalizedText[]) value);
+      case ExtensionObject ->
+          encoder.encodeExtensionObjectArray(fieldName, (ExtensionObject[]) value);
+      case DataValue -> encoder.encodeDataValueArray(fieldName, (DataValue[]) value);
+      case Variant -> encoder.encodeVariantArray(fieldName, (Variant[]) value);
+      case DiagnosticInfo -> encoder.encodeDiagnosticInfoArray(fieldName, (DiagnosticInfo[]) value);
+      // Shouldn't happen
+      default -> throw new RuntimeException("unhandled BuiltinDataType: " + dataType);
     }
   }
 
