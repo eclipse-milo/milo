@@ -184,6 +184,40 @@ class UaNodeAttributeLockingTest {
     assertTrue(heldDuringNotification.get(), "observer ran without the node monitor");
   }
 
+  /**
+   * A reader does not wait for a write's observers, and sees the new value while they are still
+   * running.
+   */
+  @Test
+  void readDuringObserverNotificationSeesTheNewValue() throws Exception {
+    var node = new UaVariableNode(CONTEXT, NODE_ID, BROWSE_NAME, DISPLAY_NAME, null, MASK, MASK);
+    node.setAttribute(AttributeId.DataType, NodeIds.Int32);
+
+    var observerRunning = new CountDownLatch(1);
+    var release = new CountDownLatch(1);
+    node.addAttributeObserver(
+        (n, attributeId, value) -> {
+          observerRunning.countDown();
+          awaitUninterruptibly(release);
+        });
+
+    Thread writer = new Thread(() -> node.setAttribute(AttributeId.DataType, NodeIds.Double));
+    writer.start();
+
+    try {
+      assertTrue(observerRunning.await(5, TimeUnit.SECONDS), "writer notified the observer");
+
+      Object dataType =
+          CompletableFuture.supplyAsync(() -> node.getAttribute(AttributeId.DataType))
+              .get(5, TimeUnit.SECONDS);
+
+      assertEquals(NodeIds.Double, dataType);
+    } finally {
+      release.countDown();
+      writer.join(TimeUnit.SECONDS.toMillis(5));
+    }
+  }
+
   private static void awaitUninterruptibly(CountDownLatch latch) {
     while (true) {
       try {
