@@ -306,6 +306,82 @@ public class AttributeWriterTest extends AbstractClientServerTest {
     assertEquals(StatusCode.GOOD, statusCode);
   }
 
+  // Variant accepts primitive arrays such as double[] (Variant.ofDoubleArray), and server code can
+  // write them through AttributeWriter. They hold the same builtin type as the boxed form, so they
+  // must pass the DataType check rather than fail it as Bad_TypeMismatch.
+  @Test
+  void writePrimitiveArrayToVariableOfMatchingDataType() {
+    UaVariableNode node =
+        (UaVariableNode) getManagedNode(doubleVariableName(ValueRanks.OneOrMoreDimensions));
+    Variant value = Variant.ofDoubleArray(new double[] {1.0, 2.0});
+
+    StatusCode statusCode =
+        AttributeWriter.writeAttribute(
+            AccessContext.INTERNAL, node, AttributeId.Value, DataValue.valueOnly(value), null);
+
+    assertEquals(StatusCode.GOOD, statusCode);
+    assertInstanceOf(double[].class, node.getValue().value().value(), "stored representation");
+  }
+
+  // The primitive elements of a Matrix take the same DataType check as a one-dimensional array.
+  @Test
+  void writePrimitiveMatrixToVariableOfMatchingDataType() {
+    UaServerNode node = getManagedNode("Int32Matrix");
+    var matrix = new Matrix(new int[][] {{1, 2}, {3, 4}});
+
+    StatusCode statusCode =
+        AttributeWriter.writeAttribute(
+            AccessContext.INTERNAL,
+            node,
+            AttributeId.Value,
+            DataValue.valueOnly(new Variant(matrix)),
+            null);
+
+    assertEquals(StatusCode.GOOD, statusCode);
+
+    DataValue stored = (DataValue) node.getAttribute(AccessContext.INTERNAL, AttributeId.Value);
+    assertEquals(new Variant(matrix), stored.value());
+  }
+
+  // Server code can store a primitive array with setValue. A client's IndexRange Write is decoded
+  // as a boxed array and merged into a copy of the stored array, which keeps the primitive form,
+  // so the merged value must pass the same DataType check.
+  @Test
+  void indexRangeWriteIntoStoredPrimitiveArrayUpdatesTheElement() throws Exception {
+    UaVariableNode node =
+        (UaVariableNode) getManagedNode(doubleVariableName(ValueRanks.OneOrMoreDimensions));
+    node.setValue(new DataValue(Variant.ofDoubleArray(new double[] {1.0, 2.0, 3.0})));
+
+    StatusCode statusCode =
+        client
+            .writeAsync(
+                List.of(
+                    new WriteValue(
+                        node.getNodeId(),
+                        AttributeId.Value.uid(),
+                        "1",
+                        DataValue.valueOnly(new Variant(new Double[] {9.0})))))
+            .get(5, TimeUnit.SECONDS)
+            .getResults()[0];
+
+    assertEquals(StatusCode.GOOD, statusCode);
+    double[] stored = assertInstanceOf(double[].class, node.getValue().value().value());
+    assertArrayEquals(new double[] {1.0, 9.0, 3.0}, stored);
+  }
+
+  // Control for the cases above: a primitive array of another builtin type is still rejected.
+  @Test
+  void rejectPrimitiveArrayOfAnotherDataType() {
+    UaServerNode node = getManagedNode(doubleVariableName(ValueRanks.OneOrMoreDimensions));
+    Variant value = Variant.ofInt32Array(new int[] {1, 2});
+
+    StatusCode statusCode =
+        AttributeWriter.writeAttribute(
+            AccessContext.INTERNAL, node, AttributeId.Value, DataValue.valueOnly(value), null);
+
+    assertEquals(new StatusCode(StatusCodes.Bad_TypeMismatch), statusCode);
+  }
+
   // Part 6 5.2.2.16: an empty Matrix is written as an empty array with no ArrayDimensions, so a
   // conforming client's empty value for a rank-2 Variable arrives with no rank of its own. Storing
   // it as a Matrix keeps the node's value consistent with its declared ValueRank.

@@ -34,11 +34,11 @@ import org.jspecify.annotations.Nullable;
 
 public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
 
-  private DataValue value;
-  private NodeId dataType;
-  private Integer valueRank;
-  private UInteger[] arrayDimensions;
-  private Boolean isAbstract;
+  private volatile DataValue value;
+  private volatile NodeId dataType;
+  private volatile Integer valueRank;
+  private volatile UInteger[] arrayDimensions;
+  private volatile Boolean isAbstract;
 
   /** Construct a {@link UaVariableTypeNode} using only attributes defined prior to OPC UA 1.04. */
   public UaVariableTypeNode(
@@ -161,7 +161,7 @@ public class UaVariableTypeNode extends UaNode implements VariableTypeNode {
   }
 
   @Override
-  public synchronized Object getAttribute(AttributeId attributeId) {
+  public Object getAttribute(AttributeId attributeId) {
     return switch (attributeId) {
       case Value -> value;
       case DataType -> dataType;

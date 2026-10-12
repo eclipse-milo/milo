@@ -25,8 +25,8 @@ import org.jspecify.annotations.Nullable;
 
 public class UaViewNode extends UaNode implements ViewNode {
 
-  private Boolean containsNoLoops;
-  private UByte eventNotifier;
+  private volatile Boolean containsNoLoops;
+  private volatile UByte eventNotifier;
 
   /** Construct a {@link UaViewNode} using only attributes defined prior to OPC UA 1.04. */
   public UaViewNode(
@@ -107,7 +107,7 @@ public class UaViewNode extends UaNode implements ViewNode {
   }
 
   @Override
-  public synchronized Object getAttribute(AttributeId attributeId) {
+  public Object getAttribute(AttributeId attributeId) {
     return switch (attributeId) {
       case ContainsNoLoops -> containsNoLoops;
       case EventNotifier -> eventNotifier;

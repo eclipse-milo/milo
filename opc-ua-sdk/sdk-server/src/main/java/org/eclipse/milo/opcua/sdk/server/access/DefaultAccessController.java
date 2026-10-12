@@ -13,6 +13,8 @@ package org.eclipse.milo.opcua.sdk.server.access;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -87,10 +89,14 @@ public class DefaultAccessController implements AccessController {
 
   static Map<ReadValueId, AccessResult> checkReadAccess(
       AccessControlContext context, List<ReadValueId> readValueIds) {
-    List<PendingResult<ReadValueId>> pending =
-        readValueIds.stream().map(PendingResult::new).toList();
-
-    List<NodeId> nodeIds = readValueIds.stream().map(ReadValueId::getNodeId).toList();
+    // Every Read and every sampling cycle on the default policy runs this check, so it uses loops
+    // rather than building a Stream pipeline per step.
+    var pending = new ArrayList<PendingResult<ReadValueId>>(readValueIds.size());
+    var nodeIds = new ArrayList<NodeId>(readValueIds.size());
+    for (ReadValueId readValueId : readValueIds) {
+      pending.add(new PendingResult<>(readValueId));
+      nodeIds.add(readValueId.getNodeId());
+    }
 
     Map<NodeId, AccessControlAttributes> attributes =
         context.readAccessControlAttributes(nodeIds, readAccessAttributes(readValueIds));
@@ -140,7 +146,14 @@ public class DefaultAccessController implements AccessController {
       }
     }
 
-    return pending.stream().collect(Collectors.toMap(p -> p.value, p -> p.result, (a, b) -> b));
+    // Built the way Collectors.toMap(..., (a, b) -> b) built it: a default-capacity HashMap
+    // filled with merge. Equal ReadValueIds share one entry holding the last result, and the
+    // iteration order, which ReadAccessCache consumes, is unchanged.
+    var results = new HashMap<ReadValueId, AccessResult>();
+    for (PendingResult<ReadValueId> p : pending) {
+      results.merge(p.value, p.result, (a, b) -> b);
+    }
+    return results;
   }
 
   /**
@@ -177,6 +190,9 @@ public class DefaultAccessController implements AccessController {
    * which denies with {@code Bad_NotWritable} when it lacks CurrentWrite, and then the Session's
    * {@code UserAccessLevel}, which denies with {@code Bad_UserAccessDenied}. Other attributes are
    * checked against {@code UserWriteMask}.
+   *
+   * <p>The returned Map compares WriteValues by identity, so look up each result with the same
+   * WriteValue instance that was passed in. Equal WriteValues each get their own entry.
    */
   @Override
   public Map<WriteValue, AccessResult> checkWriteAccess(
@@ -279,7 +295,13 @@ public class DefaultAccessController implements AccessController {
       }
     }
 
-    return pending.stream().collect(Collectors.toMap(p -> p.value, p -> p.result, (a, b) -> b));
+    // Keyed by identity: WriteValue.hashCode hashes the whole value being written, which for an
+    // array is every element, and the caller looks results up with the same instances.
+    var results = new IdentityHashMap<WriteValue, AccessResult>(pending.size());
+    for (PendingResult<WriteValue> p : pending) {
+      results.put(p.value, p.result);
+    }
+    return results;
   }
 
   // endregion
@@ -708,20 +730,21 @@ public class DefaultAccessController implements AccessController {
     public Map<NodeId, AccessControlAttributes> readAccessControlAttributes(
         List<NodeId> nodeIds, Set<AttributeId> attributeIds) {
 
-      List<AttributeId> toRead =
-          ACCESS_ATTRIBUTE_ORDER.stream()
-              .filter(id -> id == AttributeId.NodeClass || attributeIds.contains(id))
-              .toList();
+      var toRead = new ArrayList<AttributeId>(ACCESS_ATTRIBUTE_ORDER.size());
+      for (AttributeId id : ACCESS_ATTRIBUTE_ORDER) {
+        if (id == AttributeId.NodeClass || attributeIds.contains(id)) {
+          toRead.add(id);
+        }
+      }
 
-      List<NodeId> distinctNodeIds = nodeIds.stream().distinct().toList();
+      var distinctNodeIds = new ArrayList<>(new LinkedHashSet<>(nodeIds));
 
-      List<ReadValueId> readValueIds =
-          distinctNodeIds.stream()
-              .flatMap(
-                  id ->
-                      toRead.stream()
-                          .map(attributeId -> new ReadValueId(id, attributeId.uid(), null, null)))
-              .toList();
+      var readValueIds = new ArrayList<ReadValueId>(distinctNodeIds.size() * toRead.size());
+      for (NodeId id : distinctNodeIds) {
+        for (AttributeId attributeId : toRead) {
+          readValueIds.add(new ReadValueId(id, attributeId.uid(), null, null));
+        }
+      }
 
       List<DataValue> values =
           server

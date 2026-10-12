@@ -355,11 +355,15 @@ public abstract class ManagedAddressSpace implements AddressSpace {
                 readValueId.getIndexRange(),
                 readValueId.getDataEncoding());
 
-        logger.debug(
-            "read: nodeId={}, attributeId={}, value={}",
-            node.getNodeId(),
-            AttributeId.from(readValueId.getAttributeId()).map(Object::toString).orElse("unknown"),
-            value);
+        if (logger.isDebugEnabled()) {
+          logger.debug(
+              "read: nodeId={}, attributeId={}, value={}",
+              node.getNodeId(),
+              AttributeId.from(readValueId.getAttributeId())
+                  .map(Object::toString)
+                  .orElse("unknown"),
+              value);
+        }
 
         results.add(value);
       } else {
@@ -389,12 +393,14 @@ public abstract class ManagedAddressSpace implements AddressSpace {
 
         results.add(result);
 
-        logger.debug(
-            "write: nodeId={}, attributeId={}, value={}, result={}",
-            node.getNodeId(),
-            AttributeId.from(writeValue.getAttributeId()).map(Object::toString).orElse("unknown"),
-            writeValue.getValue().value(),
-            result);
+        if (logger.isDebugEnabled()) {
+          logger.debug(
+              "write: nodeId={}, attributeId={}, value={}, result={}",
+              node.getNodeId(),
+              AttributeId.from(writeValue.getAttributeId()).map(Object::toString).orElse("unknown"),
+              writeValue.getValue().value(),
+              result);
+        }
       } else {
         results.add(new StatusCode(StatusCodes.Bad_NodeIdUnknown));
       }

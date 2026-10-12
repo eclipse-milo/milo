@@ -60,15 +60,15 @@ public class UaVariableNode extends UaNode implements VariableNode {
 
   static final DataValue INITIAL_VALUE = new DataValue(new StatusCode(StatusCodes.Bad_NoValue));
 
-  private DataValue value = INITIAL_VALUE;
-  private NodeId dataType = NodeIds.BaseDataType;
-  private Integer valueRank = ValueRanks.Scalar;
-  private UInteger[] arrayDimensions = null;
-  private UByte accessLevel = AccessLevel.toValue(AccessLevel.CurrentRead);
-  private UByte userAccessLevel = AccessLevel.toValue(AccessLevel.CurrentRead);
-  private Double minimumSamplingInterval = -1.0;
-  private Boolean historizing = false;
-  private AccessLevelExType accessLevelEx;
+  private volatile DataValue value = INITIAL_VALUE;
+  private volatile NodeId dataType = NodeIds.BaseDataType;
+  private volatile Integer valueRank = ValueRanks.Scalar;
+  private volatile UInteger[] arrayDimensions = null;
+  private volatile UByte accessLevel = AccessLevel.toValue(AccessLevel.CurrentRead);
+  private volatile UByte userAccessLevel = AccessLevel.toValue(AccessLevel.CurrentRead);
+  private volatile Double minimumSamplingInterval = -1.0;
+  private volatile Boolean historizing = false;
+  private volatile AccessLevelExType accessLevelEx;
 
   // OPC UA 1.03, only base attributes
   // TODO remove after nodes are regenerated?
@@ -312,7 +312,7 @@ public class UaVariableNode extends UaNode implements VariableNode {
   }
 
   @Override
-  public synchronized Object getAttribute(AttributeId attributeId) {
+  public Object getAttribute(AttributeId attributeId) {
     return switch (attributeId) {
       case Value ->
           // The value is being directly from the field/memory.

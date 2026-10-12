@@ -51,7 +51,7 @@ import org.jspecify.annotations.Nullable;
 
 public class UaObjectNode extends UaNode implements ObjectNode {
 
-  private UByte eventNotifier = ubyte(0);
+  private volatile UByte eventNotifier = ubyte(0);
 
   /** Construct a {@link UaObjectNode} using only attributes defined prior to OPC UA 1.04. */
   public UaObjectNode(
@@ -180,7 +180,7 @@ public class UaObjectNode extends UaNode implements ObjectNode {
   }
 
   @Override
-  public synchronized Object getAttribute(AttributeId attributeId) {
+  public Object getAttribute(AttributeId attributeId) {
     if (attributeId == AttributeId.EventNotifier) {
       return eventNotifier;
     } else {

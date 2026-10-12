@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.server.access;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -279,6 +280,62 @@ class DefaultAccessControllerTest {
         DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
 
     assertEquals(AccessResult.ALLOWED, result);
+  }
+
+  // WriteValue.hashCode hashes the value being written, every element of an array value, so a
+  // check that keyed its results that way cost time in proportion to the size of the write.
+  @Test
+  void checkWriteAccess_DoesNotHashTheWriteValue() {
+    var nodeId = new NodeId(1, "foo");
+    var writeValue =
+        new WriteValue(
+            nodeId,
+            AttributeId.Value.uid(),
+            null,
+            DataValue.valueOnly(Variant.ofInt32Array(new int[1024]))) {
+
+          @Override
+          public int hashCode() {
+            throw new AssertionError("checkWriteAccess hashed the WriteValue");
+          }
+        };
+
+    UByte userAccessLevel = AccessLevel.toValue(AccessLevel.READ_WRITE);
+    attributesMap.put(
+        nodeId, new AccessControlAttributes(null, null, null, null, userAccessLevel, null, null));
+
+    AccessResult result =
+        DefaultAccessController.checkWriteAccess(context, List.of(writeValue)).get(writeValue);
+
+    assertEquals(AccessResult.ALLOWED, result);
+  }
+
+  // The results are keyed by WriteValue identity, as checkWriteAccess documents: each instance in
+  // a request has its own entry, even when equal to another, and an equal copy finds nothing.
+  @Test
+  void checkWriteAccess_ResultsAreKeyedByIdentity() {
+    var nodeId = new NodeId(1, "foo");
+    var first =
+        new WriteValue(
+            nodeId, AttributeId.Value.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
+    var second =
+        new WriteValue(
+            nodeId, AttributeId.Value.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
+    var copy =
+        new WriteValue(
+            nodeId, AttributeId.Value.uid(), null, DataValue.valueOnly(Variant.NULL_VALUE));
+
+    UByte userAccessLevel = AccessLevel.toValue(AccessLevel.READ_WRITE);
+    attributesMap.put(
+        nodeId, new AccessControlAttributes(null, null, null, null, userAccessLevel, null, null));
+
+    Map<WriteValue, AccessResult> results =
+        DefaultAccessController.checkWriteAccess(context, List.of(first, second));
+
+    assertEquals(2, results.size());
+    assertEquals(AccessResult.ALLOWED, results.get(first));
+    assertEquals(AccessResult.ALLOWED, results.get(second));
+    assertNull(results.get(copy), "lookup with an equal but different WriteValue");
   }
 
   @Test
