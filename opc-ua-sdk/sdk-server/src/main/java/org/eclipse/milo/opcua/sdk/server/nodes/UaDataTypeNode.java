@@ -26,8 +26,8 @@ import org.jspecify.annotations.Nullable;
 
 public class UaDataTypeNode extends UaNode implements DataTypeNode {
 
-  private Boolean isAbstract;
-  private DataTypeDefinition dataTypeDefinition;
+  private volatile Boolean isAbstract;
+  private volatile DataTypeDefinition dataTypeDefinition;
 
   /** Construct a {@link UaDataTypeNode} using only attributes defined prior to OPC UA 1.04. */
   public UaDataTypeNode(
@@ -109,7 +109,7 @@ public class UaDataTypeNode extends UaNode implements DataTypeNode {
   }
 
   @Override
-  public synchronized Object getAttribute(AttributeId attributeId) {
+  public Object getAttribute(AttributeId attributeId) {
     if (attributeId == AttributeId.IsAbstract) {
       return isAbstract;
     } else if (attributeId == AttributeId.DataTypeDefinition) {

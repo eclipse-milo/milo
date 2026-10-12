@@ -37,7 +37,7 @@ import org.jspecify.annotations.Nullable;
 
 public class UaObjectTypeNode extends UaNode implements ObjectTypeNode {
 
-  private Boolean isAbstract;
+  private volatile Boolean isAbstract;
 
   /** Construct a {@link UaObjectTypeNode} using only attributes defined prior to OPC UA 1.04. */
   public UaObjectTypeNode(
@@ -107,7 +107,7 @@ public class UaObjectTypeNode extends UaNode implements ObjectTypeNode {
   }
 
   @Override
-  public synchronized Object getAttribute(AttributeId attributeId) {
+  public Object getAttribute(AttributeId attributeId) {
     if (attributeId == AttributeId.IsAbstract) {
       return isAbstract;
     } else {

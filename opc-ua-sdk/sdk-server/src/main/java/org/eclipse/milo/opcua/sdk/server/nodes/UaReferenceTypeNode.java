@@ -24,9 +24,9 @@ import org.jspecify.annotations.Nullable;
 
 public class UaReferenceTypeNode extends UaNode implements ReferenceTypeNode {
 
-  private Boolean isAbstract;
-  private Boolean symmetric;
-  private @Nullable LocalizedText inverseName;
+  private volatile Boolean isAbstract;
+  private volatile Boolean symmetric;
+  private volatile @Nullable LocalizedText inverseName;
 
   public UaReferenceTypeNode(
       UaNodeContext context,
@@ -119,7 +119,7 @@ public class UaReferenceTypeNode extends UaNode implements ReferenceTypeNode {
   }
 
   @Override
-  public synchronized Object getAttribute(AttributeId attributeId) {
+  public Object getAttribute(AttributeId attributeId) {
     return switch (attributeId) {
       case IsAbstract -> isAbstract;
       case Symmetric -> symmetric;
