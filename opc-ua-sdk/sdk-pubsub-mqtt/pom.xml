@@ -99,6 +99,16 @@
       <version>4.0.6</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <!-- In reactor builds milo-guava-dependencies puts unrelocated ${guava.version} classes on
+           the test classpath, next to the embedded broker's own Guava. Mixing two Guava versions
+           fails its Guice bootstrap (IncompatibleClassChangeError: LinkedHashMultimap), so keep
+           the broker on Milo's version. -->
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>${guava.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
