@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
@@ -33,6 +34,9 @@ class SksEndpointSelectorTest {
 
   private static final String BASIC256SHA256 = SecurityPolicy.Basic256Sha256.getUri();
   private static final String AES128_RSA_OAEP = SecurityPolicy.Aes128_Sha256_RsaOaep.getUri();
+  private static final String ECC_NIST_P256 = SecurityPolicy.ECC_nistP256_AesGcm.getUri();
+
+  private static final Predicate<String> ANY_POLICY = uri -> true;
 
   @Test
   void filtersApplicationUriMismatch() {
@@ -40,7 +44,7 @@ class SksEndpointSelectorTest {
     var mismatch = endpoint("opc.tcp://b:4840", OTHER_URI, MessageSecurityMode.SignAndEncrypt, 3);
 
     Optional<EndpointDescription> selected =
-        SksEndpointSelector.selectEndpoint(List.of(mismatch, match), SKS_URI, null);
+        SksEndpointSelector.selectEndpoint(List.of(mismatch, match), SKS_URI, null, ANY_POLICY);
 
     assertEquals(Optional.of(match), selected);
   }
@@ -53,7 +57,8 @@ class SksEndpointSelectorTest {
         endpoint("opc.tcp://a:4840/se", SKS_URI, MessageSecurityMode.SignAndEncrypt, 1);
 
     Optional<EndpointDescription> selected =
-        SksEndpointSelector.selectEndpoint(List.of(none, sign, signAndEncrypt), SKS_URI, null);
+        SksEndpointSelector.selectEndpoint(
+            List.of(none, sign, signAndEncrypt), SKS_URI, null, ANY_POLICY);
 
     assertEquals(Optional.of(signAndEncrypt), selected);
   }
@@ -68,7 +73,7 @@ class SksEndpointSelectorTest {
 
     Optional<EndpointDescription> selected =
         SksEndpointSelector.selectEndpoint(
-            List.of(higherLevel, constrained), SKS_URI, AES128_RSA_OAEP);
+            List.of(higherLevel, constrained), SKS_URI, AES128_RSA_OAEP, ANY_POLICY);
 
     assertEquals(Optional.of(constrained), selected);
   }
@@ -79,7 +84,7 @@ class SksEndpointSelectorTest {
 
     Optional<EndpointDescription> selected =
         SksEndpointSelector.selectEndpoint(
-            List.of(endpoint), SKS_URI, "http://example.com/unmatched-policy");
+            List.of(endpoint), SKS_URI, "http://example.com/unmatched-policy", ANY_POLICY);
 
     assertTrue(selected.isEmpty());
   }
@@ -92,18 +97,63 @@ class SksEndpointSelectorTest {
 
     for (String constraint : new String[] {null, ""}) {
       Optional<EndpointDescription> selected =
-          SksEndpointSelector.selectEndpoint(List.of(low, high, mid), SKS_URI, constraint);
+          SksEndpointSelector.selectEndpoint(
+              List.of(low, high, mid), SKS_URI, constraint, ANY_POLICY);
 
       assertEquals(Optional.of(high), selected);
     }
+  }
+
+  // Milo ranks Basic256Sha256 above ECC_nistP256_AesGcm, so without the filter a P-256-only client
+  // would always be steered to the RSA endpoint it cannot secure.
+  @Test
+  void rankingSkipsPoliciesTheClientCannotSecure() {
+    var rsa =
+        endpoint(
+            "opc.tcp://a:4840/rsa", SKS_URI, MessageSecurityMode.SignAndEncrypt, 9, BASIC256SHA256);
+    var ecc =
+        endpoint(
+            "opc.tcp://a:4840/ecc", SKS_URI, MessageSecurityMode.SignAndEncrypt, 5, ECC_NIST_P256);
+
+    Optional<EndpointDescription> selected =
+        SksEndpointSelector.selectEndpoint(List.of(rsa, ecc), SKS_URI, null, ECC_NIST_P256::equals);
+
+    assertEquals(Optional.of(ecc), selected);
+  }
+
+  @Test
+  void rankingSelectsNothingWhenNoPolicyIsUsable() {
+    var rsa =
+        endpoint(
+            "opc.tcp://a:4840/rsa", SKS_URI, MessageSecurityMode.SignAndEncrypt, 9, BASIC256SHA256);
+
+    Optional<EndpointDescription> selected =
+        SksEndpointSelector.selectEndpoint(List.of(rsa), SKS_URI, null, uri -> false);
+
+    assertTrue(selected.isEmpty());
+  }
+
+  // An exact constraint is the operator's choice; a certificate that cannot secure it is reported
+  // by the connect attempt, not hidden by resolution.
+  @Test
+  void exactPolicyConstraintIgnoresUsability() {
+    var rsa =
+        endpoint(
+            "opc.tcp://a:4840/rsa", SKS_URI, MessageSecurityMode.SignAndEncrypt, 9, BASIC256SHA256);
+
+    Optional<EndpointDescription> selected =
+        SksEndpointSelector.selectEndpoint(List.of(rsa), SKS_URI, BASIC256SHA256, uri -> false);
+
+    assertEquals(Optional.of(rsa), selected);
   }
 
   @Test
   void emptyWhenNothingMatches() {
     var mismatch = endpoint("opc.tcp://b:4840", OTHER_URI, MessageSecurityMode.SignAndEncrypt, 3);
 
-    assertTrue(SksEndpointSelector.selectEndpoint(List.of(mismatch), SKS_URI, null).isEmpty());
-    assertTrue(SksEndpointSelector.selectEndpoint(List.of(), SKS_URI, null).isEmpty());
+    assertTrue(
+        SksEndpointSelector.selectEndpoint(List.of(mismatch), SKS_URI, null, ANY_POLICY).isEmpty());
+    assertTrue(SksEndpointSelector.selectEndpoint(List.of(), SKS_URI, null, ANY_POLICY).isEmpty());
   }
 
   @Test

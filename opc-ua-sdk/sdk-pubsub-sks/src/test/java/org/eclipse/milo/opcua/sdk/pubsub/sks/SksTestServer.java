@@ -10,14 +10,17 @@
 
 package org.eclipse.milo.opcua.sdk.pubsub.sks;
 
-import java.security.KeyPair;
 import java.security.cert.X509Certificate;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.milo.opcua.sdk.pubsub.config.PubSubConfig;
 import org.eclipse.milo.opcua.sdk.pubsub.server.ServerPubSub;
 import org.eclipse.milo.opcua.sdk.pubsub.server.ServerPubSubOptions;
+import org.eclipse.milo.opcua.sdk.server.EndpointCertificateConfig;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
@@ -27,21 +30,22 @@ import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.security.CertificateStore;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.DefaultServerCertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateStore;
 import org.eclipse.milo.opcua.stack.core.security.MemoryTrustListManager;
-import org.eclipse.milo.opcua.stack.core.security.RsaSha256CertificateFactory;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
-import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
-import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
+import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfig;
 
@@ -62,6 +66,10 @@ import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportCo
  *   <li>{@link #UNAUTHORIZED_USERNAME} and anonymous → no roles ("mapper configured, empty roles" —
  *       the default posture denies key access)
  * </ul>
+ *
+ * <p>{@link #create(int, List, PubSubConfig, List)} builds the same server with one SignAndEncrypt
+ * endpoint per requested SecurityPolicy instead, each advertising a certificate of the policy's
+ * preferred certificate type, so pulls can run over ECC, RSA-DH, and RSA-PSS SecureChannels.
  */
 final class SksTestServer implements AutoCloseable {
 
@@ -74,20 +82,21 @@ final class SksTestServer implements AutoCloseable {
 
   private final OpcUaServer server;
   private final ServerPubSub serverPubSub;
-  private final X509Certificate certificate;
+  private final List<X509Certificate> certificates;
   private final int port;
 
   private SksTestServer(
-      OpcUaServer server, ServerPubSub serverPubSub, X509Certificate certificate, int port) {
+      OpcUaServer server, ServerPubSub serverPubSub, List<X509Certificate> certificates, int port) {
 
     this.server = server;
     this.serverPubSub = serverPubSub;
-    this.certificate = certificate;
+    this.certificates = certificates;
     this.port = port;
   }
 
-  X509Certificate getCertificate() {
-    return certificate;
+  /** The server's application instance certificates, one per certificate type it advertises. */
+  List<X509Certificate> getCertificates() {
+    return certificates;
   }
 
   String getDiscoveryUrl() {
@@ -108,32 +117,73 @@ final class SksTestServer implements AutoCloseable {
       int port, X509Certificate trustedClientCertificate, PubSubConfig pubSubConfig)
       throws Exception {
 
-    KeyPair keyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    SksTestIdentity identity =
+        SksTestIdentity.generate(
+            NodeIds.RsaSha256ApplicationCertificateType, "Milo SKS Test Server", APPLICATION_URI);
 
-    X509Certificate certificate =
-        new SelfSignedCertificateBuilder(keyPair)
-            .setCommonName("Milo SKS Test Server")
-            .setApplicationUri(APPLICATION_URI)
-            .addDnsName("localhost")
-            .build();
+    return start(
+        port,
+        List.of(trustedClientCertificate),
+        pubSubConfig,
+        List.of(identity),
+        endpointConfigs(identity.certificate(), port));
+  }
+
+  /**
+   * Create and start a server on {@code port}, trusting {@code trustedClientCertificates}, with one
+   * SignAndEncrypt endpoint per policy in {@code securityPolicies} plus a None endpoint for
+   * discovery.
+   *
+   * <p>Each secured endpoint advertises a certificate of its policy's preferred certificate type,
+   * and its username token policy leaves the SecurityPolicyUri empty so the token secret is
+   * protected with the endpoint's own policy.
+   */
+  static SksTestServer create(
+      int port,
+      List<X509Certificate> trustedClientCertificates,
+      PubSubConfig pubSubConfig,
+      List<SecurityPolicy> securityPolicies)
+      throws Exception {
+
+    Map<NodeId, SksTestIdentity> identities = new LinkedHashMap<>();
+    for (SecurityPolicy securityPolicy : securityPolicies) {
+      NodeId certificateTypeId =
+          securityPolicy.getProfile().preferredCertificateTypeId().orElseThrow();
+      if (!identities.containsKey(certificateTypeId)) {
+        identities.put(
+            certificateTypeId,
+            SksTestIdentity.generate(certificateTypeId, "Milo SKS Test Server", APPLICATION_URI));
+      }
+    }
+
+    return start(
+        port,
+        trustedClientCertificates,
+        pubSubConfig,
+        List.copyOf(identities.values()),
+        policyEndpointConfigs(securityPolicies, port));
+  }
+
+  private static SksTestServer start(
+      int port,
+      List<X509Certificate> trustedClientCertificates,
+      PubSubConfig pubSubConfig,
+      List<SksTestIdentity> identities,
+      Set<EndpointConfig> endpoints)
+      throws Exception {
 
     var trustListManager = new MemoryTrustListManager();
-    trustListManager.addTrustedCertificate(trustedClientCertificate);
+    trustedClientCertificates.forEach(trustListManager::addTrustedCertificate);
 
     var certificateQuarantine = new MemoryCertificateQuarantine();
 
-    var certificateFactory =
-        new RsaSha256CertificateFactory() {
-          @Override
-          protected KeyPair createRsaSha256KeyPair() {
-            return keyPair;
-          }
-
-          @Override
-          protected X509Certificate[] createRsaSha256CertificateChain(KeyPair keyPair) {
-            return new X509Certificate[] {certificate};
-          }
-        };
+    var certificateStore = new MemoryCertificateStore();
+    for (SksTestIdentity identity : identities) {
+      certificateStore.set(
+          identity.certificateTypeId(),
+          new CertificateStore.Entry(
+              identity.keyPair().getPrivate(), new X509Certificate[] {identity.certificate()}));
+    }
 
     var certificateValidator =
         new DefaultServerCertificateValidator(trustListManager, certificateQuarantine);
@@ -141,11 +191,10 @@ final class SksTestServer implements AutoCloseable {
     var defaultGroup =
         new DefaultCertificateGroup(
             trustListManager,
-            new MemoryCertificateStore(),
+            certificateStore,
             certificateQuarantine,
-            certificateValidator);
-
-    certificateFactory.createMissingCertificates(defaultGroup);
+            certificateValidator,
+            identities.stream().map(SksTestIdentity::certificateTypeId).toList());
 
     var certificateManager = new DefaultCertificateManager(defaultGroup);
 
@@ -173,7 +222,7 @@ final class SksTestServer implements AutoCloseable {
             .setApplicationUri(APPLICATION_URI)
             .setApplicationName(LocalizedText.english("Milo SKS Test Server"))
             .setProductUri("urn:eclipse:milo:test:sks-test-server:product")
-            .setEndpoints(endpointConfigs(certificate, port))
+            .setEndpoints(endpoints)
             .setBuildInfo(
                 new BuildInfo(
                     "urn:eclipse:milo:test:sks-test-server:product",
@@ -219,7 +268,10 @@ final class SksTestServer implements AutoCloseable {
       throw e;
     }
 
-    return new SksTestServer(server, serverPubSub, certificate, port);
+    List<X509Certificate> certificates =
+        identities.stream().map(SksTestIdentity::certificate).toList();
+
+    return new SksTestServer(server, serverPubSub, certificates, port);
   }
 
   private static Set<EndpointConfig> endpointConfigs(X509Certificate certificate, int port) {
@@ -254,5 +306,46 @@ final class SksTestServer implements AutoCloseable {
             .build();
 
     return Set.of(none, sign, signAndEncrypt);
+  }
+
+  private static Set<EndpointConfig> policyEndpointConfigs(
+      List<SecurityPolicy> securityPolicies, int port) {
+
+    EndpointConfig.Builder base =
+        EndpointConfig.newBuilder()
+            .setBindAddress("localhost")
+            .setBindPort(port)
+            .setHostname("localhost")
+            .setPath("/sks")
+            .setTransportProfile(TransportProfile.TCP_UASC_UABINARY);
+
+    Set<EndpointConfig> endpoints = new LinkedHashSet<>();
+
+    endpoints.add(
+        base.copy()
+            .setSecurityPolicy(SecurityPolicy.None)
+            .setSecurityMode(MessageSecurityMode.None)
+            .addTokenPolicy(OpcUaServerConfig.USER_TOKEN_POLICY_ANONYMOUS)
+            .build());
+
+    for (SecurityPolicy securityPolicy : securityPolicies) {
+      NodeId certificateTypeId =
+          securityPolicy.getProfile().preferredCertificateTypeId().orElseThrow();
+
+      endpoints.add(
+          base.copy()
+              .setEndpointCertificateConfig(
+                  EndpointCertificateConfig.newBuilder()
+                      .setCertificateTypeId(certificateTypeId)
+                      .build())
+              .setSecurityPolicy(securityPolicy)
+              .setSecurityMode(MessageSecurityMode.SignAndEncrypt)
+              .addTokenPolicies(
+                  OpcUaServerConfig.USER_TOKEN_POLICY_ANONYMOUS,
+                  new UserTokenPolicy("username", UserTokenType.UserName, null, null, null))
+              .build());
+    }
+
+    return endpoints;
   }
 }

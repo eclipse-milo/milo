@@ -223,7 +223,7 @@ class SksSecuredLoopbackIntegrationTest {
     sks = SksTestServer.create(freeTcpPort(), clientCertificate, serverPubSubConfig());
 
     clientTrustList = new MemoryTrustListManager();
-    clientTrustList.addTrustedCertificate(sks.getCertificate());
+    sks.getCertificates().forEach(clientTrustList::addTrustedCertificate);
   }
 
   @AfterAll

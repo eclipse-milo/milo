@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
@@ -27,6 +28,13 @@ import org.jspecify.annotations.Nullable;
  * are eligible. When the config entry constrains the SecurityPolicyUri the match is exact;
  * otherwise candidates are ranked by the <b>discovered</b> endpoints' {@code securityLevel} ("best
  * available") — the entry's own securityLevel is normatively 0 and never consulted.
+ *
+ * <p>"Best available" only ranks endpoints whose SecurityPolicyUri the client's application
+ * instance certificate can secure. The securityLevel ranks policies, not clients. When an SKS
+ * offers both RSA and ECC endpoints, one family outranks the other, and a client whose certificate
+ * belongs to the lower-ranked family would otherwise be sent to an endpoint it cannot secure and
+ * fail every fetch client-side. An exact SecurityPolicyUri constraint is not filtered. A constraint
+ * the certificate cannot satisfy is a configuration error, and the connect attempt reports it.
  */
 final class SksEndpointSelector {
 
@@ -39,12 +47,15 @@ final class SksEndpointSelector {
    * @param applicationUri the SKS ApplicationUri from the config entry.
    * @param securityPolicyUri the config entry's SecurityPolicyUri constraint; null or empty means
    *     "best available".
+   * @param usableSecurityPolicy tests whether the client can secure a channel with a
+   *     SecurityPolicyUri; consulted only for "best available".
    * @return the selected endpoint, or empty if no endpoint matches.
    */
   static Optional<EndpointDescription> selectEndpoint(
       List<EndpointDescription> endpoints,
       String applicationUri,
-      @Nullable String securityPolicyUri) {
+      @Nullable String securityPolicyUri,
+      Predicate<String> usableSecurityPolicy) {
 
     Stream<EndpointDescription> candidates =
         endpoints.stream()
@@ -55,9 +66,14 @@ final class SksEndpointSelector {
     if (securityPolicyUri != null && !securityPolicyUri.isEmpty()) {
       return candidates.filter(e -> securityPolicyUri.equals(e.getSecurityPolicyUri())).findFirst();
     } else {
-      return candidates.max(
-          Comparator.comparingInt(
-              e -> e.getSecurityLevel() != null ? e.getSecurityLevel().intValue() : 0));
+      return candidates
+          .filter(
+              e ->
+                  e.getSecurityPolicyUri() != null
+                      && usableSecurityPolicy.test(e.getSecurityPolicyUri()))
+          .max(
+              Comparator.comparingInt(
+                  e -> e.getSecurityLevel() != null ? e.getSecurityLevel().intValue() : 0));
     }
   }
 
