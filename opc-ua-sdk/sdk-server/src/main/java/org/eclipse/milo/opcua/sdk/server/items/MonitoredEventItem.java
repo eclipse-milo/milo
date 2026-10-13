@@ -301,8 +301,8 @@ public class MonitoredEventItem extends BaseMonitoredItem<Variant[]> implements 
 
   @Override
   public void installFilter(MonitoringFilter filter) throws UaException {
-    if (filter instanceof EventFilter) {
-      this.filter = (EventFilter) filter;
+    if (filter instanceof EventFilter eventFilter) {
+      this.filter = eventFilter;
 
       filterResult = EventContentFilter.validate(filterContext, this.filter);
 
