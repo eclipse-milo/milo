@@ -572,7 +572,7 @@ final class JsonFieldDecoder {
   }
 
   /**
-   * Decode a deprecated Reversible ExtensionObject envelope (OPC 10000-6 Annex H): {@code TypeId}
+   * Decode a deprecated Reversible ExtensionObject envelope (OPC 10000-6 H.7): {@code TypeId}
    * carries the encoding id and {@code Encoding} selects the body form — absent or 0 for a JSON
    * structure, 1 for a base64 ByteString, 2 for an XML string. The stock decoder accepts the
    * current mapping's header names only, so this form is decoded here.
@@ -580,7 +580,7 @@ final class JsonFieldDecoder {
   private ExtensionObject decodeReversibleExtensionObject(JsonObject object) {
     NodeId typeId;
     try {
-      typeId = delegate(object.get("TypeId")).decodeNodeId(null);
+      typeId = decodeReversibleNodeId(object.get("TypeId"));
     } catch (Exception e) {
       typeId = NodeId.NULL_VALUE;
     }
@@ -595,6 +595,61 @@ final class JsonFieldDecoder {
       case 2 -> ExtensionObject.of(XmlElement.of(body.getAsString()), typeId);
       default -> ExtensionObject.of(body.toString(), typeId);
     };
+  }
+
+  /**
+   * Decode a deprecated Reversible NodeId: the H.2 JSON object form with {@code IdType}, {@code
+   * Id}, and {@code Namespace} members, or a current-form NodeId string. The stock decoder accepts
+   * the string form only.
+   */
+  private NodeId decodeReversibleNodeId(JsonElement element) {
+    if (!element.isJsonObject()) {
+      return delegate(element).decodeNodeId(null);
+    }
+
+    JsonObject object = element.getAsJsonObject();
+    JsonElement idType = object.get("IdType");
+    JsonElement namespace = object.get("Namespace");
+    int namespaceIndex = namespace != null ? (int) unsignedInteger(namespace, 0xFFFF) : 0;
+    JsonElement id = object.get("Id");
+
+    return switch (idType != null ? (int) unsignedInteger(idType, 3) : 0) {
+      case 0 -> new NodeId(namespaceIndex, Unsigned.uint(unsignedInteger(id, 0xFFFFFFFFL)));
+      case 1 -> new NodeId(namespaceIndex, jsonString(id));
+      case 2 -> new NodeId(namespaceIndex, UUID.fromString(jsonString(id)));
+      case 3 ->
+          new NodeId(namespaceIndex, ByteString.of(Base64.getDecoder().decode(jsonString(id))));
+      default -> throw new IllegalStateException("IdType outside [0, 3]");
+    };
+  }
+
+  /**
+   * {@code element} as a JSON number holding an exact integer in {@code [0, max]}. Gson's {@code
+   * getAsInt}/{@code getAsLong} wrap out-of-range values and truncate fractions, which would turn a
+   * malformed value into a valid but wrong one.
+   */
+  private static long unsignedInteger(JsonElement element, long max) {
+    JsonPrimitive primitive = element.getAsJsonPrimitive();
+    if (!primitive.isNumber()) {
+      throw new IllegalArgumentException("not a JSON number: " + element);
+    }
+    long value = primitive.getAsBigDecimal().longValueExact();
+    if (value < 0 || value > max) {
+      throw new IllegalArgumentException("out of range [0, " + max + "]: " + element);
+    }
+    return value;
+  }
+
+  /**
+   * {@code element} as a JSON string. Gson's {@code getAsString} also accepts numbers, booleans,
+   * and single-element arrays, which would turn a malformed value into a valid but wrong one.
+   */
+  private static String jsonString(JsonElement element) {
+    JsonPrimitive primitive = element.getAsJsonPrimitive();
+    if (!primitive.isString()) {
+      throw new IllegalArgumentException("not a JSON string: " + element);
+    }
+    return primitive.getAsString();
   }
 
   /** Decode a StatusCode value: a JSON number (deprecated Reversible) or the object form. */

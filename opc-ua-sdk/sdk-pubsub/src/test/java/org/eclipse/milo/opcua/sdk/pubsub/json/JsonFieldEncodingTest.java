@@ -851,23 +851,177 @@ class JsonFieldEncodingTest {
     assertNotNull(value.sourceTime());
   }
 
-  /** A deprecated-Reversible ExtensionObject wrapper delegates to the stock decoder. */
+  // region deprecated Reversible ExtensionObject envelope (OPC 10000-6 H.7)
+
+  /**
+   * Decode {@code fieldJson} as field {@code A} of a payload whose next field is {@code "B":7},
+   * check that {@code B} still decodes, and return the value of {@code A}.
+   */
+  private static Object decodeFieldBeforeSibling(String fieldJson) throws Exception {
+    DecodedFields fields =
+        new DecodedFields(
+            decode("{\"DataSetWriterId\":1,\"Payload\":{\"A\":" + fieldJson + ",\"B\":7}}"));
+    assertEquals(7, fields.value(1));
+    return fields.value(0);
+  }
+
+  /** The UA Binary body of ConfigurationVersionDataType{MajorVersion=3, MinorVersion=9}. */
+  private static final byte[] CONFIGURATION_VERSION_BINARY = {3, 0, 0, 0, 9, 0, 0, 0};
+
+  /**
+   * With {@code Encoding} absent the {@code Body} is a JSON structure. A current-form NodeId string
+   * in {@code TypeId} is also accepted.
+   */
   @Test
   void decodeDeprecatedReversibleExtensionObject() throws Exception {
     Object value =
-        decode(
-                "{\"DataSetWriterId\":1,\"Payload\":{\"A\":{"
-                    + "\"TypeId\":\"i=14593\","
-                    + "\"Body\":{\"MajorVersion\":3,\"MinorVersion\":9}}}}")
-            .messages()
-            .get(0)
-            .fields()
-            .get(0)
-            .value()
-            .value()
-            .value();
-    assertInstanceOf(ExtensionObject.class, value);
+        decodeFieldBeforeSibling(
+            "{\"TypeId\":\"i=14593\",\"Body\":{\"MajorVersion\":3,\"MinorVersion\":9}}");
+
+    ExtensionObject.Json xo = assertInstanceOf(ExtensionObject.Json.class, value);
+    assertEquals(NodeIds.ConfigurationVersionDataType, xo.getEncodingOrTypeId());
+    JsonObject body = JsonParser.parseString(xo.getBody()).getAsJsonObject();
+    assertEquals(3, body.get("MajorVersion").getAsInt());
+    assertEquals(9, body.get("MinorVersion").getAsInt());
   }
+
+  /** {@code Encoding: 0} with an H.2 NodeId object {@code TypeId} decodes a JSON body. */
+  @Test
+  void decodeDeprecatedReversibleJsonBody() throws Exception {
+    Object value =
+        decodeFieldBeforeSibling(
+            "{\"TypeId\":{\"Id\":14593},\"Encoding\":0,"
+                + "\"Body\":{\"MajorVersion\":3,\"MinorVersion\":9}}");
+
+    ExtensionObject.Json xo = assertInstanceOf(ExtensionObject.Json.class, value);
+    assertEquals(NodeIds.ConfigurationVersionDataType, xo.getEncodingOrTypeId());
+    JsonObject body = JsonParser.parseString(xo.getBody()).getAsJsonObject();
+    assertEquals(3, body.get("MajorVersion").getAsInt());
+  }
+
+  /**
+   * {@code Encoding: 1} carries a base64 ByteString body. The legacy {@code TypeId} is already the
+   * DataTypeEncoding id, so it passes through as-is rather than being mapped from a DataType id.
+   */
+  @Test
+  void decodeDeprecatedReversibleBinaryBody() throws Exception {
+    Object value =
+        decodeFieldBeforeSibling(
+            "{\"TypeId\":{\"Id\":14847},\"Encoding\":1,\"Body\":\"AwAAAAkAAAA=\"}");
+
+    ExtensionObject.Binary xo = assertInstanceOf(ExtensionObject.Binary.class, value);
+    assertEquals(
+        NodeIds.ConfigurationVersionDataType_Encoding_DefaultBinary, xo.getEncodingOrTypeId());
+    assertEquals(ByteString.of(CONFIGURATION_VERSION_BINARY), xo.getBody());
+  }
+
+  /**
+   * {@code Encoding: 2} carries the XML body as a plain JSON string, not the base64 UTF-8
+   * ByteString of the current mapping's {@code UaBody}.
+   */
+  @Test
+  void decodeDeprecatedReversibleXmlBody() throws Exception {
+    String xml =
+        "<ConfigurationVersionDataType xmlns=\"http://opcfoundation.org/UA/2008/02/Types.xsd\">"
+            + "<MajorVersion>3</MajorVersion><MinorVersion>9</MinorVersion>"
+            + "</ConfigurationVersionDataType>";
+    var json = new JsonObject();
+    json.add("TypeId", JsonParser.parseString("{\"Id\":14803}"));
+    json.addProperty("Encoding", 2);
+    json.addProperty("Body", xml);
+
+    Object value = decodeFieldBeforeSibling(json.toString());
+
+    ExtensionObject.Xml xo = assertInstanceOf(ExtensionObject.Xml.class, value);
+    assertEquals(
+        NodeIds.ConfigurationVersionDataType_Encoding_DefaultXml, xo.getEncodingOrTypeId());
+    assertEquals(xml, xo.getBody().getFragment());
+  }
+
+  /**
+   * A deprecated Reversible Variant ({@code Type}/{@code Body}) holding the envelope, the form a
+   * Reversible publisher writes for an ExtensionObject field.
+   */
+  @Test
+  void decodeDeprecatedReversibleVariantHoldingExtensionObject() throws Exception {
+    Object value =
+        decodeFieldBeforeSibling(
+            "{\"Type\":22,\"Body\":"
+                + "{\"TypeId\":{\"Id\":14847},\"Encoding\":1,\"Body\":\"AwAAAAkAAAA=\"}}");
+
+    ExtensionObject.Binary xo = assertInstanceOf(ExtensionObject.Binary.class, value);
+    assertEquals(
+        NodeIds.ConfigurationVersionDataType_Encoding_DefaultBinary, xo.getEncodingOrTypeId());
+    assertEquals(ByteString.of(CONFIGURATION_VERSION_BINARY), xo.getBody());
+  }
+
+  /**
+   * Every H.2 NodeId object form decodes as the envelope's {@code TypeId}, unresolved: an encoding
+   * id in a namespace with no registered types still passes through.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("deprecatedReversibleTypeIds")
+  void decodeDeprecatedReversibleTypeIdForms(String typeIdJson, NodeId expected) throws Exception {
+    Object value =
+        decodeFieldBeforeSibling(
+            "{\"TypeId\":" + typeIdJson + ",\"Encoding\":1,\"Body\":\"AQID\"}");
+
+    ExtensionObject.Binary xo = assertInstanceOf(ExtensionObject.Binary.class, value);
+    assertEquals(expected, xo.getEncodingOrTypeId());
+    assertEquals(ByteString.of(new byte[] {1, 2, 3}), xo.getBody());
+  }
+
+  static Stream<Arguments> deprecatedReversibleTypeIds() {
+    return Stream.of(
+        Arguments.of("{\"Id\":5001,\"Namespace\":2}", new NodeId(2, 5001)),
+        Arguments.of("{\"IdType\":0,\"Id\":5001,\"Namespace\":2}", new NodeId(2, 5001)),
+        Arguments.of(
+            "{\"IdType\":1,\"Id\":\"Point_Encoding_DefaultBinary\",\"Namespace\":2}",
+            new NodeId(2, "Point_Encoding_DefaultBinary")),
+        Arguments.of(
+            "{\"IdType\":2,\"Id\":\"3c1a4f6e-0f2a-4d3b-9d51-6e7f8a9b0c1d\",\"Namespace\":2}",
+            new NodeId(2, UUID.fromString("3c1a4f6e-0f2a-4d3b-9d51-6e7f8a9b0c1d"))),
+        Arguments.of(
+            "{\"IdType\":3,\"Id\":\"AQID\",\"Namespace\":2}",
+            new NodeId(2, ByteString.of(new byte[] {1, 2, 3}))),
+        Arguments.of(
+            "\"ns=2;s=Point_Encoding_DefaultBinary\"",
+            new NodeId(2, "Point_Encoding_DefaultBinary")));
+  }
+
+  /**
+   * A malformed H.2 {@code TypeId} decodes as the null NodeId, not as a wrapped or truncated id,
+   * and the body and the following field still decode.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("malformedDeprecatedReversibleTypeIds")
+  void decodeMalformedDeprecatedReversibleTypeIdAsNull(String typeIdJson) throws Exception {
+    Object value =
+        decodeFieldBeforeSibling(
+            "{\"TypeId\":" + typeIdJson + ",\"Encoding\":1,\"Body\":\"AQID\"}");
+
+    ExtensionObject.Binary xo = assertInstanceOf(ExtensionObject.Binary.class, value);
+    assertEquals(NodeId.NULL_VALUE, xo.getEncodingOrTypeId());
+    assertEquals(ByteString.of(new byte[] {1, 2, 3}), xo.getBody());
+  }
+
+  static Stream<String> malformedDeprecatedReversibleTypeIds() {
+    return Stream.of(
+        "{\"Id\":14847,\"Namespace\":4294967296}",
+        "{\"Id\":14847,\"Namespace\":65536}",
+        "{\"Id\":14847,\"Namespace\":\"2\"}",
+        "{\"Id\":14847.5}",
+        "{\"Id\":4294967296}",
+        "{\"Id\":-1}",
+        "{\"IdType\":4,\"Id\":14847}",
+        "{\"IdType\":1}",
+        "{\"IdType\":1,\"Id\":14847}",
+        "{\"IdType\":1,\"Id\":[\"Point\"]}",
+        "{\"IdType\":2,\"Id\":true}",
+        "{\"IdType\":3,\"Id\":1234}");
+  }
+
+  // endregion
 
   /** An inlined {@code UaTypeId} struct (§5.4.2.16) surfaces as a JSON ExtensionObject. */
   @Test
