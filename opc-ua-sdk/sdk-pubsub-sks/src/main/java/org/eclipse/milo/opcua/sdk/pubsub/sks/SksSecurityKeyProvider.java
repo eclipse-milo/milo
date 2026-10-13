@@ -399,14 +399,17 @@ public final class SksSecurityKeyProvider implements SecurityKeyProvider, AutoCl
    * Whether the application instance identity can secure a SecureChannel with {@code
    * securityPolicyUri}.
    *
-   * <p>Runs the identity selection the client runs when it opens the channel: {@link
-   * DefaultSksClientOperations} passes the identity through {@code setCertificateIdentity}, which
-   * builds the same single-identity group and selects with the default selector. An endpoint that
-   * passes this check therefore does not fail client-side with {@code Bad_ConfigurationError}.
+   * @param securityPolicyUri the endpoint's SecurityPolicyUri.
+   * @return true if connecting with this policy will not fail client-side with {@code
+   *     Bad_ConfigurationError} for lack of a compatible identity; false for an incompatible or
+   *     unknown policy. Always true when the identity itself is unusable, so the connect attempt
+   *     reports why.
    */
   private boolean canSecureChannel(String securityPolicyUri) {
+    // Mirror the client: DefaultSksClientOperations passes the identity through
+    // setCertificateIdentity, which builds this same single-identity group and selects from it
+    // with the default selector when it opens the channel.
     if (identityGroup == null) {
-      // The identity itself is unusable; let the connect attempt report why.
       return true;
     }
 
