@@ -32,9 +32,15 @@ import org.eclipse.milo.opcua.sdk.pubsub.security.SecurityKeySet;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
+import org.eclipse.milo.opcua.stack.core.security.CertificateIdentitySelectionContext;
 import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateGroup;
+import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateIdentitySelector;
 import org.eclipse.milo.opcua.stack.core.security.DefaultClientCertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
+import org.eclipse.milo.opcua.stack.core.security.MemoryTrustListManager;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.TrustListManager;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
@@ -56,11 +62,11 @@ import org.slf4j.LoggerFactory;
  * keyed by {@code server.applicationUri}, not directly a connectable endpoint. Per fetch, entries
  * are tried in array order (a previously successful entry is tried first): GetEndpoints at the
  * entry's {@code server.discoveryUrls}, filter by ApplicationUri match and {@code SignAndEncrypt},
- * constrain by the entry's SecurityPolicyUri (else rank by the discovered endpoints'
- * securityLevel), then connect with a validating certificate check and an identity chosen per the
- * entry's {@code UserIdentityTokens}. Tolerance fallback (on by default): an entry with a filled
- * {@code endpointUrl} and empty {@code discoveryUrls} uses the endpointUrl as its discovery target,
- * warned once at build time.
+ * constrain by the entry's SecurityPolicyUri (else rank by the discovered endpoints' securityLevel,
+ * among the policies the application instance certificate can secure), then connect with a
+ * validating certificate check and an identity chosen per the entry's {@code UserIdentityTokens}.
+ * Tolerance fallback (on by default): an entry with a filled {@code endpointUrl} and empty {@code
+ * discoveryUrls} uses the endpointUrl as its discovery target, warned once at build time.
  *
  * <p><b>Caching and failover:</b> the resolved endpoint is cached per entry and refreshed only
  * after a failure (Part 4 §6.1.4). Failures fail over to the next entry in array order, except an
@@ -99,6 +105,7 @@ public final class SksSecurityKeyProvider implements SecurityKeyProvider, AutoCl
   private final X509Certificate[] certificateChain;
   private final String applicationUri;
   private final CertificateValidator certificateValidator;
+  private final @Nullable CertificateGroup identityGroup;
   private final @Nullable KeyCredentialStore keyCredentialStore;
   private final @Nullable X509Certificate userIdentityCertificate;
   private final @Nullable PrivateKey userIdentityPrivateKey;
@@ -126,6 +133,7 @@ public final class SksSecurityKeyProvider implements SecurityKeyProvider, AutoCl
     this.certificateChain = certificateChain;
     this.applicationUri = applicationUri;
     this.certificateValidator = certificateValidator;
+    this.identityGroup = identityGroup(keyPair, certificateChain, certificateValidator);
     this.keyCredentialStore = builder.keyCredentialStore;
     this.userIdentityCertificate = builder.userIdentityCertificate;
     this.userIdentityPrivateKey = builder.userIdentityPrivateKey;
@@ -359,7 +367,7 @@ public final class SksSecurityKeyProvider implements SecurityKeyProvider, AutoCl
 
       Optional<EndpointDescription> selected =
           SksEndpointSelector.selectEndpoint(
-              endpoints, applicationUri, entry.getSecurityPolicyUri());
+              endpoints, applicationUri, entry.getSecurityPolicyUri(), this::canSecureChannel);
 
       if (selected.isPresent()) {
         EndpointDescription endpoint = selected.get();
@@ -370,7 +378,7 @@ public final class SksSecurityKeyProvider implements SecurityKeyProvider, AutoCl
       } else {
         String policyConstraint =
             entry.getSecurityPolicyUri() == null || entry.getSecurityPolicyUri().isEmpty()
-                ? ""
+                ? " with a security policy the application instance certificate supports"
                 : " and securityPolicyUri " + entry.getSecurityPolicyUri();
         lastCause =
             new UaException(
@@ -385,6 +393,61 @@ public final class SksSecurityKeyProvider implements SecurityKeyProvider, AutoCl
         "securityKeyServices[%d]: resolution failed: %s"
             .formatted(index, lastCause != null ? lastCause.getMessage() : "unknown"),
         lastCause);
+  }
+
+  /**
+   * Whether the application instance identity can secure a SecureChannel with {@code
+   * securityPolicyUri}.
+   *
+   * @param securityPolicyUri the endpoint's SecurityPolicyUri.
+   * @return true if connecting with this policy will not fail client-side with {@code
+   *     Bad_ConfigurationError} for lack of a compatible identity; false for an incompatible or
+   *     unknown policy. Always true when the identity itself is unusable, so the connect attempt
+   *     reports why.
+   */
+  private boolean canSecureChannel(String securityPolicyUri) {
+    // Mirror the client: DefaultSksClientOperations passes the identity through
+    // setCertificateIdentity, which builds this same single-identity group and selects from it
+    // with the default selector when it opens the channel.
+    if (identityGroup == null) {
+      return true;
+    }
+
+    Optional<SecurityPolicy> securityPolicy = SecurityPolicy.fromUriSafe(securityPolicyUri);
+    if (securityPolicy.isEmpty()) {
+      return false;
+    }
+
+    CertificateIdentitySelectionContext context =
+        CertificateIdentitySelectionContext.forClientConnectionSetup(
+            List.of(identityGroup), securityPolicy.get().getProfile(), null);
+
+    try {
+      return DefaultCertificateIdentitySelector.create().select(context).isPresent();
+    } catch (UaException e) {
+      return false;
+    }
+  }
+
+  /**
+   * Build the single-identity certificate group the client derives from the application instance
+   * identity, or {@code null} if the client would reject the identity.
+   */
+  private static @Nullable CertificateGroup identityGroup(
+      KeyPair keyPair,
+      X509Certificate[] certificateChain,
+      CertificateValidator certificateValidator) {
+
+    try {
+      return DefaultCertificateGroup.forIdentity(
+          keyPair,
+          certificateChain,
+          new MemoryTrustListManager(),
+          new MemoryCertificateQuarantine(),
+          certificateValidator);
+    } catch (IllegalArgumentException e) {
+      return null;
+    }
   }
 
   private static long statusOf(@Nullable Throwable cause) {
