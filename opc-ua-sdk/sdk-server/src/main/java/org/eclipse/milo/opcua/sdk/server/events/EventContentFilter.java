@@ -153,8 +153,8 @@ public class EventContentFilter {
 
       String indexRange = select.getIndexRange();
       if (indexRange != null && !indexRange.isEmpty()) {
-        if (relativeNode instanceof VariableNode) {
-          int valueRank = ((VariableNode) relativeNode).getValueRank();
+        if (relativeNode instanceof VariableNode variableNode) {
+          int valueRank = variableNode.getValueRank();
 
           if (valueRank == ValueRanks.Scalar) {
             throw new ValidationException(StatusCodes.Bad_IndexRangeInvalid);
@@ -249,12 +249,12 @@ public class EventContentFilter {
         operand = null;
       }
 
-      if (operand instanceof FilterOperand) {
-        operands[i] = (FilterOperand) operand;
+      if (operand instanceof FilterOperand filterOperand) {
+        operands[i] = filterOperand;
 
-        if (operand instanceof SimpleAttributeOperand) {
+        if (operand instanceof SimpleAttributeOperand sao) {
           try {
-            validateSimpleOperand(context, (SimpleAttributeOperand) operand);
+            validateSimpleOperand(context, sao);
 
             operandStatusCodes[i] = StatusCode.GOOD;
           } catch (ValidationException e) {
@@ -338,8 +338,8 @@ public class EventContentFilter {
 
     if (result == null) {
       return false;
-    } else if (result instanceof Boolean) {
-      return (Boolean) result;
+    } else if (result instanceof Boolean b) {
+      return b;
     } else {
       throw new UaException(StatusCodes.Bad_ContentFilterInvalid);
     }
@@ -564,8 +564,8 @@ public class EventContentFilter {
     @Nullable
     @Override
     public Object resolve(FilterOperand operand, BaseEventTypeNode eventNode) throws UaException {
-      if (operand instanceof LiteralOperand) {
-        return ((LiteralOperand) operand).getValue().value();
+      if (operand instanceof LiteralOperand literalOperand) {
+        return literalOperand.getValue().value();
       } else if (operand instanceof ElementOperand elementOperand) {
         UInteger index = elementOperand.getIndex();
 
