@@ -194,8 +194,8 @@ public class AddressSpace {
   public CompletableFuture<UaObjectNode> getObjectNodeAsync(NodeId nodeId) {
     UaNode cachedNode = nodeCache.getIfPresent(nodeId);
 
-    if (cachedNode instanceof UaObjectNode) {
-      return completedFuture((UaObjectNode) cachedNode);
+    if (cachedNode instanceof UaObjectNode objectNode) {
+      return completedFuture(objectNode);
     } else {
       CompletableFuture<NodeId> typeDefinitionFuture = readTypeDefinition(nodeId);
 
@@ -223,8 +223,8 @@ public class AddressSpace {
       NodeId nodeId, NodeId typeDefinitionId) {
     UaNode cachedNode = nodeCache.getIfPresent(nodeId);
 
-    if (cachedNode instanceof UaObjectNode) {
-      return completedFuture((UaObjectNode) cachedNode);
+    if (cachedNode instanceof UaObjectNode objectNode) {
+      return completedFuture(objectNode);
     } else {
       CompletableFuture<ReadResponse> future =
           readAttributes(nodeId, AttributeId.OBJECT_ATTRIBUTES);
@@ -308,8 +308,8 @@ public class AddressSpace {
   public CompletableFuture<UaVariableNode> getVariableNodeAsync(NodeId nodeId) {
     UaNode cachedNode = nodeCache.getIfPresent(nodeId);
 
-    if (cachedNode instanceof UaVariableNode) {
-      return completedFuture((UaVariableNode) cachedNode);
+    if (cachedNode instanceof UaVariableNode variableNode) {
+      return completedFuture(variableNode);
     } else {
       CompletableFuture<NodeId> typeDefinitionFuture = readTypeDefinition(nodeId);
 
@@ -337,8 +337,8 @@ public class AddressSpace {
       NodeId nodeId, NodeId typeDefinitionId) {
     UaNode cachedNode = nodeCache.getIfPresent(nodeId);
 
-    if (cachedNode instanceof UaVariableNode) {
-      return completedFuture((UaVariableNode) cachedNode);
+    if (cachedNode instanceof UaVariableNode variableNode) {
+      return completedFuture(variableNode);
     } else {
       CompletableFuture<ReadResponse> future =
           readAttributes(nodeId, AttributeId.VARIABLE_ATTRIBUTES);
