@@ -72,8 +72,7 @@ jobs:
           distribution: 'temurin'
           overwrite-settings: false
 
-      # central-publishing-maven-plugin 0.11.0 leaves Maven 3.10 staging metadata in the bundle,
-      # and Central rejects it. Keep this in step with the Maven version in .mise.toml.
+      # Keep release publishing on the Maven version pinned in .mise.toml.
       - name: Set up Maven
         shell: bash
         env:
