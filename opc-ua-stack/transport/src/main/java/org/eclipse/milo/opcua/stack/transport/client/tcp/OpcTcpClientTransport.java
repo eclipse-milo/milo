@@ -23,16 +23,12 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ConnectTimeoutException;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -365,29 +361,23 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport
     public CompletableFuture<Void> disconnect(FsmContext<State, Event> ctx, Channel channel) {
       var disconnectFuture = new CompletableFuture<Void>();
 
-      TimerTask onTimeout =
-          t ->
-              channel
-                  .close()
-                  .addListener(
-                      (ChannelFutureListener) channelFuture -> disconnectFuture.complete(null));
+      // Close the channel ourselves if the server doesn't close it after CloseSecureChannel.
+      Timeout timeout =
+          config.getWheelTimer().newTimeout(t -> channel.close(), 5, TimeUnit.SECONDS);
 
-      Timeout timeout = config.getWheelTimer().newTimeout(onTimeout, 5, TimeUnit.SECONDS);
-
+      // Netty notifies a close future listener even when it's added after the channel closed, so
+      // the disconnect completes without waiting for the timeout when this action runs against a
+      // channel that is already closed or closing.
       channel
-          .pipeline()
-          .addFirst(
-              new ChannelInboundHandlerAdapter() {
-                @Override
-                public void channelInactive(ChannelHandlerContext channelContext) throws Exception {
-                  try (MDC.MDCCloseable ignored = MDC.putCloseable("instance-id", instanceId)) {
-                    logger.debug("channelInactive() disconnect complete");
-                  }
-
-                  timeout.cancel();
-                  disconnectFuture.complete(null);
-                  super.channelInactive(channelContext);
+          .closeFuture()
+          .addListener(
+              f -> {
+                try (MDC.MDCCloseable ignored = MDC.putCloseable("instance-id", instanceId)) {
+                  logger.debug("Channel closed, disconnect complete");
                 }
+
+                timeout.cancel();
+                disconnectFuture.complete(null);
               });
 
       var requestHeader =
