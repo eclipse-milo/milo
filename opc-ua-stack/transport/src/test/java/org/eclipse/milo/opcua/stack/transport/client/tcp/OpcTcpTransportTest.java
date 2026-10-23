@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.eclipse.milo.opcua.stack.transport.TestPortAllocator.allocatePort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -21,6 +22,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,6 +43,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -89,6 +96,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
+import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.ClientSecureChannel;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransport;
@@ -414,6 +422,103 @@ class OpcTcpTransportTest extends SecurityFixture {
     LOGGER.debug("unbinding server transport...");
     serverTransport.unbind();
     LOGGER.debug("server transport unbound");
+  }
+
+  // The disconnect action falls back to closing the channel after 5 seconds, so these tests bound
+  // disconnect() well inside that timeout to show the channel close completed it.
+  @Test
+  void disconnectSendsCloseSecureChannelAndCompletesWhenChannelCloses() throws Exception {
+    OpcServerTransport serverTransport =
+        bindServerTransport(SecurityPolicy.None, MessageSecurityMode.None);
+
+    var closeSecureChannelSent = new CountDownLatch(1);
+
+    OpcTcpClientTransportConfig config =
+        OpcTcpClientTransportConfig.newBuilder()
+            .setChannelPipelineCustomizer(
+                pipeline ->
+                    pipeline.addFirst(
+                        new ChannelOutboundHandlerAdapter() {
+                          @Override
+                          public void write(
+                              ChannelHandlerContext ctx, Object msg, ChannelPromise promise)
+                              throws Exception {
+
+                            if (msg instanceof ByteBuf buffer
+                                && buffer.readableBytes() >= 3
+                                && buffer.getByte(buffer.readerIndex()) == 'C'
+                                && buffer.getByte(buffer.readerIndex() + 1) == 'L'
+                                && buffer.getByte(buffer.readerIndex() + 2) == 'O') {
+
+                              closeSecureChannelSent.countDown();
+                            }
+                            super.write(ctx, msg, promise);
+                          }
+                        }))
+            .build();
+
+    var transport = new OpcTcpClientTransport(config);
+
+    try {
+      transport.connect(noSecurityClientApplicationContext()).get();
+      Channel channel = transport.getChannelFsm().getChannel().get();
+
+      transport.disconnect().get(2, TimeUnit.SECONDS);
+
+      assertEquals(0, closeSecureChannelSent.getCount());
+      assertFalse(channel.isOpen());
+    } finally {
+      serverTransport.unbind();
+    }
+  }
+
+  // When the application calls disconnect() at about the same moment the connection closes, the
+  // ChannelFsm can evaluate Disconnect before the ChannelInactive event queued by the close. The
+  // disconnect action then runs against a channel that is already closed.
+  @Test
+  void disconnectCompletesWhenChannelClosedBeforeDisconnectActionRuns() throws Exception {
+    OpcServerTransport serverTransport =
+        bindServerTransport(SecurityPolicy.None, MessageSecurityMode.None);
+
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+
+    try {
+      var transport =
+          new OpcTcpClientTransport(
+              OpcTcpClientTransportConfig.newBuilder().setExecutor(executor).build());
+
+      transport.connect(noSecurityClientApplicationContext()).get();
+      Channel channel = transport.getChannelFsm().getChannel().get();
+
+      // Hold the ChannelFsm's only executor thread so Disconnect is queued before the
+      // ChannelInactive event from the close below.
+      var release = new CountDownLatch(1);
+      executor.execute(
+          () -> {
+            try {
+              release.await();
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+            }
+          });
+
+      CompletableFuture<Unit> disconnected = transport.disconnect();
+      channel.close().sync();
+      release.countDown();
+
+      disconnected.get(2, TimeUnit.SECONDS);
+    } finally {
+      executor.shutdownNow();
+      serverTransport.unbind();
+    }
+  }
+
+  private ClientApplicationContext noSecurityClientApplicationContext() {
+    return clientApplicationContext(
+        SecurityPolicy.None,
+        new CertificateMaterial(clientKeyPair, clientCertificate, clientCertificateBytes),
+        new CertificateMaterial(serverKeyPair, serverCertificate, serverCertificateBytes),
+        MessageSecurityMode.None);
   }
 
   @Test
