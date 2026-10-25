@@ -67,6 +67,27 @@ public class CastTest {
     assertNull(cast(3e9f, NodeIds.Int32));
   }
 
+  // Int64 tops out one below 2^63 and UInt64 one below 2^64, but both casts bounded the source with
+  // (double) Long.MAX_VALUE, which rounds up to 2^63, so anything above it saturated at
+  // Long.MAX_VALUE instead of keeping its value or failing.
+  @Test
+  public void testDoubleAtInt64OverflowFailsToCast() throws Exception {
+    assertNull(cast(9223372036854775808.0, NodeIds.Int64));
+  }
+
+  @Test
+  public void testDoubleInUpperHalfOfUInt64CastsWithoutSaturating() throws Exception {
+    // 2^63 as a UInt64 is the bit pattern Long.MIN_VALUE
+    assertEquals(ulong(Long.MIN_VALUE), cast(9223372036854775808.0, NodeIds.UInt64));
+    assertEquals(ulong(-3_446_744_073_709_551_616L), cast(1.5e19, NodeIds.UInt64));
+  }
+
+  @Test
+  public void testDoubleAboveUInt64RangeFailsToCast() throws Exception {
+    assertNull(cast(18446744073709551616.0, NodeIds.UInt64));
+    assertNull(cast(Float.MAX_VALUE, NodeIds.UInt64));
+  }
+
   @Test
   public void testConversionFailureReturnsNull() throws Exception {
     assertNull(cast("not an int", NodeIds.Int32));

@@ -25,6 +25,12 @@ import org.jspecify.annotations.Nullable;
 
 final class DoubleConversions {
 
+  /** 2^63: the smallest positive double an Int64 cannot hold; (double) Long.MAX_VALUE is this. */
+  private static final double INT64_BOUND = 9223372036854775808d;
+
+  /** 2^64: the smallest positive double a UInt64 cannot hold. */
+  private static final double UINT64_BOUND = 18446744073709551616d;
+
   private DoubleConversions() {}
 
   @NonNull
@@ -76,7 +82,7 @@ final class DoubleConversions {
 
   @Nullable
   static Long doubleToInt64(@NonNull Double d) {
-    if (d >= Long.MIN_VALUE && d <= Long.MAX_VALUE) {
+    if (d >= -INT64_BOUND && d < INT64_BOUND) {
       return Math.round(d);
     } else {
       return null;
@@ -123,10 +129,13 @@ final class DoubleConversions {
 
   @Nullable
   static ULong doubleToUInt64(@NonNull Double d) {
-    long rounded = Math.round(d);
+    if (d >= 0.0 && d < UINT64_BOUND) {
+      // Math.round() saturates at Long.MAX_VALUE, so the top half of the UInt64 range has to wrap.
+      // Every double in [2^63, 2^64) is a whole multiple of 2^11, so d - UINT64_BOUND is exact and
+      // its low 64 bits are the UInt64 value.
+      long bits = d < INT64_BOUND ? Math.round(d) : (long) (d - UINT64_BOUND);
 
-    if (rounded >= 0) {
-      return ulong(rounded);
+      return ulong(bits);
     } else {
       return null;
     }
