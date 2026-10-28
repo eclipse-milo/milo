@@ -18,9 +18,12 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.Reference;
+import org.eclipse.milo.opcua.sdk.server.AddressSpace.BrowseContext;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.ReadContext;
+import org.eclipse.milo.opcua.sdk.server.AddressSpace.ReferenceResult;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaFolderNode;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.sdk.test.TestNamespace;
@@ -43,6 +46,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.RelativePath;
 import org.eclipse.milo.opcua.stack.core.types.structured.RelativePathElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.TranslateBrowsePathsToNodeIdsResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.ViewDescription;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -174,6 +178,38 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
         "Alpha is the target of an Organizes reference, not a HasComponent reference");
   }
 
+  /**
+   * Paths in one request that share a prefix browse each Node once, and read the BrowseNames of a
+   * Node's targets in one Read. A later request browses and reads again, so it never sees what an
+   * earlier request found.
+   */
+  @Test
+  void sharedPrefixIsBrowsedAndReadOncePerRequest() throws UaException {
+    BrowsePath[] paths = {
+      hierarchicalPath("Siblings", "Alpha", "Leaf"), hierarchicalPath("Siblings", "Beta", "Leaf")
+    };
+
+    List<String> expectedBrowses = List.of("Siblings", "Siblings.Alpha", "Siblings.Beta");
+
+    List<List<String>> expectedReads =
+        List.of(
+            List.of("Siblings.Alpha", "Siblings.Beta"),
+            List.of("Siblings.Alpha.Leaf"),
+            List.of("Siblings.Beta.Leaf"));
+
+    namespace.clearCalls();
+    translateAll(paths);
+
+    assertEquals(expectedBrowses, namespace.browsedNodes());
+    assertEquals(expectedReads, namespace.readBatches());
+
+    namespace.clearCalls();
+    translateAll(paths);
+
+    assertEquals(expectedBrowses, namespace.browsedNodes(), "a later request must browse again");
+    assertEquals(expectedReads, namespace.readBatches(), "a later request must read again");
+  }
+
   private BrowsePathResult translate(String startingNode, String... targetNames)
       throws UaException {
 
@@ -235,8 +271,13 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
    * Twins         -> First "Twin", Second "Twin"
    * Routing       -> Renamed (stores "Stored", serves "Served")
    * </pre>
+   *
+   * <p>It records the Nodes passed to each Browse and Read it handles, by NodeId identifier.
    */
   private static final class BrowsePathNamespace extends ManagedNamespaceWithLifecycle {
+
+    private final List<String> browsedNodes = new CopyOnWriteArrayList<>();
+    private final List<List<String>> readBatches = new CopyOnWriteArrayList<>();
 
     BrowsePathNamespace(OpcUaServer server) {
       super(server, NAMESPACE_URI);
@@ -300,12 +341,39 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
       return folder;
     }
 
+    /** The Nodes browsed since the last {@link #clearCalls()}, in call order. */
+    List<String> browsedNodes() {
+      return List.copyOf(browsedNodes);
+    }
+
+    /** The Nodes passed to each Read since the last {@link #clearCalls()}, in call order. */
+    List<List<String>> readBatches() {
+      return List.copyOf(readBatches);
+    }
+
+    void clearCalls() {
+      browsedNodes.clear();
+      readBatches.clear();
+    }
+
+    @Override
+    public List<ReferenceResult> browse(
+        BrowseContext context, ViewDescription view, List<NodeId> nodeIds) {
+
+      nodeIds.forEach(nodeId -> browsedNodes.add(nodeId.getIdentifier().toString()));
+
+      return super.browse(context, view, nodeIds);
+    }
+
     @Override
     public List<DataValue> read(
         ReadContext context,
         Double maxAge,
         TimestampsToReturn timestamps,
         List<ReadValueId> readValueIds) {
+
+      readBatches.add(
+          readValueIds.stream().map(id -> id.getNodeId().getIdentifier().toString()).toList());
 
       NodeId brokenId = newNodeId(BROKEN_CHILD);
       NodeId renamedId = newNodeId(RENAMED_CHILD);
