@@ -29,9 +29,6 @@ permissions:
 
 jobs:
   call-license-check:
-    # Temporarily disabled pending the help desk API key and/or Dash vetting of
-    # updated netty-channel-fsm dependencies. Remove this guard once resolved.
-    if: ${{ false }}
     uses: eclipse-dash/dash-licenses/.github/workflows/mavenLicenseCheck.yml@c1e285d67462be242b1b1ecfb1ad51e70271d5d9 #master
     with:
       projectId: iot.milo
