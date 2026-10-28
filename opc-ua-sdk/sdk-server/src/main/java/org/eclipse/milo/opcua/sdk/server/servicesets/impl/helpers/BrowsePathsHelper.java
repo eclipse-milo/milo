@@ -25,6 +25,7 @@ import org.eclipse.milo.opcua.sdk.server.AddressSpace;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.BrowseContext;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.ReadContext;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.ReferenceResult.ReferenceList;
+import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -157,13 +158,60 @@ public class BrowsePathsHelper {
   }
 
   private ExpandedNodeId next(NodeId nodeId, RelativePathElement element) throws UaException {
-    NodeId referenceTypeId = element.getReferenceTypeId();
-    boolean includeSubtypes = element.getIncludeSubtypes();
     QualifiedName targetName = element.getTargetName();
 
     if (targetName.isNull()) {
       throw new UaException(StatusCodes.Bad_BrowseNameInvalid);
     }
+
+    List<ExpandedNodeId> targetNodeIds = browseTargets(nodeId, element);
+    List<QualifiedName> browseNames = readBrowseNames(targetNodeIds);
+
+    for (int i = 0; i < targetNodeIds.size(); i++) {
+      if (targetName.equals(browseNames.get(i))) {
+        return targetNodeIds.get(i);
+      }
+    }
+
+    return ExpandedNodeId.NULL_VALUE;
+  }
+
+  private List<ExpandedNodeId> target(NodeId nodeId, RelativePathElement element)
+      throws UaException {
+
+    QualifiedName targetName = element.getTargetName();
+
+    if (targetName.isNull()) {
+      throw new UaException(StatusCodes.Bad_BrowseNameInvalid);
+    }
+
+    List<ExpandedNodeId> targetNodeIds = browseTargets(nodeId, element);
+    List<QualifiedName> browseNames = readBrowseNames(targetNodeIds);
+
+    var targets = new ArrayList<ExpandedNodeId>();
+
+    for (int i = 0; i < targetNodeIds.size(); i++) {
+      if (targetName.equals(browseNames.get(i))) {
+        targets.add(targetNodeIds.get(i));
+      }
+    }
+
+    return targets;
+  }
+
+  /**
+   * Browse {@code nodeId} and return the targets of the references that pass {@code element}'s
+   * ReferenceType and direction filters, in reference order.
+   *
+   * @throws UaException with Bad_NodeIdUnknown if {@code nodeId} can't be browsed, or Bad_NoMatch
+   *     if no reference passes the filters.
+   */
+  private List<ExpandedNodeId> browseTargets(NodeId nodeId, RelativePathElement element)
+      throws UaException {
+
+    NodeId referenceTypeId = element.getReferenceTypeId();
+    boolean includeSubtypes = element.getIncludeSubtypes();
+    boolean isInverse = element.getIsInverse();
 
     var browseContext = new BrowseContext(server, context.getSession().orElse(null));
 
@@ -172,144 +220,104 @@ public class BrowsePathsHelper {
     AddressSpace.ReferenceResult result =
         server.getAddressSpaceManager().browse(browseContext, view, List.of(nodeId)).get(0);
 
-    if (result instanceof ReferenceList rl) {
-      List<Reference> references = rl.references();
-
-      ReferenceTypeTree referenceTypeTree = server.getReferenceTypeTree();
-
-      List<ExpandedNodeId> targetNodeIds =
-          references.stream()
-              /* Filter for references of the requested type or its subtype, if allowed... */
-              .filter(
-                  r ->
-                      referenceTypeId.isNull()
-                          || r.getReferenceTypeId().equals(referenceTypeId)
-                          || (includeSubtypes
-                              && referenceTypeTree.isSubtypeOf(
-                                  r.getReferenceTypeId(), referenceTypeId)))
-
-              /* Filter for reference direction... */
-              .filter(r -> r.isInverse() == element.getIsInverse())
-
-              /* Map to target ExpandedNodeId... */
-              .map(Reference::getTargetNodeId)
-              .collect(toList());
-
-      if (targetNodeIds.isEmpty()) {
-        throw new UaException(StatusCodes.Bad_NoMatch);
-      } else {
-        List<QualifiedName> browseNames = readTargetBrowseNames(targetNodeIds);
-
-        for (int i = 0; i < targetNodeIds.size(); i++) {
-          ExpandedNodeId targetNodeId = targetNodeIds.get(i);
-          QualifiedName browseName = browseNames.get(i);
-          if (targetName.equals(browseName)) {
-            return targetNodeId;
-          }
-        }
-
-        return ExpandedNodeId.NULL_VALUE;
-      }
-    } else {
+    if (!(result instanceof ReferenceList rl)) {
       throw new UaException(StatusCodes.Bad_NodeIdUnknown);
     }
-  }
 
-  private List<ExpandedNodeId> target(NodeId nodeId, RelativePathElement element)
-      throws UaException {
-    NodeId referenceTypeId = element.getReferenceTypeId();
-    boolean includeSubtypes = element.getIncludeSubtypes();
-    QualifiedName targetName = element.getTargetName();
+    ReferenceTypeTree referenceTypeTree = server.getReferenceTypeTree();
 
-    if (targetName.isNull()) {
-      throw new UaException(StatusCodes.Bad_BrowseNameInvalid);
-    }
+    var targetNodeIds = new ArrayList<ExpandedNodeId>();
 
-    BrowseContext browseContext = new BrowseContext(server, context.getSession().orElse(null));
+    for (Reference reference : rl.references()) {
+      NodeId typeId = reference.getReferenceTypeId();
 
-    var view = new ViewDescription(NodeId.NULL_VALUE, DateTime.NULL_VALUE, UInteger.valueOf(0));
+      boolean typeMatches =
+          referenceTypeId.isNull()
+              || typeId.equals(referenceTypeId)
+              || (includeSubtypes && referenceTypeTree.isSubtypeOf(typeId, referenceTypeId));
 
-    AddressSpace.ReferenceResult result =
-        server.getAddressSpaceManager().browse(browseContext, view, List.of(nodeId)).get(0);
-
-    if (result instanceof ReferenceList rl) {
-      List<Reference> references = rl.references();
-
-      ReferenceTypeTree referenceTypeTree = server.getReferenceTypeTree();
-
-      List<ExpandedNodeId> targetNodeIds =
-          references.stream()
-              /* Filter for references of the requested type or its subtype, if allowed... */
-              .filter(
-                  r ->
-                      referenceTypeId.isNull()
-                          || r.getReferenceTypeId().equals(referenceTypeId)
-                          || (includeSubtypes
-                              && referenceTypeTree.isSubtypeOf(
-                                  r.getReferenceTypeId(), referenceTypeId)))
-
-              /* Filter for reference direction... */
-              .filter(r -> r.isInverse() == element.getIsInverse())
-
-              /* Map to target ExpandedNodeId... */
-              .map(Reference::getTargetNodeId)
-              .collect(toList());
-
-      if (targetNodeIds.isEmpty()) {
-        throw new UaException(StatusCodes.Bad_NoMatch);
-      } else {
-        List<QualifiedName> browseNames = readTargetBrowseNames(targetNodeIds);
-        var targets = new ArrayList<ExpandedNodeId>();
-
-        for (int i = 0; i < targetNodeIds.size(); i++) {
-          ExpandedNodeId targetNodeId = targetNodeIds.get(i);
-          QualifiedName browseName = browseNames.get(i);
-          if (matchesTarget(browseName, targetName)) {
-            targets.add(targetNodeId);
-          }
-        }
-
-        return targets;
+      if (typeMatches && reference.isInverse() == isInverse) {
+        targetNodeIds.add(reference.getTargetNodeId());
       }
-    } else {
-      throw new UaException(StatusCodes.Bad_NodeIdUnknown);
     }
+
+    if (targetNodeIds.isEmpty()) {
+      throw new UaException(StatusCodes.Bad_NoMatch);
+    }
+
+    return targetNodeIds;
   }
 
-  private List<QualifiedName> readTargetBrowseNames(List<ExpandedNodeId> targetNodeIds) {
-    var browseNames = new ArrayList<QualifiedName>();
+  /**
+   * Read the BrowseName of each target in {@code targetNodeIds}, in one Read through the {@link
+   * AddressSpaceManager}, so each name is the one a Read of that Node returns.
+   *
+   * <p>A target on another Server, or whose Read fails, gets the null QualifiedName, which matches
+   * no target name.
+   *
+   * @param targetNodeIds the targets to read the BrowseNames of.
+   * @return the BrowseName of each target, in the order of {@code targetNodeIds}.
+   */
+  private List<QualifiedName> readBrowseNames(List<ExpandedNodeId> targetNodeIds) {
+    var browseNames =
+        new ArrayList<>(Collections.nCopies(targetNodeIds.size(), QualifiedName.NULL_VALUE));
 
-    for (ExpandedNodeId xni : targetNodeIds) {
-      try {
-        NodeId nodeId = xni.toNodeIdOrThrow(server.getNamespaceTable());
+    // Only targets on this Server are read; readIndices maps each Read back to its target.
+    var readValueIds = new ArrayList<ReadValueId>(targetNodeIds.size());
+    var readIndices = new ArrayList<Integer>(targetNodeIds.size());
 
-        ReadValueId readValueId =
-            new ReadValueId(nodeId, AttributeId.BrowseName.uid(), null, QualifiedName.NULL_VALUE);
+    for (int i = 0; i < targetNodeIds.size(); i++) {
+      Optional<NodeId> nodeId = targetNodeIds.get(i).toNodeId(server.getNamespaceTable());
 
-        var context = new ReadContext(server, null);
+      if (nodeId.isPresent()) {
+        readValueIds.add(
+            new ReadValueId(
+                nodeId.get(), AttributeId.BrowseName.uid(), null, QualifiedName.NULL_VALUE));
+        readIndices.add(i);
+      }
+    }
 
-        List<DataValue> values =
-            server
-                .getAddressSpaceManager()
-                .read(context, 0.0, TimestampsToReturn.Neither, List.of(readValueId));
+    List<DataValue> values = readAll(readValueIds);
 
-        // A failed Read has no value; its target matches no BrowseName.
-        if (values.get(0).value().value() instanceof QualifiedName browseName) {
-          browseNames.add(browseName);
-        } else {
-          browseNames.add(QualifiedName.NULL_VALUE);
-        }
-      } catch (Exception ignored) {
-        browseNames.add(QualifiedName.NULL_VALUE);
+    for (int i = 0; i < values.size(); i++) {
+      if (values.get(i).value().value() instanceof QualifiedName browseName) {
+        browseNames.set(readIndices.get(i), browseName);
       }
     }
 
     return browseNames;
   }
 
-  private boolean matchesTarget(QualifiedName browseName, QualifiedName targetName) {
-    return targetName == null
-        || targetName.equals(QualifiedName.NULL_VALUE)
-        || targetName.equals(browseName);
+  /**
+   * Read {@code readValueIds} in one call to the {@link AddressSpaceManager}.
+   *
+   * <p>If that call throws, read them again one at a time, so the failure only affects the
+   * operation that caused it. An operation whose own Read throws gets a Bad_InternalError value.
+   */
+  private List<DataValue> readAll(List<ReadValueId> readValueIds) {
+    AddressSpaceManager addressSpaceManager = server.getAddressSpaceManager();
+
+    var readContext = new ReadContext(server, null);
+
+    try {
+      return addressSpaceManager.read(readContext, 0.0, TimestampsToReturn.Neither, readValueIds);
+    } catch (Exception batchFailure) {
+      var values = new ArrayList<DataValue>(readValueIds.size());
+
+      for (ReadValueId readValueId : readValueIds) {
+        try {
+          DataValue value =
+              addressSpaceManager
+                  .read(readContext, 0.0, TimestampsToReturn.Neither, List.of(readValueId))
+                  .get(0);
+
+          values.add(value);
+        } catch (Exception failure) {
+          values.add(new DataValue(StatusCodes.Bad_InternalError));
+        }
+      }
+
+      return values;
+    }
   }
 }
