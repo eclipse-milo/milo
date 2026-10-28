@@ -149,23 +149,60 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
         "the stored BrowseName is never served, so it must not match");
   }
 
+  /**
+   * Paths in one request reuse what an earlier path browsed and read, but only for the same Node
+   * and the same reference filters. Each path must still get its own result.
+   */
+  @Test
+  void pathsInOneRequestThatShareNodesEachGetTheirOwnResult() throws UaException {
+    List<BrowsePathResult> results =
+        translateAll(
+            hierarchicalPath("Siblings", "Alpha", "Leaf"),
+            hierarchicalPath("Siblings", "Beta", "Leaf"),
+            hierarchicalPath("Siblings", "Alpha", "Leaf"),
+            hierarchicalPath("Siblings", "Alpha"),
+            browsePath("Siblings", NodeIds.HasComponent, false, "Alpha", "Leaf"));
+
+    assertEquals(List.of(expandedNodeId("Siblings.Alpha.Leaf")), targetIds(results.get(0)));
+    assertEquals(List.of(expandedNodeId("Siblings.Beta.Leaf")), targetIds(results.get(1)));
+    assertEquals(List.of(expandedNodeId("Siblings.Alpha.Leaf")), targetIds(results.get(2)));
+    assertEquals(List.of(expandedNodeId("Siblings.Alpha")), targetIds(results.get(3)));
+
+    assertEquals(
+        new StatusCode(StatusCodes.Bad_NoMatch),
+        results.get(4).getStatusCode(),
+        "Alpha is the target of an Organizes reference, not a HasComponent reference");
+  }
+
   private BrowsePathResult translate(String startingNode, String... targetNames)
       throws UaException {
+
+    return translateAll(hierarchicalPath(startingNode, targetNames)).get(0);
+  }
+
+  private List<BrowsePathResult> translateAll(BrowsePath... browsePaths) throws UaException {
+    TranslateBrowsePathsToNodeIdsResponse response =
+        client.translateBrowsePaths(List.of(browsePaths));
+
+    return List.of(requireNonNull(response.getResults()));
+  }
+
+  private BrowsePath hierarchicalPath(String startingNode, String... targetNames) {
+    return browsePath(startingNode, NodeIds.HierarchicalReferences, true, targetNames);
+  }
+
+  private BrowsePath browsePath(
+      String startingNode, NodeId referenceTypeId, boolean includeSubtypes, String... targetNames) {
 
     var elements = new RelativePathElement[targetNames.length];
 
     for (int i = 0; i < targetNames.length; i++) {
       elements[i] =
           new RelativePathElement(
-              NodeIds.HierarchicalReferences, false, true, qualifiedName(targetNames[i]));
+              referenceTypeId, false, includeSubtypes, qualifiedName(targetNames[i]));
     }
 
-    var browsePath = new BrowsePath(nodeId(startingNode), new RelativePath(elements));
-
-    TranslateBrowsePathsToNodeIdsResponse response =
-        client.translateBrowsePaths(List.of(browsePath));
-
-    return requireNonNull(response.getResults())[0];
+    return new BrowsePath(nodeId(startingNode), new RelativePath(elements));
   }
 
   private static List<ExpandedNodeId> targetIds(BrowsePathResult result) {

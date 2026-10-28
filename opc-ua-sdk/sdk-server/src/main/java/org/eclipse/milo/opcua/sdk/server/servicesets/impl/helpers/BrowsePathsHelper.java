@@ -16,7 +16,9 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
@@ -78,8 +80,11 @@ public class BrowsePathsHelper {
 
     var results = new ArrayList<BrowsePathResult>(browsePaths.size());
 
+    // Shared by every path in this request, and only this request.
+    var browsed = new HashMap<BrowseKey, List<TargetNode>>();
+
     for (BrowsePath browsePath : browsePaths) {
-      results.add(translate(browsePath));
+      results.add(translate(browsePath, browsed));
     }
 
     ResponseHeader header = createResponseHeader(request);
@@ -88,7 +93,9 @@ public class BrowsePathsHelper {
         header, results.toArray(BrowsePathResult[]::new), new DiagnosticInfo[0]);
   }
 
-  private BrowsePathResult translate(BrowsePath browsePath) {
+  private BrowsePathResult translate(
+      BrowsePath browsePath, Map<BrowseKey, List<TargetNode>> browsed) {
+
     NodeId startingNode = browsePath.getStartingNode();
     RelativePath relativePath = browsePath.getRelativePath();
 
@@ -105,7 +112,7 @@ public class BrowsePathsHelper {
     }
 
     try {
-      List<BrowsePathTarget> targets = follow(startingNode, relativePathElements);
+      List<BrowsePathTarget> targets = follow(startingNode, relativePathElements, browsed);
 
       if (!targets.isEmpty()) {
         return new BrowsePathResult(StatusCode.GOOD, targets.toArray(new BrowsePathTarget[0]));
@@ -118,13 +125,14 @@ public class BrowsePathsHelper {
     }
   }
 
-  private List<BrowsePathTarget> follow(NodeId nodeId, List<RelativePathElement> elements)
+  private List<BrowsePathTarget> follow(
+      NodeId nodeId, List<RelativePathElement> elements, Map<BrowseKey, List<TargetNode>> browsed)
       throws UaException {
 
     if (elements.isEmpty()) {
       return Collections.emptyList();
     } else if (elements.size() == 1) {
-      List<ExpandedNodeId> targets = target(nodeId, elements.get(0));
+      List<ExpandedNodeId> targets = target(nodeId, elements.get(0), browsed);
 
       return targets.stream()
           .map(
@@ -136,7 +144,7 @@ public class BrowsePathsHelper {
     } else {
       RelativePathElement e = elements.get(0);
 
-      ExpandedNodeId nextXni = next(nodeId, e);
+      ExpandedNodeId nextXni = next(nodeId, e, browsed);
       if (nextXni.isNull()) {
         // There was no match for the target name
         throw new UaException(StatusCodes.Bad_NoMatch);
@@ -147,7 +155,7 @@ public class BrowsePathsHelper {
       Optional<NodeId> nextId = nextXni.toNodeId(server.getNamespaceTable());
 
       if (nextId.isPresent()) {
-        return follow(nextId.get(), nextElements);
+        return follow(nextId.get(), nextElements, browsed);
       } else {
         UInteger remaining = nextElements.isEmpty() ? UInteger.MAX : uint(nextElements.size());
 
@@ -157,26 +165,8 @@ public class BrowsePathsHelper {
     }
   }
 
-  private ExpandedNodeId next(NodeId nodeId, RelativePathElement element) throws UaException {
-    QualifiedName targetName = element.getTargetName();
-
-    if (targetName.isNull()) {
-      throw new UaException(StatusCodes.Bad_BrowseNameInvalid);
-    }
-
-    List<ExpandedNodeId> targetNodeIds = browseTargets(nodeId, element);
-    List<QualifiedName> browseNames = readBrowseNames(targetNodeIds);
-
-    for (int i = 0; i < targetNodeIds.size(); i++) {
-      if (targetName.equals(browseNames.get(i))) {
-        return targetNodeIds.get(i);
-      }
-    }
-
-    return ExpandedNodeId.NULL_VALUE;
-  }
-
-  private List<ExpandedNodeId> target(NodeId nodeId, RelativePathElement element)
+  private ExpandedNodeId next(
+      NodeId nodeId, RelativePathElement element, Map<BrowseKey, List<TargetNode>> browsed)
       throws UaException {
 
     QualifiedName targetName = element.getTargetName();
@@ -185,14 +175,30 @@ public class BrowsePathsHelper {
       throw new UaException(StatusCodes.Bad_BrowseNameInvalid);
     }
 
-    List<ExpandedNodeId> targetNodeIds = browseTargets(nodeId, element);
-    List<QualifiedName> browseNames = readBrowseNames(targetNodeIds);
+    for (TargetNode targetNode : targetNodes(nodeId, element, browsed)) {
+      if (targetName.equals(targetNode.browseName())) {
+        return targetNode.nodeId();
+      }
+    }
+
+    return ExpandedNodeId.NULL_VALUE;
+  }
+
+  private List<ExpandedNodeId> target(
+      NodeId nodeId, RelativePathElement element, Map<BrowseKey, List<TargetNode>> browsed)
+      throws UaException {
+
+    QualifiedName targetName = element.getTargetName();
+
+    if (targetName.isNull()) {
+      throw new UaException(StatusCodes.Bad_BrowseNameInvalid);
+    }
 
     var targets = new ArrayList<ExpandedNodeId>();
 
-    for (int i = 0; i < targetNodeIds.size(); i++) {
-      if (targetName.equals(browseNames.get(i))) {
-        targets.add(targetNodeIds.get(i));
+    for (TargetNode targetNode : targetNodes(nodeId, element, browsed)) {
+      if (targetName.equals(targetNode.browseName())) {
+        targets.add(targetNode.nodeId());
       }
     }
 
@@ -200,25 +206,60 @@ public class BrowsePathsHelper {
   }
 
   /**
-   * Browse {@code nodeId} and return the targets of the references that pass {@code element}'s
-   * ReferenceType and direction filters, in reference order.
+   * Get the Nodes that {@code element}'s references lead to from {@code nodeId}, with their
+   * BrowseNames, before any matching on the element's target name.
+   *
+   * <p>Paths in one request often share their leading elements. Each Node and reference filter is
+   * browsed and read once per request; later paths reuse the result from {@code browsed}.
    *
    * @throws UaException with Bad_NodeIdUnknown if {@code nodeId} can't be browsed, or Bad_NoMatch
    *     if no reference passes the filters.
    */
-  private List<ExpandedNodeId> browseTargets(NodeId nodeId, RelativePathElement element)
+  private List<TargetNode> targetNodes(
+      NodeId nodeId, RelativePathElement element, Map<BrowseKey, List<TargetNode>> browsed)
       throws UaException {
 
-    NodeId referenceTypeId = element.getReferenceTypeId();
-    boolean includeSubtypes = element.getIncludeSubtypes();
-    boolean isInverse = element.getIsInverse();
+    var key =
+        new BrowseKey(
+            nodeId,
+            element.getReferenceTypeId(),
+            element.getIncludeSubtypes(),
+            element.getIsInverse());
+
+    List<TargetNode> targetNodes = browsed.get(key);
+
+    if (targetNodes == null) {
+      List<ExpandedNodeId> targetNodeIds = browseTargets(key);
+      List<QualifiedName> browseNames = readBrowseNames(targetNodeIds);
+
+      targetNodes = new ArrayList<>(targetNodeIds.size());
+
+      for (int i = 0; i < targetNodeIds.size(); i++) {
+        targetNodes.add(new TargetNode(targetNodeIds.get(i), browseNames.get(i)));
+      }
+
+      browsed.put(key, targetNodes);
+    }
+
+    return targetNodes;
+  }
+
+  /**
+   * Browse {@code key}'s Node and return the targets of the references that pass its ReferenceType
+   * and direction filters, in reference order.
+   *
+   * @throws UaException with Bad_NodeIdUnknown if the Node can't be browsed, or Bad_NoMatch if no
+   *     reference passes the filters.
+   */
+  private List<ExpandedNodeId> browseTargets(BrowseKey key) throws UaException {
+    NodeId referenceTypeId = key.referenceTypeId();
 
     var browseContext = new BrowseContext(server, context.getSession().orElse(null));
 
     var view = new ViewDescription(NodeId.NULL_VALUE, DateTime.NULL_VALUE, UInteger.valueOf(0));
 
     AddressSpace.ReferenceResult result =
-        server.getAddressSpaceManager().browse(browseContext, view, List.of(nodeId)).get(0);
+        server.getAddressSpaceManager().browse(browseContext, view, List.of(key.nodeId())).get(0);
 
     if (!(result instanceof ReferenceList rl)) {
       throw new UaException(StatusCodes.Bad_NodeIdUnknown);
@@ -234,9 +275,9 @@ public class BrowsePathsHelper {
       boolean typeMatches =
           referenceTypeId.isNull()
               || typeId.equals(referenceTypeId)
-              || (includeSubtypes && referenceTypeTree.isSubtypeOf(typeId, referenceTypeId));
+              || (key.includeSubtypes() && referenceTypeTree.isSubtypeOf(typeId, referenceTypeId));
 
-      if (typeMatches && reference.isInverse() == isInverse) {
+      if (typeMatches && reference.isInverse() == key.isInverse()) {
         targetNodeIds.add(reference.getTargetNodeId());
       }
     }
@@ -320,4 +361,14 @@ public class BrowsePathsHelper {
       return values;
     }
   }
+
+  /** A Node to browse, and the ReferenceType and direction filters to apply to its references. */
+  private record BrowseKey(
+      NodeId nodeId, NodeId referenceTypeId, boolean includeSubtypes, boolean isInverse) {}
+
+  /**
+   * A target of a browsed reference and its BrowseName, or the null QualifiedName if it couldn't be
+   * read.
+   */
+  private record TargetNode(ExpandedNodeId nodeId, QualifiedName browseName) {}
 }
