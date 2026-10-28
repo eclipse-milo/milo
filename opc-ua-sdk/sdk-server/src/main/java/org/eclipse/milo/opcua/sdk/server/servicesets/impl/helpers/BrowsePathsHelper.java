@@ -203,7 +203,7 @@ public class BrowsePathsHelper {
         for (int i = 0; i < targetNodeIds.size(); i++) {
           ExpandedNodeId targetNodeId = targetNodeIds.get(i);
           QualifiedName browseName = browseNames.get(i);
-          if (browseName.equals(targetName)) {
+          if (targetName.equals(browseName)) {
             return targetNodeId;
           }
         }
@@ -293,7 +293,12 @@ public class BrowsePathsHelper {
                 .getAddressSpaceManager()
                 .read(context, 0.0, TimestampsToReturn.Neither, List.of(readValueId));
 
-        browseNames.add((QualifiedName) values.get(0).value().value());
+        // A failed Read has no value; its target matches no BrowseName.
+        if (values.get(0).value().value() instanceof QualifiedName browseName) {
+          browseNames.add(browseName);
+        } else {
+          browseNames.add(QualifiedName.NULL_VALUE);
+        }
       } catch (Exception ignored) {
         browseNames.add(QualifiedName.NULL_VALUE);
       }
