@@ -851,8 +851,8 @@ public class SessionFsmFactory {
 
                           if (results != null && results.length > 0) {
                             Object value = results[0].value().value();
-                            if (value instanceof Integer) {
-                              ServerState state = ServerState.from((Integer) value);
+                            if (value instanceof Integer i) {
+                              ServerState state = ServerState.from(i);
 
                               try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
                                   MDCCloseable ignoredSessionId = putSessionId(event.session)) {

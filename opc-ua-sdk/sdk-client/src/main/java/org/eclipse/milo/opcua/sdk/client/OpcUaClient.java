@@ -3459,10 +3459,10 @@ public class OpcUaClient {
 
     UaServiceFaultException faultException = null;
 
-    if (ex instanceof UaServiceFaultException) {
-      faultException = (UaServiceFaultException) ex;
-    } else if (ex.getCause() instanceof UaServiceFaultException) {
-      faultException = (UaServiceFaultException) ex.getCause();
+    if (ex instanceof UaServiceFaultException fault) {
+      faultException = fault;
+    } else if (ex.getCause() instanceof UaServiceFaultException cause) {
+      faultException = cause;
     }
 
     if (faultException != null) {

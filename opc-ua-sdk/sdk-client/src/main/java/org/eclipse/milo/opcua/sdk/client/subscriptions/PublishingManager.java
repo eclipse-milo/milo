@@ -1868,15 +1868,14 @@ public class PublishingManager {
       for (ExtensionObject xo : notificationData) {
         Object notification = xo.decode(client.getStaticEncodingContext());
 
-        if (notification instanceof DataChangeNotification) {
-          MonitoredItemNotification[] monitoredItems =
-              ((DataChangeNotification) notification).getMonitoredItems();
+        if (notification instanceof DataChangeNotification dataChange) {
+          MonitoredItemNotification[] monitoredItems = dataChange.getMonitoredItems();
 
           if (monitoredItems != null && monitoredItems.length > 0) {
             details.subscription.notifyDataReceived(monitoredItems);
           }
-        } else if (notification instanceof EventNotificationList) {
-          EventFieldList[] events = ((EventNotificationList) notification).getEvents();
+        } else if (notification instanceof EventNotificationList eventList) {
+          EventFieldList[] events = eventList.getEvents();
 
           if (events != null && events.length > 0) {
             details.subscription.notifyEventsReceived(events);
