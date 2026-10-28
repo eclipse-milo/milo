@@ -85,7 +85,7 @@ public class CastTest {
   @Test
   public void testDoubleAboveUInt64RangeFailsToCast() throws Exception {
     assertNull(cast(18446744073709551616.0, NodeIds.UInt64));
-    assertNull(cast(Float.MAX_VALUE, NodeIds.UInt64));
+    assertNull(cast(Double.MAX_VALUE, NodeIds.UInt64));
   }
 
   @Test

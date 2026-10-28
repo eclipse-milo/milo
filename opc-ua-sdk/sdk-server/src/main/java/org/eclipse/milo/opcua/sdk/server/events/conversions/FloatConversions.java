@@ -129,7 +129,9 @@ final class FloatConversions {
   static ULong floatToUInt64(@NonNull Float f) {
     double d = f;
 
-    if (d >= 0.0 && d < UINT64_BOUND) {
+    // Math.round() takes [-0.5, 0) to 0, so those values fit, as they do for the other unsigned
+    // types. NaN fails both comparisons.
+    if (d >= -0.5 && d < UINT64_BOUND) {
       // Math.round() saturates at Long.MAX_VALUE, so the top half of the UInt64 range has to wrap.
       // Every double in [2^63, 2^64) is a whole multiple of 2^11, so d - UINT64_BOUND is exact and
       // its low 64 bits are the UInt64 value.
