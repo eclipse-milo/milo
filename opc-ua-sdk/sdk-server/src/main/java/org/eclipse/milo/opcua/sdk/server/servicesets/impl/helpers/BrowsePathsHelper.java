@@ -10,16 +10,16 @@
 
 package org.eclipse.milo.opcua.sdk.server.servicesets.impl.helpers;
 
-import static java.util.stream.Collectors.toList;
 import static org.eclipse.milo.opcua.sdk.server.servicesets.AbstractServiceSet.createResponseHeader;
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.server.AccessContext;
@@ -125,48 +125,62 @@ public class BrowsePathsHelper {
     }
   }
 
+  /**
+   * Follow {@code elements} from {@code startingNode} and return the targets of the last element.
+   *
+   * <p>Part 4 §5.9.4.1: "If a Node has multiple targets with the same BrowseName, the Server shall
+   * return a list of NodeIds." Every Node that matches an intermediate element is followed, not
+   * only the first, and the targets reached through any of them are returned. A Node reached
+   * through several matches is followed once, and each target is returned once.
+   *
+   * @throws UaException with Bad_NoMatch if no Node matches an intermediate element, or as thrown
+   *     by {@link #matches}.
+   */
   private List<BrowsePathTarget> follow(
-      NodeId nodeId, List<RelativePathElement> elements, Map<BrowseKey, List<TargetNode>> browsed)
+      NodeId startingNode,
+      List<RelativePathElement> elements,
+      Map<BrowseKey, List<TargetNode>> browsed)
       throws UaException {
 
-    if (elements.isEmpty()) {
-      return Collections.emptyList();
-    } else if (elements.size() == 1) {
-      List<ExpandedNodeId> targets = target(nodeId, elements.get(0), browsed);
+    Set<NodeId> nodeIds = Set.of(startingNode);
 
-      return targets.stream()
-          .map(
-              n -> {
-                n = BrowseUtil.normalize(n, server.getNamespaceTable());
-                return new BrowsePathTarget(n, UInteger.MAX);
-              })
-          .collect(toList());
-    } else {
-      RelativePathElement e = elements.get(0);
+    for (RelativePathElement element : elements.subList(0, elements.size() - 1)) {
+      var nextNodeIds = new LinkedHashSet<NodeId>();
 
-      ExpandedNodeId nextXni = next(nodeId, e, browsed);
-      if (nextXni.isNull()) {
-        // There was no match for the target name
+      // Only Nodes on this Server have their BrowseNames read, so every match is one of them.
+      for (ExpandedNodeId match : matches(nodeIds, element, browsed)) {
+        match.toNodeId(server.getNamespaceTable()).ifPresent(nextNodeIds::add);
+      }
+
+      if (nextNodeIds.isEmpty()) {
         throw new UaException(StatusCodes.Bad_NoMatch);
       }
 
-      List<RelativePathElement> nextElements = elements.subList(1, elements.size());
-
-      Optional<NodeId> nextId = nextXni.toNodeId(server.getNamespaceTable());
-
-      if (nextId.isPresent()) {
-        return follow(nextId.get(), nextElements, browsed);
-      } else {
-        UInteger remaining = nextElements.isEmpty() ? UInteger.MAX : uint(nextElements.size());
-
-        nextXni = BrowseUtil.normalize(nextXni, server.getNamespaceTable());
-        return List.of(new BrowsePathTarget(nextXni, remaining));
-      }
+      nodeIds = nextNodeIds;
     }
+
+    var targetIds = new LinkedHashSet<ExpandedNodeId>();
+
+    for (ExpandedNodeId match : matches(nodeIds, elements.get(elements.size() - 1), browsed)) {
+      targetIds.add(BrowseUtil.normalize(match, server.getNamespaceTable()));
+    }
+
+    return targetIds.stream().map(id -> new BrowsePathTarget(id, UInteger.MAX)).toList();
   }
 
-  private ExpandedNodeId next(
-      NodeId nodeId, RelativePathElement element, Map<BrowseKey, List<TargetNode>> browsed)
+  /**
+   * Get the targets of {@code element}'s references from each of {@code nodeIds} whose BrowseName
+   * matches the element's target name, in the order found.
+   *
+   * <p>A Node that can't be browsed, or has no reference that passes the filters, contributes no
+   * matches. Only if every Node fails is the first failure thrown, so a path through a single Node
+   * fails the same way it would on its own.
+   *
+   * @throws UaException with Bad_BrowseNameInvalid if the element's target name is null, or the
+   *     first failure from {@link #targetNodes} if it failed for every Node.
+   */
+  private List<ExpandedNodeId> matches(
+      Set<NodeId> nodeIds, RelativePathElement element, Map<BrowseKey, List<TargetNode>> browsed)
       throws UaException {
 
     QualifiedName targetName = element.getTargetName();
@@ -175,34 +189,32 @@ public class BrowsePathsHelper {
       throw new UaException(StatusCodes.Bad_BrowseNameInvalid);
     }
 
-    for (TargetNode targetNode : targetNodes(nodeId, element, browsed)) {
-      if (targetName.equals(targetNode.browseName())) {
-        return targetNode.nodeId();
+    var matches = new ArrayList<ExpandedNodeId>();
+
+    UaException firstFailure = null;
+    boolean browsedAny = false;
+
+    for (NodeId nodeId : nodeIds) {
+      try {
+        for (TargetNode targetNode : targetNodes(nodeId, element, browsed)) {
+          if (targetName.equals(targetNode.browseName())) {
+            matches.add(targetNode.nodeId());
+          }
+        }
+
+        browsedAny = true;
+      } catch (UaException e) {
+        if (firstFailure == null) {
+          firstFailure = e;
+        }
       }
     }
 
-    return ExpandedNodeId.NULL_VALUE;
-  }
-
-  private List<ExpandedNodeId> target(
-      NodeId nodeId, RelativePathElement element, Map<BrowseKey, List<TargetNode>> browsed)
-      throws UaException {
-
-    QualifiedName targetName = element.getTargetName();
-
-    if (targetName.isNull()) {
-      throw new UaException(StatusCodes.Bad_BrowseNameInvalid);
+    if (!browsedAny && firstFailure != null) {
+      throw firstFailure;
     }
 
-    var targets = new ArrayList<ExpandedNodeId>();
-
-    for (TargetNode targetNode : targetNodes(nodeId, element, browsed)) {
-      if (targetName.equals(targetNode.browseName())) {
-        targets.add(targetNode.nodeId());
-      }
-    }
-
-    return targets;
+    return matches;
   }
 
   /**

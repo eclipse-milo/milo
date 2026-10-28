@@ -136,6 +136,48 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
   }
 
   /**
+   * Part 4 §5.9.4.1: "If a Node has multiple targets with the same BrowseName, the Server shall
+   * return a list of NodeIds." The first "Twin" has no "Leaf", so following only the first match at
+   * an intermediate element would end in Bad_NoMatch.
+   */
+  @Test
+  void pathResolvesThroughALaterIntermediateMatch() throws UaException {
+    BrowsePathResult result = translate("DeadEnd", "Twin", "Leaf");
+
+    assertEquals(StatusCode.GOOD, result.getStatusCode());
+    assertEquals(List.of(expandedNodeId("DeadEnd.Second.Leaf")), targetIds(result));
+  }
+
+  // Both "Twin" Nodes have a "Leaf"; following only the first would lose the second Leaf.
+  @Test
+  void pathReturnsTargetsReachedThroughEveryIntermediateMatch() throws UaException {
+    BrowsePathResult result = translate("Both", "Twin", "Leaf");
+
+    assertEquals(StatusCode.GOOD, result.getStatusCode());
+    assertEquals(
+        Set.of(expandedNodeId("Both.First.Leaf"), expandedNodeId("Both.Second.Leaf")),
+        Set.copyOf(targetIds(result)));
+  }
+
+  // Both "Twin" Nodes lead to the same "Leaf", which is still one target.
+  @Test
+  void targetReachedThroughSeveralIntermediateMatchesIsReturnedOnce() throws UaException {
+    BrowsePathResult result = translate("Converging", "Twin", "Leaf");
+
+    assertEquals(StatusCode.GOOD, result.getStatusCode());
+    assertEquals(List.of(expandedNodeId("Converging.Leaf")), targetIds(result));
+  }
+
+  // Following every match must still report Bad_NoMatch when none of them reaches the end.
+  @Test
+  void pathThatNoIntermediateMatchCompletesReturnsBadNoMatch() throws UaException {
+    BrowsePathResult result = translate("DeadEnd", "Twin", "Missing");
+
+    assertEquals(new StatusCode(StatusCodes.Bad_NoMatch), result.getStatusCode());
+    assertEquals(List.of(), targetIds(result));
+  }
+
+  /**
    * The BrowseName a Read returns decides the match, not the BrowseName the Node stores. Read and
    * Browse report the served name, so TranslateBrowsePaths must agree with them.
    */
@@ -269,6 +311,9 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
    * ThrowingRead  -> Broken, Device -> Item
    * Siblings      -> Alpha -> Leaf, Beta -> Leaf
    * Twins         -> First "Twin", Second "Twin"
+   * DeadEnd       -> First "Twin", Second "Twin" -> Leaf
+   * Both          -> First "Twin" -> Leaf, Second "Twin" -> Leaf
+   * Converging    -> First "Twin" -> Leaf, Second "Twin" -> (the same Leaf)
    * Routing       -> Renamed (stores "Stored", serves "Served")
    * </pre>
    *
@@ -315,6 +360,27 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
       UaFolderNode twins = addFolder("Twins", "Twins");
       twins.addOrganizes(addFolder("Twins.First", "Twin"));
       twins.addOrganizes(addFolder("Twins.Second", "Twin"));
+
+      UaFolderNode deadEnd = addFolder("DeadEnd", "DeadEnd");
+      deadEnd.addOrganizes(addFolder("DeadEnd.First", "Twin"));
+      UaFolderNode deadEndSecond = addFolder("DeadEnd.Second", "Twin");
+      deadEnd.addOrganizes(deadEndSecond);
+      deadEndSecond.addOrganizes(addFolder("DeadEnd.Second.Leaf", "Leaf"));
+
+      UaFolderNode both = addFolder("Both", "Both");
+      for (String id : List.of("Both.First", "Both.Second")) {
+        UaFolderNode twin = addFolder(id, "Twin");
+        both.addOrganizes(twin);
+        twin.addOrganizes(addFolder(id + ".Leaf", "Leaf"));
+      }
+
+      UaFolderNode converging = addFolder("Converging", "Converging");
+      UaFolderNode convergingLeaf = addFolder("Converging.Leaf", "Leaf");
+      for (String id : List.of("Converging.First", "Converging.Second")) {
+        UaFolderNode twin = addFolder(id, "Twin");
+        converging.addOrganizes(twin);
+        twin.addOrganizes(convergingLeaf);
+      }
 
       UaFolderNode routing = addFolder("Routing", "Routing");
       routing.addOrganizes(addFolder(RENAMED_CHILD, STORED_NAME));
