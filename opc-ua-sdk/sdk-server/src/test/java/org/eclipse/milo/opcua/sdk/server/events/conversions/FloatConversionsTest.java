@@ -92,7 +92,9 @@ public class FloatConversionsTest extends AbstractConversionTest<Float> {
       case Int64:
         {
           // Int64 holds every finite float below 2^63, so 1e15f must keep its exact value
-          // (999999986991104) instead of saturating at Integer.MAX_VALUE.
+          // (999999986991104) instead of saturating at Integer.MAX_VALUE. (float) Long.MAX_VALUE is
+          // 2^63, one above the largest long, so it must fail like (float) Integer.MAX_VALUE does
+          // for Int32; 9223371487098961920f (2^63 - 2^39) is the largest float that still fits.
           return new Conversion[] {
             c(0.0f, 0L),
             c(0.4f, 0L),
@@ -100,7 +102,12 @@ public class FloatConversionsTest extends AbstractConversionTest<Float> {
             c(3e9f, 3_000_000_000L),
             c(1e15f, 999_999_986_991_104L),
             c((float) Long.MIN_VALUE, Long.MIN_VALUE),
-            c(1e30f, null, targetType)
+            c(9223371487098961920f, 9223371487098961920L),
+            c((float) Long.MAX_VALUE, null, targetType),
+            c(1e30f, null, targetType),
+            c(Float.NaN, null, targetType),
+            c(Float.POSITIVE_INFINITY, null, targetType),
+            c(Float.NEGATIVE_INFINITY, null, targetType)
           };
         }
 
@@ -150,13 +157,28 @@ public class FloatConversionsTest extends AbstractConversionTest<Float> {
 
       case UInt64:
         {
+          // UInt64 reaches 2^64 - 1, so the floats at and above 2^63 must convert instead of
+          // saturating at Long.MAX_VALUE. ulong(long) masks, so 2^63 is the bit pattern
+          // Long.MIN_VALUE and 2^64 - 2^40 (the largest float below 2^64) is -2^40. At the bottom,
+          // -0.5f rounds to 0 and fits, as it does for the other unsigned types, but anything below
+          // it rounds to -1.
           return new Conversion[] {
             c(0.0f, ulong(0)),
             c(0.4f, ulong(0)),
             c(0.5f, ulong(1)),
+            c(-0.4f, ulong(0)),
+            c(-0.5f, ulong(0)),
+            c(Math.nextDown(-0.5f), null, targetType),
             c(3e9f, ulong(3_000_000_000L)),
             c(1e15f, ulong(999_999_986_991_104L)),
-            c(-1.0f, null, targetType)
+            c((float) Long.MAX_VALUE, ulong(Long.MIN_VALUE)),
+            c(18446742974197923840f, ulong(-1_099_511_627_776L)),
+            c(18446744073709551616f, null, targetType),
+            c(Float.MAX_VALUE, null, targetType),
+            c(-1.0f, null, targetType),
+            c(Float.NaN, null, targetType),
+            c(Float.POSITIVE_INFINITY, null, targetType),
+            c(Float.NEGATIVE_INFINITY, null, targetType)
           };
         }
 

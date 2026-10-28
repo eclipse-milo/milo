@@ -85,12 +85,18 @@ public class DoubleConversionsTest extends AbstractConversionTest<Double> {
 
       case Int64:
         {
+          // (double) Long.MAX_VALUE rounds up to 2^63, one above the largest long, so it has to
+          // fail instead of saturating there; 2^63 - 2^10 is the largest double that still fits.
           return new Conversion[] {
             c(0.0, 0L),
             c(Long.MIN_VALUE + 0.0, Long.MIN_VALUE),
-            c(Long.MAX_VALUE + 0.0, Long.MAX_VALUE),
+            c(9223372036854774784.0, 9223372036854774784L),
+            c(Long.MAX_VALUE + 0.0, null, targetType),
             c(-Double.MAX_VALUE, null, targetType),
-            c(Double.MAX_VALUE, null, targetType)
+            c(Double.MAX_VALUE, null, targetType),
+            c(Double.NaN, null, targetType),
+            c(Double.POSITIVE_INFINITY, null, targetType),
+            c(Double.NEGATIVE_INFINITY, null, targetType)
           };
         }
 
@@ -132,10 +138,23 @@ public class DoubleConversionsTest extends AbstractConversionTest<Double> {
 
       case UInt64:
         {
+          // UInt64 reaches 2^64 - 1, so a double at or above 2^63 must keep its value instead of
+          // saturating at Long.MAX_VALUE. ulong(long) masks: 2^63 is the bit pattern Long.MIN_VALUE
+          // and 1.5e19 is that of -3_446_744_073_709_551_616. At the bottom, -0.5 rounds to 0 and
+          // fits, as it does for the other unsigned types, but anything below it rounds to -1.
           return new Conversion[] {
             c(0.0, ulong(0)),
+            c(-0.4, ulong(0)),
+            c(-0.5, ulong(0)),
+            c(Math.nextDown(-0.5), null, targetType),
             c(-1.0, null, targetType),
-            c(Double.MAX_VALUE, ulong(Math.round(Double.MAX_VALUE)))
+            c(9223372036854775808.0, ulong(Long.MIN_VALUE)),
+            c(1.5e19, ulong(-3_446_744_073_709_551_616L)),
+            c(18446744073709551616.0, null, targetType),
+            c(Double.MAX_VALUE, null, targetType),
+            c(Double.NaN, null, targetType),
+            c(Double.POSITIVE_INFINITY, null, targetType),
+            c(Double.NEGATIVE_INFINITY, null, targetType)
           };
         }
 
