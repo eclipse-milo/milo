@@ -159,13 +159,14 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
         Set.copyOf(targetIds(result)));
   }
 
-  // Both "Twin" Nodes lead to the same "Leaf", which is still one target.
+  // Both "Twin" Nodes lead to the same "Leaf". The path must keep going from it, and "End" is
+  // still one target even though both branches reach it.
   @Test
   void targetReachedThroughSeveralIntermediateMatchesIsReturnedOnce() throws UaException {
-    BrowsePathResult result = translate("Converging", "Twin", "Leaf");
+    BrowsePathResult result = translate("Converging", "Twin", "Leaf", "End");
 
     assertEquals(StatusCode.GOOD, result.getStatusCode());
-    assertEquals(List.of(expandedNodeId("Converging.Leaf")), targetIds(result));
+    assertEquals(List.of(expandedNodeId("Converging.Leaf.End")), targetIds(result));
   }
 
   // Following every match must still report Bad_NoMatch when none of them reaches the end.
@@ -313,7 +314,7 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
    * Twins         -> First "Twin", Second "Twin"
    * DeadEnd       -> First "Twin", Second "Twin" -> Leaf
    * Both          -> First "Twin" -> Leaf, Second "Twin" -> Leaf
-   * Converging    -> First "Twin" -> Leaf, Second "Twin" -> (the same Leaf)
+   * Converging    -> First "Twin" -> Leaf -> End, Second "Twin" -> (the same Leaf)
    * Routing       -> Renamed (stores "Stored", serves "Served")
    * </pre>
    *
@@ -376,6 +377,7 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
 
       UaFolderNode converging = addFolder("Converging", "Converging");
       UaFolderNode convergingLeaf = addFolder("Converging.Leaf", "Leaf");
+      convergingLeaf.addOrganizes(addFolder("Converging.Leaf.End", "End"));
       for (String id : List.of("Converging.First", "Converging.Second")) {
         UaFolderNode twin = addFolder(id, "Twin");
         converging.addOrganizes(twin);
