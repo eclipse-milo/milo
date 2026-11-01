@@ -1829,7 +1829,7 @@ public class OpcUaServer extends AbstractServiceHandler {
                   status.getStatusCode(),
                   diagnostic);
 
-      var encoder = new DiagnosticEncoder(returnDiagnostics);
+      var encoder = new DiagnosticEncoder(returnDiagnostics, diagnosticsByteBudget(session));
       DiagnosticInfo serviceDiagnostics = encoder.encode(Level.SERVICE, allowed);
 
       if (serviceDiagnostics == null) {
@@ -1844,6 +1844,26 @@ public class OpcUaServer extends AbstractServiceHandler {
               serviceDiagnostics,
               encoder.stringTable(),
               null));
+    }
+
+    /**
+     * The diagnostics budget for a ServiceFault, sized like that of every other response: an eighth
+     * of the smaller of the server's maximum message size and the Session's MaxResponseMessageSize,
+     * and at most the encoder's default.
+     */
+    private int diagnosticsByteBudget(@Nullable Session session) {
+      long limit = config.getEncodingLimits().getMaxMessageSize();
+
+      UInteger sessionLimit = session != null ? session.getMaxResponseMessageSize() : null;
+      if (sessionLimit != null && sessionLimit.longValue() > 0) {
+        limit = limit > 0 ? Math.min(limit, sessionLimit.longValue()) : sessionLimit.longValue();
+      }
+
+      if (limit > 0) {
+        return (int) Math.min(DiagnosticEncoder.DEFAULT_BYTE_BUDGET, limit / 8);
+      } else {
+        return DiagnosticEncoder.DEFAULT_BYTE_BUDGET;
+      }
     }
 
     private void logServiceRequestCompleted(

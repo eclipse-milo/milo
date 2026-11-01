@@ -278,10 +278,21 @@ public class UascServerSymmetricHandler extends ByteToMessageCodec<UascServiceRe
 
   private void sendServiceFault(
       ChannelHandlerContext ctx, UascServiceResponse response, ByteBuf outBuffer, Throwable fault) {
-    StatusCode statusCode =
-        UaException.extract(fault)
-            .map(UaException::getStatusCode)
-            .orElse(new StatusCode(StatusCodes.Bad_InternalError));
+    StatusCode statusCode;
+
+    if (response.getResponseMessage() instanceof ServiceFault original
+        && original.getResponseHeader().getServiceResult() != null
+        && original.getResponseHeader().getServiceResult().isBad()) {
+      // A ServiceFault that could not be sent, typically because its diagnostics make it too
+      // large, is sent again without them. It keeps the status that explains why the request
+      // failed instead of reporting the encoding failure.
+      statusCode = original.getResponseHeader().getServiceResult();
+    } else {
+      statusCode =
+          UaException.extract(fault)
+              .map(UaException::getStatusCode)
+              .orElse(new StatusCode(StatusCodes.Bad_InternalError));
+    }
 
     var serviceFault =
         new ServiceFault(
