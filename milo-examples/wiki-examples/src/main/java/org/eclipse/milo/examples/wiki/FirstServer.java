@@ -24,6 +24,7 @@ import org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
+import org.eclipse.milo.opcua.stack.core.Diagnostic;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -32,7 +33,6 @@ import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
-import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
@@ -215,8 +215,11 @@ public final class FirstServer {
       // The SDK's type check lets a null value through, so test for a Double here.
       boolean finite = inputs[0].value() instanceof Double delta && Double.isFinite(delta);
       if (!finite) {
-        StatusCode outOfRange = new StatusCode(StatusCodes.Bad_OutOfRange);
-        throw new InvalidArgumentException(new StatusCode[] {outOfRange});
+        Diagnostic reason = Diagnostic.text("Delta must be a finite number");
+
+        throw InvalidArgumentException.builder(inputs.length)
+            .reject(0, StatusCodes.Bad_OutOfRange, reason)
+            .build();
       }
     }
 
@@ -232,7 +235,9 @@ public final class FirstServer {
 
         boolean inRange = adjusted >= 0.0 && adjusted <= 100.0;
         if (!inRange) {
-          throw new UaException(StatusCodes.Bad_OutOfRange);
+          Diagnostic reason = Diagnostic.text("Setpoint must stay between 0.0 and 100.0");
+
+          throw new UaException(StatusCodes.Bad_OutOfRange, "setpoint " + adjusted, reason);
         }
 
         setpoint.setValue(new DataValue(new Variant(adjusted)));

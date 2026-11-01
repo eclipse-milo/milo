@@ -29,6 +29,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.sdk.client.DiscoveryClient;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
+import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.ManagedNamespaceWithLifecycle;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
@@ -42,6 +43,9 @@ import org.eclipse.milo.opcua.sdk.server.conditions.ExclusiveLimitAlarm;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
+import org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException;
+import org.eclipse.milo.opcua.sdk.server.methods.MethodResult;
 import org.eclipse.milo.opcua.sdk.server.model.objects.BaseEventTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
@@ -51,6 +55,7 @@ import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterContext;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationRequest;
 import org.eclipse.milo.opcua.sdk.server.nodes.instantiation.InstantiationResult;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.Diagnostic;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -70,11 +75,13 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.jspecify.annotations.Nullable;
@@ -105,7 +112,10 @@ public final class ServerSnippets {
                     throw new UaException(StatusCodes.Bad_TypeMismatch);
                   }
                   if (!Double.isFinite(newSetpoint) || newSetpoint < 0.0 || newSetpoint > 100.0) {
-                    throw new UaException(StatusCodes.Bad_OutOfRange);
+                    Diagnostic reason = Diagnostic.text("Setpoint must be between 0.0 and 100.0");
+
+                    throw new UaException(
+                        StatusCodes.Bad_OutOfRange, "rejected setpoint " + newSetpoint, reason);
                   }
                 }
 
@@ -113,6 +123,80 @@ public final class ServerSnippets {
               }
             });
     // snippet:data-filter:end
+  }
+
+  /** AdjustSetpoint, clamping the new setpoint to 0.0 through 100.0 instead of refusing. */
+  static final class ClampingAdjustSetpointHandler extends AbstractMethodInvocationHandler {
+
+    private static final Argument DELTA =
+        new Argument(
+            "Delta",
+            NodeIds.Double,
+            ValueRanks.Scalar,
+            null,
+            LocalizedText.english("The amount to add to the setpoint."));
+
+    private static final Argument NEW_SETPOINT =
+        new Argument(
+            "Setpoint",
+            NodeIds.Double,
+            ValueRanks.Scalar,
+            null,
+            LocalizedText.english("The setpoint after the adjustment."));
+
+    private final UaVariableNode setpoint;
+
+    ClampingAdjustSetpointHandler(UaMethodNode node, UaVariableNode setpoint) {
+      super(node);
+      this.setpoint = setpoint;
+    }
+
+    @Override
+    public Argument[] getInputArguments() {
+      return new Argument[] {DELTA};
+    }
+
+    @Override
+    public Argument[] getOutputArguments() {
+      return new Argument[] {NEW_SETPOINT};
+    }
+
+    @Override
+    protected void validateInputArgumentValues(Variant[] inputs) throws InvalidArgumentException {
+      boolean finite = inputs[0].value() instanceof Double delta && Double.isFinite(delta);
+      if (!finite) {
+        Diagnostic reason = Diagnostic.text("Delta must be a finite number");
+
+        throw InvalidArgumentException.builder(inputs.length)
+            .reject(0, StatusCodes.Bad_OutOfRange, reason)
+            .build();
+      }
+    }
+
+    // snippet:method-result:start
+    @Override
+    protected MethodResult invokeResult(InvocationContext context, Variant[] inputs) {
+      double delta = (Double) inputs[0].value();
+
+      synchronized (setpoint) {
+        double current = (Double) setpoint.getValue().value().value();
+        double requested = current + delta;
+        double adjusted = Math.max(0.0, Math.min(100.0, requested));
+
+        setpoint.setValue(new DataValue(new Variant(adjusted)));
+
+        Variant newSetpoint = new Variant(adjusted);
+        if (adjusted == requested) {
+          return MethodResult.good(newSetpoint);
+        }
+
+        StatusCode clamped = new StatusCode(StatusCodes.Good_Clamped);
+        Diagnostic reason = Diagnostic.text("Setpoint clamped to " + adjusted);
+
+        return MethodResult.good(clamped, newSetpoint).withDiagnostic(reason);
+      }
+    }
+    // snippet:method-result:end
   }
 
   // snippet:event:start
