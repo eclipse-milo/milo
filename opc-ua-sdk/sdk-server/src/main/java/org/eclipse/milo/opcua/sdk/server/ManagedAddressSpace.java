@@ -342,6 +342,8 @@ public abstract class ManagedAddressSpace implements AddressSpace {
 
     var results = new ArrayList<DataValue>(readValueIds.size());
 
+    OperationDiagnostics<ReadValueId> diagnostics = context.getOperationDiagnostics();
+
     for (ReadValueId readValueId : readValueIds) {
       UaServerNode node = nodeManager.get(readValueId.getNodeId());
 
@@ -353,7 +355,8 @@ public abstract class ManagedAddressSpace implements AddressSpace {
                 readValueId.getAttributeId(),
                 timestamps,
                 readValueId.getIndexRange(),
-                readValueId.getDataEncoding());
+                readValueId.getDataEncoding(),
+                diagnostic -> diagnostics.report(readValueId, diagnostic));
 
         if (logger.isDebugEnabled()) {
           logger.debug(
@@ -379,6 +382,8 @@ public abstract class ManagedAddressSpace implements AddressSpace {
 
     var results = new ArrayList<StatusCode>(writeValues.size());
 
+    OperationDiagnostics<WriteValue> diagnostics = context.getOperationDiagnostics();
+
     for (WriteValue writeValue : writeValues) {
       UaServerNode node = nodeManager.get(writeValue.getNodeId());
 
@@ -389,7 +394,8 @@ public abstract class ManagedAddressSpace implements AddressSpace {
                 node,
                 writeValue.getAttributeId(),
                 writeValue.getValue(),
-                writeValue.getIndexRange());
+                writeValue.getIndexRange(),
+                diagnostic -> diagnostics.report(writeValue, diagnostic));
 
         results.add(result);
 
@@ -429,6 +435,10 @@ public abstract class ManagedAddressSpace implements AddressSpace {
 
           results.add(handler.invoke(context, request));
         } catch (UaException e) {
+          e.getDiagnostic()
+              .ifPresent(
+                  diagnostic -> context.getOperationDiagnostics().report(request, diagnostic));
+
           results.add(
               new CallMethodResult(
                   e.getStatusCode(), new StatusCode[0], new DiagnosticInfo[0], new Variant[0]));

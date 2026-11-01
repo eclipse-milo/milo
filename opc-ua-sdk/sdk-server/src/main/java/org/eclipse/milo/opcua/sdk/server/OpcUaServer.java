@@ -76,12 +76,17 @@ import org.eclipse.milo.opcua.sdk.server.typetree.DataTypeTreeBuilder;
 import org.eclipse.milo.opcua.sdk.server.typetree.ObjectTypeTreeBuilder;
 import org.eclipse.milo.opcua.sdk.server.typetree.ReferenceTypeTreeBuilder;
 import org.eclipse.milo.opcua.sdk.server.typetree.VariableTypeTreeBuilder;
+import org.eclipse.milo.opcua.stack.core.Diagnostic;
+import org.eclipse.milo.opcua.stack.core.DiagnosticEncoder;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.ReturnDiagnostics;
+import org.eclipse.milo.opcua.stack.core.ReturnDiagnostics.Level;
 import org.eclipse.milo.opcua.stack.core.ServerTable;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.UaExceptionStatus;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
@@ -106,6 +111,7 @@ import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
@@ -113,10 +119,12 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
+import org.eclipse.milo.opcua.stack.core.types.structured.ResponseHeader;
+import org.eclipse.milo.opcua.stack.core.types.structured.ServiceFault;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
-import org.eclipse.milo.opcua.stack.core.util.FutureUtils;
 import org.eclipse.milo.opcua.stack.core.util.Lazy;
 import org.eclipse.milo.opcua.stack.core.util.LongSequence;
 import org.eclipse.milo.opcua.stack.core.util.ManifestUtil;
@@ -1711,26 +1719,27 @@ public class OpcUaServer extends AbstractServiceHandler {
         }
 
         if (serviceHandler instanceof AsyncServiceHandler asyncServiceHandler) {
-          CompletableFuture<UaResponseMessageType> response =
-              asyncServiceHandler
-                  .handleAsync(context, requestMessage)
-                  .whenComplete(
-                      (r, ex) -> {
-                        if (ex != null) {
-                          logger.debug(
-                              "Service request completed exceptionally: path={} handle={}"
-                                  + " service={} remote={}",
-                              path,
-                              requestMessage.getRequestHeader().getRequestHandle(),
-                              service,
-                              context.getChannel().remoteAddress(),
-                              ex);
-                        } else {
-                          logServiceRequestCompleted(path, requestMessage, service, context);
-                        }
-                      });
+          asyncServiceHandler
+              .handleAsync(context, requestMessage)
+              .whenComplete(
+                  (r, ex) -> {
+                    if (ex != null) {
+                      logger.debug(
+                          "Service request completed exceptionally: path={} handle={}"
+                              + " service={} remote={}",
+                          path,
+                          requestMessage.getRequestHeader().getRequestHandle(),
+                          service,
+                          context.getChannel().remoteAddress(),
+                          ex);
 
-          FutureUtils.complete(future).with(response);
+                      fail(future, context, requestMessage, service, ex);
+                    } else {
+                      logServiceRequestCompleted(path, requestMessage, service, context);
+
+                      future.complete(r);
+                    }
+                  });
         } else {
           try {
             UaResponseMessageType response = serviceHandler.handle(context, requestMessage);
@@ -1747,13 +1756,113 @@ public class OpcUaServer extends AbstractServiceHandler {
                 context.getChannel().remoteAddress(),
                 e);
 
-            future.completeExceptionally(e);
+            fail(future, context, requestMessage, service, e);
           }
         }
       } else {
         logger.warn("No ServiceHandler registered for path={} service={}", path, service);
 
         future.completeExceptionally(new UaException(StatusCodes.Bad_NotImplemented));
+      }
+    }
+
+    /**
+     * Complete {@code future} for a failed request: with a ServiceFault carrying the failure's
+     * service-level diagnostic when the request asked for one and the {@link DiagnosticsPolicy}
+     * allows it, otherwise exceptionally, leaving the transport to build a bare ServiceFault.
+     */
+    private void fail(
+        CompletableFuture<UaResponseMessageType> future,
+        ServiceRequestContext context,
+        UaRequestMessageType requestMessage,
+        Service service,
+        Throwable failure) {
+
+      ServiceFault serviceFault = null;
+      try {
+        serviceFault = serviceFaultWithDiagnostics(context, requestMessage, service, failure);
+      } catch (Throwable t) {
+        // Diagnostics are best effort; the request must still be answered.
+        logger.warn("Failed to build a ServiceFault with diagnostics; sending none", t);
+      }
+
+      if (serviceFault != null) {
+        future.complete(serviceFault);
+      } else {
+        future.completeExceptionally(failure);
+      }
+    }
+
+    private @Nullable ServiceFault serviceFaultWithDiagnostics(
+        ServiceRequestContext context,
+        UaRequestMessageType requestMessage,
+        Service service,
+        Throwable failure) {
+
+      RequestHeader requestHeader = requestMessage.getRequestHeader();
+      ReturnDiagnostics returnDiagnostics =
+          ReturnDiagnostics.decode(requestHeader.getReturnDiagnostics());
+
+      if (!returnDiagnostics.isRequested(Level.SERVICE)) {
+        return null;
+      }
+
+      UaExceptionStatus status = UaExceptionStatus.extract(failure).orElse(null);
+      Diagnostic diagnostic = status != null ? status.getDiagnostic().orElse(null) : null;
+
+      if (status == null || diagnostic == null) {
+        return null;
+      }
+
+      Session session =
+          isDiscoveryService(requestMessage)
+                  || service == Service.SESSION_CREATE_SESSION
+                  || service == Service.SESSION_ACTIVATE_SESSION
+              ? null
+              : sessionManager.findActivatedSession(context, requestHeader);
+
+      Diagnostic allowed =
+          config
+              .getDiagnosticsPolicy()
+              .filter(
+                  new DiagnosticsRequest(session, service, Level.SERVICE),
+                  status.getStatusCode(),
+                  diagnostic);
+
+      var encoder = new DiagnosticEncoder(returnDiagnostics, diagnosticsByteBudget(session));
+      DiagnosticInfo serviceDiagnostics = encoder.encode(Level.SERVICE, allowed);
+
+      if (serviceDiagnostics == null) {
+        return null;
+      }
+
+      return new ServiceFault(
+          new ResponseHeader(
+              DateTime.now(),
+              requestHeader.getRequestHandle(),
+              status.getStatusCode(),
+              serviceDiagnostics,
+              encoder.stringTable(),
+              null));
+    }
+
+    /**
+     * The diagnostics budget for a ServiceFault, sized like that of every other response: an eighth
+     * of the smaller of the server's maximum message size and the Session's MaxResponseMessageSize,
+     * and at most the encoder's default.
+     */
+    private int diagnosticsByteBudget(@Nullable Session session) {
+      long limit = config.getEncodingLimits().getMaxMessageSize();
+
+      UInteger sessionLimit = session != null ? session.getMaxResponseMessageSize() : null;
+      if (sessionLimit != null && sessionLimit.longValue() > 0) {
+        limit = limit > 0 ? Math.min(limit, sessionLimit.longValue()) : sessionLimit.longValue();
+      }
+
+      if (limit > 0) {
+        return (int) Math.min(DiagnosticEncoder.DEFAULT_BYTE_BUDGET, limit / 8);
+      } else {
+        return DiagnosticEncoder.DEFAULT_BYTE_BUDGET;
       }
     }
 

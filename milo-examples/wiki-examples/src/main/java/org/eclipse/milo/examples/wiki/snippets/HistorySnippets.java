@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
-import org.eclipse.milo.opcua.sdk.server.DiagnosticsContext;
 import org.eclipse.milo.opcua.sdk.server.ManagedNamespaceWithLifecycle;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
@@ -29,6 +28,7 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
@@ -182,9 +182,10 @@ public final class HistorySnippets {
           results[i] = namespace.release(session, nodes[i]);
         }
 
-        var diagnostics = new DiagnosticsContext<HistoryReadValueId>();
-        return new HistoryReadResponse(
-            createResponseHeader(request), results, diagnostics.getDiagnosticInfos(nodes));
+        // Releasing continuation points reports no per-operation diagnostics.
+        DiagnosticInfo[] diagnosticInfos = new DiagnosticInfo[0];
+
+        return new HistoryReadResponse(createResponseHeader(request), results, diagnosticInfos);
       } catch (UaException e) {
         session.getSessionDiagnostics().getHistoryReadCount().incrementErrorCount();
         session.getSessionDiagnostics().getTotalRequestCount().incrementErrorCount();

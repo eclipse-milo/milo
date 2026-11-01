@@ -16,11 +16,13 @@ import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
 import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
+import org.eclipse.milo.opcua.stack.core.ReturnDiagnostics;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
 import org.eclipse.milo.opcua.stack.core.security.CertificateGroup;
@@ -74,6 +76,8 @@ public class OpcUaClientConfigBuilder {
   private @Nullable SecurityKeysListener securityKeysListener;
 
   private @Nullable Function<OperationLimit, Optional<UInteger>> operationLimitOverrides;
+
+  private ReturnDiagnostics returnDiagnostics = ReturnDiagnostics.NONE;
 
   public OpcUaClientConfigBuilder setApplicationName(LocalizedText applicationName) {
     this.applicationName = applicationName;
@@ -354,6 +358,31 @@ public class OpcUaClientConfigBuilder {
     return this;
   }
 
+  /**
+   * Set the diagnostics the client asks servers to return with each request it creates.
+   *
+   * <p>The default, {@link ReturnDiagnostics#NONE}, asks for none. A server returns only what was
+   * asked for, and only what its policy allows. Service-level diagnostics explain faults, and reach
+   * application code through {@code UaException#getDiagnostic()}; operation-level diagnostics are
+   * resolved from raw responses with {@code ResponseDiagnostics}.
+   *
+   * <pre>{@code
+   * OpcUaClientConfig config =
+   *     OpcUaClientConfig.builder()
+   *         .setEndpoint(endpoint)
+   *         .setReturnDiagnostics(
+   *             ReturnDiagnostics.of(Field.SYMBOLIC_ID, Field.LOCALIZED_TEXT))
+   *         .build();
+   * }</pre>
+   *
+   * @param returnDiagnostics the diagnostics to request.
+   * @return this builder.
+   */
+  public OpcUaClientConfigBuilder setReturnDiagnostics(ReturnDiagnostics returnDiagnostics) {
+    this.returnDiagnostics = Objects.requireNonNull(returnDiagnostics, "returnDiagnostics");
+    return this;
+  }
+
   public OpcUaClientConfig build() {
     if (sessionName == null) {
       sessionName =
@@ -406,7 +435,8 @@ public class OpcUaClientConfigBuilder {
         keepAliveTimeout,
         sessionEndpointValidationEnabled,
         securityKeysListener,
-        operationLimitOverrides);
+        operationLimitOverrides,
+        returnDiagnostics);
   }
 
   static class OpcUaClientConfigImpl implements OpcUaClientConfig {
@@ -436,6 +466,7 @@ public class OpcUaClientConfigBuilder {
     private final boolean sessionEndpointValidationEnabled;
     private final @Nullable SecurityKeysListener securityKeysListener;
     private final @Nullable Function<OperationLimit, Optional<UInteger>> operationLimitOverrides;
+    private final ReturnDiagnostics returnDiagnostics;
 
     OpcUaClientConfigImpl(
         EndpointDescription endpoint,
@@ -461,7 +492,8 @@ public class OpcUaClientConfigBuilder {
         UInteger keepAliveTimeout,
         boolean sessionEndpointValidationEnabled,
         @Nullable SecurityKeysListener securityKeysListener,
-        @Nullable Function<OperationLimit, Optional<UInteger>> operationLimitOverrides) {
+        @Nullable Function<OperationLimit, Optional<UInteger>> operationLimitOverrides,
+        ReturnDiagnostics returnDiagnostics) {
 
       this.endpoint = endpoint;
       this.discoveryEndpoints = discoveryEndpoints;
@@ -487,6 +519,7 @@ public class OpcUaClientConfigBuilder {
       this.sessionEndpointValidationEnabled = sessionEndpointValidationEnabled;
       this.securityKeysListener = securityKeysListener;
       this.operationLimitOverrides = operationLimitOverrides;
+      this.returnDiagnostics = returnDiagnostics;
     }
 
     @Override
@@ -607,6 +640,11 @@ public class OpcUaClientConfigBuilder {
     @Override
     public Optional<Function<OperationLimit, Optional<UInteger>>> getOperationLimitOverrides() {
       return Optional.ofNullable(operationLimitOverrides);
+    }
+
+    @Override
+    public ReturnDiagnostics getReturnDiagnostics() {
+      return returnDiagnostics;
     }
   }
 }

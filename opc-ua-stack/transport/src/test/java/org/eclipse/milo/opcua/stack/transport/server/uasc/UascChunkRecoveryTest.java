@@ -15,6 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.buffer.ByteBuf;
@@ -54,6 +55,7 @@ import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -121,6 +123,40 @@ class UascChunkRecoveryTest {
           decodeResponse(decoder, fixture.client, outbound(channel))
               .getResponseHeader()
               .getServiceResult());
+    } finally {
+      channel.finishAndReleaseAll();
+    }
+  }
+
+  // A ServiceFault made too large by its diagnostics must still tell the client why its request
+  // failed. Answering with the encoding failure instead would replace the original status.
+  @Test
+  void oversizedServiceFaultIsSentAgainWithItsOwnStatus() throws Exception {
+    var fixture = new Fixture(SecurityPolicy.None);
+    var encoder = new ChunkEncoder(PARAMETERS);
+    var decoder = new ChunkDecoder(PARAMETERS, EncodingLimits.DEFAULT);
+    startAfterOpen(encoder, decoder, SecurityPolicy.None);
+    EmbeddedChannel channel =
+        fixture.symmetricChannel(encoder, new ChunkDecoder(PARAMETERS, EncodingLimits.DEFAULT));
+    try {
+      var unavailable = new StatusCode(StatusCodes.Bad_ResourceUnavailable);
+      var fault =
+          new ServiceFault(
+              new ResponseHeader(
+                  DateTime.now(),
+                  uint(1),
+                  unavailable,
+                  new DiagnosticInfo(-1, -1, -1, 0, null, null, null),
+                  new String[] {"x".repeat(9000)},
+                  null));
+
+      channel.writeOutbound(new UascServiceResponse(fault, 1));
+      UaResponseMessageType sent = decodeResponse(decoder, fixture.client, outbound(channel));
+
+      assertInstanceOf(ServiceFault.class, sent);
+      assertEquals(unavailable, sent.getResponseHeader().getServiceResult());
+      assertNull(sent.getResponseHeader().getStringTable(), "sent again without diagnostics");
+      assertTrue(channel.isOpen());
     } finally {
       channel.finishAndReleaseAll();
     }

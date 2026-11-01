@@ -18,11 +18,16 @@ import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.client.nodes.UaObjectNode;
+import org.eclipse.milo.opcua.stack.core.Diagnostic;
+import org.eclipse.milo.opcua.stack.core.ResponseDiagnostics;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.structured.Argument;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
+import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
+import org.eclipse.milo.opcua.stack.core.types.structured.CallResponse;
 
 /** A callable method belonging to an ObjectNode. */
 public class UaMethod {
@@ -103,6 +108,7 @@ public class UaMethod {
         throw new UaMethodException(
             mx.getCause(),
             mx.getStatusCode(),
+            mx.getDiagnostic().orElse(null),
             mx.getInputArgumentResults(),
             mx.getInputArgumentDiagnostics());
       } else {
@@ -125,20 +131,40 @@ public class UaMethod {
 
     return client
         .callAsync(List.of(request))
-        .thenApply(response -> requireNonNull(response.getResults())[0])
         .thenCompose(
-            result -> {
+            response -> {
+              CallMethodResult result = requireNonNull(response.getResults())[0];
               StatusCode statusCode = result.getStatusCode();
 
               if (statusCode.isGood()) {
                 return CompletableFuture.completedFuture(result.getOutputArguments());
               } else {
-                return CompletableFuture.failedFuture(
-                    new UaMethodException(
-                        statusCode,
-                        result.getInputArgumentResults(),
-                        result.getInputArgumentDiagnosticInfos()));
+                return CompletableFuture.failedFuture(methodException(response, result));
               }
             });
+  }
+
+  /**
+   * Create the {@link UaMethodException} for the first operation of {@code response}, with its
+   * diagnostics resolved against the response's string table.
+   *
+   * @param response the {@link CallResponse} for a single-operation request.
+   * @param result the first operation's result.
+   * @return the {@link UaMethodException} for {@code result}.
+   */
+  static UaMethodException methodException(CallResponse response, CallMethodResult result) {
+    ResponseDiagnostics diagnostics = ResponseDiagnostics.of(response.getResponseHeader());
+
+    DiagnosticInfo[] operationDiagnostics = response.getDiagnosticInfos();
+    Diagnostic diagnostic =
+        operationDiagnostics != null && operationDiagnostics.length > 0
+            ? diagnostics.resolve(operationDiagnostics[0])
+            : null;
+
+    return new UaMethodException(
+        result.getStatusCode(),
+        diagnostic,
+        result.getInputArgumentResults(),
+        diagnostics.resolve(result.getInputArgumentDiagnosticInfos()));
   }
 }

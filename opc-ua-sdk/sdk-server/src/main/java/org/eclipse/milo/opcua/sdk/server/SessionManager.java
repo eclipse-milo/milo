@@ -232,6 +232,28 @@ public class SessionManager {
     }
   }
 
+  /**
+   * Find the activated Session a request belongs to, without the side effects of {@link
+   * #getSession}: no Session is closed, no counter changes, and no activity is recorded.
+   *
+   * @param context the context of the request.
+   * @param requestHeader the header of the request.
+   * @return the activated Session bound to the request's secure channel, or {@code null}.
+   */
+  @Nullable Session findActivatedSession(
+      ServiceRequestContext context, RequestHeader requestHeader) {
+
+    NodeId authToken = requestHeader.getAuthenticationToken();
+    Session session = authToken != null ? activeSessions.get(authToken) : null;
+
+    if (session != null
+        && session.getSecureChannelId() == context.getSecureChannel().getChannelId()) {
+      return session;
+    } else {
+      return null;
+    }
+  }
+
   public CreateSessionResponse createSession(
       ServiceRequestContext context, CreateSessionRequest request) throws UaException {
 

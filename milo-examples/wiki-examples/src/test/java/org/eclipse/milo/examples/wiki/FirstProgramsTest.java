@@ -11,6 +11,7 @@
 package org.eclipse.milo.examples.wiki;
 
 import static java.util.Objects.requireNonNull;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,7 +25,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
+import org.eclipse.milo.opcua.stack.core.Diagnostic;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.ResponseDiagnostics;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -36,8 +39,10 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
+import org.eclipse.milo.opcua.stack.core.types.structured.CallRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -198,6 +203,30 @@ class FirstProgramsTest {
         result.getInputArgumentResults());
   }
 
+  // A client that asks for operation-level localized text learns why AdjustSetpoint refused;
+  // the tutorial pages quote these texts.
+  @Test
+  void adjustSetpointExplainsItsRefusalsWhenAsked() throws Exception {
+    setSetpoint(22.0);
+
+    CallResponse response =
+        callWithLocalizedText(
+            new CallMethodRequest(
+                thermostatId, adjustSetpointId, new Variant[] {new Variant(78.5)}),
+            new CallMethodRequest(
+                thermostatId, adjustSetpointId, new Variant[] {new Variant(Double.NaN)}));
+
+    ResponseDiagnostics diagnostics = ResponseDiagnostics.of(response.getResponseHeader());
+    CallMethodResult invalidDelta = response.getResults()[1];
+
+    assertEquals(
+        Diagnostic.text("Setpoint must stay between 0.0 and 100.0"),
+        diagnostics.resolve(response.getDiagnosticInfos()).get(0));
+    assertEquals(
+        List.of(Diagnostic.text("Delta must be a finite number")),
+        diagnostics.resolve(invalidDelta.getInputArgumentDiagnosticInfos()));
+  }
+
   static Stream<Variant> nonFiniteOrNullDeltas() {
     return Stream.of(
         new Variant(Double.NaN),
@@ -248,6 +277,26 @@ class FirstProgramsTest {
     StatusCode status = write(setpointId, new Variant(value));
 
     assertEquals(StatusCode.GOOD, status, "set Setpoint before the call");
+  }
+
+  /** Call with returnDiagnostics 0x040: operation-level localized text only. */
+  private static CallResponse callWithLocalizedText(CallMethodRequest... requests)
+      throws Exception {
+
+    NodeId authToken = client.getSessionAsync().get(10, TimeUnit.SECONDS).getAuthenticationToken();
+    RequestHeader base = client.newRequestHeader(authToken);
+
+    var header =
+        new RequestHeader(
+            base.getAuthenticationToken(),
+            base.getTimestamp(),
+            base.getRequestHandle(),
+            uint(0x040),
+            base.getAuditEntryId(),
+            base.getTimeoutHint(),
+            base.getAdditionalHeader());
+
+    return (CallResponse) client.sendRequest(new CallRequest(header, requests));
   }
 
   private static CallMethodResult callAdjustSetpoint(Variant delta) throws UaException {

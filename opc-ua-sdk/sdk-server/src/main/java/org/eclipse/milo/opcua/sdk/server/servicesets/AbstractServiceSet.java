@@ -12,7 +12,6 @@ package org.eclipse.milo.opcua.sdk.server.servicesets;
 
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.ResponseHeader;
@@ -37,27 +36,12 @@ public abstract class AbstractServiceSet {
       UaRequestMessageType request,
       StatusCode serviceResult,
       @Nullable ExtensionObject additionalHeader) {
-    return createResponseHeader(request, serviceResult, null, additionalHeader);
-  }
-
-  public static ResponseHeader createResponseHeader(
-      UaRequestMessageType request,
-      StatusCode serviceResult,
-      String @Nullable [] stringTable,
-      @Nullable ExtensionObject additionalHeader) {
     return new ResponseHeader(
         DateTime.now(),
         request.getRequestHeader().getRequestHandle(),
         serviceResult,
         null,
-        stringTable,
+        null,
         additionalHeader);
-  }
-
-  @SuppressWarnings("unused")
-  public static ResponseHeader createResponseHeader(
-      UaRequestMessageType request, DiagnosticInfo[] diagnosticInfos) {
-    // TODO use DiagnosticInfo to create crazy header...
-    return createResponseHeader(request, StatusCode.GOOD);
   }
 }

@@ -10,24 +10,22 @@
 
 package org.eclipse.milo.opcua.sdk.server.servicesets.impl;
 
-import static java.util.Objects.requireNonNullElse;
 import static org.eclipse.milo.opcua.sdk.core.util.GroupMapCollate.groupMapCollate;
-import static org.eclipse.milo.opcua.sdk.server.servicesets.AbstractServiceSet.createResponseHeader;
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.CallContext;
-import org.eclipse.milo.opcua.sdk.server.DiagnosticsContext;
+import org.eclipse.milo.opcua.sdk.server.CallOperationDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.servicesets.MethodServiceSet;
+import org.eclipse.milo.opcua.sdk.server.servicesets.Service;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
-import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallRequest;
@@ -77,10 +75,10 @@ public class DefaultMethodServiceSet implements MethodServiceSet {
     Map<CallMethodRequest, AccessResult> accessResults =
         server.getAccessController().checkCallAccess(session, methodsToCall);
 
-    // One context for the whole request, so handlers in every group share a string table.
-    var diagnosticsContext =
-        new DiagnosticsContext<CallMethodRequest>(
-            requireNonNullElse(request.getRequestHeader().getReturnDiagnostics(), uint(0)));
+    ServiceDiagnostics diagnostics =
+        ServiceDiagnostics.create(server, session, Service.METHOD_CALL, request);
+
+    CallOperationDiagnostics operationDiagnostics = diagnostics.collectCall(methodsToCall);
 
     List<CallMethodResult> results =
         groupMapCollate(
@@ -96,7 +94,7 @@ public class DefaultMethodServiceSet implements MethodServiceSet {
                         new CallContext(
                             server,
                             session,
-                            diagnosticsContext,
+                            operationDiagnostics,
                             request.getRequestHeader().getAuditEntryId(),
                             request.getRequestHeader().getTimeoutHint(),
                             request.getRequestHeader().getAdditionalHeader());
@@ -105,17 +103,20 @@ public class DefaultMethodServiceSet implements MethodServiceSet {
                   }
                 });
 
-    MethodDiagnostics.Normalized normalized =
-        MethodDiagnostics.normalize(
-            diagnosticsContext.getReturnDiagnostics(),
+    CallMethodResult[] normalized =
+        NestedDiagnostics.normalizeCallResults(
+            diagnostics,
+            operationDiagnostics,
             methodsToCall,
             results,
-            diagnosticsContext.getStringTable(),
             server.getConfig().getEncodingLimits().getMaxRecursionDepth());
 
-    ResponseHeader header =
-        createResponseHeader(request, StatusCode.GOOD, normalized.stringTable(), null);
+    DiagnosticInfo[] diagnosticInfos =
+        diagnostics.encodeOperations(
+            operationDiagnostics, Arrays.asList(normalized), CallMethodResult::getStatusCode);
 
-    return new CallResponse(header, normalized.results(), new DiagnosticInfo[0]);
+    ResponseHeader header = diagnostics.responseHeader(request);
+
+    return new CallResponse(header, normalized, diagnosticInfos);
   }
 }

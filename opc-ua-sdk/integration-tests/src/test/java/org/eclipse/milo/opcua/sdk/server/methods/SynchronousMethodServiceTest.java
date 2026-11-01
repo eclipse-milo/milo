@@ -12,13 +12,13 @@ package org.eclipse.milo.opcua.sdk.server.methods;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfigBuilder;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
 import org.eclipse.milo.opcua.sdk.client.identity.UsernameProvider;
-import org.eclipse.milo.opcua.sdk.server.DiagnosticsContext;
 import org.eclipse.milo.opcua.sdk.server.ManagedNamespaceWithLifecycle;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
@@ -26,8 +26,11 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaObjectNode;
 import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.sdk.test.TestNamespace;
+import org.eclipse.milo.opcua.stack.core.Diagnostic;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.ResponseDiagnostics;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.structured.*;
 import org.junit.jupiter.api.AfterAll;
@@ -36,6 +39,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class SynchronousMethodServiceTest extends AbstractClientServerTest {
+  private static final Diagnostic EXPLANATION =
+      Diagnostic.symbolic("urn:eclipse:milo:test:device", "E_FAILED")
+          .withText("The device rejected the command");
+
   private DiagnosticNamespace first;
   private DiagnosticNamespace second;
 
@@ -60,7 +67,7 @@ class SynchronousMethodServiceTest extends AbstractClientServerTest {
 
   // The request crosses two namespace dispatch groups and one denied access group.
   @Test
-  void authenticatedCallSharesDiagnosticTableAcrossGroupsAndRetainsDeniedPosition()
+  void authenticatedCallReturnsArgumentDiagnosticsAcrossGroupsAndRetainsDeniedPosition()
       throws Exception {
     int deniedBefore = first.deniedCalls.get();
     CallResponse response =
@@ -78,14 +85,13 @@ class SynchronousMethodServiceTest extends AbstractClientServerTest {
       assertEquals(new StatusCode(StatusCodes.Bad_InvalidArgument), result.getStatusCode());
       assertEquals(1, result.getInputArgumentDiagnosticInfos().length);
       DiagnosticInfo info = result.getInputArgumentDiagnosticInfos()[0];
-      String[] table = response.getResponseHeader().getStringTable();
-      assertEquals("urn:vendor", table[info.namespaceUri()]);
-      assertEquals("range", table[info.symbolicId()]);
-      assertEquals("en", table[info.locale()]);
-      assertEquals("outside range", table[info.localizedText()]);
-      assertEquals("argument", info.additionalInfo());
+      assertEquals(
+          new DiagnosticInfo(
+              -1, -1, -1, -1, "argument", new StatusCode(StatusCodes.Bad_OutOfRange), null),
+          info);
     }
-    assertEquals(4, response.getResponseHeader().getStringTable().length);
+    String[] table = response.getResponseHeader().getStringTable();
+    assertTrue(table == null || table.length == 0);
     assertTrue(response.getDiagnosticInfos() == null || response.getDiagnosticInfos().length == 0);
     assertTrue(
         response.getResponseHeader().getServiceDiagnostics() == null
@@ -126,6 +132,25 @@ class SynchronousMethodServiceTest extends AbstractClientServerTest {
         new Variant[] {new Variant("label")}, response.getResults()[2].getOutputArguments());
     assertEquals(
         new StatusCode(StatusCodes.Bad_InvalidArgument), response.getResults()[3].getStatusCode());
+  }
+
+  // Part 4 §5.12.2.2: CallResponse.diagnosticInfos explains each operation's status. The
+  // diagnostic of a UaException thrown from a handler reaches the client resolved through the
+  // response's string table.
+  @Test
+  void thrownDiagnosticExplainsTheOperation() throws Exception {
+    CallResponse response =
+        call(
+            0x3e0,
+            first.request("optional", new Variant("label")),
+            first.request("explained", Variant.NULL_VALUE));
+
+    assertEquals(
+        new StatusCode(StatusCodes.Bad_DeviceFailure), response.getResults()[1].getStatusCode());
+    assertEquals(
+        Arrays.asList(null, EXPLANATION),
+        ResponseDiagnostics.of(response.getResponseHeader())
+            .resolve(response.getDiagnosticInfos()));
   }
 
   @Test
@@ -173,7 +198,7 @@ class SynchronousMethodServiceTest extends AbstractClientServerTest {
               .setBrowseName(newQualifiedName("owner"))
               .setDisplayName(LocalizedText.english("owner"))
               .buildAndAdd();
-      for (String name : List.of("diagnostic", "denied", "malformed", "optional")) {
+      for (String name : List.of("diagnostic", "denied", "malformed", "optional", "explained")) {
         UaMethodNode method =
             UaMethodNode.builder(getNodeContext())
                 .setNodeId(newNodeId(name))
@@ -193,6 +218,19 @@ class SynchronousMethodServiceTest extends AbstractClientServerTest {
                 : new Argument[0];
         method.setInputArguments(inputs);
         method.setOutputArguments(outputs);
+
+        if (name.equals("malformed")) {
+          // A raw handler builds wire diagnostics itself; it cannot know the string table.
+          method.setInvocationHandler(
+              (context, request) ->
+                  new CallMethodResult(
+                      new StatusCode(StatusCodes.Bad_InvalidArgument),
+                      new StatusCode[] {new StatusCode(StatusCodes.Bad_OutOfRange)},
+                      new DiagnosticInfo[] {new DiagnosticInfo(-1, 999, -1, -1, null, null, null)},
+                      new Variant[0]));
+          continue;
+        }
+
         method.setInvocationHandler(
             new AbstractMethodInvocationHandler(method) {
               public Argument[] getInputArguments() {
@@ -207,34 +245,30 @@ class SynchronousMethodServiceTest extends AbstractClientServerTest {
                 return name.equals("optional") ? 0 : 1;
               }
 
-              protected CallMethodResult invokeResult(InvocationContext context, Variant[] values) {
+              protected MethodResult invokeResult(InvocationContext context, Variant[] values)
+                  throws UaException {
                 assertTrue(context.getSession().isPresent());
                 if (name.equals("optional")) {
-                  return new CallMethodResult(
+                  return MethodResult.uncertain(
                       StatusCode.UNCERTAIN,
-                      null,
-                      null,
                       values.length == 0 ? new Variant[] {new Variant("omitted")} : values);
                 }
+                if (name.equals("explained")) {
+                  throw new UaException(
+                      StatusCodes.Bad_DeviceFailure, "device failed", EXPLANATION);
+                }
                 if (name.equals("denied")) deniedCalls.incrementAndGet();
-                DiagnosticsContext<CallMethodRequest> diagnostics =
-                    context.getCallDiagnostics().orElseThrow();
-                DiagnosticInfo info =
-                    name.equals("malformed")
-                        ? new DiagnosticInfo(-1, 999, -1, -1, null, null, null)
-                        : new DiagnosticInfo(
-                            diagnostics.addString("urn:vendor"),
-                            diagnostics.addString("range"),
-                            diagnostics.addString("en"),
-                            diagnostics.addString("outside range"),
-                            "argument",
-                            new StatusCode(StatusCodes.Bad_OutOfRange),
-                            null);
-                return new CallMethodResult(
-                    new StatusCode(StatusCodes.Bad_InvalidArgument),
-                    new StatusCode[] {new StatusCode(StatusCodes.Bad_OutOfRange)},
-                    new DiagnosticInfo[] {info},
-                    new Variant[0]);
+                Diagnostic argument =
+                    new Diagnostic(
+                        null,
+                        null,
+                        null,
+                        "argument",
+                        new StatusCode(StatusCodes.Bad_OutOfRange),
+                        null);
+                throw InvalidArgumentException.builder(values.length)
+                    .reject(0, StatusCodes.Bad_OutOfRange, argument)
+                    .build();
               }
             });
       }

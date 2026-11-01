@@ -9,24 +9,32 @@
  */
 package org.eclipse.milo.opcua.sdk.server.methods;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.util.Arrays;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.server.AccessContext;
+import org.eclipse.milo.opcua.sdk.server.AddressSpace.CallContext;
+import org.eclipse.milo.opcua.sdk.server.CallOperationDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNodeContext;
+import org.eclipse.milo.opcua.stack.core.Diagnostic;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.structured.*;
+import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 
 class SynchronousMethodOutcomeTest {
   private final AtomicInteger calls = new AtomicInteger();
@@ -45,7 +53,7 @@ class SynchronousMethodOutcomeTest {
     when(server.getDataTypeTree()).thenReturn(mock(DataTypeTree.class));
   }
 
-  private AbstractMethodInvocationHandler handler(int required, CallMethodResult outcome) {
+  private AbstractMethodInvocationHandler handler(int required, MethodResult outcome) {
     return new AbstractMethodInvocationHandler(node) {
       public Argument[] getInputArguments() {
         return arguments;
@@ -59,11 +67,9 @@ class SynchronousMethodOutcomeTest {
         return required;
       }
 
-      protected CallMethodResult invokeResult(InvocationContext context, Variant[] supplied) {
+      protected MethodResult invokeResult(InvocationContext context, Variant[] supplied) {
         calls.incrementAndGet();
-        return outcome == null
-            ? new CallMethodResult(StatusCode.UNCERTAIN, null, null, supplied)
-            : outcome;
+        return outcome == null ? MethodResult.uncertain(StatusCode.UNCERTAIN, supplied) : outcome;
       }
     };
   }
@@ -167,40 +173,23 @@ class SynchronousMethodOutcomeTest {
     assertEquals(1, calls.get());
   }
 
-  static Stream<CallMethodResult> invalidOutcomes() {
-    return Stream.of(
-        new CallMethodResult(
-            new StatusCode(StatusCodes.Bad_NotSupported),
-            null,
-            null,
-            new Variant[] {new Variant(1)}),
-        new CallMethodResult(StatusCode.GOOD, new StatusCode[] {StatusCode.GOOD}, null, null),
-        new CallMethodResult(
-            new StatusCode(StatusCodes.Bad_InvalidArgument),
-            new StatusCode[] {StatusCode.GOOD, StatusCode.GOOD},
-            null,
-            null),
-        new CallMethodResult(
-            StatusCode.GOOD,
-            null,
-            new DiagnosticInfo[] {DiagnosticInfo.NULL_VALUE, DiagnosticInfo.NULL_VALUE},
-            null),
-        new CallMethodResult(null, null, null, null));
-  }
+  // A handler may return the same MethodResult for every call. Each Call result gets its own
+  // output array, so a caller that changes one response cannot change the next.
+  @Test
+  void reusedResultGivesEachCallItsOwnOutputs() {
+    AbstractMethodInvocationHandler handler =
+        handler(1, MethodResult.uncertain(StatusCode.UNCERTAIN, new Variant(1)));
 
-  // Part 4 Call outcomes cannot attach outputs to Bad or populate input results for other statuses.
-  @ParameterizedTest
-  @MethodSource("invalidOutcomes")
-  void invalidCompleteOutcomesBecomeInternalError(CallMethodResult outcome) {
-    CallMethodResult result = call(handler(1, outcome), new Variant(7));
-    assertEquals(new StatusCode(StatusCodes.Bad_InternalError), result.getStatusCode());
-    assertEquals(0, result.getOutputArguments().length);
+    CallMethodResult first = call(handler, new Variant(7));
+    first.getOutputArguments()[0] = new Variant(2);
+    CallMethodResult second = call(handler, new Variant(7));
+
+    assertArrayEquals(new Variant[] {new Variant(1)}, second.getOutputArguments());
   }
 
   @Test
   void goodSubcodesAreDelivered() {
-    CallMethodResult outcome =
-        new CallMethodResult(new StatusCode(StatusCodes.Good_Clamped), null, null, null);
+    MethodResult outcome = MethodResult.good(new StatusCode(StatusCodes.Good_Clamped));
     assertEquals(
         outcome.getStatusCode(), call(handler(1, outcome), new Variant(7)).getStatusCode());
   }
@@ -248,7 +237,7 @@ class SynchronousMethodOutcomeTest {
             return new Argument[0];
           }
 
-          protected CallMethodResult invokeResult(InvocationContext context, Variant[] values) {
+          protected MethodResult invokeResult(InvocationContext context, Variant[] values) {
             return null;
           }
         };
@@ -276,5 +265,142 @@ class SynchronousMethodOutcomeTest {
     assertEquals(StatusCode.GOOD, result.getStatusCode());
     assertNull(result.getOutputArguments());
     assertEquals(1, metadataReads.get());
+  }
+
+  /** Diagnostics reach the Call service through the CallContext the handler is invoked with. */
+  @Nested
+  class Diagnostics {
+
+    private final RecordingDiagnostics recorded = new RecordingDiagnostics();
+
+    private final CallContext context =
+        new CallContext(mock(OpcUaServer.class), null, recorded, null, uint(0), null);
+
+    private final Diagnostic explanation = Diagnostic.text("explained");
+
+    @Test
+    void diagnosticOfAThrownExceptionExplainsTheOperation() {
+      AbstractMethodInvocationHandler handler =
+          resultHandler(
+              () -> {
+                throw new UaException(StatusCodes.Bad_DeviceFailure, "failed", explanation);
+              });
+
+      CallMethodResult result = handler.invoke(context, request);
+
+      assertEquals(new StatusCode(StatusCodes.Bad_DeviceFailure), result.getStatusCode());
+      assertEquals(explanation, recorded.operations.get(request));
+    }
+
+    @Test
+    void diagnosticOfAResultExplainsTheOperation() {
+      AbstractMethodInvocationHandler handler =
+          resultHandler(
+              () ->
+                  MethodResult.bad(new StatusCode(StatusCodes.Bad_DeviceFailure))
+                      .withDiagnostic(explanation));
+
+      handler.invoke(context, request);
+
+      assertEquals(explanation, recorded.operations.get(request));
+    }
+
+    @Test
+    void argumentDiagnosticsOfAnInvalidArgumentExceptionExplainTheArguments() {
+      AbstractMethodInvocationHandler handler =
+          resultHandler(
+              () -> {
+                throw InvalidArgumentException.builder(2)
+                    .reject(1, StatusCodes.Bad_OutOfRange, explanation)
+                    .build();
+              });
+
+      CallMethodResult result = handler.invoke(context, request);
+
+      assertArrayEquals(
+          new StatusCode[] {StatusCode.GOOD, new StatusCode(StatusCodes.Bad_OutOfRange)},
+          result.getInputArgumentResults());
+      assertEquals(0, result.getInputArgumentDiagnosticInfos().length, "reported, not inlined");
+      assertEquals(Arrays.asList(null, explanation), recorded.arguments.get(request));
+    }
+
+    // A result that breaks the rules becomes Bad_InternalError; its diagnostics would explain a
+    // status the client never sees.
+    @Test
+    void diagnosticsOfAnInvalidOutcomeAreNotReported() {
+      AbstractMethodInvocationHandler handler =
+          resultHandler(
+              () -> {
+                throw InvalidArgumentException.builder(3)
+                    .reject(0, StatusCodes.Bad_OutOfRange, explanation)
+                    .build();
+              });
+
+      CallMethodResult result = handler.invoke(context, request);
+
+      assertEquals(new StatusCode(StatusCodes.Bad_InternalError), result.getStatusCode());
+      assertTrue(recorded.operations.isEmpty());
+      assertTrue(recorded.arguments.isEmpty());
+    }
+
+    // Outside a Call request there is no response to carry diagnostics; the outcome is unchanged.
+    @Test
+    void directInvocationDropsDiagnostics() {
+      AbstractMethodInvocationHandler handler =
+          resultHandler(() -> MethodResult.good().withDiagnostic(explanation));
+
+      CallMethodResult result = handler.invoke(access, request);
+
+      assertEquals(StatusCode.GOOD, result.getStatusCode());
+      assertTrue(recorded.operations.isEmpty());
+    }
+
+    private final CallMethodRequest request =
+        new CallMethodRequest(
+            new NodeId(1, 1), new NodeId(1, 2), new Variant[] {new Variant(7), new Variant("x")});
+
+    private AbstractMethodInvocationHandler resultHandler(Outcome outcome) {
+      return new AbstractMethodInvocationHandler(node) {
+        public Argument[] getInputArguments() {
+          return arguments;
+        }
+
+        public Argument[] getOutputArguments() {
+          return new Argument[0];
+        }
+
+        protected MethodResult invokeResult(InvocationContext context, Variant[] values)
+            throws UaException {
+          return outcome.get();
+        }
+      };
+    }
+  }
+
+  @FunctionalInterface
+  interface Outcome {
+    MethodResult get() throws UaException;
+  }
+
+  /** Records what a handler reports, by request instance. */
+  static final class RecordingDiagnostics implements CallOperationDiagnostics {
+    final Map<CallMethodRequest, Diagnostic> operations = new IdentityHashMap<>();
+    final Map<CallMethodRequest, List<?>> arguments = new IdentityHashMap<>();
+
+    @Override
+    public boolean isRequested() {
+      return true;
+    }
+
+    @Override
+    public void report(CallMethodRequest operation, Diagnostic diagnostic) {
+      operations.put(operation, diagnostic);
+    }
+
+    @Override
+    public void reportArguments(
+        CallMethodRequest request, List<? extends @Nullable Diagnostic> diagnostics) {
+      arguments.put(request, diagnostics);
+    }
   }
 }

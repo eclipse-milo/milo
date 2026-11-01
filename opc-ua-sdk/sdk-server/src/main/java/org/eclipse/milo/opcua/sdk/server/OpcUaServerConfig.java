@@ -168,6 +168,15 @@ public interface OpcUaServerConfig {
   }
 
   /**
+   * Get the policy that decides which diagnostics the server returns to clients.
+   *
+   * @return the {@link DiagnosticsPolicy}; {@link DiagnosticsPolicy#defaults()} unless configured.
+   */
+  default DiagnosticsPolicy getDiagnosticsPolicy() {
+    return DiagnosticsPolicy.defaults();
+  }
+
+  /**
    * @return the {@link ExecutorService} for this server.
    */
   ExecutorService getExecutor();
@@ -212,6 +221,7 @@ public interface OpcUaServerConfig {
     builder.setExecutor(config.getExecutor());
     builder.setScheduledExecutor(config.getScheduledExecutorService());
     config.getSecurityKeysListener().ifPresent(builder::setSecurityKeysListener);
+    builder.setDiagnosticsPolicy(config.getDiagnosticsPolicy());
 
     return builder;
   }

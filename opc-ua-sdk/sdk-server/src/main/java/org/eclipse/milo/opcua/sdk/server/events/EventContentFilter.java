@@ -80,39 +80,36 @@ public class EventContentFilter {
       throw new UaException(StatusCodes.Bad_EventFilterInvalid);
     }
 
-    SelectClauseValidationResult selectClauseResults =
-        validateSelectClauses(context, selectClauses);
+    List<StatusCode> selectClauseResults = validateSelectClauses(context, selectClauses);
 
     ContentFilterResult whereClauseResult = validateWhereClause(context, filter.getWhereClause());
 
+    // Part 4 7.22.3: the select clause diagnostics are empty unless diagnostics were requested
+    // and encountered. Their indexes would refer to the CreateMonitoredItems response's string
+    // table, which this result does not see, so none are returned.
     return new EventFilterResult(
-        selectClauseResults.statusCodes, selectClauseResults.diagnosticInfos, whereClauseResult);
+        selectClauseResults.toArray(new StatusCode[0]), new DiagnosticInfo[0], whereClauseResult);
   }
 
-  private static SelectClauseValidationResult validateSelectClauses(
+  private static List<StatusCode> validateSelectClauses(
       FilterContext context, SimpleAttributeOperand[] selectClauses) {
 
     List<StatusCode> statusCodes = new ArrayList<>();
-    List<DiagnosticInfo> diagnosticInfos = new ArrayList<>();
 
     for (SimpleAttributeOperand select : selectClauses) {
       try {
         validateSimpleOperand(context, select);
 
         statusCodes.add(StatusCode.GOOD);
-        diagnosticInfos.add(DiagnosticInfo.NULL_VALUE);
       } catch (ValidationException e) {
         statusCodes.add(e.getStatusCode());
-        diagnosticInfos.add(e.getDiagnosticInfo());
       } catch (Throwable t) {
         LOGGER.error("Unexpected error validating operand: {}", select, t);
         statusCodes.add(new StatusCode(StatusCodes.Bad_InternalError));
-        diagnosticInfos.add(DiagnosticInfo.NULL_VALUE);
       }
     }
 
-    return new SelectClauseValidationResult(
-        statusCodes.toArray(new StatusCode[0]), diagnosticInfos.toArray(new DiagnosticInfo[0]));
+    return statusCodes;
   }
 
   private static void validateSimpleOperand(FilterContext context, SimpleAttributeOperand select)
@@ -627,17 +624,6 @@ public class EventContentFilter {
         throw failure;
       }
       return value;
-    }
-  }
-
-  static class SelectClauseValidationResult {
-    private final StatusCode[] statusCodes;
-    private final DiagnosticInfo[] diagnosticInfos;
-
-    public SelectClauseValidationResult(
-        StatusCode[] statusCodes, DiagnosticInfo[] diagnosticInfos) {
-      this.statusCodes = statusCodes;
-      this.diagnosticInfos = diagnosticInfos;
     }
   }
 }

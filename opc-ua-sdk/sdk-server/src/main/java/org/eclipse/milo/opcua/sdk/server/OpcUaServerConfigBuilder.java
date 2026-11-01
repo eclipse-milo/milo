@@ -66,6 +66,8 @@ public class OpcUaServerConfigBuilder {
 
   private @Nullable SecurityKeysListener securityKeysListener;
 
+  private DiagnosticsPolicy diagnosticsPolicy = DiagnosticsPolicy.defaults();
+
   private ExecutorService executor;
   private ScheduledExecutorService scheduledExecutor;
 
@@ -198,6 +200,20 @@ public class OpcUaServerConfigBuilder {
     return this;
   }
 
+  /**
+   * Set the policy that decides which diagnostics the server returns to clients.
+   *
+   * <p>The default, {@link DiagnosticsPolicy#defaults()}, sends nothing without an activated
+   * Session and nothing for security-related statuses.
+   *
+   * @param diagnosticsPolicy the {@link DiagnosticsPolicy}.
+   * @return this builder.
+   */
+  public OpcUaServerConfigBuilder setDiagnosticsPolicy(DiagnosticsPolicy diagnosticsPolicy) {
+    this.diagnosticsPolicy = requireNonNull(diagnosticsPolicy);
+    return this;
+  }
+
   public OpcUaServerConfigBuilder setExecutor(ExecutorService executor) {
     this.executor = executor;
     return this;
@@ -231,6 +247,7 @@ public class OpcUaServerConfigBuilder {
         accessControllerFactory,
         sessionSecurityDiagnosticsAccessMode,
         securityKeysListener,
+        diagnosticsPolicy,
         executor,
         scheduledExecutor);
   }
@@ -251,6 +268,7 @@ public class OpcUaServerConfigBuilder {
     private final @Nullable Function<OpcUaServer, AccessController> accessControllerFactory;
     private final SessionSecurityDiagnosticsAccessMode sessionSecurityDiagnosticsAccessMode;
     private final @Nullable SecurityKeysListener securityKeysListener;
+    private final DiagnosticsPolicy diagnosticsPolicy;
     private final ExecutorService executor;
     private final ScheduledExecutorService scheduledExecutorService;
 
@@ -330,6 +348,12 @@ public class OpcUaServerConfigBuilder {
           scheduledExecutorService);
     }
 
+    /**
+     * Source-compatibility overload for callers that pre-date the configurable {@link
+     * DiagnosticsPolicy}.
+     *
+     * <p>Equivalent to the canonical constructor with {@link DiagnosticsPolicy#defaults()}.
+     */
     public OpcUaServerConfigImpl(
         Set<EndpointConfig> endpoints,
         Set<ReverseConnectTarget> reverseConnectTargets,
@@ -348,6 +372,45 @@ public class OpcUaServerConfigBuilder {
         ExecutorService executor,
         ScheduledExecutorService scheduledExecutorService) {
 
+      this(
+          endpoints,
+          reverseConnectTargets,
+          applicationName,
+          applicationUri,
+          productUri,
+          buildInfo,
+          identityValidator,
+          encodingLimits,
+          limits,
+          certificateManager,
+          roleMapper,
+          accessControllerFactory,
+          sessionSecurityDiagnosticsAccessMode,
+          securityKeysListener,
+          DiagnosticsPolicy.defaults(),
+          executor,
+          scheduledExecutorService);
+    }
+
+    public OpcUaServerConfigImpl(
+        Set<EndpointConfig> endpoints,
+        Set<ReverseConnectTarget> reverseConnectTargets,
+        LocalizedText applicationName,
+        String applicationUri,
+        String productUri,
+        BuildInfo buildInfo,
+        IdentityValidator identityValidator,
+        EncodingLimits encodingLimits,
+        OpcUaServerConfigLimits limits,
+        CertificateManager certificateManager,
+        RoleMapper roleMapper,
+        @Nullable Function<OpcUaServer, AccessController> accessControllerFactory,
+        SessionSecurityDiagnosticsAccessMode sessionSecurityDiagnosticsAccessMode,
+        @Nullable SecurityKeysListener securityKeysListener,
+        DiagnosticsPolicy diagnosticsPolicy,
+        ExecutorService executor,
+        ScheduledExecutorService scheduledExecutorService) {
+
       this.endpoints = endpoints;
       this.reverseConnectTargets = Set.copyOf(reverseConnectTargets);
       this.applicationName = applicationName;
@@ -363,6 +426,7 @@ public class OpcUaServerConfigBuilder {
       this.sessionSecurityDiagnosticsAccessMode =
           requireNonNull(sessionSecurityDiagnosticsAccessMode);
       this.securityKeysListener = securityKeysListener;
+      this.diagnosticsPolicy = requireNonNull(diagnosticsPolicy);
       this.executor = executor;
       this.scheduledExecutorService = scheduledExecutorService;
     }
@@ -514,6 +578,11 @@ public class OpcUaServerConfigBuilder {
     @Override
     public Optional<SecurityKeysListener> getSecurityKeysListener() {
       return Optional.ofNullable(securityKeysListener);
+    }
+
+    @Override
+    public DiagnosticsPolicy getDiagnosticsPolicy() {
+      return diagnosticsPolicy;
     }
 
     @Override

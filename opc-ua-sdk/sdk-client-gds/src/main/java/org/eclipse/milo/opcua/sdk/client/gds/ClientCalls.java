@@ -21,10 +21,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.methods.UaMethodException;
+import org.eclipse.milo.opcua.stack.core.Diagnostic;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.ResponseDiagnostics;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
@@ -54,8 +57,8 @@ final class ClientCalls {
    * Invoke one method with a single Call request.
    *
    * <p>A Bad operation-level result fails the future with a {@link UaMethodException} carrying the
-   * server's {@link StatusCode}; a Good result with at least {@code requiredOutputs} output
-   * arguments is decoded by {@code decoder}.
+   * server's {@link StatusCode} and any diagnostics it returned; a Good result with at least {@code
+   * requiredOutputs} output arguments is decoded by {@code decoder}.
    */
   static <T> CompletableFuture<T> call(
       OpcUaClient client,
@@ -86,11 +89,21 @@ final class ClientCalls {
               StatusCode statusCode = result.getStatusCode();
 
               if (!statusCode.isGood()) {
+                ResponseDiagnostics diagnostics =
+                    ResponseDiagnostics.of(response.getResponseHeader());
+
+                DiagnosticInfo[] operationDiagnostics = response.getDiagnosticInfos();
+                Diagnostic diagnostic =
+                    operationDiagnostics != null && operationDiagnostics.length > 0
+                        ? diagnostics.resolve(operationDiagnostics[0])
+                        : null;
+
                 return failedFuture(
                     new UaMethodException(
                         statusCode,
+                        diagnostic,
                         result.getInputArgumentResults(),
-                        result.getInputArgumentDiagnosticInfos()));
+                        diagnostics.resolve(result.getInputArgumentDiagnosticInfos())));
               }
 
               try {

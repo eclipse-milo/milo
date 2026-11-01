@@ -35,8 +35,10 @@ import org.eclipse.milo.opcua.sdk.client.subscriptions.MonitoredItemSynchronizat
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaMonitoredItem;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.Diagnostic;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.ResponseDiagnostics;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -68,7 +70,10 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.RelativePath;
 import org.eclipse.milo.opcua.stack.core.types.structured.RelativePathElement;
 import org.eclipse.milo.opcua.stack.core.types.structured.TranslateBrowsePathsToNodeIdsResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.WriteResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
 import org.eclipse.milo.opcua.stack.core.util.validation.ValidationCheck;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -270,6 +275,33 @@ public final class ClientSnippets {
   }
 
   // snippet:write:end
+
+  // snippet:write-diagnostics:start
+  static void writeSetpointWithReason(OpcUaClient client, NodeId setpointId, double setpoint)
+      throws UaException {
+    DataValue dataValue = DataValue.valueOnly(Variant.ofDouble(setpoint));
+    var writeValue = new WriteValue(setpointId, AttributeId.Value.uid(), null, dataValue);
+
+    WriteResponse response = client.write(List.of(writeValue));
+    StatusCode status = requireNonNull(response.getResults())[0];
+
+    if (status.isGood()) {
+      return;
+    }
+
+    // The list is empty when the server returned no diagnostics.
+    ResponseDiagnostics diagnostics = ResponseDiagnostics.of(response.getResponseHeader());
+    List<@Nullable Diagnostic> perWrite = diagnostics.resolve(response.getDiagnosticInfos());
+
+    Diagnostic reason = perWrite.isEmpty() ? null : perWrite.get(0);
+    if (reason != null) {
+      throw new UaException(status, "Setpoint write failed", reason);
+    } else {
+      throw new UaException(status);
+    }
+  }
+
+  // snippet:write-diagnostics:end
 
   // snippet:write-batch:start
   static Map<NodeId, StatusCode> writeBatch(

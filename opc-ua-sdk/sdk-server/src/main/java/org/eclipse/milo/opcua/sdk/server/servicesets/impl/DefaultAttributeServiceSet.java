@@ -13,21 +13,25 @@ package org.eclipse.milo.opcua.sdk.server.servicesets.impl;
 import static java.util.Objects.requireNonNullElse;
 import static org.eclipse.milo.opcua.sdk.core.util.GroupMapCollate.groupMapCollate;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.HistoryReadContext;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.HistoryUpdateContext;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.ReadContext;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.WriteContext;
-import org.eclipse.milo.opcua.sdk.server.DiagnosticsContext;
+import org.eclipse.milo.opcua.sdk.server.HistoryUpdateOperationDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
+import org.eclipse.milo.opcua.sdk.server.OperationDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.servicesets.AbstractServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.AttributeServiceSet;
+import org.eclipse.milo.opcua.sdk.server.servicesets.Service;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
@@ -157,7 +161,10 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
     Map<ReadValueId, AccessResult> accessResults =
         server.getAccessController().checkReadAccess(session, nodesToRead);
 
-    var diagnosticsContext = new DiagnosticsContext<ReadValueId>();
+    ServiceDiagnostics diagnostics =
+        ServiceDiagnostics.create(server, session, Service.ATTRIBUTE_READ, request);
+
+    OperationDiagnostics<ReadValueId> operationDiagnostics = diagnostics.collect(nodesToRead);
 
     List<DataValue> values =
         groupMapCollate(
@@ -172,7 +179,7 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
                         new ReadContext(
                             server,
                             session,
-                            diagnosticsContext,
+                            operationDiagnostics,
                             request.getRequestHeader().getAuditEntryId(),
                             request.getRequestHeader().getTimeoutHint(),
                             request.getRequestHeader().getAdditionalHeader());
@@ -187,9 +194,10 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
                   }
                 });
 
-    DiagnosticInfo[] diagnosticInfos = diagnosticsContext.getDiagnosticInfos(nodesToRead);
+    DiagnosticInfo[] diagnosticInfos =
+        diagnostics.encodeOperations(operationDiagnostics, values, DataValue::statusCode);
 
-    ResponseHeader header = createResponseHeader(request);
+    ResponseHeader header = diagnostics.responseHeader(request);
 
     return new ReadResponse(header, values.toArray(DataValue[]::new), diagnosticInfos);
   }
@@ -210,13 +218,17 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
       throw new UaException(StatusCodes.Bad_TimestampsToReturnInvalid);
     }
 
-    var diagnosticsContext = new DiagnosticsContext<HistoryReadValueId>();
+    ServiceDiagnostics diagnostics =
+        ServiceDiagnostics.create(server, session, Service.ATTRIBUTE_HISTORY_READ, request);
+
+    OperationDiagnostics<HistoryReadValueId> operationDiagnostics =
+        diagnostics.collect(nodesToRead);
 
     var historyReadContext =
         new HistoryReadContext(
             server,
             session,
-            diagnosticsContext,
+            operationDiagnostics,
             request.getRequestHeader().getAuditEntryId(),
             request.getRequestHeader().getTimeoutHint(),
             request.getRequestHeader().getAdditionalHeader());
@@ -229,9 +241,11 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
             .getAddressSpaceManager()
             .historyRead(historyReadContext, details, request.getTimestampsToReturn(), nodesToRead);
 
-    ResponseHeader header = createResponseHeader(request);
+    DiagnosticInfo[] diagnosticInfos =
+        diagnostics.encodeOperations(
+            operationDiagnostics, results, HistoryReadResult::getStatusCode);
 
-    DiagnosticInfo[] diagnosticInfos = diagnosticsContext.getDiagnosticInfos(nodesToRead);
+    ResponseHeader header = diagnostics.responseHeader(request);
 
     return new HistoryReadResponse(
         header, results.toArray(HistoryReadResult[]::new), diagnosticInfos);
@@ -251,7 +265,10 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
     Map<WriteValue, AccessResult> accessResults =
         server.getAccessController().checkWriteAccess(session, nodesToWrite);
 
-    var diagnosticsContext = new DiagnosticsContext<WriteValue>();
+    ServiceDiagnostics diagnostics =
+        ServiceDiagnostics.create(server, session, Service.ATTRIBUTE_WRITE, request);
+
+    OperationDiagnostics<WriteValue> operationDiagnostics = diagnostics.collect(nodesToWrite);
 
     List<StatusCode> results =
         groupMapCollate(
@@ -266,7 +283,7 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
                         new WriteContext(
                             server,
                             session,
-                            diagnosticsContext,
+                            operationDiagnostics,
                             request.getRequestHeader().getAuditEntryId(),
                             request.getRequestHeader().getTimeoutHint(),
                             request.getRequestHeader().getAdditionalHeader());
@@ -275,9 +292,10 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
                   }
                 });
 
-    ResponseHeader header = createResponseHeader(request);
+    DiagnosticInfo[] diagnosticInfos =
+        diagnostics.encodeOperations(operationDiagnostics, results, Function.identity());
 
-    DiagnosticInfo[] diagnosticInfos = diagnosticsContext.getDiagnosticInfos(nodesToWrite);
+    ResponseHeader header = diagnostics.responseHeader(request);
 
     return new WriteResponse(header, results.toArray(StatusCode[]::new), diagnosticInfos);
   }
@@ -301,13 +319,17 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
       throw new UaException(StatusCodes.Bad_TooManyOperations);
     }
 
-    var diagnosticsContext = new DiagnosticsContext<HistoryUpdateDetails>();
+    ServiceDiagnostics diagnostics =
+        ServiceDiagnostics.create(server, session, Service.ATTRIBUTE_HISTORY_UPDATE, request);
+
+    HistoryUpdateOperationDiagnostics operationDiagnostics =
+        diagnostics.collectHistoryUpdate(historyUpdateDetailsList);
 
     var historyUpdateContext =
         new HistoryUpdateContext(
             server,
             session,
-            diagnosticsContext,
+            operationDiagnostics,
             request.getRequestHeader().getAuditEntryId(),
             request.getRequestHeader().getTimeoutHint(),
             request.getRequestHeader().getAdditionalHeader());
@@ -317,12 +339,19 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
             .getAddressSpaceManager()
             .historyUpdate(historyUpdateContext, historyUpdateDetailsList);
 
-    ResponseHeader header = createResponseHeader(request);
+    HistoryUpdateResult[] normalized =
+        NestedDiagnostics.normalizeHistoryUpdateResults(
+            diagnostics,
+            operationDiagnostics,
+            results,
+            server.getConfig().getEncodingLimits().getMaxRecursionDepth());
 
     DiagnosticInfo[] diagnosticInfos =
-        diagnosticsContext.getDiagnosticInfos(historyUpdateDetailsList);
+        diagnostics.encodeOperations(
+            operationDiagnostics, Arrays.asList(normalized), HistoryUpdateResult::getStatusCode);
 
-    return new HistoryUpdateResponse(
-        header, results.toArray(HistoryUpdateResult[]::new), diagnosticInfos);
+    ResponseHeader header = diagnostics.responseHeader(request);
+
+    return new HistoryUpdateResponse(header, normalized, diagnosticInfos);
   }
 }

@@ -26,6 +26,15 @@ public interface UaExceptionStatus {
   StatusCode getStatusCode();
 
   /**
+   * Get the {@link Diagnostic} that explains the status, if the exception carries one.
+   *
+   * @return the {@link Diagnostic} associated with the exception, or empty if there is none.
+   */
+  default Optional<Diagnostic> getDiagnostic() {
+    return Optional.empty();
+  }
+
+  /**
    * If {@code ex} is a {@link UaExceptionStatus}, or if a {@link UaExceptionStatus} can be found by
    * walking up the exception cause chain, return it.
    *

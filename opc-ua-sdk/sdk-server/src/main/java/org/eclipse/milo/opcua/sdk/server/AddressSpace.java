@@ -464,12 +464,12 @@ public interface AddressSpace {
     public ReadContext(
         OpcUaServer server,
         @Nullable Session session,
-        DiagnosticsContext<ReadValueId> diagnosticsContext,
+        OperationDiagnostics<ReadValueId> operationDiagnostics,
         @Nullable String auditEntryId,
         UInteger timeoutHint,
         ExtensionObject additionalHeader) {
 
-      super(server, session, diagnosticsContext, auditEntryId, timeoutHint, additionalHeader);
+      super(server, session, operationDiagnostics, auditEntryId, timeoutHint, additionalHeader);
     }
   }
 
@@ -482,12 +482,12 @@ public interface AddressSpace {
     public WriteContext(
         OpcUaServer server,
         @Nullable Session session,
-        DiagnosticsContext<WriteValue> diagnosticsContext,
+        OperationDiagnostics<WriteValue> operationDiagnostics,
         @Nullable String auditEntryId,
         UInteger timeoutHint,
         ExtensionObject additionalHeader) {
 
-      super(server, session, diagnosticsContext, auditEntryId, timeoutHint, additionalHeader);
+      super(server, session, operationDiagnostics, auditEntryId, timeoutHint, additionalHeader);
     }
   }
 
@@ -500,48 +500,70 @@ public interface AddressSpace {
     public HistoryReadContext(
         OpcUaServer server,
         @Nullable Session session,
-        DiagnosticsContext<HistoryReadValueId> diagnosticsContext,
+        OperationDiagnostics<HistoryReadValueId> operationDiagnostics,
         @Nullable String auditEntryId,
         UInteger timeoutHint,
         ExtensionObject additionalHeader) {
 
-      super(server, session, diagnosticsContext, auditEntryId, timeoutHint, additionalHeader);
+      super(server, session, operationDiagnostics, auditEntryId, timeoutHint, additionalHeader);
     }
   }
 
   final class HistoryUpdateContext extends ServiceOperationContext<HistoryUpdateDetails> {
 
     public HistoryUpdateContext(OpcUaServer server, @Nullable Session session) {
-      super(server, session);
+      this(server, session, HistoryUpdateOperationDiagnostics.none(), "", uint(0), null);
     }
 
     public HistoryUpdateContext(
         OpcUaServer server,
         @Nullable Session session,
-        DiagnosticsContext<HistoryUpdateDetails> diagnosticsContext,
+        HistoryUpdateOperationDiagnostics operationDiagnostics,
         @Nullable String auditEntryId,
         UInteger timeoutHint,
         ExtensionObject additionalHeader) {
 
-      super(server, session, diagnosticsContext, auditEntryId, timeoutHint, additionalHeader);
+      super(server, session, operationDiagnostics, auditEntryId, timeoutHint, additionalHeader);
+    }
+
+    /**
+     * Get the collector for the diagnostics of the operations in this context, and of the
+     * individual results of each operation.
+     *
+     * @return the {@link HistoryUpdateOperationDiagnostics} for this context.
+     */
+    @Override
+    public HistoryUpdateOperationDiagnostics getOperationDiagnostics() {
+      return (HistoryUpdateOperationDiagnostics) super.getOperationDiagnostics();
     }
   }
 
   final class CallContext extends ServiceOperationContext<CallMethodRequest> {
 
     public CallContext(OpcUaServer server, @Nullable Session session) {
-      super(server, session);
+      this(server, session, CallOperationDiagnostics.none(), "", uint(0), null);
     }
 
     public CallContext(
         OpcUaServer server,
         @Nullable Session session,
-        DiagnosticsContext<CallMethodRequest> diagnosticsContext,
+        CallOperationDiagnostics operationDiagnostics,
         @Nullable String auditEntryId,
         UInteger timeoutHint,
         ExtensionObject additionalHeader) {
 
-      super(server, session, diagnosticsContext, auditEntryId, timeoutHint, additionalHeader);
+      super(server, session, operationDiagnostics, auditEntryId, timeoutHint, additionalHeader);
+    }
+
+    /**
+     * Get the collector for the diagnostics of the operations in this context, and of the input
+     * arguments of each operation.
+     *
+     * @return the {@link CallOperationDiagnostics} for this context.
+     */
+    @Override
+    public CallOperationDiagnostics getOperationDiagnostics() {
+      return (CallOperationDiagnostics) super.getOperationDiagnostics();
     }
   }
 
@@ -554,12 +576,12 @@ public interface AddressSpace {
     public AddNodesContext(
         OpcUaServer server,
         @Nullable Session session,
-        DiagnosticsContext<AddNodesItem> diagnosticsContext,
+        OperationDiagnostics<AddNodesItem> operationDiagnostics,
         @Nullable String auditEntryId,
         UInteger timeoutHint,
         ExtensionObject additionalHeader) {
 
-      super(server, session, diagnosticsContext, auditEntryId, timeoutHint, additionalHeader);
+      super(server, session, operationDiagnostics, auditEntryId, timeoutHint, additionalHeader);
     }
   }
 
@@ -572,12 +594,12 @@ public interface AddressSpace {
     public DeleteNodesContext(
         OpcUaServer server,
         @Nullable Session session,
-        DiagnosticsContext<DeleteNodesItem> diagnosticsContext,
+        OperationDiagnostics<DeleteNodesItem> operationDiagnostics,
         @Nullable String auditEntryId,
         UInteger timeoutHint,
         ExtensionObject additionalHeader) {
 
-      super(server, session, diagnosticsContext, auditEntryId, timeoutHint, additionalHeader);
+      super(server, session, operationDiagnostics, auditEntryId, timeoutHint, additionalHeader);
     }
   }
 
@@ -590,12 +612,12 @@ public interface AddressSpace {
     public AddReferencesContext(
         OpcUaServer server,
         @Nullable Session session,
-        DiagnosticsContext<AddReferencesItem> diagnosticsContext,
+        OperationDiagnostics<AddReferencesItem> operationDiagnostics,
         @Nullable String auditEntryId,
         UInteger timeoutHint,
         ExtensionObject additionalHeader) {
 
-      super(server, session, diagnosticsContext, auditEntryId, timeoutHint, additionalHeader);
+      super(server, session, operationDiagnostics, auditEntryId, timeoutHint, additionalHeader);
     }
   }
 
@@ -608,12 +630,12 @@ public interface AddressSpace {
     public DeleteReferencesContext(
         OpcUaServer server,
         @Nullable Session session,
-        DiagnosticsContext<DeleteReferencesItem> diagnosticsContext,
+        OperationDiagnostics<DeleteReferencesItem> operationDiagnostics,
         @Nullable String auditEntryId,
         UInteger timeoutHint,
         ExtensionObject additionalHeader) {
 
-      super(server, session, diagnosticsContext, auditEntryId, timeoutHint, additionalHeader);
+      super(server, session, operationDiagnostics, auditEntryId, timeoutHint, additionalHeader);
     }
   }
 
@@ -626,12 +648,12 @@ public interface AddressSpace {
     public BrowseContext(
         OpcUaServer server,
         @Nullable Session session,
-        DiagnosticsContext<NodeId> diagnosticsContext,
+        OperationDiagnostics<NodeId> operationDiagnostics,
         @Nullable String auditEntryId,
         UInteger timeoutHint,
         ExtensionObject additionalHeader) {
 
-      super(server, session, diagnosticsContext, auditEntryId, timeoutHint, additionalHeader);
+      super(server, session, operationDiagnostics, auditEntryId, timeoutHint, additionalHeader);
     }
   }
 
@@ -644,12 +666,12 @@ public interface AddressSpace {
     public RegisterNodesContext(
         OpcUaServer server,
         @Nullable Session session,
-        DiagnosticsContext<NodeId> diagnosticsContext,
+        OperationDiagnostics<NodeId> operationDiagnostics,
         @Nullable String auditEntryId,
         UInteger timeoutHint,
         ExtensionObject additionalHeader) {
 
-      super(server, session, diagnosticsContext, auditEntryId, timeoutHint, additionalHeader);
+      super(server, session, operationDiagnostics, auditEntryId, timeoutHint, additionalHeader);
     }
   }
 
@@ -662,12 +684,12 @@ public interface AddressSpace {
     public UnregisterNodesContext(
         OpcUaServer server,
         @Nullable Session session,
-        DiagnosticsContext<NodeId> diagnosticsContext,
+        OperationDiagnostics<NodeId> operationDiagnostics,
         @Nullable String auditEntryId,
         UInteger timeoutHint,
         ExtensionObject additionalHeader) {
 
-      super(server, session, diagnosticsContext, auditEntryId, timeoutHint, additionalHeader);
+      super(server, session, operationDiagnostics, auditEntryId, timeoutHint, additionalHeader);
     }
   }
 }
