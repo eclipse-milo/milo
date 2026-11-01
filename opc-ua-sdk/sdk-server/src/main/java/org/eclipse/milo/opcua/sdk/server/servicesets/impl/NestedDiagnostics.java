@@ -270,27 +270,37 @@ final class NestedDiagnostics {
     return diagnostics.encodeAll(resolved, statuses);
   }
 
-  /** The index-free content of a raw entry, after checking it carries no requested index. */
+  /**
+   * The index-free content of a raw entry, with its whole inner chain, so the policy sees every
+   * inner status; the encoder removes the fields the client did not request afterward. The index
+   * and depth rules apply only to the entries that are sent: the outer entry, and the inner entries
+   * when Inner Diagnostics is requested.
+   */
   private @Nullable Diagnostic resolve(@Nullable DiagnosticInfo info, int depth) {
     if (info == null) {
       return null;
     }
+
+    boolean sent = depth == 0 || fields.contains(Field.INNER_DIAGNOSTICS);
+
     if (depth >= maxDepth) {
-      throw new IllegalArgumentException("inner DiagnosticInfo nesting exceeds " + maxDepth);
+      if (sent) {
+        throw new IllegalArgumentException("inner DiagnosticInfo nesting exceeds " + maxDepth);
+      } else {
+        return null;
+      }
     }
-    if (fields.contains(Field.SYMBOLIC_ID)) {
+
+    if (sent && fields.contains(Field.SYMBOLIC_ID)) {
       requireNoIndex(info.namespaceUri(), "namespaceUri");
       requireNoIndex(info.symbolicId(), "symbolicId");
     }
-    if (fields.contains(Field.LOCALIZED_TEXT)) {
+    if (sent && fields.contains(Field.LOCALIZED_TEXT)) {
       requireNoIndex(info.locale(), "locale");
       requireNoIndex(info.localizedText(), "localizedText");
     }
 
-    Diagnostic inner =
-        fields.contains(Field.INNER_DIAGNOSTICS)
-            ? resolve(info.innerDiagnosticInfo(), depth + 1)
-            : null;
+    Diagnostic inner = resolve(info.innerDiagnosticInfo(), depth + 1);
 
     return new Diagnostic(null, null, null, info.additionalInfo(), info.innerStatusCode(), inner);
   }

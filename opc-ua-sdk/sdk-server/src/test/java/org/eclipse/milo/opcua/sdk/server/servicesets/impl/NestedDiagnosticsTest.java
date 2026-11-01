@@ -14,6 +14,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.mock;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,6 +22,7 @@ import java.util.List;
 import org.eclipse.milo.opcua.sdk.server.CallOperationDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.DiagnosticsPolicy;
 import org.eclipse.milo.opcua.sdk.server.HistoryUpdateOperationDiagnostics;
+import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.servicesets.Service;
 import org.eclipse.milo.opcua.stack.core.Diagnostic;
 import org.eclipse.milo.opcua.stack.core.ResponseDiagnostics;
@@ -174,6 +176,47 @@ class NestedDiagnosticsTest {
               MAX_DEPTH);
 
       assertEquals(0, normalized[0].getInputArgumentDiagnosticInfos().length);
+    }
+
+    // The default policy drops a diagnostic whose inner status is security-related. Requesting only
+    // additional info must not hide that inner status from it, or a client could read text that a
+    // request for every field would not get.
+    @ParameterizedTest
+    @ValueSource(ints = {0x080, 0x380})
+    void policySeesInnerStatusesWhateverTheMask(int mask) {
+      CallMethodResult[] normalized =
+          normalizeWithDefaultPolicy(mask, StatusCodes.Bad_UserAccessDenied);
+
+      assertEquals(0, normalized[0].getInputArgumentDiagnosticInfos().length);
+    }
+
+    @Test
+    void innerStatusesThatAreNotSecurityRelatedKeepTheDiagnostic() {
+      CallMethodResult[] normalized = normalizeWithDefaultPolicy(0x080, StatusCodes.Bad_Timeout);
+
+      assertEquals(
+          new DiagnosticInfo(-1, -1, -1, -1, "account locked", null, null),
+          firstArgument(normalized[0]));
+    }
+
+    private CallMethodResult[] normalizeWithDefaultPolicy(int mask, long innerStatus) {
+      DiagnosticInfo inner =
+          new DiagnosticInfo(-1, -1, -1, -1, null, new StatusCode(innerStatus), null);
+      DiagnosticInfo outer = new DiagnosticInfo(-1, -1, -1, -1, "account locked", null, inner);
+
+      var diagnostics =
+          new ServiceDiagnostics(
+              ReturnDiagnostics.decode(uint(mask)),
+              DiagnosticsPolicy.defaults(),
+              mock(Session.class),
+              Service.METHOD_CALL);
+
+      return NestedDiagnostics.normalizeCallResults(
+          diagnostics,
+          CallOperationDiagnostics.none(),
+          List.of(REQUEST),
+          List.of(invalid(outer)),
+          MAX_DEPTH);
     }
 
     private CallMethodResult[] normalize(
