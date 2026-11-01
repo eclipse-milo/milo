@@ -104,6 +104,18 @@ public class EventContentFilterTest {
         StatusCodes.Bad_FilterOperatorUnsupported, elementResults[1].getStatusCode().value());
   }
 
+  // Part 4 §7.22.3: selectClauseDiagnosticInfos is empty unless diagnostics were requested and
+  // encountered. One null entry per select clause is a list of diagnostics the client did not ask
+  // for.
+  @Test
+  void selectClauseDiagnosticsAreEmpty() throws Exception {
+    EventFilterResult result =
+        EventContentFilter.validate(filterContext(), eventFilter(new ContentFilterElement[0]));
+
+    assertEquals(1, result.getSelectClauseResults().length, "control: one select clause");
+    assertEquals(0, result.getSelectClauseDiagnosticInfos().length);
+  }
+
   @Nested
   class OperandDecoding {
 

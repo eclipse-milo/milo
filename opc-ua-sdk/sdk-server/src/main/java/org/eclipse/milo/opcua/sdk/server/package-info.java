@@ -81,6 +81,42 @@
  * initial Session unactivated. Enhanced username-token keys consumed during validation remain
  * single-use even if later response preparation fails.
  *
+ * <h2>Diagnostics returned to clients</h2>
+ *
+ * <p>A client asks for diagnostics with the {@code returnDiagnostics} mask of each request header.
+ * The server explains a status with a resolved {@link org.eclipse.milo.opcua.stack.core.Diagnostic}
+ * and never handles string-table indexes itself. Diagnostics reach the response in three ways:
+ *
+ * <ul>
+ *   <li>Code throws a {@link org.eclipse.milo.opcua.stack.core.UaException} that carries one. The
+ *       SDK records it when an attribute filter, value delegate or node fails a Read or Write in a
+ *       {@link org.eclipse.milo.opcua.sdk.server.ManagedAddressSpace}, when an {@code
+ *       AbstractMethodInvocationHandler} or the Method lookup fails a Call, and when a service set
+ *       fails a whole request, where it becomes the ServiceFault's service diagnostic. A {@code
+ *       UaException} from the client SDK carries the diagnostic of the server that sent it, so an
+ *       address space that rethrows one forwards that diagnostic.
+ *   <li>An {@link org.eclipse.milo.opcua.sdk.server.AddressSpace} that builds its own results
+ *       reports through the {@link org.eclipse.milo.opcua.sdk.server.OperationDiagnostics} of its
+ *       operation context. Composites pass the parent context's collector to every child, so all
+ *       layers report into the one collector of the request. Operations are identified by the
+ *       identity of the request item each address space received.
+ *   <li>Call and HistoryUpdate also collect per-argument and per-value diagnostics through {@link
+ *       org.eclipse.milo.opcua.sdk.server.CallOperationDiagnostics} and {@link
+ *       org.eclipse.milo.opcua.sdk.server.HistoryUpdateOperationDiagnostics}.
+ * </ul>
+ *
+ * <p>After the results are collated, on the request thread, each service set passes every collected
+ * diagnostic through the configured {@link org.eclipse.milo.opcua.sdk.server.DiagnosticsPolicy} and
+ * encodes the response's lists and string table with one {@link
+ * org.eclipse.milo.opcua.stack.core.DiagnosticEncoder}. A request that asks for no operation-level
+ * fields gets {@link org.eclipse.milo.opcua.sdk.server.OperationDiagnostics#none()} collectors and
+ * a response without diagnostics or string table. Diagnostics are never sent inside notifications,
+ * because after a Republish it is unclear which string table their indexes refer to.
+ *
+ * <p>The word "diagnostics" also names the Part 5 diagnostics model in the {@code diagnostics}
+ * subpackage: Session and server counters exposed as nodes. That model is unrelated to the
+ * diagnostics returned in responses.
+ *
  * <h2>Reference storage</h2>
  *
  * <p>{@link org.eclipse.milo.opcua.sdk.server.AddressSpaceManager} aggregates references from every

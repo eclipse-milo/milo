@@ -10,23 +10,22 @@
 
 package org.eclipse.milo.opcua.sdk.server.events;
 
+import org.eclipse.milo.opcua.stack.core.Diagnostic;
 import org.eclipse.milo.opcua.stack.core.UaException;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 
+/** Thrown when an element or operand of an event filter is invalid. */
 public class ValidationException extends UaException {
 
-  private final DiagnosticInfo diagnosticInfo;
-
   public ValidationException(long statusCode) {
-    this(statusCode, DiagnosticInfo.NULL_VALUE);
-  }
-
-  public ValidationException(long statusCode, DiagnosticInfo diagnosticInfo) {
     super(statusCode);
-    this.diagnosticInfo = diagnosticInfo;
   }
 
-  public DiagnosticInfo getDiagnosticInfo() {
-    return diagnosticInfo;
+  /**
+   * @param statusCode the status that explains why the filter is invalid.
+   * @param diagnostic the diagnostic that explains {@code statusCode}.
+   */
+  public ValidationException(long statusCode, Diagnostic diagnostic) {
+    super(new StatusCode(statusCode), null, diagnostic);
   }
 }

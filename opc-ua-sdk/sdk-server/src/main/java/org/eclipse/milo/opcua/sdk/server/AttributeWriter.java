@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.server;
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.NumericRange;
 import org.eclipse.milo.opcua.sdk.core.ValueRanks;
@@ -51,13 +52,7 @@ public class AttributeWriter {
       DataValue value,
       @Nullable String indexRange) {
 
-    Optional<AttributeId> aid = AttributeId.from(attributeId);
-
-    if (aid.isPresent()) {
-      return writeAttribute(context, node, aid.get(), value, indexRange);
-    } else {
-      return new StatusCode(StatusCodes.Bad_AttributeIdInvalid);
-    }
+    return writeAttribute(context, node, attributeId, value, indexRange, diagnostic -> {});
   }
 
   public static StatusCode writeAttribute(
@@ -66,6 +61,42 @@ public class AttributeWriter {
       AttributeId attributeId,
       DataValue value,
       @Nullable String indexRange) {
+
+    return writeAttribute(context, node, attributeId, value, indexRange, diagnostic -> {});
+  }
+
+  /**
+   * Write an attribute, passing the {@link Diagnostic} of any exception that fails the write to
+   * {@code diagnostics}.
+   */
+  static StatusCode writeAttribute(
+      AccessContext context,
+      UaServerNode node,
+      UInteger attributeId,
+      DataValue value,
+      @Nullable String indexRange,
+      Consumer<Diagnostic> diagnostics) {
+
+    Optional<AttributeId> aid = AttributeId.from(attributeId);
+
+    if (aid.isPresent()) {
+      return writeAttribute(context, node, aid.get(), value, indexRange, diagnostics);
+    } else {
+      return new StatusCode(StatusCodes.Bad_AttributeIdInvalid);
+    }
+  }
+
+  /**
+   * Write an attribute, passing the {@link Diagnostic} of any exception that fails the write to
+   * {@code diagnostics}.
+   */
+  static StatusCode writeAttribute(
+      AccessContext context,
+      UaServerNode node,
+      AttributeId attributeId,
+      DataValue value,
+      @Nullable String indexRange,
+      Consumer<Diagnostic> diagnostics) {
 
     if (!AttributeId.getAttributes(node.getNodeClass()).contains(attributeId)) {
       return new StatusCode(StatusCodes.Bad_AttributeIdInvalid);
@@ -145,6 +176,7 @@ public class AttributeWriter {
 
         updateVariant = new Variant(valueAtRange);
       } catch (UaException e) {
+        e.getDiagnostic().ifPresent(diagnostics);
         return e.getStatusCode();
       }
     }
@@ -195,6 +227,7 @@ public class AttributeWriter {
 
         value = validateArrayType(valueRank, arrayDimensions, value);
       } catch (UaException e) {
+        e.getDiagnostic().ifPresent(diagnostics);
         return e.getStatusCode();
       }
     }
@@ -205,6 +238,7 @@ public class AttributeWriter {
         attributeValue =
             convertAttributeValue(node.getNodeContext(), attributeId, value.value().value());
       } catch (UaException e) {
+        e.getDiagnostic().ifPresent(diagnostics);
         return e.getStatusCode();
       }
     }
@@ -213,8 +247,10 @@ public class AttributeWriter {
       node.writeAttribute(context, attributeId, attributeValue);
       return StatusCode.GOOD;
     } catch (UaException e) {
+      e.getDiagnostic().ifPresent(diagnostics);
       return e.getStatusCode();
     } catch (UaRuntimeException e) {
+      e.getDiagnostic().ifPresent(diagnostics);
       return e.getStatusCode();
     } catch (ClassCastException e) {
       return new StatusCode(StatusCodes.Bad_TypeMismatch);

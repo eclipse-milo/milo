@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.server;
 
 import static org.eclipse.milo.opcua.stack.core.util.ArrayUtil.transformArray;
 
+import java.util.function.Consumer;
 import org.eclipse.milo.opcua.sdk.core.NumericRange;
 import org.eclipse.milo.opcua.sdk.core.nodes.Node;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
@@ -20,6 +21,7 @@ import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaServerNode;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.Diagnostic;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -42,9 +44,8 @@ public class AttributeReader {
       @Nullable String indexRange,
       @Nullable QualifiedName encodingName) {
 
-    return AttributeId.from(attributeId)
-        .map(id -> readAttribute(context, node, id, timestamps, indexRange, encodingName))
-        .orElseGet(() -> new DataValue(StatusCodes.Bad_AttributeIdInvalid));
+    return readAttribute(
+        context, node, attributeId, timestamps, indexRange, encodingName, diagnostic -> {});
   }
 
   public static DataValue readAttribute(
@@ -55,6 +56,43 @@ public class AttributeReader {
       @Nullable String indexRange,
       @Nullable QualifiedName encodingName) {
 
+    return readAttribute(
+        context, node, attributeId, timestamps, indexRange, encodingName, diagnostic -> {});
+  }
+
+  /**
+   * Read an attribute, passing the {@link Diagnostic} of any exception that fails the read to
+   * {@code diagnostics}.
+   */
+  static DataValue readAttribute(
+      AccessContext context,
+      UaServerNode node,
+      UInteger attributeId,
+      @Nullable TimestampsToReturn timestamps,
+      @Nullable String indexRange,
+      @Nullable QualifiedName encodingName,
+      Consumer<Diagnostic> diagnostics) {
+
+    return AttributeId.from(attributeId)
+        .map(
+            id ->
+                readAttribute(context, node, id, timestamps, indexRange, encodingName, diagnostics))
+        .orElseGet(() -> new DataValue(StatusCodes.Bad_AttributeIdInvalid));
+  }
+
+  /**
+   * Read an attribute, passing the {@link Diagnostic} of any exception that fails the read to
+   * {@code diagnostics}.
+   */
+  static DataValue readAttribute(
+      AccessContext context,
+      UaServerNode node,
+      AttributeId attributeId,
+      @Nullable TimestampsToReturn timestamps,
+      @Nullable String indexRange,
+      @Nullable QualifiedName encodingName,
+      Consumer<Diagnostic> diagnostics) {
+
     if (!AttributeId.getAttributes(node.getNodeClass()).contains(attributeId)) {
       return new DataValue(StatusCodes.Bad_AttributeIdInvalid);
     }
@@ -63,6 +101,7 @@ public class AttributeReader {
     try {
       value = node.readAttribute(context, attributeId);
     } catch (UaException e) {
+      e.getDiagnostic().ifPresent(diagnostics);
       return new DataValue(e.getStatusCode());
     }
 
@@ -112,6 +151,7 @@ public class AttributeReader {
               .applyTimestamps(attributeId, timestamps)
               .build();
         } catch (UaException e) {
+          e.getDiagnostic().ifPresent(diagnostics);
           return new DataValue(e.getStatusCode());
         }
       } else {
@@ -167,6 +207,7 @@ public class AttributeReader {
 
           value = NumericRange.readFromValueAtRange(value, range);
         } catch (UaException e) {
+          e.getDiagnostic().ifPresent(diagnostics);
           return new DataValue(e.getStatusCode());
         }
       }

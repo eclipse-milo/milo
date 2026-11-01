@@ -11,20 +11,21 @@
 package org.eclipse.milo.opcua.sdk.server.servicesets.impl;
 
 import static org.eclipse.milo.opcua.sdk.core.util.GroupMapCollate.groupMapCollate;
-import static org.eclipse.milo.opcua.sdk.server.servicesets.AbstractServiceSet.createResponseHeader;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.AddNodesContext;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.AddReferencesContext;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.DeleteNodesContext;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.DeleteReferencesContext;
-import org.eclipse.milo.opcua.sdk.server.DiagnosticsContext;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
+import org.eclipse.milo.opcua.sdk.server.OperationDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.servicesets.NodeManagementServiceSet;
+import org.eclipse.milo.opcua.sdk.server.servicesets.Service;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
@@ -137,13 +138,16 @@ public class DefaultNodeManagementServiceSet implements NodeManagementServiceSet
       throw new UaException(StatusCodes.Bad_TooManyOperations);
     }
 
-    var diagnosticsContext = new DiagnosticsContext<AddNodesItem>();
+    ServiceDiagnostics diagnostics =
+        ServiceDiagnostics.create(server, session, Service.NODE_MANAGEMENT_ADD_NODES, request);
+
+    OperationDiagnostics<AddNodesItem> operationDiagnostics = diagnostics.collect(nodesToAdd);
 
     var addNodesContext =
         new AddNodesContext(
             server,
             session,
-            diagnosticsContext,
+            operationDiagnostics,
             request.getRequestHeader().getAuditEntryId(),
             request.getRequestHeader().getTimeoutHint(),
             request.getRequestHeader().getAdditionalHeader());
@@ -151,9 +155,10 @@ public class DefaultNodeManagementServiceSet implements NodeManagementServiceSet
     List<AddNodesResult> results =
         server.getAddressSpaceManager().addNodes(addNodesContext, nodesToAdd);
 
-    DiagnosticInfo[] diagnosticInfos = diagnosticsContext.getDiagnosticInfos(nodesToAdd);
+    DiagnosticInfo[] diagnosticInfos =
+        diagnostics.encodeOperations(operationDiagnostics, results, AddNodesResult::getStatusCode);
 
-    ResponseHeader header = createResponseHeader(request);
+    ResponseHeader header = diagnostics.responseHeader(request);
 
     return new AddNodesResponse(header, results.toArray(AddNodesResult[]::new), diagnosticInfos);
   }
@@ -172,7 +177,10 @@ public class DefaultNodeManagementServiceSet implements NodeManagementServiceSet
       throw new UaException(StatusCodes.Bad_TooManyOperations);
     }
 
-    var diagnosticsContext = new DiagnosticsContext<DeleteNodesItem>();
+    ServiceDiagnostics diagnostics =
+        ServiceDiagnostics.create(server, session, Service.NODE_MANAGEMENT_DELETE_NODES, request);
+
+    OperationDiagnostics<DeleteNodesItem> operationDiagnostics = diagnostics.collect(nodesToDelete);
 
     Map<DeleteNodesItem, AccessResult> accessResults =
         server.getAccessController().checkDeleteNodesAccess(session, nodesToDelete);
@@ -190,7 +198,7 @@ public class DefaultNodeManagementServiceSet implements NodeManagementServiceSet
                         new DeleteNodesContext(
                             server,
                             session,
-                            diagnosticsContext,
+                            operationDiagnostics,
                             request.getRequestHeader().getAuditEntryId(),
                             request.getRequestHeader().getTimeoutHint(),
                             request.getRequestHeader().getAdditionalHeader());
@@ -199,9 +207,10 @@ public class DefaultNodeManagementServiceSet implements NodeManagementServiceSet
                   }
                 });
 
-    DiagnosticInfo[] diagnosticInfos = diagnosticsContext.getDiagnosticInfos(nodesToDelete);
+    DiagnosticInfo[] diagnosticInfos =
+        diagnostics.encodeOperations(operationDiagnostics, results, Function.identity());
 
-    ResponseHeader header = createResponseHeader(request);
+    ResponseHeader header = diagnostics.responseHeader(request);
 
     return new DeleteNodesResponse(header, results.toArray(StatusCode[]::new), diagnosticInfos);
   }
@@ -220,7 +229,11 @@ public class DefaultNodeManagementServiceSet implements NodeManagementServiceSet
       throw new UaException(StatusCodes.Bad_TooManyOperations);
     }
 
-    var diagnosticsContext = new DiagnosticsContext<AddReferencesItem>();
+    ServiceDiagnostics diagnostics =
+        ServiceDiagnostics.create(server, session, Service.NODE_MANAGEMENT_ADD_REFERENCES, request);
+
+    OperationDiagnostics<AddReferencesItem> operationDiagnostics =
+        diagnostics.collect(referencesToAdd);
 
     Map<AddReferencesItem, AccessResult> accessResults =
         server.getAccessController().checkAddReferencesAccess(session, referencesToAdd);
@@ -238,7 +251,7 @@ public class DefaultNodeManagementServiceSet implements NodeManagementServiceSet
                         new AddReferencesContext(
                             server,
                             session,
-                            diagnosticsContext,
+                            operationDiagnostics,
                             request.getRequestHeader().getAuditEntryId(),
                             request.getRequestHeader().getTimeoutHint(),
                             request.getRequestHeader().getAdditionalHeader());
@@ -249,9 +262,10 @@ public class DefaultNodeManagementServiceSet implements NodeManagementServiceSet
                   }
                 });
 
-    DiagnosticInfo[] diagnosticInfos = diagnosticsContext.getDiagnosticInfos(referencesToAdd);
+    DiagnosticInfo[] diagnosticInfos =
+        diagnostics.encodeOperations(operationDiagnostics, results, Function.identity());
 
-    ResponseHeader header = createResponseHeader(request);
+    ResponseHeader header = diagnostics.responseHeader(request);
 
     return new AddReferencesResponse(header, results.toArray(new StatusCode[0]), diagnosticInfos);
   }
@@ -271,7 +285,12 @@ public class DefaultNodeManagementServiceSet implements NodeManagementServiceSet
       throw new UaException(StatusCodes.Bad_TooManyOperations);
     }
 
-    var diagnosticsContext = new DiagnosticsContext<DeleteReferencesItem>();
+    ServiceDiagnostics diagnostics =
+        ServiceDiagnostics.create(
+            server, session, Service.NODE_MANAGEMENT_DELETE_REFERENCES, request);
+
+    OperationDiagnostics<DeleteReferencesItem> operationDiagnostics =
+        diagnostics.collect(referencesToDelete);
 
     Map<DeleteReferencesItem, AccessResult> accessResults =
         server.getAccessController().checkDeleteReferencesAccess(session, referencesToDelete);
@@ -289,7 +308,7 @@ public class DefaultNodeManagementServiceSet implements NodeManagementServiceSet
                         new DeleteReferencesContext(
                             server,
                             session,
-                            diagnosticsContext,
+                            operationDiagnostics,
                             request.getRequestHeader().getAuditEntryId(),
                             request.getRequestHeader().getTimeoutHint(),
                             request.getRequestHeader().getAdditionalHeader());
@@ -300,9 +319,10 @@ public class DefaultNodeManagementServiceSet implements NodeManagementServiceSet
                   }
                 });
 
-    DiagnosticInfo[] diagnosticInfos = diagnosticsContext.getDiagnosticInfos(referencesToDelete);
+    DiagnosticInfo[] diagnosticInfos =
+        diagnostics.encodeOperations(operationDiagnostics, results, Function.identity());
 
-    ResponseHeader header = createResponseHeader(request);
+    ResponseHeader header = diagnostics.responseHeader(request);
 
     return new DeleteReferencesResponse(
         header, results.toArray(StatusCode[]::new), diagnosticInfos);

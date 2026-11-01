@@ -265,7 +265,7 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
                   new RegisterNodesContext(
                       server,
                       context.getSession().orElse(null),
-                      context.getDiagnosticsContext(),
+                      context.getOperationDiagnostics(),
                       context.getAuditEntryId(),
                       context.getTimeoutHint(),
                       context.getAdditionalHeader());
@@ -285,7 +285,7 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
                   new UnregisterNodesContext(
                       server,
                       context.getSession().orElse(null),
-                      context.getDiagnosticsContext(),
+                      context.getOperationDiagnostics(),
                       context.getAuditEntryId(),
                       context.getTimeoutHint(),
                       context.getAdditionalHeader());
@@ -323,7 +323,7 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
                   new ReadContext(
                       server,
                       context.getSession().orElse(null),
-                      context.getDiagnosticsContext(),
+                      context.getOperationDiagnostics(),
                       context.getAuditEntryId(),
                       context.getTimeoutHint(),
                       context.getAdditionalHeader());
@@ -343,7 +343,7 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
                   new WriteContext(
                       server,
                       context.getSession().orElse(null),
-                      context.getDiagnosticsContext(),
+                      context.getOperationDiagnostics(),
                       context.getAuditEntryId(),
                       context.getTimeoutHint(),
                       context.getAdditionalHeader());
@@ -372,7 +372,7 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
                   new HistoryReadContext(
                       server,
                       context.getSession().orElse(null),
-                      context.getDiagnosticsContext(),
+                      context.getOperationDiagnostics(),
                       context.getAuditEntryId(),
                       context.getTimeoutHint(),
                       context.getAdditionalHeader());
@@ -411,7 +411,7 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
                   new HistoryUpdateContext(
                       server,
                       context.getSession().orElse(null),
-                      context.getDiagnosticsContext(),
+                      context.getOperationDiagnostics(),
                       context.getAuditEntryId(),
                       context.getTimeoutHint(),
                       context.getAdditionalHeader());
@@ -435,7 +435,7 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
                   new CallContext(
                       server,
                       context.getSession().orElse(null),
-                      context.getDiagnosticsContext(),
+                      context.getOperationDiagnostics(),
                       context.getAuditEntryId(),
                       context.getTimeoutHint(),
                       context.getAdditionalHeader());
@@ -598,7 +598,7 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
                   new AddNodesContext(
                       server,
                       context.getSession().orElse(null),
-                      context.getDiagnosticsContext(),
+                      context.getOperationDiagnostics(),
                       context.getAuditEntryId(),
                       context.getTimeoutHint(),
                       context.getAdditionalHeader());
@@ -619,7 +619,7 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
                   new DeleteNodesContext(
                       server,
                       context.getSession().orElse(null),
-                      context.getDiagnosticsContext(),
+                      context.getOperationDiagnostics(),
                       context.getAuditEntryId(),
                       context.getTimeoutHint(),
                       context.getAdditionalHeader());
@@ -640,7 +640,7 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
                   new AddReferencesContext(
                       server,
                       context.getSession().orElse(null),
-                      context.getDiagnosticsContext(),
+                      context.getOperationDiagnostics(),
                       context.getAuditEntryId(),
                       context.getTimeoutHint(),
                       context.getAdditionalHeader());
@@ -661,7 +661,7 @@ public abstract class SimpleAddressSpaceComposite implements AddressSpaceFragmen
                   new DeleteReferencesContext(
                       server,
                       context.getSession().orElse(null),
-                      context.getDiagnosticsContext(),
+                      context.getOperationDiagnostics(),
                       context.getAuditEntryId(),
                       context.getTimeoutHint(),
                       context.getAdditionalHeader());
