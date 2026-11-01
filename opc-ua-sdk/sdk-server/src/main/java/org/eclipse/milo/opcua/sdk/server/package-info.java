@@ -90,11 +90,10 @@
  * <ul>
  *   <li>Code throws a {@link org.eclipse.milo.opcua.stack.core.UaException} that carries one. The
  *       SDK records it when an attribute filter, value delegate or node fails a Read or Write in a
- *       {@link org.eclipse.milo.opcua.sdk.server.ManagedAddressSpace}, when an {@code
- *       AbstractMethodInvocationHandler} or the Method lookup fails a Call, and when a service set
- *       fails a whole request, where it becomes the ServiceFault's service diagnostic. A {@code
- *       UaException} from the client SDK carries the diagnostic of the server that sent it, so an
- *       address space that rethrows one forwards that diagnostic.
+ *       {@link org.eclipse.milo.opcua.sdk.server.ManagedAddressSpace}, when the Method lookup fails
+ *       a Call, and when a service set fails a whole request, where it becomes the ServiceFault's
+ *       service diagnostic. A {@code UaException} from the client SDK carries the diagnostic of the
+ *       server that sent it, so an address space that rethrows one forwards that diagnostic.
  *   <li>An {@link org.eclipse.milo.opcua.sdk.server.AddressSpace} that builds its own results
  *       reports through the {@link org.eclipse.milo.opcua.sdk.server.OperationDiagnostics} of its
  *       operation context. Composites pass the parent context's collector to every child, so all

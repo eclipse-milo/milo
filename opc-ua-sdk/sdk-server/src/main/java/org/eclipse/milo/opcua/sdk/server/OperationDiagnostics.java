@@ -27,8 +27,8 @@ import org.jspecify.annotations.NullMarked;
  *
  * <p>Most address spaces never use this directly. An address space built on {@link
  * ManagedAddressSpace} reports by throwing a {@link UaException} that carries a diagnostic from a
- * node, attribute filter, value delegate, or Method handler; the SDK records it here. An address
- * space that builds its own results reports through its context:
+ * node, attribute filter or value delegate; the SDK records it here. An address space that builds
+ * its own results reports through its context:
  *
  * <pre>{@code
  * for (WriteValue writeValue : writeValues) {
