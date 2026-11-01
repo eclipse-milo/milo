@@ -18,9 +18,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfigBuilder;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
 import org.eclipse.milo.opcua.sdk.server.servicesets.AttributeServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.DiscoveryServiceSet;
@@ -30,6 +34,7 @@ import org.eclipse.milo.opcua.sdk.test.AbstractClientServerTest;
 import org.eclipse.milo.opcua.sdk.test.TestServer;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.Diagnostic;
+import org.eclipse.milo.opcua.stack.core.ReturnDiagnostics;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaServiceFaultException;
@@ -78,6 +83,13 @@ class ServiceFaultDiagnosticsTest extends AbstractClientServerTest {
 
   private final AtomicReference<DiagnosticsPolicy> policy =
       new AtomicReference<>(DiagnosticsPolicy.defaults());
+
+  // Service-level fields only, so faults explain themselves without operation-level traffic.
+  @Override
+  protected void customizeClientConfig(OpcUaClientConfigBuilder configBuilder) {
+    configBuilder.setReturnDiagnostics(
+        new ReturnDiagnostics(EnumSet.allOf(ReturnDiagnostics.Field.class), Set.of()));
+  }
 
   @Override
   protected TestServer createTestServer() throws Exception {
@@ -158,6 +170,22 @@ class ServiceFaultDiagnosticsTest extends AbstractClientServerTest {
     } finally {
       policy.set(DiagnosticsPolicy.defaults());
     }
+  }
+
+  // The blocking API wraps the failed future's cause in a new UaException. A caller that catches
+  // UaException must still see the server's explanation.
+  @Test
+  void blockingCallerSeesTheFaultDiagnostic() {
+    var readValueId =
+        new ReadValueId(OFFLINE, AttributeId.Value.uid(), null, QualifiedName.NULL_VALUE);
+
+    UaException e =
+        assertThrows(
+            UaException.class,
+            () -> client.read(0.0, TimestampsToReturn.Neither, List.of(readValueId)));
+
+    assertEquals(new StatusCode(StatusCodes.Bad_ResourceUnavailable), e.getStatusCode());
+    assertEquals(OFFLINE_DIAGNOSTIC, e.getDiagnostic().orElseThrow());
   }
 
   private UaServiceFaultException fault(UaRequestMessageType request) {

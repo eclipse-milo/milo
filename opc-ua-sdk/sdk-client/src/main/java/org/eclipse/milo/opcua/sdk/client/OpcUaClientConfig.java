@@ -17,6 +17,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
+import org.eclipse.milo.opcua.stack.core.ReturnDiagnostics;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
@@ -262,6 +263,19 @@ public interface OpcUaClientConfig {
   }
 
   /**
+   * Get the diagnostics the client asks servers to return with each request it creates.
+   *
+   * <p>{@link OpcUaClient#newRequestHeader()} puts this in the {@code returnDiagnostics} of every
+   * request header. A request built with a header of its own keeps that header's mask.
+   *
+   * @return the {@link ReturnDiagnostics}; {@link ReturnDiagnostics#NONE} unless configured.
+   * @see OpcUaClientConfigBuilder#setReturnDiagnostics(ReturnDiagnostics)
+   */
+  default ReturnDiagnostics getReturnDiagnostics() {
+    return ReturnDiagnostics.NONE;
+  }
+
+  /**
    * @return a new {@link OpcUaClientConfigBuilder}.
    */
   static OpcUaClientConfigBuilder builder() {
@@ -302,6 +316,7 @@ public interface OpcUaClientConfig {
     builder.setSessionEndpointValidationEnabled(config.isSessionEndpointValidationEnabled());
     config.getSecurityKeysListener().ifPresent(builder::setSecurityKeysListener);
     config.getOperationLimitOverrides().ifPresent(builder::setOperationLimitOverrides);
+    builder.setReturnDiagnostics(config.getReturnDiagnostics());
 
     return builder;
   }

@@ -57,16 +57,16 @@ import org.jspecify.annotations.Nullable;
  * ManagedAddressSpace} application reports. The other services report through their context's
  * {@link OperationDiagnostics}, the way an address space that builds its own results reports.
  */
-final class ReportingNamespace extends ManagedNamespaceWithLifecycle {
+public final class ReportingNamespace extends ManagedNamespaceWithLifecycle {
 
-  static final String BLOCKED = "blocked";
-  static final String OK = "ok";
+  public static final String BLOCKED = "blocked";
+  public static final String OK = "ok";
 
   private final String label;
 
   private final UaObjectNode owner;
 
-  ReportingNamespace(OpcUaServer server, String namespaceUri, String label) {
+  public ReportingNamespace(OpcUaServer server, String namespaceUri, String label) {
     super(server, namespaceUri);
 
     this.label = label;
@@ -118,7 +118,7 @@ final class ReportingNamespace extends ManagedNamespaceWithLifecycle {
   }
 
   /** The diagnostic every blocked operation in this namespace reports. */
-  Diagnostic diagnostic() {
+  public Diagnostic diagnostic() {
     return Diagnostic.symbolic(getNamespaceUri(), "E_BLOCKED")
         .withText("Blocked in " + label)
         .withAdditionalInfo("detail for " + label)
@@ -126,20 +126,25 @@ final class ReportingNamespace extends ManagedNamespaceWithLifecycle {
   }
 
   /** The diagnostic a blocked Method call reports for its one input argument. */
-  Diagnostic argumentDiagnostic() {
+  public Diagnostic argumentDiagnostic() {
     return Diagnostic.text("Speed is out of range in " + label);
   }
 
   /** The diagnostic a blocked HistoryUpdate reports for its second value. */
-  Diagnostic valueDiagnostic() {
+  public Diagnostic valueDiagnostic() {
     return Diagnostic.text("Value exists in " + label);
   }
 
-  NodeId nodeId(String name) {
+  public NodeId nodeId(String name) {
     return newNodeId(name);
   }
 
-  CallMethodRequest callRequest(String name) {
+  /** The NodeId of the Object that owns the blocked and ok Methods. */
+  public NodeId ownerId() {
+    return owner.getNodeId();
+  }
+
+  public CallMethodRequest callRequest(String name) {
     return new CallMethodRequest(
         owner.getNodeId(), newNodeId("method/" + name), new Variant[] {new Variant(1.0)});
   }

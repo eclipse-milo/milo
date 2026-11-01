@@ -1543,7 +1543,8 @@ public class OpcUaClient {
   /**
    * Create a new {@link RequestHeader} with {@code authToken} and {@code requestTimeout}.
    *
-   * <p>A unique request handle will be automatically assigned to the header.
+   * <p>A unique request handle will be automatically assigned to the header. Its {@code
+   * returnDiagnostics} is the configured {@link OpcUaClientConfig#getReturnDiagnostics()}.
    *
    * @param authToken the authentication token to create the header with.
    * @param requestTimeout the timeout hint to create the header with.
@@ -1554,7 +1555,7 @@ public class OpcUaClient {
         authToken,
         DateTime.now(),
         uint(requestHandles.getAndIncrement()),
-        uint(0),
+        config.getReturnDiagnostics().encode(),
         null,
         requestTimeout,
         null);
