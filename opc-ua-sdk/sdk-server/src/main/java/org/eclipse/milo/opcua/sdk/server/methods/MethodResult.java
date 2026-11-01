@@ -152,11 +152,11 @@ public final class MethodResult {
   }
 
   /**
-   * The output values as the handler supplied them; {@code null} when an {@code invoke} override
+   * A copy of the output values for one Call result; {@code null} when an {@code invoke} override
    * returned null, which the Call service has always sent as a null array.
    */
   Variant @Nullable [] outputArgumentsForResponse() {
-    return outputArguments;
+    return outputArguments != null ? outputArguments.clone() : null;
   }
 
   @Override

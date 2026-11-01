@@ -173,6 +173,20 @@ class SynchronousMethodOutcomeTest {
     assertEquals(1, calls.get());
   }
 
+  // A handler may return the same MethodResult for every call. Each Call result gets its own
+  // output array, so a caller that changes one response cannot change the next.
+  @Test
+  void reusedResultGivesEachCallItsOwnOutputs() {
+    AbstractMethodInvocationHandler handler =
+        handler(1, MethodResult.uncertain(StatusCode.UNCERTAIN, new Variant(1)));
+
+    CallMethodResult first = call(handler, new Variant(7));
+    first.getOutputArguments()[0] = new Variant(2);
+    CallMethodResult second = call(handler, new Variant(7));
+
+    assertArrayEquals(new Variant[] {new Variant(1)}, second.getOutputArguments());
+  }
+
   @Test
   void goodSubcodesAreDelivered() {
     MethodResult outcome = MethodResult.good(new StatusCode(StatusCodes.Good_Clamped));
