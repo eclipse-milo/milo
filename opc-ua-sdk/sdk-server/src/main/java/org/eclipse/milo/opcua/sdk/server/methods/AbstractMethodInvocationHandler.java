@@ -20,8 +20,6 @@ import org.eclipse.milo.opcua.sdk.core.ValueRanks;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataType;
 import org.eclipse.milo.opcua.sdk.core.typetree.DataTypeTree;
 import org.eclipse.milo.opcua.sdk.server.AccessContext;
-import org.eclipse.milo.opcua.sdk.server.AddressSpace.CallContext;
-import org.eclipse.milo.opcua.sdk.server.DiagnosticsContext;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
@@ -208,13 +206,6 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
             @Override
             public Optional<Session> getSession() {
               return accessContext.getSession();
-            }
-
-            @Override
-            public Optional<DiagnosticsContext<CallMethodRequest>> getCallDiagnostics() {
-              return accessContext instanceof CallContext callContext
-                  ? Optional.of(callContext.getDiagnosticsContext())
-                  : Optional.empty();
             }
           };
 
@@ -565,15 +556,6 @@ public abstract class AbstractMethodInvocationHandler implements MethodInvocatio
    * AbstractMethodInvocationHandler}.
    */
   public interface InvocationContext extends AccessContext {
-
-    /**
-     * Get the request-wide Call diagnostics context, when invoked through the Call service.
-     *
-     * @return the context used to intern diagnostic strings, or empty for independent invocations.
-     */
-    default Optional<DiagnosticsContext<CallMethodRequest>> getCallDiagnostics() {
-      return Optional.empty();
-    }
 
     /**
      * Get the {@link OpcUaServer} instance.

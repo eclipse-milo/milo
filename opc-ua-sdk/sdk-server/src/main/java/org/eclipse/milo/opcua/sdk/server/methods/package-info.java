@@ -42,11 +42,11 @@
  * null keeps its position. A result that breaks the CallMethodResult rules is logged and reported
  * as Bad_InternalError.
  *
- * <p>When dispatched through the Call service, the invocation context exposes the request's {@link
- * org.eclipse.milo.opcua.sdk.server.DiagnosticsContext}. A handler interns diagnostic strings there
- * and returns argument diagnostics that index them, one per supplied input. After every
- * address-space group has finished, the service keeps only the fields the ReturnDiagnostics mask
- * requests and builds the response StringTable from the strings those fields reference.
+ * <p>A handler can return argument diagnostics, one per supplied input. The Call service keeps only
+ * the fields the request's ReturnDiagnostics mask asks for. Call responses carry no StringTable, so
+ * a handler reports through additional info and inner status codes; a requested symbolic id or
+ * localized text that indexes a StringTable causes that operation's argument diagnostics to be
+ * dropped.
  *
  * <p>{@link org.eclipse.milo.opcua.sdk.server.methods.MethodBindings} is an application-owned
  * lifetime for ObjectId-specific handlers on Methods shared by several Objects. Bind validates the

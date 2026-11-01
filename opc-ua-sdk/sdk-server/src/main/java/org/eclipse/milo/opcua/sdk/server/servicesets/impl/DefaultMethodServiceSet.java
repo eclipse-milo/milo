@@ -27,7 +27,6 @@ import org.eclipse.milo.opcua.sdk.server.servicesets.MethodServiceSet;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
-import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallRequest;
@@ -77,10 +76,7 @@ public class DefaultMethodServiceSet implements MethodServiceSet {
     Map<CallMethodRequest, AccessResult> accessResults =
         server.getAccessController().checkCallAccess(session, methodsToCall);
 
-    // One context for the whole request, so handlers in every group share a string table.
-    var diagnosticsContext =
-        new DiagnosticsContext<CallMethodRequest>(
-            requireNonNullElse(request.getRequestHeader().getReturnDiagnostics(), uint(0)));
+    var diagnosticsContext = new DiagnosticsContext<CallMethodRequest>();
 
     List<CallMethodResult> results =
         groupMapCollate(
@@ -105,17 +101,15 @@ public class DefaultMethodServiceSet implements MethodServiceSet {
                   }
                 });
 
-    MethodDiagnostics.Normalized normalized =
+    CallMethodResult[] normalized =
         MethodDiagnostics.normalize(
-            diagnosticsContext.getReturnDiagnostics(),
+            requireNonNullElse(request.getRequestHeader().getReturnDiagnostics(), uint(0)),
             methodsToCall,
             results,
-            diagnosticsContext.getStringTable(),
             server.getConfig().getEncodingLimits().getMaxRecursionDepth());
 
-    ResponseHeader header =
-        createResponseHeader(request, StatusCode.GOOD, normalized.stringTable(), null);
+    ResponseHeader header = createResponseHeader(request);
 
-    return new CallResponse(header, normalized.results(), new DiagnosticInfo[0]);
+    return new CallResponse(header, normalized, new DiagnosticInfo[0]);
   }
 }

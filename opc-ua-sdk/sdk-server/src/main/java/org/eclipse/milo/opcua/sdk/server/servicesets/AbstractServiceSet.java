@@ -37,20 +37,12 @@ public abstract class AbstractServiceSet {
       UaRequestMessageType request,
       StatusCode serviceResult,
       @Nullable ExtensionObject additionalHeader) {
-    return createResponseHeader(request, serviceResult, null, additionalHeader);
-  }
-
-  public static ResponseHeader createResponseHeader(
-      UaRequestMessageType request,
-      StatusCode serviceResult,
-      String @Nullable [] stringTable,
-      @Nullable ExtensionObject additionalHeader) {
     return new ResponseHeader(
         DateTime.now(),
         request.getRequestHeader().getRequestHandle(),
         serviceResult,
         null,
-        stringTable,
+        null,
         additionalHeader);
   }
 

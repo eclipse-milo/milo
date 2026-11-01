@@ -10,9 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.servicesets.impl;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -26,13 +24,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Reduces the argument diagnostics returned by Method handlers to the fields the client requested
- * and builds the response StringTable those fields reference.
+ * Reduces the argument diagnostics returned by Method handlers to the fields the client requested.
  *
- * <p>Handlers intern strings in the request's working string table and index it from the
- * DiagnosticInfo entries they return. Only strings referenced by a requested field are carried into
- * the response table, so every retained index is reassigned here. Malformed diagnostics are dropped
- * from their operation without changing its status or outputs, because the Method has already run.
+ * <p>Call responses carry no StringTable, so a requested symbolic id or localized text that indexes
+ * one makes its entry malformed. Malformed diagnostics are dropped from their operation without
+ * changing its status or outputs, because the Method has already run.
  */
 final class MethodDiagnostics {
 
@@ -49,48 +45,38 @@ final class MethodDiagnostics {
   private static final int OPERATION_LEVEL =
       SYMBOLIC_ID | LOCALIZED_TEXT | ADDITIONAL_INFO | INNER_STATUS_CODE | INNER_DIAGNOSTICS;
 
-  private final Map<String, Integer> table = new LinkedHashMap<>();
-
   private final int mask;
-  private final String[] source;
   private final int maxDepth;
 
-  private MethodDiagnostics(int mask, String[] source, int maxDepth) {
+  private MethodDiagnostics(int mask, int maxDepth) {
     this.mask = mask;
-    this.source = source;
     this.maxDepth = maxDepth;
   }
 
   /**
-   * Filter the argument diagnostics of each result and build the response StringTable.
+   * Filter the argument diagnostics of each result.
    *
    * @param returnDiagnostics the request's ReturnDiagnostics mask.
    * @param requests the operations, in request order.
    * @param results one result per operation, in the same order.
-   * @param source the request's working string table, as indexed by the results.
    * @param maxDepth the deepest inner DiagnosticInfo nesting accepted.
-   * @return the results to send, and the StringTable their diagnostics index, or {@code null} when
-   *     no string is referenced.
+   * @return the results to send, in request order.
    */
-  static Normalized normalize(
+  static CallMethodResult[] normalize(
       UInteger returnDiagnostics,
       List<CallMethodRequest> requests,
       List<CallMethodResult> results,
-      String[] source,
       int maxDepth) {
 
     var diagnostics =
-        new MethodDiagnostics(returnDiagnostics.intValue() & OPERATION_LEVEL, source, maxDepth);
+        new MethodDiagnostics(returnDiagnostics.intValue() & OPERATION_LEVEL, maxDepth);
 
     var normalized = new CallMethodResult[results.size()];
     for (int i = 0; i < normalized.length; i++) {
       normalized[i] = diagnostics.normalize(requests.get(i), results.get(i));
     }
 
-    String[] stringTable =
-        diagnostics.table.isEmpty() ? null : diagnostics.table.keySet().toArray(String[]::new);
-
-    return new Normalized(normalized, stringTable);
+    return normalized;
   }
 
   private CallMethodResult normalize(CallMethodRequest request, @Nullable CallMethodResult result) {
@@ -152,9 +138,14 @@ final class MethodDiagnostics {
     if (depth >= maxDepth) {
       throw new IllegalArgumentException("inner DiagnosticInfo nesting exceeds " + maxDepth);
     }
-
-    boolean symbolicId = (mask & SYMBOLIC_ID) != 0;
-    boolean localizedText = (mask & LOCALIZED_TEXT) != 0;
+    if ((mask & SYMBOLIC_ID) != 0) {
+      requireNoIndex(info.namespaceUri(), "namespaceUri");
+      requireNoIndex(info.symbolicId(), "symbolicId");
+    }
+    if ((mask & LOCALIZED_TEXT) != 0) {
+      requireNoIndex(info.locale(), "locale");
+      requireNoIndex(info.localizedText(), "localizedText");
+    }
 
     DiagnosticInfo inner =
         (mask & INNER_DIAGNOSTICS) != 0
@@ -162,26 +153,19 @@ final class MethodDiagnostics {
             : DiagnosticInfo.NULL_VALUE;
 
     return new DiagnosticInfo(
-        symbolicId ? index(info.namespaceUri()) : -1,
-        symbolicId ? index(info.symbolicId()) : -1,
-        localizedText ? index(info.locale()) : -1,
-        localizedText ? index(info.localizedText()) : -1,
+        -1,
+        -1,
+        -1,
+        -1,
         (mask & ADDITIONAL_INFO) != 0 ? info.additionalInfo() : null,
         (mask & INNER_STATUS_CODE) != 0 ? info.innerStatusCode() : null,
         DiagnosticInfo.NULL_VALUE.equals(inner) ? null : inner);
   }
 
-  /** Map an index into the working table to its index in the response table. */
-  private int index(int original) {
-    if (original == -1) {
-      return -1;
-    }
-    if (original < 0 || original >= source.length) {
+  private static void requireNoIndex(int index, String field) {
+    if (index != -1) {
       throw new IllegalArgumentException(
-          "string index " + original + " is not in the request's string table");
+          field + " index " + index + " references a StringTable the response does not carry");
     }
-    return table.computeIfAbsent(source[original], s -> table.size());
   }
-
-  record Normalized(CallMethodResult[] results, String @Nullable [] stringTable) {}
 }

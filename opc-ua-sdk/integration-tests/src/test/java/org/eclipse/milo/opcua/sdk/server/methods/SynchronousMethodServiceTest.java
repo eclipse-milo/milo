@@ -18,7 +18,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfigBuilder;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
 import org.eclipse.milo.opcua.sdk.client.identity.UsernameProvider;
-import org.eclipse.milo.opcua.sdk.server.DiagnosticsContext;
 import org.eclipse.milo.opcua.sdk.server.ManagedNamespaceWithLifecycle;
 import org.eclipse.milo.opcua.sdk.server.items.DataItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
@@ -60,7 +59,7 @@ class SynchronousMethodServiceTest extends AbstractClientServerTest {
 
   // The request crosses two namespace dispatch groups and one denied access group.
   @Test
-  void authenticatedCallSharesDiagnosticTableAcrossGroupsAndRetainsDeniedPosition()
+  void authenticatedCallReturnsArgumentDiagnosticsAcrossGroupsAndRetainsDeniedPosition()
       throws Exception {
     int deniedBefore = first.deniedCalls.get();
     CallResponse response =
@@ -78,14 +77,13 @@ class SynchronousMethodServiceTest extends AbstractClientServerTest {
       assertEquals(new StatusCode(StatusCodes.Bad_InvalidArgument), result.getStatusCode());
       assertEquals(1, result.getInputArgumentDiagnosticInfos().length);
       DiagnosticInfo info = result.getInputArgumentDiagnosticInfos()[0];
-      String[] table = response.getResponseHeader().getStringTable();
-      assertEquals("urn:vendor", table[info.namespaceUri()]);
-      assertEquals("range", table[info.symbolicId()]);
-      assertEquals("en", table[info.locale()]);
-      assertEquals("outside range", table[info.localizedText()]);
-      assertEquals("argument", info.additionalInfo());
+      assertEquals(
+          new DiagnosticInfo(
+              -1, -1, -1, -1, "argument", new StatusCode(StatusCodes.Bad_OutOfRange), null),
+          info);
     }
-    assertEquals(4, response.getResponseHeader().getStringTable().length);
+    String[] table = response.getResponseHeader().getStringTable();
+    assertTrue(table == null || table.length == 0);
     assertTrue(response.getDiagnosticInfos() == null || response.getDiagnosticInfos().length == 0);
     assertTrue(
         response.getResponseHeader().getServiceDiagnostics() == null
@@ -217,16 +215,14 @@ class SynchronousMethodServiceTest extends AbstractClientServerTest {
                       values.length == 0 ? new Variant[] {new Variant("omitted")} : values);
                 }
                 if (name.equals("denied")) deniedCalls.incrementAndGet();
-                DiagnosticsContext<CallMethodRequest> diagnostics =
-                    context.getCallDiagnostics().orElseThrow();
                 DiagnosticInfo info =
                     name.equals("malformed")
                         ? new DiagnosticInfo(-1, 999, -1, -1, null, null, null)
                         : new DiagnosticInfo(
-                            diagnostics.addString("urn:vendor"),
-                            diagnostics.addString("range"),
-                            diagnostics.addString("en"),
-                            diagnostics.addString("outside range"),
+                            -1,
+                            -1,
+                            -1,
+                            -1,
                             "argument",
                             new StatusCode(StatusCodes.Bad_OutOfRange),
                             null);
