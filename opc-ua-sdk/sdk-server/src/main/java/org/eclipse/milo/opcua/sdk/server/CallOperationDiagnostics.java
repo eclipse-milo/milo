@@ -11,6 +11,8 @@
 package org.eclipse.milo.opcua.sdk.server;
 
 import java.util.List;
+import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
+import org.eclipse.milo.opcua.sdk.server.methods.InvalidArgumentException;
 import org.eclipse.milo.opcua.stack.core.Diagnostic;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.jspecify.annotations.NullMarked;
@@ -20,7 +22,17 @@ import org.jspecify.annotations.Nullable;
  * The {@link OperationDiagnostics} of a Call request, which also collects the diagnostics of each
  * Method's input arguments.
  *
- * <p>A Method handler reports through the {@link AddressSpace.CallContext} it is invoked with.
+ * <p>{@link AbstractMethodInvocationHandler} reports through this for you: the diagnostic of a
+ * thrown {@code UaException} or of the returned {@code MethodResult} explains the operation, and
+ * the per-argument diagnostics of an {@link InvalidArgumentException} explain its input arguments.
+ * A handler that implements {@code MethodInvocationHandler} directly reports through the {@link
+ * AddressSpace.CallContext} it is invoked with:
+ *
+ * <pre>{@code
+ * if (accessContext instanceof CallContext callContext) {
+ *   callContext.getOperationDiagnostics().report(request, diagnostic);
+ * }
+ * }</pre>
  */
 @NullMarked
 public interface CallOperationDiagnostics extends OperationDiagnostics<CallMethodRequest> {

@@ -36,17 +36,31 @@
  *
  * <p>A handler chooses one of two callbacks. The output callback, {@code invoke}, receives every
  * declared input and reports Good with its output array. The result callback, {@code invokeResult},
- * returns a complete result, so it can report Uncertain with outputs or Bad without them. A handler
- * overriding the result callback can also override {@code getRequiredInputArgumentCount} to let
- * callers omit trailing inputs; omitted inputs are absent from the supplied array, while a supplied
- * null keeps its position. A result that breaks the CallMethodResult rules is logged and reported
+ * returns a {@link org.eclipse.milo.opcua.sdk.server.methods.MethodResult}, so it can report
+ * Uncertain with outputs or Bad without them. A handler overriding the result callback can also
+ * override {@code getRequiredInputArgumentCount} to let callers omit trailing inputs; omitted
+ * inputs are absent from the supplied array, while a supplied null keeps its position. A null
+ * result, or an invalid-argument rejection with the wrong number of results, is logged and reported
  * as Bad_InternalError.
  *
- * <p>A handler can return argument diagnostics, one per supplied input. The Call service keeps only
- * the fields the request's ReturnDiagnostics mask asks for. Call responses carry no StringTable, so
- * a handler reports through additional info and inner status codes; a requested symbolic id or
- * localized text that indexes a StringTable causes that operation's argument diagnostics to be
- * dropped.
+ * <h2>Diagnostics</h2>
+ *
+ * <p>Handlers explain failures with resolved {@link org.eclipse.milo.opcua.stack.core.Diagnostic}s
+ * and never handle string-table indexes. The diagnostic of a {@code UaException} thrown from a
+ * callback, or attached to a {@code MethodResult}, explains the operation; the per-argument
+ * diagnostics of an {@code InvalidArgumentException} explain its input arguments. {@link
+ * org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler} reports them to the
+ * Call service through the {@link org.eclipse.milo.opcua.sdk.server.CallOperationDiagnostics} of
+ * the {@code CallContext} it is invoked with. The Call service returns them, subject to the
+ * request's ReturnDiagnostics mask and the server's diagnostics policy, encoded against the
+ * response's string table. A handler invoked directly, outside a Call request, has nowhere to
+ * report to, and its diagnostics are dropped.
+ *
+ * <p>A {@link org.eclipse.milo.opcua.sdk.server.methods.MethodInvocationHandler} that builds wire
+ * results itself can report resolved diagnostics through the same context. Argument diagnostics it
+ * puts directly in its {@code CallMethodResult} cannot refer to the response's string table, so
+ * only their index-free fields, additional info and inner status codes, are kept; a requested
+ * symbolic id or localized text index drops that operation's argument diagnostics.
  *
  * <p>{@link org.eclipse.milo.opcua.sdk.server.methods.MethodBindings} is an application-owned
  * lifetime for ObjectId-specific handlers on Methods shared by several Objects. Bind validates the
