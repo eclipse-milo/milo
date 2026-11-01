@@ -135,25 +135,9 @@ public final class DiagnosticEncoder {
    *     requested fields are set, or the byte budget is spent.
    */
   public @Nullable DiagnosticInfo encode(Level level, @Nullable Diagnostic diagnostic) {
-    if (diagnostic == null || exhausted) {
-      return null;
-    }
+    Diagnostic reduced = reduce(level, diagnostic);
 
-    Set<Field> fields = returnDiagnostics.fields(level);
-    if (fields.isEmpty()) {
-      return null;
-    }
-
-    Diagnostic reduced = reduce(diagnostic, fields, 1);
-    if (reduced == null) {
-      return null;
-    }
-
-    if (!reserve(cost(reduced, new HashSet<>()))) {
-      return null;
-    }
-
-    return toDiagnosticInfo(reduced);
+    return reduced != null ? charge(reduced, 0) : null;
   }
 
   /**
@@ -168,25 +152,32 @@ public final class DiagnosticEncoder {
    * @return the encoded list.
    */
   public DiagnosticInfo[] encodeAll(Level level, List<? extends @Nullable Diagnostic> diagnostics) {
-    if (exhausted
-        || returnDiagnostics.fields(level).isEmpty()
-        || diagnostics.stream().allMatch(Objects::isNull)) {
+    var reduced = new ArrayList<@Nullable Diagnostic>(diagnostics.size());
+    for (Diagnostic diagnostic : diagnostics) {
+      reduced.add(reduce(level, diagnostic));
+    }
 
+    // A list with nothing to send stays empty and costs nothing.
+    if (exhausted || reduced.stream().allMatch(Objects::isNull)) {
       return new DiagnosticInfo[0];
     }
 
-    // A list that is sent costs its length and a byte for every entry, including the null ones.
-    int overhead = 4 + diagnostics.size();
+    // A list that is sent costs its length and the mask byte of every entry, null ones included.
+    int overhead = 4 + reduced.size();
     if (!reserve(overhead)) {
       return new DiagnosticInfo[0];
     }
 
-    var diagnosticInfos = new DiagnosticInfo[diagnostics.size()];
+    var diagnosticInfos = new DiagnosticInfo[reduced.size()];
     boolean any = false;
 
     for (int i = 0; i < diagnosticInfos.length; i++) {
-      diagnosticInfos[i] = encode(level, diagnostics.get(i));
-      any |= diagnosticInfos[i] != null;
+      Diagnostic entry = reduced.get(i);
+
+      if (entry != null) {
+        diagnosticInfos[i] = charge(entry, 1);
+        any |= diagnosticInfos[i] != null;
+      }
     }
 
     if (any) {
@@ -205,6 +196,32 @@ public final class DiagnosticEncoder {
    */
   public String @Nullable [] stringTable() {
     return strings.isEmpty() ? null : strings.toArray(String[]::new);
+  }
+
+  /** The requested fields of {@code diagnostic} at {@code level}, or null if none are set. */
+  private @Nullable Diagnostic reduce(Level level, @Nullable Diagnostic diagnostic) {
+    Set<Field> fields = returnDiagnostics.fields(level);
+
+    if (diagnostic == null || fields.isEmpty()) {
+      return null;
+    } else {
+      return reduce(diagnostic, fields, 1);
+    }
+  }
+
+  /**
+   * Charge a reduced diagnostic to the budget and encode it.
+   *
+   * @param reduced the requested fields of a diagnostic.
+   * @param prepaid the bytes of its cost already charged, such as the mask byte of a list entry.
+   * @return the encoded diagnostic, or {@code null} if the budget is spent.
+   */
+  private @Nullable DiagnosticInfo charge(Diagnostic reduced, int prepaid) {
+    if (exhausted || !reserve(cost(reduced, new HashSet<>()) - prepaid)) {
+      return null;
+    }
+
+    return toDiagnosticInfo(reduced);
   }
 
   /** Charge {@code cost} bytes to the budget, or mark it spent if they do not fit. */

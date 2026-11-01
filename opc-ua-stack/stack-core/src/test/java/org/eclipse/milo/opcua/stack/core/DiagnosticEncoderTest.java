@@ -330,6 +330,42 @@ class DiagnosticEncoderTest {
       assertArrayEquals(new String[] {"x".repeat(40)}, encoder.stringTable());
     }
 
+    // Each entry of a list costs its mask byte once: two diagnostics holding only an inner status
+    // code need the array length (4) plus 1 + 4 bytes each, 14 bytes in all.
+    @Test
+    void listEntriesAreChargedExactlyOnce() {
+      var statusOnly = new Diagnostic(null, null, null, null, StatusCode.BAD, null);
+      List<Diagnostic> diagnostics = List.of(statusOnly, statusOnly);
+
+      var exact = new DiagnosticEncoder(ReturnDiagnostics.ALL, 14);
+      var oneShort = new DiagnosticEncoder(ReturnDiagnostics.ALL, 13);
+
+      DiagnosticInfo[] fits = exact.encodeAll(Level.OPERATION, diagnostics);
+      DiagnosticInfo[] cut = oneShort.encodeAll(Level.OPERATION, diagnostics);
+
+      assertNotNull(fits[1], "both entries fit a budget of exactly 14 bytes");
+      assertNotNull(cut[0], "control: the first entry fits 13 bytes");
+      assertNull(cut[1], "the second entry does not");
+    }
+
+    // Requested fields decide whether a list is sent. A list whose entries carry none of them is
+    // empty and must not spend budget that a later diagnostic, such as the service-level one,
+    // needs.
+    @Test
+    void listWithNothingToSendLeavesTheBudgetForLaterDiagnostics() {
+      var encoder =
+          new DiagnosticEncoder(
+              new ReturnDiagnostics(Set.of(Field.LOCALIZED_TEXT), Set.of(Field.SYMBOLIC_ID)), 20);
+
+      DiagnosticInfo[] operations =
+          encoder.encodeAll(
+              Level.OPERATION, Collections.nCopies(50, Diagnostic.text("no symbolic id")));
+      DiagnosticInfo service = encoder.encode(Level.SERVICE, Diagnostic.text("ok"));
+
+      assertArrayEquals(new DiagnosticInfo[0], operations);
+      assertNotNull(service);
+    }
+
     // A list that is sent carries a null entry for every other operation. In a large request
     // those entries can outweigh the diagnostic itself, so they count against the budget.
     @Test
