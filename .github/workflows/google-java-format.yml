@@ -24,3 +24,6 @@ jobs:
       - uses: axel-op/googlejavaformat-action@v4
         with:
           args: "--set-exit-if-changed"
+          # Match the google-java-format version Spotless uses, so CI and local checks agree.
+          # Without a pin the action downloads the latest release.
+          release-name: "v1.28.0"
