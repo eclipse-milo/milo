@@ -15,7 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 
-abstract class NodeIds1 extends NodeIds2 {
+public abstract class NodeIds1 extends NodeIds2 {
   public static final NodeId ServerConfigurationType_CreateSigningRequest =
       new NodeId(UShort.MIN, uint(12731));
 

@@ -15,7 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 
-abstract class NodeIds0 extends NodeIds1 {
+public abstract class NodeIds0 extends NodeIds1 {
   public static final NodeId Boolean = new NodeId(UShort.MIN, uint(1));
 
   public static final NodeId SByte = new NodeId(UShort.MIN, uint(2));

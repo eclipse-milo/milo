@@ -15,7 +15,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 
-abstract class NodeIds5 {
+public abstract class NodeIds5 {
   public static final NodeId
       CertificateGroupFolderType_DefaultApplicationGroup_CertificateExpired_Suppress2_InputArguments =
           new NodeId(UShort.MIN, uint(24539));
