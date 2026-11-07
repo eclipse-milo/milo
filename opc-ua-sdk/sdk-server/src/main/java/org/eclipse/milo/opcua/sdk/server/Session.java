@@ -73,6 +73,9 @@ public class Session {
 
   private final SubscriptionManager subscriptionManager;
 
+  /** Serializes timeout publication with the transition to closed. */
+  private final Object timeoutLock = new Object();
+
   /** Ensures timeout, subscription, and lifecycle cleanup run once across all close paths. */
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
@@ -95,7 +98,9 @@ public class Session {
   private volatile ByteString userTokenEphemeralPublicKey = ByteString.NULL_VALUE;
 
   private volatile long lastActivityNanos = System.nanoTime();
-  private volatile ScheduledFuture<?> checkTimeoutFuture;
+
+  // Guarded by timeoutLock.
+  private ScheduledFuture<?> checkTimeoutFuture;
 
   private volatile EndpointDescription endpoint;
   private final SessionServerCertificate originalServerCertificate;
@@ -146,7 +151,9 @@ public class Session {
 
     subscriptionManager = new SubscriptionManager(this, server);
 
-    checkTimeoutFuture = scheduleTimeoutCheck(server, sessionTimeout);
+    synchronized (timeoutLock) {
+      checkTimeoutFuture = scheduleTimeoutCheck(server, sessionTimeout);
+    }
   }
 
   public OpcUaServer getServer() {
@@ -405,20 +412,28 @@ public class Session {
   }
 
   private void checkTimeout() {
-    long elapsed = Math.abs(System.nanoTime() - lastActivityNanos);
+    synchronized (timeoutLock) {
+      if (closed.get()) {
+        return;
+      }
 
-    if (elapsed > sessionTimeout.toNanos()) {
+      long elapsed = Math.abs(System.nanoTime() - lastActivityNanos);
+
+      if (elapsed <= sessionTimeout.toNanos()) {
+        Duration remaining = Duration.ofNanos(sessionTimeout.toNanos() - elapsed);
+
+        LOGGER.trace(
+            "Session id={} timeout scheduled for +{}s.", sessionId, remaining.getSeconds());
+
+        checkTimeoutFuture = scheduleTimeoutCheck(server, remaining);
+        return;
+      }
+    }
+
+    if (closeInternal(false)) {
       LOGGER.debug("Session id={} lifetime expired ({}ms).", sessionId, sessionTimeout.toMillis());
 
-      close(false);
-
       server.getDiagnosticsSummary().getSessionTimeoutCount().increment();
-    } else {
-      Duration remaining = Duration.ofNanos(sessionTimeout.toNanos() - elapsed);
-
-      LOGGER.trace("Session id={} timeout scheduled for +{}s.", sessionId, remaining.getSeconds());
-
-      checkTimeoutFuture = scheduleTimeoutCheck(server, remaining);
     }
   }
 
@@ -494,17 +509,29 @@ public class Session {
    *     deleted as part of the close.
    */
   void close(boolean deleteSubscriptions) {
-    if (!closed.compareAndSet(false, true)) {
-      return;
+    closeInternal(deleteSubscriptions);
+  }
+
+  private boolean closeInternal(boolean deleteSubscriptions) {
+    ScheduledFuture<?> timeoutFuture;
+    synchronized (timeoutLock) {
+      if (!closed.compareAndSet(false, true)) {
+        return false;
+      }
+
+      timeoutFuture = checkTimeoutFuture;
     }
 
-    if (checkTimeoutFuture != null) {
-      checkTimeoutFuture.cancel(false);
+    // Cancellation, subscription cleanup, and application listeners can call back into the Session.
+    if (timeoutFuture != null) {
+      timeoutFuture.cancel(false);
     }
 
     subscriptionManager.sessionClosed(deleteSubscriptions);
 
     listeners.forEach(listener -> listener.onSessionClosed(this, deleteSubscriptions));
+
+    return true;
   }
 
   @Nullable
