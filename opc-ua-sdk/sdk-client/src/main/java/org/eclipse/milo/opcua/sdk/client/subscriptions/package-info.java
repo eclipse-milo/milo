@@ -22,6 +22,9 @@
  * copy. Per-subscription processing and delivery queues preserve the order received from the
  * transport.
  *
+ * <p>Watchdog expiries are validated again when their queued notifications reach delivery. Reset,
+ * pause, and rearm invalidate older expiries; application callbacks run outside the watchdog lock.
+ *
  * <p>Lifecycle operations claim a serial transition slot without holding a lock across service
  * calls. Completing a transition hands the slot to the next waiter through a serial executor, with
  * inline fallback when the caller-owned transport executor rejects dispatch. Reset and item
