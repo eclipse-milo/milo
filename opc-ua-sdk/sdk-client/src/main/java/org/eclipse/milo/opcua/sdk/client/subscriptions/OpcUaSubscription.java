@@ -2725,6 +2725,14 @@ public class OpcUaSubscription {
       if (listener != null) {
         deliveryQueue.execute(
             () -> {
+              synchronized (lock) {
+                // Reset, pause, or rearm may have invalidated this expiry while delivery was
+                // queued.
+                if (cancelled || scheduledEpoch != epoch) {
+                  return;
+                }
+              }
+
               LOGGER.debug(
                   "id={}, watchdog timer expired after {}ms",
                   getServerState().map(ServerState::getSubscriptionId).orElse(null),
