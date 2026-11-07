@@ -22,7 +22,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.UUID;
-import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
@@ -55,6 +55,15 @@ public class OpcUaBinaryDecoder implements UaDecoder {
 
   private static final Charset CHARSET_UTF8 = StandardCharsets.UTF_8;
   private static final Charset CHARSET_UTF16 = StandardCharsets.UTF_16;
+
+  /**
+   * The smallest encoded size of a builtin type value. Every builtin type encodes as at least one
+   * byte, so an array of builtin values cannot declare more elements than there are bytes left.
+   */
+  private static final int MIN_BUILTIN_ELEMENT_SIZE = 1;
+
+  /** The most elements an array is allocated room for before any of them have been decoded. */
+  private static final int MAX_INITIAL_ARRAY_CAPACITY = 1024;
 
   private ByteBuf buffer;
 
@@ -96,13 +105,9 @@ public class OpcUaBinaryDecoder implements UaDecoder {
       checkArrayLength(length);
 
       @SuppressWarnings("unchecked")
-      T[] array = (T[]) Array.newInstance(clazz, length);
+      IntFunction<T[]> newArray = n -> (T[]) Array.newInstance(clazz, n);
 
-      for (int i = 0; i < length; i++) {
-        array[i] = read.get();
-      }
-
-      return array;
+      return decodeElements(length, newArray, read);
     }
   }
 
@@ -197,6 +202,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
       return ByteString.NULL_VALUE;
     } else {
       checkArrayLength(length);
+      checkRemainingBytes(length, Byte.BYTES);
 
       byte[] bs = new byte[length];
       buffer.readBytes(bs);
@@ -419,6 +425,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
             return new Variant(null);
           } else {
             checkArrayLength(length);
+            checkRemainingBytes(length, MIN_BUILTIN_ELEMENT_SIZE);
 
             Object flatArray = decodeBuiltinTypeArray(typeId, length);
 
@@ -471,6 +478,8 @@ public class OpcUaBinaryDecoder implements UaDecoder {
                 length, context.getEncodingLimits().getMaxMessageSize()));
       }
 
+      checkRemainingBytes(length, Byte.BYTES);
+
       String str = buffer.toString(buffer.readerIndex(), length, charset);
       buffer.skipBytes(length);
       return str;
@@ -500,6 +509,7 @@ public class OpcUaBinaryDecoder implements UaDecoder {
       return new int[0];
     } else {
       checkArrayLength(length);
+      checkRemainingBytes(length, Integer.BYTES);
 
       int[] is = new int[length];
       for (int i = 0; i < length; i++) {
@@ -558,181 +568,31 @@ public class OpcUaBinaryDecoder implements UaDecoder {
    */
   private Object decodeBuiltinTypeArray(int typeId, int length) throws UaSerializationException {
     return switch (typeId) {
-      case 1 -> {
-        Boolean[] values = new Boolean[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeBoolean();
-        }
-        yield values;
-      }
-      case 2 -> {
-        Byte[] values = new Byte[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeSByte();
-        }
-        yield values;
-      }
-      case 3 -> {
-        UByte[] values = new UByte[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeByte();
-        }
-        yield values;
-      }
-      case 4 -> {
-        Short[] values = new Short[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeInt16();
-        }
-        yield values;
-      }
-      case 5 -> {
-        UShort[] values = new UShort[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeUInt16();
-        }
-        yield values;
-      }
-      case 6 -> {
-        Integer[] values = new Integer[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeInt32();
-        }
-        yield values;
-      }
-      case 7 -> {
-        UInteger[] values = new UInteger[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeUInt32();
-        }
-        yield values;
-      }
-      case 8 -> {
-        Long[] values = new Long[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeInt64();
-        }
-        yield values;
-      }
-      case 9 -> {
-        ULong[] values = new ULong[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeUInt64();
-        }
-        yield values;
-      }
-      case 10 -> {
-        Float[] values = new Float[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeFloat();
-        }
-        yield values;
-      }
-      case 11 -> {
-        Double[] values = new Double[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeDouble();
-        }
-        yield values;
-      }
-      case 12 -> {
-        String[] values = new String[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeString();
-        }
-        yield values;
-      }
-      case 13 -> {
-        DateTime[] values = new DateTime[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeDateTime();
-        }
-        yield values;
-      }
-      case 14 -> {
-        UUID[] values = new UUID[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeGuid();
-        }
-        yield values;
-      }
-      case 15 -> {
-        ByteString[] values = new ByteString[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeByteString();
-        }
-        yield values;
-      }
-      case 16 -> {
-        XmlElement[] values = new XmlElement[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeXmlElement();
-        }
-        yield values;
-      }
-      case 17 -> {
-        NodeId[] values = new NodeId[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeNodeId();
-        }
-        yield values;
-      }
-      case 18 -> {
-        ExpandedNodeId[] values = new ExpandedNodeId[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeExpandedNodeId();
-        }
-        yield values;
-      }
-      case 19 -> {
-        StatusCode[] values = new StatusCode[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeStatusCode();
-        }
-        yield values;
-      }
-      case 20 -> {
-        QualifiedName[] values = new QualifiedName[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeQualifiedName();
-        }
-        yield values;
-      }
-      case 21 -> {
-        LocalizedText[] values = new LocalizedText[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeLocalizedText();
-        }
-        yield values;
-      }
-      case 22 -> {
-        ExtensionObject[] values = new ExtensionObject[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeExtensionObject();
-        }
-        yield values;
-      }
-      case 23 -> {
-        DataValue[] values = new DataValue[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeDataValue();
-        }
-        yield values;
-      }
-      case 24 -> {
-        Variant[] values = new Variant[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeVariant();
-        }
-        yield values;
-      }
-      case 25 -> {
-        DiagnosticInfo[] values = new DiagnosticInfo[length];
-        for (int i = 0; i < length; i++) {
-          values[i] = decodeDiagnosticInfo();
-        }
-        yield values;
-      }
+      case 1 -> decodeElements(length, Boolean[]::new, this::decodeBoolean);
+      case 2 -> decodeElements(length, Byte[]::new, this::decodeSByte);
+      case 3 -> decodeElements(length, UByte[]::new, this::decodeByte);
+      case 4 -> decodeElements(length, Short[]::new, this::decodeInt16);
+      case 5 -> decodeElements(length, UShort[]::new, this::decodeUInt16);
+      case 6 -> decodeElements(length, Integer[]::new, this::decodeInt32);
+      case 7 -> decodeElements(length, UInteger[]::new, this::decodeUInt32);
+      case 8 -> decodeElements(length, Long[]::new, this::decodeInt64);
+      case 9 -> decodeElements(length, ULong[]::new, this::decodeUInt64);
+      case 10 -> decodeElements(length, Float[]::new, this::decodeFloat);
+      case 11 -> decodeElements(length, Double[]::new, this::decodeDouble);
+      case 12 -> decodeElements(length, String[]::new, this::decodeString);
+      case 13 -> decodeElements(length, DateTime[]::new, this::decodeDateTime);
+      case 14 -> decodeElements(length, UUID[]::new, this::decodeGuid);
+      case 15 -> decodeElements(length, ByteString[]::new, this::decodeByteString);
+      case 16 -> decodeElements(length, XmlElement[]::new, this::decodeXmlElement);
+      case 17 -> decodeElements(length, NodeId[]::new, this::decodeNodeId);
+      case 18 -> decodeElements(length, ExpandedNodeId[]::new, this::decodeExpandedNodeId);
+      case 19 -> decodeElements(length, StatusCode[]::new, this::decodeStatusCode);
+      case 20 -> decodeElements(length, QualifiedName[]::new, this::decodeQualifiedName);
+      case 21 -> decodeElements(length, LocalizedText[]::new, this::decodeLocalizedText);
+      case 22 -> decodeElements(length, ExtensionObject[]::new, this::decodeExtensionObject);
+      case 23 -> decodeElements(length, DataValue[]::new, this::decodeDataValue);
+      case 24 -> decodeElements(length, Variant[]::new, this::decodeVariant);
+      case 25 -> decodeElements(length, DiagnosticInfo[]::new, this::decodeDiagnosticInfo);
       default ->
           throw new UaSerializationException(
               StatusCodes.Bad_DecodingError, "unknown builtin type: " + typeId);
@@ -921,428 +781,128 @@ public class OpcUaBinaryDecoder implements UaDecoder {
 
   @Override
   public Boolean[] decodeBooleanArray(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      Boolean[] values = new Boolean[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeBoolean(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(Boolean[]::new, () -> decodeBoolean(field));
   }
 
   @Override
   public Byte[] decodeSByteArray(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      Byte[] values = new Byte[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeSByte(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(Byte[]::new, () -> decodeSByte(field));
   }
 
   @Override
   public Short[] decodeInt16Array(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      Short[] values = new Short[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeInt16(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(Short[]::new, () -> decodeInt16(field));
   }
 
   @Override
   public Integer[] decodeInt32Array(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      Integer[] values = new Integer[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeInt32(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(Integer[]::new, () -> decodeInt32(field));
   }
 
   @Override
   public Long[] decodeInt64Array(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      Long[] values = new Long[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeInt64(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(Long[]::new, () -> decodeInt64(field));
   }
 
   @Override
   public UByte[] decodeByteArray(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      UByte[] values = new UByte[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeByte(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(UByte[]::new, () -> decodeByte(field));
   }
 
   @Override
   public UShort[] decodeUInt16Array(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      UShort[] values = new UShort[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeUInt16(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(UShort[]::new, () -> decodeUInt16(field));
   }
 
   @Override
   public UInteger[] decodeUInt32Array(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      UInteger[] values = new UInteger[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeUInt32(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(UInteger[]::new, () -> decodeUInt32(field));
   }
 
   @Override
   public ULong[] decodeUInt64Array(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      ULong[] values = new ULong[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeUInt64(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(ULong[]::new, () -> decodeUInt64(field));
   }
 
   @Override
   public Float[] decodeFloatArray(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      Float[] values = new Float[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeFloat(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(Float[]::new, () -> decodeFloat(field));
   }
 
   @Override
   public Double[] decodeDoubleArray(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      Double[] values = new Double[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeDouble(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(Double[]::new, () -> decodeDouble(field));
   }
 
   @Override
   public String[] decodeStringArray(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      String[] values = new String[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeString(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(String[]::new, () -> decodeString(field));
   }
 
   @Override
   public DateTime[] decodeDateTimeArray(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      DateTime[] values = new DateTime[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeDateTime(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(DateTime[]::new, () -> decodeDateTime(field));
   }
 
   @Override
   public UUID[] decodeGuidArray(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      UUID[] values = new UUID[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeGuid(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(UUID[]::new, () -> decodeGuid(field));
   }
 
   @Override
   public ByteString[] decodeByteStringArray(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      ByteString[] values = new ByteString[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeByteString(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(ByteString[]::new, () -> decodeByteString(field));
   }
 
   @Override
   public XmlElement[] decodeXmlElementArray(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      XmlElement[] values = new XmlElement[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeXmlElement(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(XmlElement[]::new, () -> decodeXmlElement(field));
   }
 
   @Override
   public NodeId[] decodeNodeIdArray(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      NodeId[] values = new NodeId[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeNodeId(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(NodeId[]::new, () -> decodeNodeId(field));
   }
 
   @Override
   public ExpandedNodeId[] decodeExpandedNodeIdArray(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      ExpandedNodeId[] values = new ExpandedNodeId[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeExpandedNodeId(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(ExpandedNodeId[]::new, () -> decodeExpandedNodeId(field));
   }
 
   @Override
   public StatusCode[] decodeStatusCodeArray(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      StatusCode[] values = new StatusCode[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeStatusCode(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(StatusCode[]::new, () -> decodeStatusCode(field));
   }
 
   @Override
   public QualifiedName[] decodeQualifiedNameArray(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      QualifiedName[] values = new QualifiedName[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeQualifiedName(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(QualifiedName[]::new, () -> decodeQualifiedName(field));
   }
 
   @Override
   public LocalizedText[] decodeLocalizedTextArray(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      LocalizedText[] values = new LocalizedText[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeLocalizedText(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(LocalizedText[]::new, () -> decodeLocalizedText(field));
   }
 
   @Override
   public ExtensionObject[] decodeExtensionObjectArray(String field)
       throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      ExtensionObject[] values = new ExtensionObject[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeExtensionObject(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(ExtensionObject[]::new, () -> decodeExtensionObject(field));
   }
 
   @Override
   public DataValue[] decodeDataValueArray(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      DataValue[] values = new DataValue[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeDataValue(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(DataValue[]::new, () -> decodeDataValue(field));
   }
 
   @Override
   public Variant[] decodeVariantArray(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      Variant[] values = new Variant[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeVariant(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(Variant[]::new, () -> decodeVariant(field));
   }
 
   @Override
   public DiagnosticInfo[] decodeDiagnosticInfoArray(String field) throws UaSerializationException {
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      DiagnosticInfo[] values = new DiagnosticInfo[length];
-      for (int i = 0; i < length; i++) {
-        values[i] = decodeDiagnosticInfo(field);
-      }
-      return values;
-    }
+    return decodeBuiltinArray(DiagnosticInfo[]::new, () -> decodeDiagnosticInfo(field));
   }
 
   @Override
@@ -1368,13 +928,11 @@ public class OpcUaBinaryDecoder implements UaDecoder {
             StatusCodes.Bad_DecodingError, "no codec registered: " + dataTypeId);
       }
 
-      UaStructuredType[] array = (UaStructuredType[]) Array.newInstance(codec.getType(), length);
-
-      for (int i = 0; i < length; i++) {
-        array[i] = codec.decode(context, this);
-      }
-
-      return array;
+      // No remaining-bytes check: a structure with no fields encodes as zero bytes.
+      return decodeElements(
+          length,
+          n -> (UaStructuredType[]) Array.newInstance(codec.getType(), n),
+          () -> codec.decode(context, this));
     }
   }
 
@@ -1412,6 +970,74 @@ public class OpcUaBinaryDecoder implements UaDecoder {
     }
   }
 
+  /**
+   * Check that the bytes left to read can hold {@code length} elements of at least {@code
+   * elementSize} bytes each.
+   *
+   * <p>Call this before allocating anything sized by a length read from the message. Only use it
+   * where the elements follow immediately and have a known minimum size; structures can encode as
+   * zero bytes, so structure arrays are not checked this way.
+   */
+  private void checkRemainingBytes(int length, int elementSize) throws UaSerializationException {
+    long required = (long) length * elementSize;
+
+    if (required > buffer.readableBytes()) {
+      throw new UaSerializationException(
+          StatusCodes.Bad_DecodingError,
+          String.format(
+              "length exceeds remaining bytes (length=%s, required=%s, remaining=%s)",
+              length, required, buffer.readableBytes()));
+    }
+  }
+
+  /**
+   * Read an array length, then decode that many builtin elements with {@code decodeElement}.
+   *
+   * @return the decoded array, or {@code null} if the encoded length is -1.
+   */
+  private <T> T @Nullable [] decodeBuiltinArray(
+      IntFunction<T[]> newArray, Supplier<T> decodeElement) throws UaSerializationException {
+
+    int length = buffer.readIntLE();
+
+    if (length == -1) {
+      return null;
+    } else {
+      checkArrayLength(length);
+      checkRemainingBytes(length, MIN_BUILTIN_ELEMENT_SIZE);
+
+      return decodeElements(length, newArray, decodeElement);
+    }
+  }
+
+  /**
+   * Decode {@code length} elements with {@code decodeElement} into an array created by {@code
+   * newArray}.
+   *
+   * <p>The array starts with room for at most {@link #MAX_INITIAL_ARRAY_CAPACITY} elements and
+   * grows as elements are decoded, so a length that the message does not back with elements never
+   * allocates more than that up front. Nested arrays, such as a Variant array of Variant arrays,
+   * would otherwise each hold their full declared length at once.
+   *
+   * @return an array of exactly {@code length} elements, with the component type of {@code
+   *     newArray}'s arrays.
+   */
+  private static <T> T[] decodeElements(
+      int length, IntFunction<T[]> newArray, Supplier<T> decodeElement) {
+
+    T[] values = newArray.apply(Math.min(length, MAX_INITIAL_ARRAY_CAPACITY));
+
+    for (int i = 0; i < length; i++) {
+      if (i == values.length) {
+        values = Arrays.copyOf(values, (int) Math.min(length, 2L * values.length));
+      }
+
+      values[i] = decodeElement.get();
+    }
+
+    return values;
+  }
+
   private int calculateMatrixLength(int[] dimensions) throws UaSerializationException {
     int length = 1;
 
@@ -1444,33 +1070,13 @@ public class OpcUaBinaryDecoder implements UaDecoder {
     return length;
   }
 
-  private <T> T[] decodeArray(String field, Function<String, T> decoder, Class<T> clazz)
-      throws UaSerializationException {
-
-    int length = buffer.readIntLE();
-
-    if (length == -1) {
-      return null;
-    } else {
-      checkArrayLength(length);
-
-      @SuppressWarnings("unchecked")
-      T[] array = (T[]) Array.newInstance(clazz, length);
-
-      for (int i = 0; i < length; i++) {
-        array[i] = decoder.apply(field);
-      }
-
-      return array;
-    }
-  }
-
   @Override
   public Matrix decodeMatrix(String field, OpcUaDataType dataType) throws UaSerializationException {
     int[] dimensions = decodeMatrixDimensions();
     if (dimensions == null) return Matrix.ofNull();
 
     int length = calculateMatrixLength(dimensions);
+    checkRemainingBytes(length, MIN_BUILTIN_ELEMENT_SIZE);
 
     Object flatArray = decodeBuiltinTypeArray(dataType.getTypeId(), length);
 
@@ -1499,11 +1105,12 @@ public class OpcUaBinaryDecoder implements UaDecoder {
 
     // Kept as Object[]: DataTypeCodec.getType() is unbounded, so generic codecs may report a
     // component type that is not a UaStructuredType (the encoder supports such matrices too).
-    Object[] flatArray = (Object[]) Array.newInstance(codec.getType(), length);
-
-    for (int i = 0; i < length; i++) {
-      flatArray[i] = codec.decode(context, this);
-    }
+    // No remaining-bytes check: a structure with no fields encodes as zero bytes.
+    Object[] flatArray =
+        decodeElements(
+            length,
+            n -> (Object[]) Array.newInstance(codec.getType(), n),
+            () -> codec.decode(context, this));
 
     return new Matrix(flatArray, dimensions, OpcUaDataType.ExtensionObject, dataTypeId.expanded());
   }
@@ -1538,6 +1145,8 @@ public class OpcUaBinaryDecoder implements UaDecoder {
             StatusCodes.Bad_DecodingError,
             String.format("matrix must have at least 2 dimensions (dimensions=%s)", length));
       }
+
+      checkRemainingBytes(length, Integer.BYTES);
 
       int[] dimensions = new int[length];
       for (int i = 0; i < length; i++) {
