@@ -81,6 +81,11 @@
  * initial Session unactivated. Enhanced username-token keys consumed during validation remain
  * single-use even if later response preparation fails.
  *
+ * <p>Session timeout checks move from the scheduler to the configured server executor. Closing a
+ * Session cancels its timer and prevents queued checks from replacing it. Only expiration that wins
+ * closure increments the timeout diagnostic; subscription cleanup and lifecycle notification run
+ * once, outside the lock coordinating closure and timer replacement.
+ *
  * <h2>Diagnostics returned to clients</h2>
  *
  * <p>A client asks for diagnostics with the {@code returnDiagnostics} mask of each request header.
