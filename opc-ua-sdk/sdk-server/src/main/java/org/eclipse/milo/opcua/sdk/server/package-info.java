@@ -53,6 +53,11 @@
  * later child fails. Each failing child cleans up its own partial startup before propagating the
  * failure.
  *
+ * <p>Normal lifecycle-manager shutdown attempts every child in the configured order, then rethrows
+ * the first failure with additional failures suppressed. Managed namespaces use reverse order so
+ * subclass cleanup precedes base namespace and node-manager unregistration, even when a subclass
+ * fails to shut down. Shutdown remains terminal; subsequent calls do not repeat cleanup.
+ *
  * <h2>Node storage</h2>
  *
  * <p>{@link org.eclipse.milo.opcua.sdk.server.NodeManager} owns node identity and reference
