@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
 public class LifecycleManagerTest {
@@ -44,6 +45,60 @@ public class LifecycleManagerTest {
 
     manager.shutdown();
     assertEquals(List.of("start-a", "start-b", "start-c", "stop-b", "stop-a"), events);
+  }
+
+  // A failed shutdown cannot be retried, so every child must receive cleanup on the first call.
+  @ParameterizedTest
+  @CsvSource({"LINEAR, a, c", "INVERSE, c, a"})
+  void shutdownContinuesInConfiguredOrderAfterFailure(
+      LifecycleManager.ShutdownOrder order, String first, String last) {
+    var manager = new LifecycleManager(order);
+    var events = new ArrayList<String>();
+    var cleanupFailure = new IllegalStateException("cleanup");
+    manager.addLifecycle(recordingLifecycle("a", events, null, null));
+    manager.addLifecycle(recordingLifecycle("b", events, null, cleanupFailure));
+    manager.addLifecycle(recordingLifecycle("c", events, null, null));
+    manager.startup();
+    events.clear();
+
+    assertSame(cleanupFailure, assertThrows(IllegalStateException.class, manager::shutdown));
+    assertEquals(List.of("stop-" + first, "stop-b", "stop-" + last), events);
+    assertFalse(manager.isRunning());
+
+    manager.shutdown();
+    assertEquals(List.of("stop-" + first, "stop-b", "stop-" + last), events);
+  }
+
+  // Keep all cleanup diagnostics, even for Errors or children that throw the same instance.
+  @Test
+  void shutdownPreservesFirstFailureAndSuppressesLaterFailures() {
+    var manager = new LifecycleManager();
+    var firstFailure = new AssertionError("first");
+    var secondFailure = new IllegalStateException("second");
+    var thirdFailure = new AssertionError("third");
+    var cleanupCount = new AtomicInteger();
+    manager.addShutdownTask(
+        () -> {
+          throw firstFailure;
+        });
+    manager.addShutdownTask(
+        () -> {
+          throw secondFailure;
+        });
+    manager.addShutdownTask(
+        () -> {
+          throw firstFailure;
+        });
+    manager.addShutdownTask(
+        () -> {
+          throw thirdFailure;
+        });
+    manager.addShutdownTask(cleanupCount::incrementAndGet);
+    manager.startup();
+
+    assertSame(firstFailure, assertThrows(AssertionError.class, manager::shutdown));
+    assertEquals(List.of(secondFailure, thirdFailure), List.of(firstFailure.getSuppressed()));
+    assertEquals(1, cleanupCount.get());
   }
 
   private static Lifecycle recordingLifecycle(

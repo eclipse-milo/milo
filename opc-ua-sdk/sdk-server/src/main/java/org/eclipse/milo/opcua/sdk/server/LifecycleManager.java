@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.server;
 
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -28,6 +29,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * <p>If a child fails during startup, successfully started children are shut down in reverse order.
  * Cleanup failures are suppressed on the original startup failure. The failing child remains
  * responsible for cleaning up resources acquired by its own incomplete startup.
+ *
+ * <p>Shutdown attempts every child in the configured order before rethrowing the first failure,
+ * with additional failures suppressed on it.
  */
 public final class LifecycleManager extends AbstractLifecycle {
 
@@ -76,10 +80,26 @@ public final class LifecycleManager extends AbstractLifecycle {
 
   @Override
   protected void onShutdown() {
-    if (shutdownOrder == ShutdownOrder.LINEAR) {
-      lifecycles.forEach(Lifecycle::shutdown);
-    } else {
-      Lists.reverse(lifecycles).forEach(Lifecycle::shutdown);
+    Iterator<Lifecycle> iterator =
+        shutdownOrder == ShutdownOrder.LINEAR
+            ? lifecycles.iterator()
+            : Lists.reverse(lifecycles).iterator();
+
+    try {
+      while (iterator.hasNext()) {
+        iterator.next().shutdown();
+      }
+    } catch (Throwable shutdownFailure) {
+      while (iterator.hasNext()) {
+        try {
+          iterator.next().shutdown();
+        } catch (Throwable cleanupFailure) {
+          if (cleanupFailure != shutdownFailure) {
+            shutdownFailure.addSuppressed(cleanupFailure);
+          }
+        }
+      }
+      throw shutdownFailure;
     }
   }
 
