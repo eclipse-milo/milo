@@ -26,5 +26,12 @@
  * bodies into structures. {@link
  * org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaDefaultBinaryEncoding} supplies this
  * structure-to-body conversion and resolves codecs by their encoding NodeIds.
+ *
+ * <p>The decoder never sizes an allocation from a decoded length alone. A length must fit the
+ * {@link org.eclipse.milo.opcua.stack.core.channel.EncodingLimits} and, where each element has a
+ * known minimum size, the bytes left in the buffer. Arrays grow as their elements are decoded
+ * rather than being allocated at their declared length, so memory use follows the data actually
+ * present. Structure arrays skip the remaining-bytes check, because a structure with no fields
+ * encodes as zero bytes.
  */
 package org.eclipse.milo.opcua.stack.core.encoding.binary;
