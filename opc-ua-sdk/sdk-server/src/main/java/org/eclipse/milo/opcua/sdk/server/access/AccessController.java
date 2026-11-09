@@ -21,6 +21,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteNodesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteReferencesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadValueId;
+import org.eclipse.milo.opcua.stack.core.types.structured.HistoryUpdateDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
 
@@ -68,6 +69,24 @@ public interface AccessController {
    * @return a Map containing the {@link AccessResult} for each {@link WriteValue}.
    */
   Map<WriteValue, AccessResult> checkWriteAccess(Session session, List<WriteValue> writeValues);
+
+  /**
+   * Check if the current Session may change the history of the Node each of {@code
+   * historyUpdateDetails} identifies.
+   *
+   * <p>What an entry needs depends on what it does: inserting, replacing, and deleting history are
+   * separate permissions (OPC 10000-3, 8.55).
+   *
+   * <p>HistoryUpdate looks up each result with the same {@link HistoryUpdateDetails} instance that
+   * was passed in, sends the entries that are not denied to the AddressSpace, and answers each
+   * denied entry with the status code of its denial.
+   *
+   * @param session the Session to check access for.
+   * @param historyUpdateDetails the history updates to check access for.
+   * @return a Map containing the {@link AccessResult} for each {@link HistoryUpdateDetails}.
+   */
+  Map<HistoryUpdateDetails, AccessResult> checkHistoryUpdateAccess(
+      Session session, List<HistoryUpdateDetails> historyUpdateDetails);
 
   /**
    * Check if the current Session has permission to browse the Nodes identified by {@code nodeIds}.
@@ -135,7 +154,10 @@ public interface AccessController {
     /** Access is denied because the Node's AccessLevel does not allow reading. */
     AccessResult DENIED_NOT_READABLE = new Denied(StatusCodes.Bad_NotReadable);
 
-    /** Access is denied because the Node's AccessLevel does not allow writing. */
+    /**
+     * Access is denied because the Node does not allow writing: its AccessLevel for a Variable, or
+     * its EventNotifier for the event history of an Object or View.
+     */
     AccessResult DENIED_NOT_WRITABLE = new Denied(StatusCodes.Bad_NotWritable);
 
     /** Access is denied because the Node does not make its history available for reading. */

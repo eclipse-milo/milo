@@ -63,9 +63,16 @@ public final class ReportingNamespace extends ManagedNamespaceWithLifecycle {
   public static final String BLOCKED = "blocked";
   public static final String OK = "ok";
 
-  /** Includes HistoryRead, without which the access check answers a HistoryRead itself. */
+  /**
+   * Includes HistoryRead and HistoryWrite, without which the access check answers a HistoryRead or
+   * HistoryUpdate itself.
+   */
   private static final Set<AccessLevel> ACCESS_LEVEL =
-      Set.of(AccessLevel.CurrentRead, AccessLevel.CurrentWrite, AccessLevel.HistoryRead);
+      Set.of(
+          AccessLevel.CurrentRead,
+          AccessLevel.CurrentWrite,
+          AccessLevel.HistoryRead,
+          AccessLevel.HistoryWrite);
 
   private final String label;
 

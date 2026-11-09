@@ -117,6 +117,15 @@ class DefaultAttributeServiceSetHistoryLimitsTest {
               nodesToRead.forEach(id -> results.put(id, AccessResult.ALLOWED));
               return results;
             });
+    when(accessController.checkHistoryUpdateAccess(any(), any()))
+        .thenAnswer(
+            invocation -> {
+              List<HistoryUpdateDetails> details = invocation.getArgument(1);
+
+              var results = new IdentityHashMap<HistoryUpdateDetails, AccessResult>();
+              details.forEach(d -> results.put(d, AccessResult.ALLOWED));
+              return results;
+            });
 
     when(addressSpaceManager.historyRead(any(), any(), any(), any()))
         .thenAnswer(
