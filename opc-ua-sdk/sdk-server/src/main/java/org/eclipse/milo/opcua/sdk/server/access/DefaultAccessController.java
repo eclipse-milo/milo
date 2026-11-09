@@ -29,6 +29,7 @@ import org.eclipse.milo.opcua.sdk.server.AddressSpace;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -39,6 +40,7 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.PerformUpdateType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.AddNodesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.AddReferencesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteAtTimeDetails;
@@ -783,6 +785,90 @@ public class DefaultAccessController implements AccessController {
 
   // endregion
 
+  // region AddNodes
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Adding a Node adds a Reference from its parent, so each item is checked the way an added
+   * Reference is, with the parent as the source: the parent's {@code AccessRestrictions}, and then
+   * the AddReference permission in its {@code UserRolePermissions} when the Session has roles.
+   *
+   * <p>An item whose parent is null, on another server, in an unregistered namespace, or unknown to
+   * the AddressSpace is allowed, and the AddressSpace answers for the parent as it would have
+   * anyway. The AddNode permission of the new Node's namespace is not checked.
+   */
+  @Override
+  public Map<AddNodesItem, AccessResult> checkAddNodesAccess(
+      Session session, List<AddNodesItem> nodesToAdd) {
+    var context = new DefaultAccessControlContext(server, session);
+
+    return checkAddNodesAccess(context, nodesToAdd);
+  }
+
+  static Map<AddNodesItem, AccessResult> checkAddNodesAccess(
+      AccessControlContext context, List<AddNodesItem> nodesToAdd) {
+
+    var results = new HashMap<AddNodesItem, AccessResult>();
+
+    var pending = new ArrayList<PendingResult<ParentedItem>>(nodesToAdd.size());
+    var parentNodeIds = new ArrayList<NodeId>(nodesToAdd.size());
+
+    NamespaceTable namespaceTable = context.getNamespaceTable();
+
+    for (AddNodesItem item : nodesToAdd) {
+      @Nullable NodeId parentNodeId =
+          Optional.ofNullable(item.getParentNodeId())
+              .flatMap(id -> id.toNodeId(namespaceTable))
+              .filter(NodeId::isNotNull)
+              .orElse(null);
+
+      if (parentNodeId != null) {
+        pending.add(new PendingResult<>(new ParentedItem(item, parentNodeId)));
+        parentNodeIds.add(parentNodeId);
+      } else {
+        // There is no local parent to decide from.
+        results.put(item, AccessResult.ALLOWED);
+      }
+    }
+
+    if (pending.isEmpty()) {
+      return results;
+    }
+
+    Map<NodeId, AccessControlAttributes> attributes =
+        context.readAccessControlAttributes(parentNodeIds, ACCESS_ATTRIBUTES);
+
+    checkAccessRestrictions(context, pending, attributes, ParentedItem::parentNodeId);
+
+    for (PendingResult<ParentedItem> p : pending) {
+      if (!p.result.isDenied()) {
+        List<NodeId> roleIds = context.getRoleIds().orElse(null);
+
+        RolePermissionType[] userRolePermissions =
+            attributes.get(p.value.parentNodeId()).userRolePermissions();
+
+        if (roleIds != null && userRolePermissions != null) {
+          boolean hasAccess =
+              hasPermission(roleIds, userRolePermissions, PermissionType::getAddReference);
+
+          if (!hasAccess) {
+            p.result = AccessResult.DENIED_USER_ACCESS;
+          }
+        }
+      }
+
+      results.put(p.value.item(), p.result);
+    }
+
+    return results;
+  }
+
+  /** An {@link AddNodesItem} and the local NodeId of the parent it names. */
+  private record ParentedItem(AddNodesItem item, NodeId parentNodeId) {}
+
+  // endregion
+
   // region AddReferences
 
   @Override
@@ -1005,6 +1091,8 @@ public class DefaultAccessController implements AccessController {
 
     MessageSecurityMode getSecurityMode();
 
+    NamespaceTable getNamespaceTable();
+
     /**
      * Read {@code attributeIds} of each of {@code nodeIds}. NodeClass is always read, since it is
      * how a Node the AddressSpace does not know is told apart; an attribute not read is null.
@@ -1071,6 +1159,11 @@ public class DefaultAccessController implements AccessController {
     @Override
     public MessageSecurityMode getSecurityMode() {
       return session.getEndpoint().getSecurityMode();
+    }
+
+    @Override
+    public NamespaceTable getNamespaceTable() {
+      return server.getNamespaceTable();
     }
 
     @Override

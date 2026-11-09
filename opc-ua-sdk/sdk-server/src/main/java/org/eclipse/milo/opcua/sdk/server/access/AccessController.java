@@ -16,6 +16,7 @@ import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.structured.AddNodesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.AddReferencesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteNodesItem;
@@ -107,6 +108,23 @@ public interface AccessController {
    */
   Map<CallMethodRequest, AccessResult> checkCallAccess(
       Session session, List<CallMethodRequest> requests);
+
+  /**
+   * Check if the current Session has permission to add the Nodes described by {@code nodesToAdd}.
+   *
+   * <p>The Nodes do not exist yet, so a decision is made from what each {@link AddNodesItem} asks
+   * for: the parent Node it would be referenced from, the namespace of the requested NodeId, the
+   * NodeClass, or the type definition.
+   *
+   * <p>AddNodes sends the items that are not denied to the AddressSpace and answers each denied
+   * item with the status code of its denial.
+   *
+   * @param session the Session to check access for.
+   * @param nodesToAdd the {@link AddNodesItem}s describing the Nodes to check access for.
+   * @return a Map containing the {@link AccessResult} for each {@link AddNodesItem}.
+   */
+  Map<AddNodesItem, AccessResult> checkAddNodesAccess(
+      Session session, List<AddNodesItem> nodesToAdd);
 
   /**
    * Check if the current Session has permission to add References to the Nodes identified by {@code
