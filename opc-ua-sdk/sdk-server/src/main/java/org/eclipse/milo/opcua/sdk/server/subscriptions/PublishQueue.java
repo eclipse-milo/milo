@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntSupplier;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
@@ -29,6 +30,14 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Holds a Session's Publish requests until one of its Subscriptions has something to send, and its
+ * Subscriptions until a Publish request arrives for them.
+ *
+ * <p>The number of waiting requests is bounded. A request that arrives when the queue is full takes
+ * the place of the oldest one, which is answered with {@code Bad_TooManyPublishRequests}, as Part 4
+ * §5.14.5.1 requires.
+ */
 public class PublishQueue {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PublishQueue.class);
@@ -38,16 +47,45 @@ public class PublishQueue {
   private final LinkedHashMap<UInteger, WaitingSubscription> waitList = new LinkedHashMap<>();
 
   private final ExecutorService executor;
+  private final IntSupplier maxQueuedRequests;
 
+  /**
+   * Create a PublishQueue that does not limit the number of queued Publish requests.
+   *
+   * @param executor the executor that delivers Publish requests to waiting Subscriptions.
+   */
   public PublishQueue(ExecutorService executor) {
-    this.executor = executor;
+    this(executor, () -> Integer.MAX_VALUE);
   }
 
+  /**
+   * Create a PublishQueue that queues at most {@code maxQueuedRequests} Publish requests.
+   *
+   * <p>The limit is read each time a request is queued, so it can follow the Session's current
+   * number of Subscriptions. A value less than one is treated as one.
+   *
+   * @param executor the executor that delivers Publish requests to waiting Subscriptions.
+   * @param maxQueuedRequests supplies the maximum number of Publish requests to queue.
+   */
+  public PublishQueue(ExecutorService executor, IntSupplier maxQueuedRequests) {
+    this.executor = executor;
+    this.maxQueuedRequests = maxQueuedRequests;
+  }
+
+  /**
+   * Hand a Publish request to the Subscription that has waited longest among those with the highest
+   * priority, or queue it if no Subscription is waiting.
+   *
+   * <p>If the queue is full, the oldest queued request is removed and completed with {@code
+   * Bad_TooManyPublishRequests} to make room.
+   *
+   * @param pending the Publish request to deliver or queue.
+   */
   public synchronized void addRequest(PendingPublish pending) {
     List<WaitingSubscription> waitingSubscriptions = List.copyOf(waitList.values());
 
     if (waitingSubscriptions.isEmpty()) {
-      pendingQueue.add(pending);
+      enqueue(pending);
 
       LOGGER.debug(
           "Queued PublishRequest requestHandle={}, size={}",
@@ -98,9 +136,31 @@ public class PublishQueue {
 
         executor.execute(() -> ws.subscription.onPublish(pending));
       } else {
-        pendingQueue.add(pending);
+        enqueue(pending);
       }
     }
+  }
+
+  /**
+   * Add {@code pending} to the queue, first answering the oldest queued requests with {@code
+   * Bad_TooManyPublishRequests} until there is room for it.
+   */
+  private void enqueue(PendingPublish pending) {
+    int maxSize = Math.max(1, maxQueuedRequests.getAsInt());
+
+    while (pendingQueue.size() >= maxSize) {
+      PendingPublish oldest = pendingQueue.removeFirst();
+
+      LOGGER.debug(
+          "Too many queued PublishRequests, returning oldest requestHandle={}, maxSize={}",
+          oldest.request.getRequestHeader().getRequestHandle(),
+          maxSize);
+
+      oldest.responseFuture.completeExceptionally(
+          new UaException(StatusCodes.Bad_TooManyPublishRequests));
+    }
+
+    pendingQueue.add(pending);
   }
 
   /**

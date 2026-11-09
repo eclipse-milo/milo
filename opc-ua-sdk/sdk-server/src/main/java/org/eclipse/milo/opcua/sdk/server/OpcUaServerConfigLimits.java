@@ -108,6 +108,22 @@ public interface OpcUaServerConfigLimits {
     return uint(Integer.MAX_VALUE);
   }
 
+  /**
+   * Get the maximum number of Publish requests, per Session, that the server will hold while it
+   * waits for a Subscription to have something to send.
+   *
+   * <p>A Publish request that arrives when this many are already queued replaces the oldest one,
+   * which is answered with {@code Bad_TooManyPublishRequests}.
+   *
+   * <p>A Session can always queue one more Publish request than it has Subscriptions, even if this
+   * limit is smaller.
+   *
+   * @return the maximum number of Publish requests, per Session, that can be queued.
+   */
+  default UInteger getMaxPublishRequestsPerSession() {
+    return uint(100);
+  }
+
   default Double getMaxSupportedSampleRate() {
     return (double) TimeUnit.MILLISECONDS.convert(24, TimeUnit.HOURS);
   }
