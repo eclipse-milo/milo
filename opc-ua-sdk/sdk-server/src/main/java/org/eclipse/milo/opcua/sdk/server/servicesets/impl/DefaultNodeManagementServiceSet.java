@@ -29,6 +29,7 @@ import org.eclipse.milo.opcua.sdk.server.servicesets.Service;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.AddNodesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.AddNodesRequest;
@@ -143,17 +144,31 @@ public class DefaultNodeManagementServiceSet implements NodeManagementServiceSet
 
     OperationDiagnostics<AddNodesItem> operationDiagnostics = diagnostics.collect(nodesToAdd);
 
-    var addNodesContext =
-        new AddNodesContext(
-            server,
-            session,
-            operationDiagnostics,
-            request.getRequestHeader().getAuditEntryId(),
-            request.getRequestHeader().getTimeoutHint(),
-            request.getRequestHeader().getAdditionalHeader());
+    Map<AddNodesItem, AccessResult> accessResults =
+        server.getAccessController().checkAddNodesAccess(session, nodesToAdd);
 
     List<AddNodesResult> results =
-        server.getAddressSpaceManager().addNodes(addNodesContext, nodesToAdd);
+        groupMapCollate(
+            nodesToAdd,
+            accessResults::get,
+            accessResult ->
+                group -> {
+                  if (accessResult instanceof AccessResult.Denied denied) {
+                    var result = new AddNodesResult(denied.statusCode(), NodeId.NULL_VALUE);
+                    return Collections.nCopies(group.size(), result);
+                  } else {
+                    var addNodesContext =
+                        new AddNodesContext(
+                            server,
+                            session,
+                            operationDiagnostics,
+                            request.getRequestHeader().getAuditEntryId(),
+                            request.getRequestHeader().getTimeoutHint(),
+                            request.getRequestHeader().getAdditionalHeader());
+
+                    return server.getAddressSpaceManager().addNodes(addNodesContext, group);
+                  }
+                });
 
     DiagnosticInfo[] diagnosticInfos =
         diagnostics.encodeOperations(operationDiagnostics, results, AddNodesResult::getStatusCode);

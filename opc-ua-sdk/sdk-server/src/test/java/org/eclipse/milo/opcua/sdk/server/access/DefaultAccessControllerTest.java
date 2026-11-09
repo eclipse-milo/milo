@@ -34,9 +34,14 @@ import org.eclipse.milo.opcua.sdk.server.access.DefaultAccessController.AccessCo
 import org.eclipse.milo.opcua.sdk.server.access.DefaultAccessController.AccessControlContext;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -45,6 +50,7 @@ import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.AddNodesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.AddReferencesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteNodesItem;
@@ -73,6 +79,7 @@ class DefaultAccessControllerTest {
   void setup() {
     Mockito.when(context.readAccessControlAttributes(Mockito.anyList(), Mockito.any()))
         .thenReturn(attributesMap);
+    Mockito.when(context.getNamespaceTable()).thenReturn(new NamespaceTable());
   }
 
   /**
@@ -1225,6 +1232,157 @@ class DefaultAccessControllerTest {
     }
   }
 
+  // Adding a Node adds a Reference from its parent, so the parent's AddReference permission
+  // (Part 3 §8.55) decides, the way it does for AddReferences.
+  @Test
+  void checkAddNodesAccess_ParentLacksAddReferencePermission_Denied() {
+    var parentNodeId = new NodeId(1, "parent");
+    AddNodesItem addNodesItem = addNodesItem(parentNodeId.expanded());
+
+    attributesMap.put(
+        parentNodeId,
+        new AccessControlAttributes(
+            null, null, null, null, null, null, rolePermissions(PermissionType.Field.Browse)));
+
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+
+    AccessResult result =
+        DefaultAccessController.checkAddNodesAccess(context, List.of(addNodesItem))
+            .get(addNodesItem);
+
+    assertEquals(AccessResult.DENIED_USER_ACCESS, result);
+  }
+
+  @Test
+  void checkAddNodesAccess_ParentGrantsAddReferencePermission_Allowed() {
+    var parentNodeId = new NodeId(1, "parent");
+    AddNodesItem addNodesItem = addNodesItem(parentNodeId.expanded());
+
+    attributesMap.put(
+        parentNodeId,
+        new AccessControlAttributes(
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            rolePermissions(PermissionType.Field.AddReference)));
+
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+
+    AccessResult result =
+        DefaultAccessController.checkAddNodesAccess(context, List.of(addNodesItem))
+            .get(addNodesItem);
+
+    assertEquals(AccessResult.ALLOWED, result);
+  }
+
+  // A parent that requires encryption cannot be added to over an unencrypted channel, whatever
+  // the Session's roles.
+  @Test
+  void checkAddNodesAccess_ParentAccessRestrictions_DeniedSecurityMode() {
+    var parentNodeId = new NodeId(1, "parent");
+    AddNodesItem addNodesItem = addNodesItem(parentNodeId.expanded());
+
+    // SigningRequired | EncryptionRequired
+    var accessRestrictions = new AccessRestrictionType(UShort.valueOf(3));
+
+    attributesMap.put(
+        parentNodeId,
+        new AccessControlAttributes(null, accessRestrictions, null, null, null, null, null));
+
+    Mockito.when(context.getSecurityMode()).thenReturn(MessageSecurityMode.Sign);
+
+    assertEquals(
+        AccessResult.DENIED_SECURITY_MODE,
+        DefaultAccessController.checkAddNodesAccess(context, List.of(addNodesItem))
+            .get(addNodesItem));
+
+    Mockito.when(context.getSecurityMode()).thenReturn(MessageSecurityMode.SignAndEncrypt);
+
+    assertEquals(
+        AccessResult.ALLOWED,
+        DefaultAccessController.checkAddNodesAccess(context, List.of(addNodesItem))
+            .get(addNodesItem),
+        "the same parent allows the add once the channel is encrypted");
+  }
+
+  // AddNodesItem.hashCode hashes the new Node's encoded attributes, initial value included, so
+  // the results are keyed by identity, as checkAddNodesAccess documents: the item is never hashed
+  // and an equal copy finds nothing.
+  @Test
+  void checkAddNodesAccess_ResultsAreKeyedByIdentityWithoutHashingTheItem() {
+    var parentNodeId = new NodeId(1, "parent");
+    var addNodesItem =
+        new AddNodesItem(
+            parentNodeId.expanded(),
+            NodeIds.HasComponent,
+            ExpandedNodeId.NULL_VALUE,
+            new QualifiedName(1, "child"),
+            NodeClass.Object,
+            null,
+            NodeIds.BaseObjectType.expanded()) {
+
+          @Override
+          public int hashCode() {
+            throw new AssertionError("checkAddNodesAccess hashed the AddNodesItem");
+          }
+        };
+    var copy =
+        new AddNodesItem(
+            parentNodeId.expanded(),
+            NodeIds.HasComponent,
+            ExpandedNodeId.NULL_VALUE,
+            new QualifiedName(1, "child"),
+            NodeClass.Object,
+            null,
+            NodeIds.BaseObjectType.expanded());
+
+    attributesMap.put(
+        parentNodeId, new AccessControlAttributes(null, null, null, null, null, null, null));
+
+    Map<AddNodesItem, AccessResult> results =
+        DefaultAccessController.checkAddNodesAccess(context, List.of(addNodesItem));
+
+    assertEquals(AccessResult.ALLOWED, results.get(addNodesItem));
+    assertNull(results.get(copy), "lookup with an equal but different AddNodesItem");
+  }
+
+  /**
+   * A parent the controller cannot resolve to a local Node gives it nothing to decide from, so the
+   * item is allowed through and the AddressSpace answers Bad_ParentNodeIdInvalid (Part 4 §5.8.2)
+   * rather than the controller hiding it behind a denial. The resolvable item in the same request
+   * is still decided from its own parent.
+   */
+  @Test
+  void checkAddNodesAccess_ParentNotALocalNode_AllowedWithoutReadingIt() {
+    var deniedParentNodeId = new NodeId(1, "parent");
+
+    AddNodesItem nullParent = addNodesItem(ExpandedNodeId.NULL_VALUE);
+    AddNodesItem remoteParent =
+        addNodesItem(new ExpandedNodeId(ServerReference.of(1), NamespaceReference.of(1), "remote"));
+    AddNodesItem unregisteredNamespace =
+        addNodesItem(ExpandedNodeId.of("urn:not:registered", "parent"));
+    AddNodesItem deniedItem = addNodesItem(deniedParentNodeId.expanded());
+
+    attributesMap.put(
+        deniedParentNodeId,
+        new AccessControlAttributes(
+            null, null, null, null, null, null, rolePermissions(PermissionType.Field.Browse)));
+
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+
+    Map<AddNodesItem, AccessResult> results =
+        DefaultAccessController.checkAddNodesAccess(
+            context, List.of(nullParent, remoteParent, unregisteredNamespace, deniedItem));
+
+    assertEquals(AccessResult.ALLOWED, results.get(nullParent));
+    assertEquals(AccessResult.ALLOWED, results.get(remoteParent));
+    assertEquals(AccessResult.ALLOWED, results.get(unregisteredNamespace));
+    assertEquals(AccessResult.DENIED_USER_ACCESS, results.get(deniedItem));
+  }
+
   @Test
   void checkDeleteNodes() {
     var deleteNodesItem = new DeleteNodesItem(new NodeId(1, "foo"), true);
@@ -1576,6 +1734,17 @@ class DefaultAccessControllerTest {
             AttributeId.AccessLevel,
             AttributeId.UserAccessLevel),
         attributesRead);
+  }
+
+  private static AddNodesItem addNodesItem(ExpandedNodeId parentNodeId) {
+    return new AddNodesItem(
+        parentNodeId,
+        NodeIds.HasComponent,
+        ExpandedNodeId.NULL_VALUE,
+        new QualifiedName(1, "child-of-" + parentNodeId.toParseableString()),
+        NodeClass.Object,
+        null,
+        NodeIds.BaseObjectType.expanded());
   }
 
   private static RolePermissionType[] rolePermissions(PermissionType.Field field) {
