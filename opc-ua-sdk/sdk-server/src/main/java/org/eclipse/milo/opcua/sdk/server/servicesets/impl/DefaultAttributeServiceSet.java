@@ -26,6 +26,7 @@ import org.eclipse.milo.opcua.sdk.server.AddressSpace.ReadContext;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.WriteContext;
 import org.eclipse.milo.opcua.sdk.server.HistoryUpdateOperationDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
+import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits;
 import org.eclipse.milo.opcua.sdk.server.OperationDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
@@ -38,6 +39,8 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.structured.DeleteEventDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadResponse;
@@ -47,10 +50,12 @@ import org.eclipse.milo.opcua.stack.core.types.structured.HistoryUpdateDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryUpdateRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryUpdateResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryUpdateResult;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReadEventDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ResponseHeader;
+import org.eclipse.milo.opcua.stack.core.types.structured.UpdateEventDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
@@ -210,7 +215,10 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
       throw new UaException(StatusCodes.Bad_NothingToDo);
     }
 
-    if (nodesToRead.size() > server.getConfig().getLimits().getMaxNodesPerRead().longValue()) {
+    ExtensionObject xo = request.getHistoryReadDetails();
+    HistoryReadDetails details = (HistoryReadDetails) xo.decode(server.getStaticEncodingContext());
+
+    if (nodesToRead.size() > maxNodesPerHistoryRead(details).longValue()) {
       throw new UaException(StatusCodes.Bad_TooManyOperations);
     }
 
@@ -232,9 +240,6 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
             request.getRequestHeader().getAuditEntryId(),
             request.getRequestHeader().getTimeoutHint(),
             request.getRequestHeader().getAdditionalHeader());
-
-    ExtensionObject xo = request.getHistoryReadDetails();
-    HistoryReadDetails details = (HistoryReadDetails) xo.decode(server.getStaticEncodingContext());
 
     List<HistoryReadResult> results =
         server
@@ -305,17 +310,31 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
     var historyUpdateDetails =
         requireNonNullElse(request.getHistoryUpdateDetails(), new ExtensionObject[0]);
 
+    if (historyUpdateDetails.length == 0) {
+      throw new UaException(StatusCodes.Bad_NothingToDo);
+    }
+
+    OpcUaServerConfigLimits limits = server.getConfig().getLimits();
+    long maxDataEntries = limits.getMaxNodesPerHistoryUpdateData().longValue();
+    long maxEventEntries = limits.getMaxNodesPerHistoryUpdateEvents().longValue();
+
+    // No valid request is longer than the larger limit, so reject those before decoding anything.
+    if (historyUpdateDetails.length > Math.max(maxDataEntries, maxEventEntries)) {
+      throw new UaException(StatusCodes.Bad_TooManyOperations);
+    }
+
     List<HistoryUpdateDetails> historyUpdateDetailsList =
         Stream.of(historyUpdateDetails)
             .map(xo -> (HistoryUpdateDetails) xo.decode(server.getStaticEncodingContext()))
             .collect(Collectors.toList());
 
-    if (historyUpdateDetailsList.isEmpty()) {
-      throw new UaException(StatusCodes.Bad_NothingToDo);
-    }
+    long eventEntries =
+        historyUpdateDetailsList.stream()
+            .filter(DefaultAttributeServiceSet::isEventHistoryUpdate)
+            .count();
+    long dataEntries = historyUpdateDetailsList.size() - eventEntries;
 
-    if (historyUpdateDetailsList.size()
-        > server.getConfig().getLimits().getMaxNodesPerWrite().intValue()) {
+    if (dataEntries > maxDataEntries || eventEntries > maxEventEntries) {
       throw new UaException(StatusCodes.Bad_TooManyOperations);
     }
 
@@ -353,5 +372,29 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
     ResponseHeader header = diagnostics.responseHeader(request);
 
     return new HistoryUpdateResponse(header, normalized, diagnosticInfos);
+  }
+
+  /**
+   * Get the operation limit that applies to a HistoryRead request with the given details.
+   *
+   * <p>OPC 10000-5 6.3.11: MaxNodesPerHistoryReadEvents limits requests that read events, and
+   * MaxNodesPerHistoryReadData limits all other requests.
+   */
+  private UInteger maxNodesPerHistoryRead(HistoryReadDetails details) {
+    OpcUaServerConfigLimits limits = server.getConfig().getLimits();
+
+    if (details instanceof ReadEventDetails) {
+      return limits.getMaxNodesPerHistoryReadEvents();
+    } else {
+      return limits.getMaxNodesPerHistoryReadData();
+    }
+  }
+
+  /**
+   * Check whether a HistoryUpdate entry counts against MaxNodesPerHistoryUpdateEvents instead of
+   * MaxNodesPerHistoryUpdateData.
+   */
+  private static boolean isEventHistoryUpdate(HistoryUpdateDetails details) {
+    return details instanceof UpdateEventDetails || details instanceof DeleteEventDetails;
   }
 }
