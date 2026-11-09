@@ -145,7 +145,22 @@ public class SubscriptionManager {
     this.session = session;
     this.server = server;
 
-    publishQueue = new PublishQueue(server.getConfig().getExecutor());
+    publishQueue =
+        new PublishQueue(server.getConfig().getExecutor(), this::getMaxQueuedPublishRequests);
+  }
+
+  /**
+   * Get the number of Publish requests this Session may have queued right now.
+   *
+   * <p>Part 4 §5.14.5.1 requires a Server to accept more queued Publish requests than the Session
+   * has Subscriptions, so the configured limit is raised to one more than the Subscription count
+   * when it is smaller.
+   */
+  private int getMaxQueuedPublishRequests() {
+    long configured = server.getConfig().getLimits().getMaxPublishRequestsPerSession().longValue();
+    long required = subscriptions.size() + 1L;
+
+    return (int) Math.min(Integer.MAX_VALUE, Math.max(configured, required));
   }
 
   public Session getSession() {

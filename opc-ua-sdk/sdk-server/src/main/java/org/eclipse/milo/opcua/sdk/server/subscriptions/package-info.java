@@ -31,6 +31,12 @@
  * keeps a bounded queue of notifications. The Subscription's publishing timer drains those queues
  * into NotificationMessages and completes queued Publish requests with them.
  *
+ * <p>The PublishQueue holds a bounded number of Publish requests per Session. The bound is {@link
+ * org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits#getMaxPublishRequestsPerSession}, or
+ * one more than the Session's Subscription count if that is larger. A request that arrives when the
+ * queue is full replaces the oldest one, which is answered with {@code Bad_TooManyPublishRequests}
+ * (Part 4 §5.14.5.1).
+ *
  * <h2>Ownership</h2>
  *
  * <p>The AddressSpace owns sampling: when and how a value is read. This package owns everything the
