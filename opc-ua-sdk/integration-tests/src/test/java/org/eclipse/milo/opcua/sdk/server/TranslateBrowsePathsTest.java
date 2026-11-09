@@ -39,6 +39,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
+import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrowsePath;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrowsePathResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrowsePathTarget;
@@ -61,21 +62,34 @@ import org.junit.jupiter.params.provider.MethodSource;
  * own namespace so they control the order of each Node's references and how the namespace answers a
  * Read: one Node's Read throws, and another Node's BrowseName as Read differs from the one it
  * stores.
+ *
+ * <p>The Server's default AccessController decides which Nodes the Session may browse. The client
+ * connects without encryption, so it denies Browse on the Nodes under "Restricted" that require it.
  */
 class TranslateBrowsePathsTest extends AbstractClientServerTest {
 
   private static final String NAMESPACE_URI = "urn:eclipse:milo:test:translate-browse-paths";
 
-  /** A child whose Read throws, ahead of the matching child. */
+  /** A child whose BrowseName Read throws, ahead of the matching child. */
   private static final String THROWING_READ = "ThrowingRead";
 
   private static final String BROKEN_CHILD = THROWING_READ + ".Broken";
+
+  /** A child whose Read of any other attribute throws, which fails its browse access check. */
+  private static final String THROWING_ACCESS_CHECK = "ThrowingAccessCheck";
+
+  private static final String UNCHECKED_CHILD = THROWING_ACCESS_CHECK + ".Unchecked";
 
   /** A child whose stored BrowseName differs from the BrowseName the namespace serves. */
   private static final String RENAMED_CHILD = "Routing.Renamed";
 
   private static final String STORED_NAME = "Stored";
   private static final String SERVED_NAME = "Served";
+
+  /** A child whose BrowseName is only served to a Read made for a Session. */
+  private static final String SESSION_CHILD = "Personal.Named";
+
+  private static final String SESSION_NAME = "Mine";
 
   private BrowsePathNamespace namespace;
 
@@ -96,12 +110,14 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
     return Stream.of(
         arguments(named("reference to a Node that does not exist", "Dangling")),
         arguments(named("reference to a Node on another Server", "Remote")),
-        arguments(named("child whose Read throws", THROWING_READ)));
+        arguments(named("child whose BrowseName Read throws", THROWING_READ)),
+        arguments(named("child whose browse access check throws", THROWING_ACCESS_CHECK)));
   }
 
   /**
-   * A child whose BrowseName can't be read just doesn't match. It must not stop the path from
-   * resolving through a sibling, and it must not fail the whole request.
+   * A child whose BrowseName can't be read, or whose browse access can't be checked, just doesn't
+   * match. It must not stop the path from resolving through a sibling, and it must not fail the
+   * whole request.
    */
   @ParameterizedTest
   @MethodSource("unreadableChildren")
@@ -197,6 +213,73 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
   }
 
   /**
+   * An attribute filter can serve a BrowseName that depends on the Session, and Read and Browse
+   * report that name to the client. The match must use the name served to the requesting Session.
+   */
+  @Test
+  void browseNameIsReadForTheRequestingSession() throws UaException {
+    BrowsePathResult result = translate("Personal", SESSION_NAME);
+
+    assertEquals(StatusCode.GOOD, result.getStatusCode());
+    assertEquals(List.of(expandedNodeId(SESSION_CHILD)), targetIds(result));
+  }
+
+  /**
+   * Part 3 §8.55: without the Browse permission a client can't see the references to a Node, so
+   * Browse leaves that Node out. A path must not find what Browse hides. "Open" and "Closed" share
+   * a BrowseName; only "Open" may be returned.
+   */
+  @Test
+  void targetTheSessionMayNotBrowseIsNotReturned() throws UaException {
+    BrowsePathResult result = translate("Restricted", "Twin");
+
+    assertEquals(StatusCode.GOOD, result.getStatusCode());
+    assertEquals(List.of(expandedNodeId("Restricted.Open")), targetIds(result));
+  }
+
+  // A denied Node must look the same as a name that matches nothing, or the status would reveal
+  // that the Node exists.
+  @Test
+  void pathWhoseOnlyMatchMayNotBeBrowsedReturnsBadNoMatch() throws UaException {
+    BrowsePathResult denied = translate("Restricted", "Sealed");
+    BrowsePathResult missing = translate("Restricted", "Missing");
+
+    assertEquals(new StatusCode(StatusCodes.Bad_NoMatch), denied.getStatusCode());
+    assertEquals(List.of(), targetIds(denied));
+
+    assertEquals(missing.getStatusCode(), denied.getStatusCode());
+  }
+
+  // Both "Twin" Nodes have a "Leaf". Browse would never show the client "Closed", so the path must
+  // not continue through it to a Leaf the client is otherwise allowed to browse.
+  @Test
+  void pathIsNotFollowedThroughANodeTheSessionMayNotBrowse() throws UaException {
+    BrowsePathResult result = translate("Restricted", "Twin", "Leaf");
+
+    assertEquals(StatusCode.GOOD, result.getStatusCode());
+    assertEquals(List.of(expandedNodeId("Restricted.Open.Leaf")), targetIds(result));
+  }
+
+  // Browse returns no references for a starting Node the Session may not browse. Starting a path
+  // there must fail the way it does for a Node that doesn't exist.
+  @Test
+  void pathStartingAtANodeTheSessionMayNotBrowseFailsLikeAnUnknownNode() throws UaException {
+    BrowsePathResult denied = translate("Restricted.Closed", "Leaf");
+    BrowsePathResult unknown = translate("NoSuchNode", "Leaf");
+    BrowsePathResult allowed = translate("Restricted.Open", "Leaf");
+
+    assertEquals(new StatusCode(StatusCodes.Bad_NodeIdUnknown), denied.getStatusCode());
+    assertEquals(List.of(), targetIds(denied));
+
+    assertEquals(unknown.getStatusCode(), denied.getStatusCode());
+
+    assertEquals(
+        List.of(expandedNodeId("Restricted.Open.Leaf")),
+        targetIds(allowed),
+        "the same path resolves from the sibling the Session may browse");
+  }
+
+  /**
    * Paths in one request reuse what an earlier path browsed and read, but only for the same Node
    * and the same reference filters. Each path must still get its own result.
    */
@@ -225,6 +308,9 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
    * Paths in one request that share a prefix browse each Node once, and read the BrowseNames of a
    * Node's targets in one Read. A later request browses and reads again, so it never sees what an
    * earlier request found.
+   *
+   * <p>Only BrowseName Reads are counted; the AccessController reads other attributes of the same
+   * Nodes.
    */
   @Test
   void sharedPrefixIsBrowsedAndReadOncePerRequest() throws UaException {
@@ -244,13 +330,13 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
     translateAll(paths);
 
     assertEquals(expectedBrowses, namespace.browsedNodes());
-    assertEquals(expectedReads, namespace.readBatches());
+    assertEquals(expectedReads, namespace.browseNameReads());
 
     namespace.clearCalls();
     translateAll(paths);
 
     assertEquals(expectedBrowses, namespace.browsedNodes(), "a later request must browse again");
-    assertEquals(expectedReads, namespace.readBatches(), "a later request must read again");
+    assertEquals(expectedReads, namespace.browseNameReads(), "a later request must read again");
   }
 
   private BrowsePathResult translate(String startingNode, String... targetNames)
@@ -310,20 +396,26 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
    * Dangling      -> (missing Node), Device -> Item
    * Remote        -> (Node on Server 1), Device -> Item
    * ThrowingRead  -> Broken, Device -> Item
+   * ThrowingAccessCheck -> Unchecked, Device -> Item
    * Siblings      -> Alpha -> Leaf, Beta -> Leaf
    * Twins         -> First "Twin", Second "Twin"
    * DeadEnd       -> First "Twin", Second "Twin" -> Leaf
    * Both          -> First "Twin" -> Leaf, Second "Twin" -> Leaf
    * Converging    -> First "Twin" -> Leaf -> End, Second "Twin" -> (the same Leaf)
    * Routing       -> Renamed (stores "Stored", serves "Served")
+   * Personal      -> Named (serves "Mine" to a Read made for a Session)
+   * Restricted    -> Open "Twin" -> Leaf, Closed "Twin" (denied) -> Leaf, Sealed (denied)
    * </pre>
    *
-   * <p>It records the Nodes passed to each Browse and Read it handles, by NodeId identifier.
+   * <p>The denied Nodes have AccessRestrictions that require encryption and apply to Browse.
+   *
+   * <p>It records the Nodes passed to each Browse and each BrowseName Read it handles, by NodeId
+   * identifier.
    */
   private static final class BrowsePathNamespace extends ManagedNamespaceWithLifecycle {
 
     private final List<String> browsedNodes = new CopyOnWriteArrayList<>();
-    private final List<List<String>> readBatches = new CopyOnWriteArrayList<>();
+    private final List<List<String>> browseNameReads = new CopyOnWriteArrayList<>();
 
     BrowsePathNamespace(OpcUaServer server) {
       super(server, NAMESPACE_URI);
@@ -350,6 +442,10 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
       UaFolderNode throwingRead = addFolder(THROWING_READ, THROWING_READ);
       throwingRead.addOrganizes(addFolder(BROKEN_CHILD, "Broken"));
       addDeviceWithItem(throwingRead);
+
+      UaFolderNode throwingAccessCheck = addFolder(THROWING_ACCESS_CHECK, THROWING_ACCESS_CHECK);
+      throwingAccessCheck.addOrganizes(addFolder(UNCHECKED_CHILD, "Unchecked"));
+      addDeviceWithItem(throwingAccessCheck);
 
       UaFolderNode siblings = addFolder("Siblings", "Siblings");
       for (String name : List.of("Alpha", "Beta")) {
@@ -386,6 +482,27 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
 
       UaFolderNode routing = addFolder("Routing", "Routing");
       routing.addOrganizes(addFolder(RENAMED_CHILD, STORED_NAME));
+
+      UaFolderNode personal = addFolder("Personal", "Personal");
+      personal.addOrganizes(addFolder(SESSION_CHILD, "Named"));
+
+      UaFolderNode restricted = addFolder("Restricted", "Restricted");
+      for (String id : List.of("Restricted.Open", "Restricted.Closed")) {
+        UaFolderNode twin = addFolder(id, "Twin");
+        restricted.addOrganizes(twin);
+        twin.addOrganizes(addFolder(id + ".Leaf", "Leaf"));
+      }
+      restricted.addOrganizes(addFolder("Restricted.Sealed", "Sealed"));
+
+      for (String id : List.of("Restricted.Closed", "Restricted.Sealed")) {
+        getNodeManager()
+            .getNode(newNodeId(id))
+            .orElseThrow()
+            .setAccessRestrictions(
+                AccessRestrictionType.of(
+                    AccessRestrictionType.Field.EncryptionRequired,
+                    AccessRestrictionType.Field.ApplyRestrictionsToBrowse));
+      }
     }
 
     private void addDeviceWithItem(UaFolderNode parent) {
@@ -414,14 +531,17 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
       return List.copyOf(browsedNodes);
     }
 
-    /** The Nodes passed to each Read since the last {@link #clearCalls()}, in call order. */
-    List<List<String>> readBatches() {
-      return List.copyOf(readBatches);
+    /**
+     * The Nodes whose BrowseName each Read asked for since the last {@link #clearCalls()}, in call
+     * order.
+     */
+    List<List<String>> browseNameReads() {
+      return List.copyOf(browseNameReads);
     }
 
     void clearCalls() {
       browsedNodes.clear();
-      readBatches.clear();
+      browseNameReads.clear();
     }
 
     @Override
@@ -440,15 +560,30 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
         TimestampsToReturn timestamps,
         List<ReadValueId> readValueIds) {
 
-      readBatches.add(
-          readValueIds.stream().map(id -> id.getNodeId().getIdentifier().toString()).toList());
+      List<String> browseNameRead =
+          readValueIds.stream()
+              .filter(id -> id.getAttributeId().equals(AttributeId.BrowseName.uid()))
+              .map(id -> id.getNodeId().getIdentifier().toString())
+              .toList();
+
+      if (!browseNameRead.isEmpty()) {
+        browseNameReads.add(browseNameRead);
+      }
 
       NodeId brokenId = newNodeId(BROKEN_CHILD);
       NodeId renamedId = newNodeId(RENAMED_CHILD);
+      NodeId sessionChildId = newNodeId(SESSION_CHILD);
+
+      NodeId uncheckedId = newNodeId(UNCHECKED_CHILD);
 
       for (ReadValueId readValueId : readValueIds) {
-        if (readValueId.getNodeId().equals(brokenId)) {
-          throw new IllegalStateException("read failed: " + brokenId);
+        boolean browseName = readValueId.getAttributeId().equals(AttributeId.BrowseName.uid());
+
+        if (readValueId.getNodeId().equals(brokenId) && browseName) {
+          throw new IllegalStateException("BrowseName read failed: " + brokenId);
+        }
+        if (readValueId.getNodeId().equals(uncheckedId) && !browseName) {
+          throw new IllegalStateException("attribute read failed: " + uncheckedId);
         }
       }
 
@@ -463,6 +598,15 @@ class TranslateBrowsePathsTest extends AbstractClientServerTest {
 
         if (renamedBrowseName) {
           values.set(i, new DataValue(new Variant(newQualifiedName(SERVED_NAME))));
+        }
+
+        boolean sessionBrowseName =
+            readValueId.getNodeId().equals(sessionChildId)
+                && readValueId.getAttributeId().equals(AttributeId.BrowseName.uid())
+                && context.getSession().isPresent();
+
+        if (sessionBrowseName) {
+          values.set(i, new DataValue(new Variant(newQualifiedName(SESSION_NAME))));
         }
       }
 

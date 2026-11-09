@@ -14,12 +14,14 @@
  *
  * <p>The SDK's default Read, HistoryRead, Write, HistoryUpdate, Browse, Call, DeleteNodes,
  * AddReferences, and DeleteReferences paths consult the {@link
- * org.eclipse.milo.opcua.sdk.server.access.AccessController}. CreateMonitoredItems checks read
- * access through it, and TransferSubscriptions rechecks read access for transferred data items.
+ * org.eclipse.milo.opcua.sdk.server.access.AccessController}. TranslateBrowsePathsToNodeIds checks
+ * browse access through it, on the starting Node and on every Node a path reaches.
+ * CreateMonitoredItems checks read access through it, and TransferSubscriptions rechecks read
+ * access for transferred data items.
  *
- * <p>AddNodes and TranslateBrowsePathsToNodeIds dispatch without a controller check. BrowseNext
- * returns previously filtered references without rechecking access. Applications must enforce their
- * policy for these paths and for direct AddressSpace calls.
+ * <p>AddNodes dispatches without a controller check. BrowseNext returns previously filtered
+ * references without rechecking access. Applications must enforce their policy for these paths and
+ * for direct AddressSpace calls.
  *
  * <p>{@link org.eclipse.milo.opcua.sdk.server.access.DefaultAccessController} decides from the
  * Node's access attributes as read for the requesting Session, so an application shapes its answers
