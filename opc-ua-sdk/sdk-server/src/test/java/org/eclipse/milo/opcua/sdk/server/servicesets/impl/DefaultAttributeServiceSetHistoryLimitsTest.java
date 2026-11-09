@@ -39,6 +39,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.PerformUpdateType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.ContentFilter;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteEventDetails;
@@ -54,6 +55,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.HistoryUpdateResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadEventDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadRawModifiedDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
+import org.eclipse.milo.opcua.stack.core.types.structured.UpdateEventDetails;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -180,6 +182,22 @@ class DefaultAttributeServiceSetHistoryLimitsTest {
       assertEquals(StatusCodes.Bad_TooManyOperations, e.getStatusCode().value());
     }
 
+    // Both event details types count against the events limit. MAX_EVENTS is above the data limit,
+    // so an entry mistaken for a data entry would be rejected here.
+    @ParameterizedTest
+    @MethodSource(
+        "org.eclipse.milo.opcua.sdk.server.servicesets.impl."
+            + "DefaultAttributeServiceSetHistoryLimitsTest#eventUpdateDetails")
+    void everyEventDetailsTypeCountsAgainstTheEventsLimit(HistoryUpdateDetails eventDetails)
+        throws Exception {
+
+      var response =
+          serviceSet.onHistoryUpdate(
+              context, historyUpdateRequest(Collections.nCopies(MAX_EVENTS, eventDetails)));
+
+      assertEquals(MAX_EVENTS, response.getResults().length);
+    }
+
     // The limit also bounds the work spent on a request. An array longer than any valid request
     // must be rejected without decoding its entries, so undecodable entries never get the chance
     // to fail first.
@@ -225,6 +243,14 @@ class DefaultAttributeServiceSetHistoryLimitsTest {
         Arguments.of(MAX_DATA, MAX_EVENTS));
   }
 
+  static Stream<HistoryUpdateDetails> eventUpdateDetails() {
+    var filter = new EventFilter(null, new ContentFilter(null));
+
+    return Stream.of(
+        new DeleteEventDetails(new NodeId(1, "event"), null),
+        new UpdateEventDetails(new NodeId(1, "event"), PerformUpdateType.Insert, filter, null));
+  }
+
   private static HistoryReadDetails rawDetails() {
     return new ReadRawModifiedDetails(
         false, DateTime.MIN_VALUE, DateTime.MIN_VALUE, uint(0), false);
@@ -259,11 +285,17 @@ class DefaultAttributeServiceSetHistoryLimitsTest {
             new NodeId(1, "data"), false, DateTime.MIN_VALUE, DateTime.MIN_VALUE);
     var event = new DeleteEventDetails(new NodeId(1, "event"), null);
 
-    ExtensionObject[] historyUpdateDetails =
+    return historyUpdateRequest(
         Stream.concat(
                 Collections.nCopies(dataCount, data).stream(),
                 Collections.nCopies(eventCount, event).stream())
-            .map(details -> ExtensionObject.encode(ENCODING_CONTEXT, details))
+            .toList());
+  }
+
+  private static HistoryUpdateRequest historyUpdateRequest(List<HistoryUpdateDetails> details) {
+    ExtensionObject[] historyUpdateDetails =
+        details.stream()
+            .map(entry -> ExtensionObject.encode(ENCODING_CONTEXT, entry))
             .toArray(ExtensionObject[]::new);
 
     return new HistoryUpdateRequest(REQUEST_HEADER, historyUpdateDetails);
