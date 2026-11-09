@@ -36,16 +36,24 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.PerformUpdateType;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessRestrictionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.AddReferencesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
+import org.eclipse.milo.opcua.stack.core.types.structured.DeleteAtTimeDetails;
+import org.eclipse.milo.opcua.stack.core.types.structured.DeleteEventDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteNodesItem;
+import org.eclipse.milo.opcua.stack.core.types.structured.DeleteRawModifiedDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteReferencesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadValueId;
+import org.eclipse.milo.opcua.stack.core.types.structured.HistoryUpdateDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.PermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.UpdateDataDetails;
+import org.eclipse.milo.opcua.stack.core.types.structured.UpdateEventDetails;
+import org.eclipse.milo.opcua.stack.core.types.structured.UpdateStructureDataDetails;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
 import org.jspecify.annotations.Nullable;
 
@@ -74,8 +82,8 @@ public class DefaultAccessController implements AccessController {
           AttributeId.UserExecutable,
           AttributeId.UserRolePermissions);
 
-  /** The attributes a history read check decides from. */
-  private static final Set<AttributeId> HISTORY_READ_ATTRIBUTES =
+  /** The attributes a history read or history update check decides from. */
+  private static final Set<AttributeId> HISTORY_ATTRIBUTES =
       EnumSet.of(
           AttributeId.NodeClass,
           AttributeId.AccessRestrictions,
@@ -86,6 +94,13 @@ public class DefaultAccessController implements AccessController {
 
   /** The HistoryRead bit of the EventNotifier attribute (Part 3 §8.59). */
   private static final int EVENT_NOTIFIER_HISTORY_READ = 0x04;
+
+  /** The HistoryWrite bit of the EventNotifier attribute (Part 3 §8.59). */
+  private static final int EVENT_NOTIFIER_HISTORY_WRITE = 0x08;
+
+  /** The denial for a HistoryUpdateDetails subtype this controller does not know how to check. */
+  private static final AccessResult DENIED_HISTORY_OPERATION_UNSUPPORTED =
+      new AccessResult.Denied(StatusCodes.Bad_HistoryOperationUnsupported);
 
   private final OpcUaServer server;
 
@@ -237,7 +252,7 @@ public class DefaultAccessController implements AccessController {
     List<NodeId> nodeIds = historyReadValueIds.stream().map(HistoryReadValueId::getNodeId).toList();
 
     Map<NodeId, AccessControlAttributes> attributes =
-        context.readAccessControlAttributes(nodeIds, HISTORY_READ_ATTRIBUTES);
+        context.readAccessControlAttributes(nodeIds, HISTORY_ATTRIBUTES);
 
     for (PendingResult<HistoryReadValueId> p : pending) {
       if (attributes.get(p.value.getNodeId()).nodeUnknown()) {
@@ -431,6 +446,207 @@ public class DefaultAccessController implements AccessController {
       results.put(p.value, p.result);
     }
     return results;
+  }
+
+  // endregion
+
+  // region HistoryUpdate
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Each entry is checked against the Node it names:
+   *
+   * <ul>
+   *   <li>the Node's {@code AccessRestrictions};
+   *   <li>for a Variable, the HistoryWrite bit of {@code AccessLevel}, which denies with {@code
+   *       Bad_NotWritable}, and then of {@code UserAccessLevel}, which denies with {@code
+   *       Bad_UserAccessDenied};
+   *   <li>for an Object or View, the HistoryWrite bit of {@code EventNotifier}, which denies with
+   *       {@code Bad_NotWritable};
+   *   <li>when the Session has roles and the Node has {@code UserRolePermissions}, the permissions
+   *       the entry needs, which deny with {@code Bad_UserAccessDenied}.
+   * </ul>
+   *
+   * <p>The permissions an entry needs follow from what it does:
+   *
+   * <table>
+   *   <caption>Permissions needed by a history update</caption>
+   *   <tr><th>Entry</th><th>Permissions</th></tr>
+   *   <tr><td>Update*Details, Insert</td><td>InsertHistory</td></tr>
+   *   <tr><td>Update*Details, Replace</td><td>ModifyHistory</td></tr>
+   *   <tr><td>Update*Details, Update</td><td>InsertHistory and ModifyHistory</td></tr>
+   *   <tr><td>Update*Details, Remove</td><td>DeleteHistory</td></tr>
+   *   <tr><td>Delete*Details</td><td>DeleteHistory</td></tr>
+   * </table>
+   *
+   * <p>An Update entry inserts or replaces depending on whether a value already exists, so it needs
+   * both permissions. An entry whose update type did not decode needs all three.
+   *
+   * <p>A Node the AddressSpace does not know gets {@link AccessResult#NODE_UNKNOWN}, so the
+   * AddressSpace answers for it. A {@link HistoryUpdateDetails} subtype other than the six the
+   * specification defines is denied with {@code Bad_HistoryOperationUnsupported}.
+   *
+   * <p>The returned Map compares entries by identity, so look up each result with the same instance
+   * that was passed in. Equal entries each get their own result.
+   */
+  @Override
+  public Map<HistoryUpdateDetails, AccessResult> checkHistoryUpdateAccess(
+      Session session, List<HistoryUpdateDetails> historyUpdateDetails) {
+    var context = new DefaultAccessControlContext(server, session);
+
+    return checkHistoryUpdateAccess(context, historyUpdateDetails);
+  }
+
+  static Map<HistoryUpdateDetails, AccessResult> checkHistoryUpdateAccess(
+      AccessControlContext context, List<HistoryUpdateDetails> historyUpdateDetails) {
+
+    var pending = new ArrayList<PendingResult<HistoryUpdateDetails>>(historyUpdateDetails.size());
+    var nodeIds = new ArrayList<NodeId>(historyUpdateDetails.size());
+
+    for (HistoryUpdateDetails details : historyUpdateDetails) {
+      var p = new PendingResult<>(details);
+      NodeId nodeId = historyUpdateNodeId(details);
+
+      if (nodeId != null) {
+        nodeIds.add(nodeId);
+      } else {
+        p.result = DENIED_HISTORY_OPERATION_UNSUPPORTED;
+      }
+
+      pending.add(p);
+    }
+
+    Map<NodeId, AccessControlAttributes> attributes =
+        context.readAccessControlAttributes(nodeIds, HISTORY_ATTRIBUTES);
+
+    for (PendingResult<HistoryUpdateDetails> p : pending) {
+      NodeId nodeId = historyUpdateNodeId(p.value);
+
+      if (nodeId != null && attributes.get(nodeId).nodeUnknown()) {
+        p.result = AccessResult.NODE_UNKNOWN;
+      }
+    }
+
+    checkAccessRestrictions(
+        context, pending, attributes, DefaultAccessController::historyUpdateNodeId);
+
+    List<NodeId> roleIds = context.getRoleIds().orElse(null);
+
+    for (PendingResult<HistoryUpdateDetails> p : pending) {
+      if (!p.result.isAllowed()) {
+        continue;
+      }
+
+      AccessControlAttributes nodeAttributes = attributes.get(historyUpdateNodeId(p.value));
+
+      p.result = checkHistoryWriteBits(nodeAttributes);
+
+      RolePermissionType[] userRolePermissions = nodeAttributes.userRolePermissions();
+
+      if (p.result.isAllowed() && roleIds != null && userRolePermissions != null) {
+        boolean hasAccess =
+            historyUpdatePermissions(p.value).stream()
+                .allMatch(permission -> hasPermission(roleIds, userRolePermissions, permission));
+
+        if (!hasAccess) {
+          p.result = AccessResult.DENIED_USER_ACCESS;
+        }
+      }
+    }
+
+    // Keyed by identity: an entry's hashCode hashes every value it carries, and the caller looks
+    // results up with the same instances.
+    var results = new IdentityHashMap<HistoryUpdateDetails, AccessResult>(pending.size());
+    for (PendingResult<HistoryUpdateDetails> p : pending) {
+      results.put(p.value, p.result);
+    }
+    return results;
+  }
+
+  /**
+   * Check the HistoryWrite bit of the attributes that carry one for the Node's class: AccessLevel
+   * and UserAccessLevel for a Variable, EventNotifier for an Object or View.
+   */
+  private static AccessResult checkHistoryWriteBits(AccessControlAttributes attributes) {
+    NodeClass nodeClass = attributes.nodeClass();
+
+    if (nodeClass == NodeClass.Variable) {
+      UByte accessLevel = attributes.accessLevel();
+      UByte userAccessLevel = attributes.userAccessLevel();
+
+      if (accessLevel != null
+          && !AccessLevel.fromValue(accessLevel).contains(AccessLevel.HistoryWrite)) {
+        return AccessResult.DENIED_NOT_WRITABLE;
+      } else if (userAccessLevel != null
+          && !AccessLevel.fromValue(userAccessLevel).contains(AccessLevel.HistoryWrite)) {
+        return AccessResult.DENIED_USER_ACCESS;
+      }
+    } else if (nodeClass == NodeClass.Object || nodeClass == NodeClass.View) {
+      UByte eventNotifier = attributes.eventNotifier();
+
+      if (eventNotifier != null && (eventNotifier.intValue() & EVENT_NOTIFIER_HISTORY_WRITE) == 0) {
+        return AccessResult.DENIED_NOT_WRITABLE;
+      }
+    }
+
+    return AccessResult.ALLOWED;
+  }
+
+  /**
+   * The Node whose history {@code details} changes, or {@code null} if {@code details} is not one
+   * of the subtypes the specification defines.
+   */
+  private static @Nullable NodeId historyUpdateNodeId(HistoryUpdateDetails details) {
+    if (details instanceof UpdateDataDetails d) {
+      return d.getNodeId();
+    } else if (details instanceof UpdateStructureDataDetails d) {
+      return d.getNodeId();
+    } else if (details instanceof UpdateEventDetails d) {
+      return d.getNodeId();
+    } else if (details instanceof DeleteRawModifiedDetails d) {
+      return d.getNodeId();
+    } else if (details instanceof DeleteAtTimeDetails d) {
+      return d.getNodeId();
+    } else if (details instanceof DeleteEventDetails d) {
+      return d.getNodeId();
+    } else {
+      return null;
+    }
+  }
+
+  /** The permissions {@code details} needs, all of which the Session must hold. */
+  private static List<Predicate<PermissionType>> historyUpdatePermissions(
+      HistoryUpdateDetails details) {
+
+    if (details instanceof UpdateDataDetails d) {
+      return historyUpdatePermissions(d.getPerformInsertReplace());
+    } else if (details instanceof UpdateStructureDataDetails d) {
+      return historyUpdatePermissions(d.getPerformInsertReplace());
+    } else if (details instanceof UpdateEventDetails d) {
+      return historyUpdatePermissions(d.getPerformInsertReplace());
+    } else {
+      return List.of(PermissionType::getDeleteHistory);
+    }
+  }
+
+  private static List<Predicate<PermissionType>> historyUpdatePermissions(
+      @Nullable PerformUpdateType updateType) {
+
+    if (updateType == null) {
+      // The update type did not decode, so there is no telling what the AddressSpace would do.
+      return List.of(
+          PermissionType::getInsertHistory,
+          PermissionType::getModifyHistory,
+          PermissionType::getDeleteHistory);
+    }
+
+    return switch (updateType) {
+      case Insert -> List.of(PermissionType::getInsertHistory);
+      case Replace -> List.of(PermissionType::getModifyHistory);
+      case Update -> List.of(PermissionType::getInsertHistory, PermissionType::getModifyHistory);
+      case Remove -> List.of(PermissionType::getDeleteHistory);
+    };
   }
 
   // endregion

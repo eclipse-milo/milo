@@ -353,6 +353,9 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
       throw new UaException(StatusCodes.Bad_TooManyOperations);
     }
 
+    Map<HistoryUpdateDetails, AccessResult> accessResults =
+        server.getAccessController().checkHistoryUpdateAccess(session, historyUpdateDetailsList);
+
     ServiceDiagnostics diagnostics =
         ServiceDiagnostics.create(server, session, Service.ATTRIBUTE_HISTORY_UPDATE, request);
 
@@ -369,9 +372,21 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
             request.getRequestHeader().getAdditionalHeader());
 
     List<HistoryUpdateResult> results =
-        server
-            .getAddressSpaceManager()
-            .historyUpdate(historyUpdateContext, historyUpdateDetailsList);
+        groupMapCollate(
+            historyUpdateDetailsList,
+            accessResults::get,
+            accessResult ->
+                group -> {
+                  if (accessResult instanceof AccessResult.Denied denied) {
+                    var result = new HistoryUpdateResult(denied.statusCode(), null, null);
+
+                    return Collections.nCopies(group.size(), result);
+                  } else {
+                    return server
+                        .getAddressSpaceManager()
+                        .historyUpdate(historyUpdateContext, group);
+                  }
+                });
 
     HistoryUpdateResult[] normalized =
         NestedDiagnostics.normalizeHistoryUpdateResults(
