@@ -13,6 +13,8 @@ package org.eclipse.milo.opcua.sdk.server.items;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -22,6 +24,7 @@ import java.util.List;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
+import org.eclipse.milo.opcua.sdk.server.util.RingBuffer;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
@@ -29,12 +32,15 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.MonitoredItemNotification;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class MonitoredDataItemTest {
 
@@ -42,21 +48,7 @@ class MonitoredDataItemTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    item =
-        new MonitoredDataItem(
-            mock(OpcUaServer.class),
-            mock(Session.class),
-            uint(1),
-            uint(1),
-            new ReadValueId(new NodeId(2, "v"), AttributeId.Value.uid(), null, null),
-            MonitoringMode.Reporting,
-            TimestampsToReturn.Both,
-            uint(1),
-            100.0,
-            uint(10),
-            true);
-
-    item.installFilter(MonitoredDataItem.DEFAULT_FILTER);
+    item = newItem(uint(10));
   }
 
   /**
@@ -316,6 +308,75 @@ class MonitoredDataItemTest {
     List<DataValue> queued = drain();
     assertEquals(1, queued.size());
     assertEquals(StatusCodes.Bad_NotReadable, queued.get(0).statusCode().getValue());
+  }
+
+  /**
+   * Part 4 §7.21: a requested queueSize outside the Server's bounds is revised to the bounding
+   * value. Requesting the same out-of-bounds size again revises to the size the item already has,
+   * so the queue must be kept rather than reallocated and refilled on every modify.
+   */
+  @ParameterizedTest
+  @ValueSource(longs = {0L, 100_000L, 4_294_967_295L})
+  void modifyKeepsTheQueueWhenTheRevisedQueueSizeIsUnchanged(long requestedQueueSize)
+      throws Exception {
+
+    item = newItem(uint(requestedQueueSize));
+    item.setValue(new DataValue(new Variant(1)));
+
+    int revisedQueueSize = item.getQueueSize();
+    RingBuffer<DataValue> queue = item.queue;
+
+    modifyQueueSize(uint(requestedQueueSize));
+
+    assertSame(queue, item.queue, "an unchanged revised queue size must not rebuild the queue");
+    assertEquals(revisedQueueSize, item.getQueueSize());
+    assertEquals(List.of(1), values(drain()));
+  }
+
+  // Control for the test above: a modify that does change the revised size still replaces the
+  // queue, sized to the bounding value, and carries the queued values over.
+  @Test
+  void modifyRebuildsTheQueueAndKeepsItsValuesWhenTheRevisedQueueSizeChanges() throws Exception {
+    item.setValue(new DataValue(new Variant(1)));
+    item.setValue(new DataValue(new Variant(2)));
+
+    RingBuffer<DataValue> queue = item.queue;
+
+    modifyQueueSize(uint(100_000));
+
+    assertNotSame(queue, item.queue, "a changed revised queue size must rebuild the queue");
+    assertEquals(65_535, item.getQueueSize());
+    assertEquals(65_535, item.queue.maxSize());
+    assertEquals(List.of(1, 2), values(drain()));
+  }
+
+  private static MonitoredDataItem newItem(UInteger queueSize) throws Exception {
+    var item =
+        new MonitoredDataItem(
+            mock(OpcUaServer.class),
+            mock(Session.class),
+            uint(1),
+            uint(1),
+            new ReadValueId(new NodeId(2, "v"), AttributeId.Value.uid(), null, null),
+            MonitoringMode.Reporting,
+            TimestampsToReturn.Both,
+            uint(1),
+            100.0,
+            queueSize,
+            true);
+
+    item.installFilter(MonitoredDataItem.DEFAULT_FILTER);
+
+    return item;
+  }
+
+  private void modifyQueueSize(UInteger queueSize) throws Exception {
+    item.modify(
+        TimestampsToReturn.Both, uint(1), 100.0, MonitoredDataItem.DEFAULT_FILTER, queueSize, true);
+  }
+
+  private static List<Object> values(List<DataValue> values) {
+    return values.stream().map(value -> value.value().value()).toList();
   }
 
   private static List<Long> statusCodes(List<DataValue> values) {

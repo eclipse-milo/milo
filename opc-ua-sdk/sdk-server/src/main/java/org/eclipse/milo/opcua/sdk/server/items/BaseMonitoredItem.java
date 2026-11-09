@@ -121,9 +121,11 @@ public abstract class BaseMonitoredItem<T> implements MonitoredItem {
     this.samplingInterval = samplingInterval;
     this.discardOldest = discardOldest;
 
-    if (queueSize.intValue() != this.queueSize) {
-      setQueueSize(queueSize);
+    // Compare revised sizes; a requested size outside the bounds never equals the revised size.
+    int previousQueueSize = this.queueSize;
+    setQueueSize(queueSize);
 
+    if (this.queueSize != previousQueueSize) {
       RingBuffer<T> oldQueue = queue;
       queue = new RingBuffer<>(this.queueSize);
 
