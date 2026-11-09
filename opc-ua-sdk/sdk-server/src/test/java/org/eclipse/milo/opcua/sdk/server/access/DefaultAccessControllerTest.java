@@ -1308,6 +1308,47 @@ class DefaultAccessControllerTest {
         "the same parent allows the add once the channel is encrypted");
   }
 
+  // AddNodesItem.hashCode hashes the new Node's encoded attributes, initial value included, so
+  // the results are keyed by identity, as checkAddNodesAccess documents: the item is never hashed
+  // and an equal copy finds nothing.
+  @Test
+  void checkAddNodesAccess_ResultsAreKeyedByIdentityWithoutHashingTheItem() {
+    var parentNodeId = new NodeId(1, "parent");
+    var addNodesItem =
+        new AddNodesItem(
+            parentNodeId.expanded(),
+            NodeIds.HasComponent,
+            ExpandedNodeId.NULL_VALUE,
+            new QualifiedName(1, "child"),
+            NodeClass.Object,
+            null,
+            NodeIds.BaseObjectType.expanded()) {
+
+          @Override
+          public int hashCode() {
+            throw new AssertionError("checkAddNodesAccess hashed the AddNodesItem");
+          }
+        };
+    var copy =
+        new AddNodesItem(
+            parentNodeId.expanded(),
+            NodeIds.HasComponent,
+            ExpandedNodeId.NULL_VALUE,
+            new QualifiedName(1, "child"),
+            NodeClass.Object,
+            null,
+            NodeIds.BaseObjectType.expanded());
+
+    attributesMap.put(
+        parentNodeId, new AccessControlAttributes(null, null, null, null, null, null, null));
+
+    Map<AddNodesItem, AccessResult> results =
+        DefaultAccessController.checkAddNodesAccess(context, List.of(addNodesItem));
+
+    assertEquals(AccessResult.ALLOWED, results.get(addNodesItem));
+    assertNull(results.get(copy), "lookup with an equal but different AddNodesItem");
+  }
+
   /**
    * A parent the controller cannot resolve to a local Node gives it nothing to decide from, so the
    * item is allowed through and the AddressSpace answers Bad_ParentNodeIdInvalid (Part 4 §5.8.2)

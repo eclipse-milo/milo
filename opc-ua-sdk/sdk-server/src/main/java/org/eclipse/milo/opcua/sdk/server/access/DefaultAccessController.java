@@ -797,6 +797,9 @@ public class DefaultAccessController implements AccessController {
    * <p>An item whose parent is null, on another server, in an unregistered namespace, or unknown to
    * the AddressSpace is allowed, and the AddressSpace answers for the parent as it would have
    * anyway. The AddNode permission of the new Node's namespace is not checked.
+   *
+   * <p>The returned Map compares AddNodesItems by identity, so look up each result with the same
+   * AddNodesItem instance that was passed in. Equal AddNodesItems each get their own entry.
    */
   @Override
   public Map<AddNodesItem, AccessResult> checkAddNodesAccess(
@@ -809,7 +812,9 @@ public class DefaultAccessController implements AccessController {
   static Map<AddNodesItem, AccessResult> checkAddNodesAccess(
       AccessControlContext context, List<AddNodesItem> nodesToAdd) {
 
-    var results = new HashMap<AddNodesItem, AccessResult>();
+    // Keyed by identity: AddNodesItem.hashCode hashes the encoded attributes of the new Node,
+    // initial value included, and the caller looks results up with the same instances.
+    var results = new IdentityHashMap<AddNodesItem, AccessResult>(nodesToAdd.size());
 
     var pending = new ArrayList<PendingResult<ParentedItem>>(nodesToAdd.size());
     var parentNodeIds = new ArrayList<NodeId>(nodesToAdd.size());
