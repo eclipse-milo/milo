@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.server.access;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -20,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.WriteMask;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
@@ -48,12 +50,15 @@ import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteNodesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteReferencesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.PermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 
 class DefaultAccessControllerTest {
@@ -81,7 +86,7 @@ class DefaultAccessControllerTest {
     var readValueId = new ReadValueId(nodeId, AttributeId.Value.uid(), null, null);
 
     attributesMap.put(
-        nodeId, new AccessControlAttributes(null, null, null, null, null, null, null, true));
+        nodeId, new AccessControlAttributes(null, null, null, null, null, null, null, null, true));
 
     AccessResult result =
         DefaultAccessController.checkReadAccess(context, List.of(readValueId)).get(readValueId);
@@ -98,7 +103,7 @@ class DefaultAccessControllerTest {
     var readValueId = new ReadValueId(nodeId, uint(99), null, null);
 
     attributesMap.put(
-        nodeId, new AccessControlAttributes(null, null, null, null, null, null, null, true));
+        nodeId, new AccessControlAttributes(null, null, null, null, null, null, null, null, true));
 
     AccessResult result =
         DefaultAccessController.checkReadAccess(context, List.of(readValueId)).get(readValueId);
@@ -261,6 +266,183 @@ class DefaultAccessControllerTest {
         DefaultAccessController.checkReadAccess(context, List.of(readValueId)).get(readValueId);
 
     assertEquals(AccessResult.DENIED_ATTRIBUTE_ID_INVALID, result);
+  }
+
+  // Part 3 §8.57: the HistoryRead bit of AccessLevel says the Variable's history is available, and
+  // the same bit of UserAccessLevel says this user may read it.
+  @Test
+  void checkHistoryReadAccess_Variable_Allowed() {
+    AccessControlAttributes attributes =
+        variable(AccessLevel.HISTORY_READ_ONLY, AccessLevel.HISTORY_READ_ONLY);
+
+    assertEquals(AccessResult.ALLOWED, checkHistoryReadAccess(attributes));
+  }
+
+  // Readable current values say nothing about history: a Variable without the HistoryRead bit has
+  // no history to offer, which Part 4 §5.11.3.4 reports as Bad_HistoryOperationUnsupported.
+  @Test
+  void checkHistoryReadAccess_Variable_HistoryNotReadable() {
+    AccessControlAttributes attributes = variable(AccessLevel.READ_WRITE, AccessLevel.READ_WRITE);
+
+    assertEquals(AccessResult.DENIED_HISTORY_NOT_READABLE, checkHistoryReadAccess(attributes));
+  }
+
+  @Test
+  void checkHistoryReadAccess_Variable_UserAccessDenied() {
+    AccessControlAttributes attributes =
+        variable(AccessLevel.HISTORY_READ_ONLY, AccessLevel.READ_ONLY);
+
+    assertEquals(AccessResult.DENIED_USER_ACCESS, checkHistoryReadAccess(attributes));
+  }
+
+  // When both levels deny the read, the Node-level reason is reported, as it is for Read.
+  @Test
+  void checkHistoryReadAccess_Variable_HistoryNotReadableTakesPrecedenceOverUserAccessDenied() {
+    AccessControlAttributes attributes = variable(AccessLevel.NONE, AccessLevel.NONE);
+
+    assertEquals(AccessResult.DENIED_HISTORY_NOT_READABLE, checkHistoryReadAccess(attributes));
+  }
+
+  // Part 3 §8.59: for Objects and Views the HistoryRead bit of EventNotifier says whether the
+  // history of Events is readable. SubscribeToEvents alone does not.
+  @ParameterizedTest
+  @EnumSource(
+      value = NodeClass.class,
+      names = {"Object", "View"})
+  void checkHistoryReadAccess_EventNotifier(NodeClass nodeClass) {
+    assertEquals(
+        AccessResult.ALLOWED, checkHistoryReadAccess(eventNotifier(nodeClass, ubyte(0x05))));
+
+    assertEquals(
+        AccessResult.DENIED_HISTORY_NOT_READABLE,
+        checkHistoryReadAccess(eventNotifier(nodeClass, ubyte(0x01))));
+  }
+
+  // Part 3 §8.55: ReadHistory is the permission for reading history. Read, the permission for the
+  // current value, does not grant it, and a role the Session does not have grants nothing.
+  @Test
+  void checkHistoryReadAccess_RolePermissions() {
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_A)));
+
+    assertEquals(
+        AccessResult.ALLOWED,
+        checkHistoryReadAccess(
+            historicalVariable(rolePermissions(PermissionType.Field.ReadHistory))));
+
+    assertEquals(
+        AccessResult.DENIED_USER_ACCESS,
+        checkHistoryReadAccess(historicalVariable(rolePermissions(PermissionType.Field.Read))));
+
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.of(List.of(ROLE_B)));
+
+    assertEquals(
+        AccessResult.DENIED_USER_ACCESS,
+        checkHistoryReadAccess(
+            historicalVariable(rolePermissions(PermissionType.Field.ReadHistory))));
+  }
+
+  // A server without a RoleMapper has no roles to compare, so RolePermissions decide nothing.
+  @Test
+  void checkHistoryReadAccess_RolePermissions_IgnoredWithoutRoles() {
+    Mockito.when(context.getRoleIds()).thenReturn(Optional.empty());
+
+    assertEquals(
+        AccessResult.ALLOWED,
+        checkHistoryReadAccess(historicalVariable(rolePermissions(PermissionType.Field.Read))));
+  }
+
+  @Test
+  void checkHistoryReadAccess_AccessRestrictions() {
+    // EncryptionRequired
+    var accessRestrictions = new AccessRestrictionType(UShort.valueOf(2));
+
+    var attributes =
+        new AccessControlAttributes(
+            NodeClass.Variable,
+            accessRestrictions,
+            null,
+            AccessLevel.toValue(AccessLevel.HISTORY_READ_ONLY),
+            AccessLevel.toValue(AccessLevel.HISTORY_READ_ONLY),
+            null,
+            null,
+            null,
+            false);
+
+    Mockito.when(context.getSecurityMode()).thenReturn(MessageSecurityMode.Sign);
+    assertEquals(AccessResult.DENIED_SECURITY_MODE, checkHistoryReadAccess(attributes));
+
+    Mockito.when(context.getSecurityMode()).thenReturn(MessageSecurityMode.SignAndEncrypt);
+    assertEquals(AccessResult.ALLOWED, checkHistoryReadAccess(attributes));
+  }
+
+  // As for Read, an unknown Node is no decision, so HistoryRead still reaches the AddressSpace and
+  // the client is told Bad_NodeIdUnknown rather than that access was denied.
+  @Test
+  void checkHistoryReadAccess_UnknownNode_NoDecision() {
+    var attributes =
+        new AccessControlAttributes(null, null, null, null, null, null, null, null, true);
+
+    assertEquals(AccessResult.NODE_UNKNOWN, checkHistoryReadAccess(attributes));
+  }
+
+  // Two reads of one Node that differ only in their continuation point are separate operations,
+  // and the service looks each one up by instance.
+  @Test
+  void checkHistoryReadAccess_ResultsAreKeyedByIdentity() {
+    var nodeId = new NodeId(1, "foo");
+    var first = new HistoryReadValueId(nodeId, null, null, null);
+    var second = new HistoryReadValueId(nodeId, null, null, null);
+
+    attributesMap.put(nodeId, variable(AccessLevel.READ_WRITE, AccessLevel.READ_WRITE));
+
+    Map<HistoryReadValueId, AccessResult> results =
+        DefaultAccessController.checkHistoryReadAccess(context, List.of(first, second));
+
+    assertEquals(2, results.size());
+    assertEquals(AccessResult.DENIED_HISTORY_NOT_READABLE, results.get(first));
+    assertEquals(AccessResult.DENIED_HISTORY_NOT_READABLE, results.get(second));
+  }
+
+  private AccessResult checkHistoryReadAccess(AccessControlAttributes attributes) {
+    var nodeId = new NodeId(1, "foo");
+    var historyReadValueId = new HistoryReadValueId(nodeId, null, null, null);
+
+    attributesMap.put(nodeId, attributes);
+
+    return DefaultAccessController.checkHistoryReadAccess(context, List.of(historyReadValueId))
+        .get(historyReadValueId);
+  }
+
+  private static AccessControlAttributes variable(
+      Set<AccessLevel> accessLevel, Set<AccessLevel> userAccessLevel) {
+
+    return new AccessControlAttributes(
+        NodeClass.Variable,
+        null,
+        null,
+        AccessLevel.toValue(accessLevel),
+        AccessLevel.toValue(userAccessLevel),
+        null,
+        null);
+  }
+
+  /** A Variable whose access levels allow reading history, with {@code userRolePermissions}. */
+  private static AccessControlAttributes historicalVariable(
+      RolePermissionType[] userRolePermissions) {
+
+    return new AccessControlAttributes(
+        NodeClass.Variable,
+        null,
+        null,
+        AccessLevel.toValue(AccessLevel.HISTORY_READ_ONLY),
+        AccessLevel.toValue(AccessLevel.HISTORY_READ_ONLY),
+        null,
+        userRolePermissions);
+  }
+
+  private static AccessControlAttributes eventNotifier(NodeClass nodeClass, UByte eventNotifier) {
+    return new AccessControlAttributes(
+        nodeClass, null, null, null, null, eventNotifier, null, null, false);
   }
 
   @Test

@@ -42,6 +42,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AddReferencesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteNodesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteReferencesItem;
+import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.PermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
@@ -58,10 +59,33 @@ public class DefaultAccessController implements AccessController {
           AttributeId.UserWriteMask,
           AttributeId.AccessLevel,
           AttributeId.UserAccessLevel,
+          AttributeId.EventNotifier,
           AttributeId.UserExecutable,
           AttributeId.UserRolePermissions);
 
-  private static final Set<AttributeId> ACCESS_ATTRIBUTES = EnumSet.copyOf(ACCESS_ATTRIBUTE_ORDER);
+  /** The attributes the write, browse, call, and node management checks decide from. */
+  private static final Set<AttributeId> ACCESS_ATTRIBUTES =
+      EnumSet.of(
+          AttributeId.NodeClass,
+          AttributeId.AccessRestrictions,
+          AttributeId.UserWriteMask,
+          AttributeId.AccessLevel,
+          AttributeId.UserAccessLevel,
+          AttributeId.UserExecutable,
+          AttributeId.UserRolePermissions);
+
+  /** The attributes a history read check decides from. */
+  private static final Set<AttributeId> HISTORY_READ_ATTRIBUTES =
+      EnumSet.of(
+          AttributeId.NodeClass,
+          AttributeId.AccessRestrictions,
+          AttributeId.AccessLevel,
+          AttributeId.UserAccessLevel,
+          AttributeId.EventNotifier,
+          AttributeId.UserRolePermissions);
+
+  /** The HistoryRead bit of the EventNotifier attribute (Part 3 §8.59). */
+  private static final int EVENT_NOTIFIER_HISTORY_READ = 0x04;
 
   private final OpcUaServer server;
 
@@ -177,6 +201,111 @@ public class DefaultAccessController implements AccessController {
     }
 
     return attributeIds;
+  }
+
+  // endregion
+
+  // region HistoryRead
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>What is checked depends on the Node's class. A Variable needs the HistoryRead bit in its
+   * {@code AccessLevel}, or the check denies with {@code Bad_HistoryOperationUnsupported}, and then
+   * in the Session's {@code UserAccessLevel}, or it denies with {@code Bad_UserAccessDenied}. An
+   * Object or View needs the HistoryRead bit in its {@code EventNotifier}, or the check denies with
+   * {@code Bad_HistoryOperationUnsupported}. When the Session has roles, a Node of any class also
+   * needs the ReadHistory permission in its {@code UserRolePermissions}.
+   *
+   * <p>An attribute the AddressSpace does not answer decides nothing, and a Node it does not know
+   * gets {@link AccessResult#NODE_UNKNOWN}.
+   */
+  @Override
+  public Map<HistoryReadValueId, AccessResult> checkHistoryReadAccess(
+      Session session, List<HistoryReadValueId> historyReadValueIds) {
+    var context = new DefaultAccessControlContext(server, session);
+
+    return checkHistoryReadAccess(context, historyReadValueIds);
+  }
+
+  static Map<HistoryReadValueId, AccessResult> checkHistoryReadAccess(
+      AccessControlContext context, List<HistoryReadValueId> historyReadValueIds) {
+
+    List<PendingResult<HistoryReadValueId>> pending =
+        historyReadValueIds.stream().map(PendingResult::new).toList();
+
+    List<NodeId> nodeIds = historyReadValueIds.stream().map(HistoryReadValueId::getNodeId).toList();
+
+    Map<NodeId, AccessControlAttributes> attributes =
+        context.readAccessControlAttributes(nodeIds, HISTORY_READ_ATTRIBUTES);
+
+    for (PendingResult<HistoryReadValueId> p : pending) {
+      if (attributes.get(p.value.getNodeId()).nodeUnknown()) {
+        p.result = AccessResult.NODE_UNKNOWN;
+      }
+    }
+
+    checkAccessRestrictions(context, pending, attributes, HistoryReadValueId::getNodeId);
+
+    List<NodeId> roleIds = context.getRoleIds().orElse(null);
+
+    for (PendingResult<HistoryReadValueId> p : pending) {
+      if (!p.result.isAllowed()) {
+        continue;
+      }
+
+      AccessControlAttributes nodeAttributes = attributes.get(p.value.getNodeId());
+
+      p.result = checkHistoryReadBits(nodeAttributes);
+
+      RolePermissionType[] userRolePermissions = nodeAttributes.userRolePermissions();
+
+      if (p.result.isAllowed() && roleIds != null && userRolePermissions != null) {
+        boolean hasAccess =
+            hasPermission(roleIds, userRolePermissions, PermissionType::getReadHistory);
+
+        if (!hasAccess) {
+          p.result = AccessResult.DENIED_USER_ACCESS;
+        }
+      }
+    }
+
+    // Keyed by identity: the caller looks results up with the same instances, and equal
+    // HistoryReadValueIds, which differ at most in a continuation point, each get their own entry.
+    var results = new IdentityHashMap<HistoryReadValueId, AccessResult>(pending.size());
+    for (PendingResult<HistoryReadValueId> p : pending) {
+      results.put(p.value, p.result);
+    }
+    return results;
+  }
+
+  /**
+   * Decide from the attribute that says whether the Node's history is readable: AccessLevel and
+   * UserAccessLevel for a Variable, EventNotifier for an Object or View.
+   */
+  private static AccessResult checkHistoryReadBits(AccessControlAttributes attributes) {
+    NodeClass nodeClass = attributes.nodeClass();
+
+    if (nodeClass == NodeClass.Variable) {
+      UByte accessLevel = attributes.accessLevel();
+      UByte userAccessLevel = attributes.userAccessLevel();
+
+      if (accessLevel != null
+          && !AccessLevel.fromValue(accessLevel).contains(AccessLevel.HistoryRead)) {
+        return AccessResult.DENIED_HISTORY_NOT_READABLE;
+      } else if (userAccessLevel != null
+          && !AccessLevel.fromValue(userAccessLevel).contains(AccessLevel.HistoryRead)) {
+        return AccessResult.DENIED_USER_ACCESS;
+      }
+    } else if (nodeClass == NodeClass.Object || nodeClass == NodeClass.View) {
+      UByte eventNotifier = attributes.eventNotifier();
+
+      if (eventNotifier != null && (eventNotifier.intValue() & EVENT_NOTIFIER_HISTORY_READ) == 0) {
+        return AccessResult.DENIED_HISTORY_NOT_READABLE;
+      }
+    }
+
+    return AccessResult.ALLOWED;
   }
 
   // endregion
@@ -680,11 +809,12 @@ public class DefaultAccessController implements AccessController {
       @Nullable UInteger userWriteMask,
       @Nullable UByte accessLevel,
       @Nullable UByte userAccessLevel,
+      @Nullable UByte eventNotifier,
       @Nullable Boolean userExecutable,
       RolePermissionType @Nullable [] userRolePermissions,
       boolean nodeUnknown) {
 
-    /** Attributes of a Node the AddressSpace knows. */
+    /** Attributes of a Node the AddressSpace knows, without an EventNotifier. */
     AccessControlAttributes(
         @Nullable NodeClass nodeClass,
         @Nullable AccessRestrictionType accessRestrictions,
@@ -700,6 +830,7 @@ public class DefaultAccessController implements AccessController {
           userWriteMask,
           accessLevel,
           userAccessLevel,
+          null,
           userExecutable,
           userRolePermissions,
           false);
@@ -776,6 +907,7 @@ public class DefaultAccessController implements AccessController {
       UInteger userWriteMask = null;
       UByte accessLevel = null;
       UByte userAccessLevel = null;
+      UByte eventNotifier = null;
       Boolean userExecutable = null;
       RolePermissionType[] userRolePermissions = null;
       boolean nodeUnknown = false;
@@ -813,6 +945,11 @@ public class DefaultAccessController implements AccessController {
               userAccessLevel = ual;
             }
           }
+          case EventNotifier -> {
+            if (v instanceof UByte en) {
+              eventNotifier = en;
+            }
+          }
           case UserExecutable -> {
             if (v instanceof Boolean b) {
               userExecutable = b;
@@ -833,6 +970,7 @@ public class DefaultAccessController implements AccessController {
           userWriteMask,
           accessLevel,
           userAccessLevel,
+          eventNotifier,
           userExecutable,
           userRolePermissions,
           nodeUnknown);

@@ -226,25 +226,40 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
       throw new UaException(StatusCodes.Bad_TimestampsToReturnInvalid);
     }
 
+    Map<HistoryReadValueId, AccessResult> accessResults =
+        server.getAccessController().checkHistoryReadAccess(session, nodesToRead);
+
     ServiceDiagnostics diagnostics =
         ServiceDiagnostics.create(server, session, Service.ATTRIBUTE_HISTORY_READ, request);
 
     OperationDiagnostics<HistoryReadValueId> operationDiagnostics =
         diagnostics.collect(nodesToRead);
 
-    var historyReadContext =
-        new HistoryReadContext(
-            server,
-            session,
-            operationDiagnostics,
-            request.getRequestHeader().getAuditEntryId(),
-            request.getRequestHeader().getTimeoutHint(),
-            request.getRequestHeader().getAdditionalHeader());
-
     List<HistoryReadResult> results =
-        server
-            .getAddressSpaceManager()
-            .historyRead(historyReadContext, details, request.getTimestampsToReturn(), nodesToRead);
+        groupMapCollate(
+            nodesToRead,
+            accessResults::get,
+            accessResult ->
+                group -> {
+                  if (accessResult instanceof AccessResult.Denied denied) {
+                    return Collections.nCopies(
+                        group.size(), new HistoryReadResult(denied.statusCode(), null, null));
+                  } else {
+                    var historyReadContext =
+                        new HistoryReadContext(
+                            server,
+                            session,
+                            operationDiagnostics,
+                            request.getRequestHeader().getAuditEntryId(),
+                            request.getRequestHeader().getTimeoutHint(),
+                            request.getRequestHeader().getAdditionalHeader());
+
+                    return server
+                        .getAddressSpaceManager()
+                        .historyRead(
+                            historyReadContext, details, request.getTimestampsToReturn(), group);
+                  }
+                });
 
     DiagnosticInfo[] diagnosticInfos =
         diagnostics.encodeOperations(

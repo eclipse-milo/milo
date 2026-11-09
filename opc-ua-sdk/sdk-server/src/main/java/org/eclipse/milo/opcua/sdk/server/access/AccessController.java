@@ -20,6 +20,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AddReferencesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.CallMethodRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteNodesItem;
 import org.eclipse.milo.opcua.stack.core.types.structured.DeleteReferencesItem;
+import org.eclipse.milo.opcua.stack.core.types.structured.HistoryReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
 
@@ -38,6 +39,25 @@ public interface AccessController {
    * @return a Map containing the {@link AccessResult} for each {@link ReadValueId}.
    */
   Map<ReadValueId, AccessResult> checkReadAccess(Session session, List<ReadValueId> readValueIds);
+
+  /**
+   * Check if the current Session may read the history of the Nodes identified by {@code
+   * historyReadValueIds}: the historical values of a Variable, or the historical Events of an
+   * Object or View.
+   *
+   * <p>HistoryRead answers a denied operation with the denial's status and does not pass it to the
+   * AddressSpace. As with {@link #checkReadAccess}, a Node the AddressSpace does not know can get
+   * {@link AccessResult#NODE_UNKNOWN}; it is still passed on, and the AddressSpace answers {@code
+   * Bad_NodeIdUnknown}.
+   *
+   * <p>HistoryRead also runs this check for a request that only releases continuation points.
+   *
+   * @param session the Session to check access for.
+   * @param historyReadValueIds the Nodes to check access for.
+   * @return a Map containing the {@link AccessResult} for each {@link HistoryReadValueId}.
+   */
+  Map<HistoryReadValueId, AccessResult> checkHistoryReadAccess(
+      Session session, List<HistoryReadValueId> historyReadValueIds);
 
   /**
    * Check if the current Session has write access to the Nodes and Attributes identified by {@code
@@ -117,6 +137,10 @@ public interface AccessController {
 
     /** Access is denied because the Node's AccessLevel does not allow writing. */
     AccessResult DENIED_NOT_WRITABLE = new Denied(StatusCodes.Bad_NotWritable);
+
+    /** Access is denied because the Node does not make its history available for reading. */
+    AccessResult DENIED_HISTORY_NOT_READABLE =
+        new Denied(StatusCodes.Bad_HistoryOperationUnsupported);
 
     /** Access is denied due to insufficient user access rights. */
     AccessResult DENIED_USER_ACCESS = new Denied(StatusCodes.Bad_UserAccessDenied);
