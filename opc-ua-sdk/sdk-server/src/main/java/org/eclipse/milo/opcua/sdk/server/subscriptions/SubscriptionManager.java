@@ -409,6 +409,9 @@ public class SubscriptionManager {
     if (itemsToCreate.isEmpty()) {
       throw new UaException(StatusCodes.Bad_NothingToDo);
     }
+    if (exceedsMaxMonitoredItemsPerCall(itemsToCreate.size())) {
+      throw new UaException(StatusCodes.Bad_TooManyOperations);
+    }
 
     Map<ReadValueId, AccessResult> accessResults =
         server
@@ -884,6 +887,9 @@ public class SubscriptionManager {
     }
     if (itemsToModify == null || itemsToModify.length == 0) {
       throw new UaException(StatusCodes.Bad_NothingToDo);
+    }
+    if (exceedsMaxMonitoredItemsPerCall(itemsToModify.length)) {
+      throw new UaException(StatusCodes.Bad_TooManyOperations);
     }
 
     List<NodeId> nodeIds =
@@ -1400,6 +1406,9 @@ public class SubscriptionManager {
     if (itemsToDelete == null || itemsToDelete.length == 0) {
       return failedUaFuture(StatusCodes.Bad_NothingToDo);
     }
+    if (exceedsMaxMonitoredItemsPerCall(itemsToDelete.length)) {
+      return failedUaFuture(StatusCodes.Bad_TooManyOperations);
+    }
 
     var deleteResults = new StatusCode[itemsToDelete.length];
     var deletedItems = new ArrayList<BaseMonitoredItem<?>>(itemsToDelete.length);
@@ -1462,6 +1471,9 @@ public class SubscriptionManager {
     }
     if (itemsToModify == null || itemsToModify.length == 0) {
       return failedUaFuture(StatusCodes.Bad_NothingToDo);
+    }
+    if (exceedsMaxMonitoredItemsPerCall(itemsToModify.length)) {
+      return failedUaFuture(StatusCodes.Bad_TooManyOperations);
     }
 
     /*
@@ -1625,6 +1637,9 @@ public class SubscriptionManager {
     if (linksToAdd.length == 0 && linksToRemove.length == 0) {
       return failedUaFuture(StatusCodes.Bad_NothingToDo);
     }
+    if (exceedsMaxMonitoredItemsPerCall((long) linksToAdd.length + linksToRemove.length)) {
+      return failedUaFuture(StatusCodes.Bad_TooManyOperations);
+    }
 
     StatusCode[] addResults;
     StatusCode[] removeResults;
@@ -1773,6 +1788,21 @@ public class SubscriptionManager {
    */
   private static UInteger nextSubscriptionId() {
     return uint(SUBSCRIPTION_IDS.incrementAndGet());
+  }
+
+  /**
+   * Check a monitored item service request against the MaxMonitoredItemsPerCall operation limit.
+   *
+   * <p>Part 5 §6.3.11 applies the limit to the size of the operation array in CreateMonitoredItems,
+   * ModifyMonitoredItems, SetMonitoringMode, and DeleteMonitoredItems, and to the combined size of
+   * linksToAdd and linksToRemove in SetTriggering.
+   *
+   * @param operationCount the number of operations in the request.
+   * @return {@code true} if the request has more operations than the server allows in one call.
+   */
+  private boolean exceedsMaxMonitoredItemsPerCall(long operationCount) {
+    return operationCount
+        > server.getConfig().getLimits().getMaxMonitoredItemsPerCall().longValue();
   }
 
   private void setClosingStateListener(Subscription subscription) {
