@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaMethodNode;
@@ -62,6 +63,10 @@ public final class ReportingNamespace extends ManagedNamespaceWithLifecycle {
   public static final String BLOCKED = "blocked";
   public static final String OK = "ok";
 
+  /** Includes HistoryRead, without which the access check answers a HistoryRead itself. */
+  private static final Set<AccessLevel> ACCESS_LEVEL =
+      Set.of(AccessLevel.CurrentRead, AccessLevel.CurrentWrite, AccessLevel.HistoryRead);
+
   private final String label;
 
   private final UaObjectNode owner;
@@ -75,8 +80,8 @@ public final class ReportingNamespace extends ManagedNamespaceWithLifecycle {
       UaVariableNode variable =
           new UaVariableNode.UaVariableNodeBuilder(getNodeContext())
               .setNodeId(newNodeId(name))
-              .setAccessLevel(AccessLevel.READ_WRITE)
-              .setUserAccessLevel(AccessLevel.READ_WRITE)
+              .setAccessLevel(ACCESS_LEVEL)
+              .setUserAccessLevel(ACCESS_LEVEL)
               .setBrowseName(newQualifiedName(name))
               .setDisplayName(LocalizedText.english(name))
               .setDataType(NodeIds.Int32)

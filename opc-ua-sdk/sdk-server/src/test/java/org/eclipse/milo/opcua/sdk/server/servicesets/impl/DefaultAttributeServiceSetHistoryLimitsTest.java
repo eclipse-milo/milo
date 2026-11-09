@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
@@ -27,6 +28,8 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.SessionManager;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionDiagnostics;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -101,6 +104,19 @@ class DefaultAttributeServiceSetHistoryLimitsTest {
     when(sessionManager.getSession(context, REQUEST_HEADER)).thenReturn(session);
     when(session.getSessionDiagnostics()).thenReturn(new SessionDiagnostics(session));
     when(server.getAddressSpaceManager()).thenReturn(addressSpaceManager);
+
+    // Access is not what these tests are about, so every operation is allowed.
+    AccessController accessController = mock(AccessController.class);
+    when(server.getAccessController()).thenReturn(accessController);
+    when(accessController.checkHistoryReadAccess(any(), any()))
+        .thenAnswer(
+            invocation -> {
+              List<HistoryReadValueId> nodesToRead = invocation.getArgument(1);
+
+              var results = new IdentityHashMap<HistoryReadValueId, AccessResult>();
+              nodesToRead.forEach(id -> results.put(id, AccessResult.ALLOWED));
+              return results;
+            });
 
     when(addressSpaceManager.historyRead(any(), any(), any(), any()))
         .thenAnswer(
