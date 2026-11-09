@@ -135,8 +135,7 @@ public class SamplingFrameworkTest extends AbstractClientServerTest {
     monitor(namespace.variable.getNodeId(), 100.0, values);
     assertNotNull(values.poll(5, TimeUnit.SECONDS));
 
-    namespace.failReads = true;
-    namespace.variable.setValue(new DataValue(new Variant(INITIAL_VALUE + 1)));
+    namespace.failReadsAndSetValue(new DataValue(new Variant(INITIAL_VALUE + 1)));
     assertNull(values.poll(1, TimeUnit.SECONDS), "nothing is delivered while reads fail");
 
     namespace.failReads = false;
@@ -202,8 +201,22 @@ public class SamplingFrameworkTest extends AbstractClientServerTest {
     private final List<Long> readNanos = new CopyOnWriteArrayList<>();
 
     private volatile CountDownLatch readLatch = new CountDownLatch(0);
+    private final Object readLock = new Object();
     private volatile boolean failReads = false;
     private UaVariableNode variable;
+
+    /**
+     * Makes reads fail from here on and gives the Variable a value only a later read could return.
+     *
+     * <p>Both happen under the lock that {@code read} holds, so a read already past its failure
+     * check finishes with the old value before the new one is set.
+     */
+    void failReadsAndSetValue(DataValue value) {
+      synchronized (readLock) {
+        failReads = true;
+        variable.setValue(value);
+      }
+    }
 
     /** A latch that opens once {@code count} more Value reads of the Variable have happened. */
     CountDownLatch expectReads(int count) {
@@ -250,20 +263,23 @@ public class SamplingFrameworkTest extends AbstractClientServerTest {
         TimestampsToReturn timestamps,
         List<ReadValueId> readValueIds) {
 
-      if (failReads) {
-        throw new IllegalStateException("reads are failing");
-      }
-
-      // The access check reads other attributes through here too; record only value samples.
-      for (ReadValueId id : readValueIds) {
-        if (AttributeId.Value.uid().equals(id.getAttributeId())
-            && id.getNodeId().equals(variable.getNodeId())) {
-          readNanos.add(System.nanoTime());
-          readLatch.countDown();
+      // Held across the failure check and the read; see failReadsAndSetValue.
+      synchronized (readLock) {
+        if (failReads) {
+          throw new IllegalStateException("reads are failing");
         }
-      }
 
-      return super.read(context, maxAge, timestamps, readValueIds);
+        // The access check reads other attributes through here too; record only value samples.
+        for (ReadValueId id : readValueIds) {
+          if (AttributeId.Value.uid().equals(id.getAttributeId())
+              && id.getNodeId().equals(variable.getNodeId())) {
+            readNanos.add(System.nanoTime());
+            readLatch.countDown();
+          }
+        }
+
+        return super.read(context, maxAge, timestamps, readValueIds);
+      }
     }
   }
 }
