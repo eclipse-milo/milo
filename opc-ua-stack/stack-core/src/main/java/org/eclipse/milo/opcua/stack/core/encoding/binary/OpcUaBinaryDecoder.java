@@ -263,8 +263,9 @@ public class OpcUaBinaryDecoder implements UaDecoder {
       } else {
         int symbolicId = ((mask & 0x01) == 0x01) ? buffer.readIntLE() : -1;
         int namespaceUri = ((mask & 0x02) == 0x02) ? buffer.readIntLE() : -1;
-        int localizedText = ((mask & 0x04) == 0x04) ? buffer.readIntLE() : -1;
+        // Part 6 §5.2.2.12: Locale is encoded before LocalizedText.
         int locale = ((mask & 0x08) == 0x08) ? buffer.readIntLE() : -1;
+        int localizedText = ((mask & 0x04) == 0x04) ? buffer.readIntLE() : -1;
         String additionalInfo = ((mask & 0x10) == 0x10) ? decodeString() : null;
         StatusCode innerStatusCode = ((mask & 0x20) == 0x20) ? decodeStatusCode() : null;
         DiagnosticInfo innerDiagnosticInfo =
