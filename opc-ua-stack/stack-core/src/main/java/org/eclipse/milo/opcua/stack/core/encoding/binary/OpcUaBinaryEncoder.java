@@ -379,8 +379,9 @@ public class OpcUaBinaryEncoder implements UaEncoder {
 
       if ((mask & 0x01) == 0x01) encodeInt32(value.symbolicId());
       if ((mask & 0x02) == 0x02) encodeInt32(value.namespaceUri());
-      if ((mask & 0x04) == 0x04) encodeInt32(value.localizedText());
+      // Part 6 §5.2.2.12: Locale is encoded before LocalizedText.
       if ((mask & 0x08) == 0x08) encodeInt32(value.locale());
+      if ((mask & 0x04) == 0x04) encodeInt32(value.localizedText());
       if ((mask & 0x10) == 0x10) encodeString(value.additionalInfo());
       if ((mask & 0x20) == 0x20) encodeStatusCode(value.innerStatusCode());
       if ((mask & 0x40) == 0x40) encodeDiagnosticInfo(value.innerDiagnosticInfo());
