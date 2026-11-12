@@ -1002,7 +1002,7 @@ public abstract class UaNode implements Node {
           Iterator<DataValue> vi = Arrays.stream(values).iterator();
 
           synchronized (UaNode.this) {
-            if (ai.hasNext() && vi.hasNext()) {
+            while (ai.hasNext() && vi.hasNext()) {
               AttributeId attributeId = ai.next();
               DataValue value = vi.next();
               StatusCode statusCode = value.statusCode();
