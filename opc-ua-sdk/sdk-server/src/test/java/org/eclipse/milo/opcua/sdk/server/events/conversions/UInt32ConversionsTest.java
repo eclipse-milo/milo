@@ -65,7 +65,10 @@ public class UInt32ConversionsTest extends AbstractConversionTest<UInteger> {
           return new Conversion[] {
             c(uint(0), (short) 0),
             c(uint(Short.MAX_VALUE), Short.MAX_VALUE),
-            c(uint(Short.MAX_VALUE + 1), null, targetType)
+            c(uint(Short.MAX_VALUE + 1), null, targetType),
+            c(uint(Integer.MAX_VALUE), null, targetType),
+            c(uint(Integer.MAX_VALUE + 1L), null, targetType),
+            c(UInteger.MAX, null, targetType)
           };
         }
 
@@ -88,7 +91,10 @@ public class UInt32ConversionsTest extends AbstractConversionTest<UInteger> {
           return new Conversion[] {
             c(uint(0), (byte) 0),
             c(uint(Byte.MAX_VALUE), Byte.MAX_VALUE),
-            c(uint(Byte.MAX_VALUE + 1), null, targetType)
+            c(uint(Byte.MAX_VALUE + 1), null, targetType),
+            c(uint(Integer.MAX_VALUE), null, targetType),
+            c(uint(Integer.MAX_VALUE + 1L), null, targetType),
+            c(UInteger.MAX, null, targetType)
           };
         }
 
@@ -114,7 +120,10 @@ public class UInt32ConversionsTest extends AbstractConversionTest<UInteger> {
           return new Conversion[] {
             c(uint(0), ushort(0)),
             c(uint(UShort.MAX_VALUE), UShort.MAX),
-            c(uint(UShort.MAX_VALUE + 1), null, targetType)
+            c(uint(UShort.MAX_VALUE + 1), null, targetType),
+            c(uint(Integer.MAX_VALUE), null, targetType),
+            c(uint(Integer.MAX_VALUE + 1L), null, targetType),
+            c(UInteger.MAX, null, targetType)
           };
         }
 

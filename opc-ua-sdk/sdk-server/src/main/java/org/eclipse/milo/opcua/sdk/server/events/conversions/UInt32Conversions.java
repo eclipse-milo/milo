@@ -55,10 +55,12 @@ final class UInt32Conversions {
 
   @Nullable
   static Short uInt32ToInt16(@NonNull UInteger ui) {
-    int i = ui.intValue();
+    long l = ui.longValue();
 
-    if (i <= Short.MAX_VALUE) {
-      return (short) i;
+    // compareUnsigned: a UInteger is never negative, so comparing its true
+    // (unsigned) magnitude against the signed target maximum is exact here.
+    if (Long.compareUnsigned(l, Short.MAX_VALUE) <= 0) {
+      return (short) l;
     } else {
       return null;
     }
@@ -82,10 +84,10 @@ final class UInt32Conversions {
 
   @Nullable
   static Byte uInt32ToSByte(@NonNull UInteger ui) {
-    int i = ui.intValue();
+    long l = ui.longValue();
 
-    if (i <= Byte.MAX_VALUE) {
-      return (byte) i;
+    if (Long.compareUnsigned(l, Byte.MAX_VALUE) <= 0) {
+      return (byte) l;
     } else {
       return null;
     }
@@ -103,10 +105,10 @@ final class UInt32Conversions {
 
   @Nullable
   static UShort uInt32ToUInt16(@NonNull UInteger ui) {
-    int i = ui.intValue();
+    long l = ui.longValue();
 
-    if (i <= UShort.MAX_VALUE) {
-      return ushort(i);
+    if (Long.compareUnsigned(l, UShort.MAX_VALUE) <= 0) {
+      return ushort((int) l);
     } else {
       return null;
     }
