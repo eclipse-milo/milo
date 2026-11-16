@@ -40,7 +40,7 @@ the pinned Java 17 and Maven versions are used.
 
 ### Building Milo
 
-**Using JDK 17**, run this from the project root:
+Building Milo requires Maven 3.9.0 or later. **Using JDK 17**, run this from the project root:
 
 ```shell
 mise exec -- mvn clean install
