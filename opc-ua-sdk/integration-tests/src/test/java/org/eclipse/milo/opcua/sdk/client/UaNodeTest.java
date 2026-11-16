@@ -173,6 +173,32 @@ public class UaNodeTest extends AbstractClientServerTest {
   }
 
   @Test
+  public void refreshStoresEveryAttribute() throws UaException {
+    NodeId nodeId = newNodeId("TestInt32");
+    UaNode node = client.getAddressSpace().getNode(nodeId);
+    var serverNode = testNamespace.getNodeManager().getNode(nodeId).orElseThrow();
+    LocalizedText originalDisplayName = serverNode.getDisplayName();
+    LocalizedText originalDescription = serverNode.getDescription();
+    LocalizedText updatedDisplayName = LocalizedText.english("Updated display name");
+    LocalizedText updatedDescription = LocalizedText.english("Updated description");
+    try {
+      serverNode.setDisplayName(updatedDisplayName);
+      serverNode.setDescription(updatedDescription);
+
+      List<DataValue> values =
+          node.refresh(EnumSet.of(AttributeId.DisplayName, AttributeId.Description));
+
+      assertEquals(2, values.size());
+      assertEquals(updatedDisplayName, node.getDisplayName());
+      assertEquals(updatedDescription, node.getDescription());
+    } finally {
+      serverNode.setDisplayName(originalDisplayName);
+      serverNode.setDescription(originalDescription);
+      node.refresh(EnumSet.of(AttributeId.DisplayName, AttributeId.Description));
+    }
+  }
+
+  @Test
   public void synchronize() throws UaException {
     AddressSpace addressSpace = client.getAddressSpace();
 
