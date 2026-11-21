@@ -23,9 +23,17 @@ final class GuidConversions {
 
   @NonNull
   static ByteString guidToByteString(@NonNull UUID uuid) {
-    ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
-    bb.putLong(uuid.getMostSignificantBits());
-    bb.putLong(uuid.getLeastSignificantBits());
+    // the ByteString is the 16-byte OPC UA Part 6 §5.1.3 binary encoding of the
+    // GUID: Data1, Data2 and Data3 are little-endian, Data4 is a raw byte array.
+    // This matches what OpcUaBinaryEncoder.encodeGuid writes for the same value.
+    ByteBuffer bb = ByteBuffer.allocate(16);
+    long msb = uuid.getMostSignificantBits();
+    long lsb = uuid.getLeastSignificantBits();
+
+    bb.putInt(Integer.reverseBytes((int) (msb >>> 32)));
+    bb.putShort(Short.reverseBytes((short) ((msb >>> 16) & 0xFFFF)));
+    bb.putShort(Short.reverseBytes((short) (msb & 0xFFFF)));
+    bb.putLong(lsb); // intentionally Big Endian
 
     return ByteString.of(bb.array());
   }
