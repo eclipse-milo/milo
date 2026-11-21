@@ -27,10 +27,17 @@ final class ByteStringConversions {
     if (bs.length() != 16) {
       return null;
     } else {
+      // mirror the OPC UA Part 6 §5.1.3 binary encoding: Data1, Data2 and Data3
+      // are little-endian, Data4 is a raw byte array. This matches what
+      // OpcUaBinaryDecoder.decodeGuid reads for the same bytes.
       ByteBuffer byteBuffer = ByteBuffer.wrap(bs.bytesOrEmpty());
-      long high = byteBuffer.getLong();
-      long low = byteBuffer.getLong();
-      return new UUID(high, low);
+      int data1 = Integer.reverseBytes(byteBuffer.getInt());
+      short data2 = Short.reverseBytes(byteBuffer.getShort());
+      short data3 = Short.reverseBytes(byteBuffer.getShort());
+      long data4 = byteBuffer.getLong(); // intentionally Big Endian
+
+      long msb = ((long) data1 & 0xFFFFFFFFL) << 32 | (data2 & 0xFFFFL) << 16 | (data3 & 0xFFFFL);
+      return new UUID(msb, data4);
     }
   }
 
