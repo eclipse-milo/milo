@@ -1523,7 +1523,8 @@ public class AddressSpace {
       Double minimumSamplingInterval = getAttributeOrNull(attributeValues[16], Double.class);
       Boolean historizing = (Boolean) attributeValues[17].value().value();
       AccessLevelExType accessLevelEx =
-          getAttributeOrNull(attributeValues[18], AccessLevelExType.class);
+          getAttributeOrNull(
+              client.getStaticEncodingContext(), attributeValues[18], AccessLevelExType.class);
 
       VariableTypeManager.VariableNodeConstructor constructor =
           client

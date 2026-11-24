@@ -23,6 +23,7 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -53,6 +54,9 @@ public class UaVariableNodeAttributeTest extends AbstractClientServerTest {
     assertEquals(AccessLevel.toValue(AccessLevel.READ_WRITE), variableNode.getUserAccessLevel());
     assertEquals(-1.0, variableNode.getMinimumSamplingInterval());
     assertFalse(variableNode.getHistorizing());
+    // The server sends AccessLevelEx as a UInt32, which must be wrapped in its OptionSet type
+    // the same way AccessRestrictions is.
+    assertEquals(new AccessLevelExType(uint(3)), variableNode.getAccessLevelEx());
   }
 
   @Test
@@ -87,6 +91,7 @@ public class UaVariableNodeAttributeTest extends AbstractClientServerTest {
     assertEquals(AccessLevel.toValue(AccessLevel.READ_WRITE), variableNode.readUserAccessLevel());
     assertEquals(-1.0, variableNode.readMinimumSamplingInterval());
     assertFalse(variableNode.readHistorizing());
+    assertEquals(new AccessLevelExType(uint(3)), variableNode.readAccessLevelEx());
   }
 
   @BeforeAll
