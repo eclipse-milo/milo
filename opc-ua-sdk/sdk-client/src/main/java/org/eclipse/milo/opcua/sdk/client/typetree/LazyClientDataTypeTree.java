@@ -227,6 +227,14 @@ public class LazyClientDataTypeTree extends DataTypeTree {
       lock.readLock().unlock();
     }
 
+    if (lock.getReadHoldCount() > 0) {
+      // A thread holding this tree's read lock cannot upgrade to the write lock without
+      // deadlocking permanently.
+      LOGGER.warn(
+          "Skipping lazy resolution of DataType {} while read lock is already held", dataTypeId);
+      return;
+    }
+
     // Slow path under write lock
     lock.writeLock().lock();
     try {
@@ -549,7 +557,27 @@ public class LazyClientDataTypeTree extends DataTypeTree {
       // The superclass answers without consulting the tree; skip resolution and locking.
       return super.getBackingClass(dataTypeId);
     }
-    return resolvedQuery(dataTypeId, () -> super.getBackingClass(dataTypeId));
+    return resolvedQuery(
+        dataTypeId,
+        () -> {
+          // Walk the parent chain directly under this read lock rather than delegating to the
+          // superclass, which would dispatch virtually back into getBackingClass().
+          Tree<DataType> node = super.getTreeNode(dataTypeId);
+
+          while (node != null) {
+            Tree<DataType> parent = node.getParent();
+            if (parent == null) {
+              return Object.class;
+            }
+            NodeId parentId = parent.getValue().getNodeId();
+            if (hasStaticBackingClass(parentId)) {
+              return super.getBackingClass(parentId);
+            }
+            node = parent;
+          }
+
+          return Object.class;
+        });
   }
 
   @Override
@@ -558,32 +586,56 @@ public class LazyClientDataTypeTree extends DataTypeTree {
       // The superclass answers without consulting the tree; skip resolution and locking.
       return super.getBuiltinType(dataTypeId);
     }
-    return resolvedQuery(dataTypeId, () -> super.getBuiltinType(dataTypeId));
+    return resolvedQuery(
+        dataTypeId,
+        () -> {
+          // Walk the parent chain directly under this read lock rather than delegating to the
+          // superclass, which would dispatch virtually back into getBuiltinType().
+          Tree<DataType> node = super.getTreeNode(dataTypeId);
+
+          while (node != null) {
+            Tree<DataType> parent = node.getParent();
+            if (parent == null) {
+              return OpcUaDataType.Variant;
+            }
+            NodeId parentId = parent.getValue().getNodeId();
+            if (OpcUaDataType.isBuiltin(parentId)) {
+              return super.getBuiltinType(parentId);
+            }
+            node = parent;
+          }
+
+          return OpcUaDataType.Variant;
+        });
   }
 
   @Override
   public @Nullable DataType getDataType(NodeId dataTypeId) {
-    return resolvedQuery(dataTypeId, () -> super.getDataType(dataTypeId));
+    return getType(dataTypeId);
   }
 
   @Override
   public @Nullable NodeId getBinaryEncodingId(NodeId dataTypeId) {
-    return resolvedQuery(dataTypeId, () -> super.getBinaryEncodingId(dataTypeId));
+    DataType dataType = getDataType(dataTypeId);
+    return dataType != null ? dataType.getBinaryEncodingId() : null;
   }
 
   @Override
   public @Nullable NodeId getXmlEncodingId(NodeId dataTypeId) {
-    return resolvedQuery(dataTypeId, () -> super.getXmlEncodingId(dataTypeId));
+    DataType dataType = getDataType(dataTypeId);
+    return dataType != null ? dataType.getXmlEncodingId() : null;
   }
 
   @Override
   public @Nullable NodeId getJsonEncodingId(NodeId dataTypeId) {
-    return resolvedQuery(dataTypeId, () -> super.getJsonEncodingId(dataTypeId));
+    DataType dataType = getDataType(dataTypeId);
+    return dataType != null ? dataType.getJsonEncodingId() : null;
   }
 
   @Override
   public @Nullable DataTypeDefinition getDataTypeDefinition(NodeId dataTypeId) {
-    return resolvedQuery(dataTypeId, () -> super.getDataTypeDefinition(dataTypeId));
+    DataType dataType = getDataType(dataTypeId);
+    return dataType != null ? dataType.getDataTypeDefinition() : null;
   }
 
   @Override
@@ -594,12 +646,12 @@ public class LazyClientDataTypeTree extends DataTypeTree {
 
   @Override
   public boolean isEnumType(NodeId dataTypeId) {
-    return resolvedQuery(dataTypeId, () -> super.isEnumType(dataTypeId));
+    return isSubtypeOf(dataTypeId, NodeIds.Enumeration);
   }
 
   @Override
   public boolean isStructType(NodeId dataTypeId) {
-    return resolvedQuery(dataTypeId, () -> super.isStructType(dataTypeId));
+    return isSubtypeOf(dataTypeId, NodeIds.Structure);
   }
 
   @Override
