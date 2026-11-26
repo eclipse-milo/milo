@@ -357,6 +357,43 @@ public final class ReverseTcpClientTransport extends AbstractUascClientTransport
     transitionListeners.remove(listener);
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>This transport reports:
+   *
+   * <ul>
+   *   <li>{@link ChannelState#DISCONNECTED} before the first {@link
+   *       #connect(ClientApplicationContext)}, and from the moment {@link #disconnect()} is called.
+   *       This transport has no {@link ChannelState#DISCONNECTING} state. It is also disconnected
+   *       when it waits for no further channel: once the manager could not hand it one, until it is
+   *       connected again, and, for a transport made from one pre-claimed connection, once that
+   *       connection has closed or failed, since it cannot connect again.
+   *   <li>{@link ChannelState#CONNECTING} while it waits for the Server to connect to it and for
+   *       the SecureChannel handshake to complete. That includes waiting again, on its own, after a
+   *       claimed channel closed or failed its handshake: this transport has no {@link
+   *       ChannelState#RECONNECTING} state.
+   *   <li>{@link ChannelState#CONNECTED} once a claimed channel completed its SecureChannel
+   *       handshake.
+   * </ul>
+   */
+  @Override
+  public ChannelState getChannelState() {
+    synchronized (lock) {
+      if (!started) {
+        return ChannelState.DISCONNECTED;
+      } else if (!channelFuture.isDone()) {
+        return ChannelState.CONNECTING;
+      } else if (channelFuture.isCompletedExceptionally()) {
+        // A failed channel future is replaced before it fails whenever the transport waits for
+        // another channel, so one that stays failed waits for nothing until connect().
+        return ChannelState.DISCONNECTED;
+      } else {
+        return ChannelState.CONNECTED;
+      }
+    }
+  }
+
   @Override
   public @Nullable Channel getCurrentChannel() {
     synchronized (lock) {

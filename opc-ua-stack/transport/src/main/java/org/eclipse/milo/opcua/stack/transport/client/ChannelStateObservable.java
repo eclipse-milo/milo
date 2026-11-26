@@ -40,6 +40,49 @@ public interface ChannelStateObservable {
   void removeTransitionListener(TransitionListener listener);
 
   /**
+   * Get the state of this transport's channel.
+   *
+   * <p>The client's Session handling reads this when an attempt to open or recover a Session fails.
+   * Over a transport that is {@link ChannelState#DISCONNECTED}, it abandons the Session instead of
+   * reactivating it, and it does not report the failed attempts to {@code SessionActivityListener}:
+   * nothing connects the transport again until the application does.
+   *
+   * @return the state of this transport's channel.
+   */
+  ChannelState getChannelState();
+
+  /**
+   * The state of a client transport's channel, as {@link #getChannelState()} reports it.
+   *
+   * <p>Each transport documents how its own connection lifecycle maps onto these states.
+   */
+  enum ChannelState {
+
+    /**
+     * No channel is ready, and the transport makes no attempt to establish one on its own. A
+     * transport is disconnected before it is first connected and after the application disconnects
+     * it, until it is connected again. A transport that can no longer connect at all is
+     * disconnected too.
+     */
+    DISCONNECTED,
+
+    /** The transport is establishing a channel because it was asked to connect. */
+    CONNECTING,
+
+    /** A channel is ready for service. */
+    CONNECTED,
+
+    /**
+     * No channel is ready, and the transport is establishing one again on its own, after a failed
+     * attempt or a lost channel. This includes the wait before its next attempt.
+     */
+    RECONNECTING,
+
+    /** The application asked the transport to disconnect, and its channel is being closed. */
+    DISCONNECTING
+  }
+
+  /**
    * Callback notified when a client transport gains or loses a usable channel, and when an attempt
    * to establish one fails.
    */

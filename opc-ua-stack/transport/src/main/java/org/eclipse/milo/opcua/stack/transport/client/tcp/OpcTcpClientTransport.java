@@ -239,6 +239,33 @@ public class OpcTcpClientTransport extends AbstractUascClientTransport
     transitionListeners.remove(listener);
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>The state follows this transport's {@link ChannelFsm}:
+   *
+   * <ul>
+   *   <li>{@code NotConnected} is {@link ChannelState#DISCONNECTED}: before the first connect, and
+   *       after {@link #disconnect()}.
+   *   <li>{@code Connecting} is {@link ChannelState#CONNECTING}.
+   *   <li>{@code Connected} is {@link ChannelState#CONNECTED}.
+   *   <li>{@code ReconnectWait} and {@code Reconnecting} are {@link ChannelState#RECONNECTING}: the
+   *       transport reconnects on its own after a failed connect or a lost channel.
+   *   <li>{@code Disconnecting} is {@link ChannelState#DISCONNECTING}.
+   * </ul>
+   */
+  @Override
+  public ChannelState getChannelState() {
+    return switch (channelFsm.getState()) {
+      case NotConnected -> ChannelState.DISCONNECTED;
+      case Connecting -> ChannelState.CONNECTING;
+      case Connected -> ChannelState.CONNECTED;
+      // Idle is reached only by a lazy ChannelFsm, which reconnects on the next request.
+      case Idle, ReconnectWait, Reconnecting -> ChannelState.RECONNECTING;
+      case Disconnecting -> ChannelState.DISCONNECTING;
+    };
+  }
+
   @Override
   public @Nullable Channel getCurrentChannel() {
     try {

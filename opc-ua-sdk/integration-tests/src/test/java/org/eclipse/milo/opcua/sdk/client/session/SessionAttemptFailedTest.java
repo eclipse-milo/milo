@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.channel.Channel;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -32,10 +33,14 @@ import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
 import org.eclipse.milo.opcua.sdk.client.SessionActivityListener;
 import org.eclipse.milo.opcua.sdk.client.UaSession;
 import org.eclipse.milo.opcua.sdk.client.identity.UsernameProvider;
+import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectManager;
+import org.eclipse.milo.opcua.sdk.client.reverse.ReverseConnectSelector;
+import org.eclipse.milo.opcua.sdk.client.reverse.ReverseTcpClientTransport;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
+import org.eclipse.milo.opcua.sdk.server.reverse.ReverseConnectTarget;
 import org.eclipse.milo.opcua.sdk.test.TestClient;
 import org.eclipse.milo.opcua.sdk.test.TestPortAllocator;
 import org.eclipse.milo.opcua.sdk.test.TestServer;
@@ -261,6 +266,66 @@ class SessionAttemptFailedTest {
     }
   }
 
+  // A reverse transport the application disconnected waits for no further connection from the
+  // Server until the application connects it again, so no attempt over it can succeed before then.
+  // Disconnecting the transport, not the client, leaves the client to reactivate the Session over
+  // it.
+  @Test
+  void attemptsOverAReverseTransportTheApplicationDisconnectedAreNotReported() throws Exception {
+    try (var fixture = new ReverseConnectFixture()) {
+      var listener = new RecordingListener();
+      fixture.client.addSessionActivityListener(listener);
+
+      fixture.startReverseConnect();
+      fixture.client.connect();
+
+      fixture.client.getTransport().disconnect().get(10, SECONDS);
+
+      assertEquals(List.of("onSessionActive", "onSessionInactive"), listener.next(2));
+
+      CompletableFuture<OpcUaSession> reactivated = fixture.client.getSessionFsm().getSession();
+
+      assertThrows(
+          ExecutionException.class,
+          () -> reactivated.get(10, SECONDS),
+          "the reactivation over the disconnected transport must have failed");
+
+      fixture.client.connect();
+
+      assertEquals(
+          List.of("onSessionActive"),
+          listener.next(1),
+          "attempts over a reverse transport the application disconnected must not be reported");
+    }
+  }
+
+  // connect() waits for the Server to connect to the client. An application that stops waiting
+  // and disconnects the client has ended the attempts, even though connect() then opens the
+  // Session over the transport the disconnect left behind.
+  @Test
+  void disconnectWhileConnectWaitsForAReverseConnectionIsNotReported() throws Exception {
+    try (var fixture = new ReverseConnectFixture()) {
+      var listener = new RecordingListener();
+      fixture.client.addSessionActivityListener(listener);
+
+      CompletableFuture<OpcUaClient> connected = fixture.client.connectAsync();
+      fixture.client.disconnectAsync().get(10, SECONDS);
+
+      assertThrows(
+          ExecutionException.class,
+          () -> connected.get(10, SECONDS),
+          "connect() must have failed once the client disconnected");
+
+      fixture.startReverseConnect();
+      fixture.client.connect();
+
+      assertEquals(
+          List.of("onSessionActive"),
+          listener.next(1),
+          "attempts after the client disconnected must not be reported");
+    }
+  }
+
   // region helpers
 
   /** Records each callback it receives, in the order they arrive. */
@@ -432,6 +497,66 @@ class SessionAttemptFailedTest {
       }
 
       return acceptingLogins;
+    }
+  }
+
+  /**
+   * A running Server and a client, not yet connected, that waits for the Server to connect to it
+   * with Reverse Connect.
+   *
+   * <p>Once the test starts Reverse Connect, the Server connects to the client's listener, and
+   * connects again shortly after each connection closes. A connection that arrives while the client
+   * isn't waiting for one is held until the client connects.
+   */
+  private static final class ReverseConnectFixture implements AutoCloseable {
+
+    private final OpcUaServer server;
+    private final ReverseConnectManager manager;
+    private final OpcUaClient client;
+
+    ReverseConnectFixture() throws Exception {
+      server = TestServer.create().getServer();
+      server.startup().get(10, SECONDS);
+
+      manager =
+          ReverseConnectManager.builder()
+              .addBindAddress(new InetSocketAddress("localhost", 0))
+              .build();
+      manager.startup();
+
+      client =
+          TestClient.createWithTransport(
+              server,
+              transportConfig ->
+                  new ReverseTcpClientTransport(
+                      transportConfig, manager, ReverseConnectSelector.any()),
+              // No keep-alive within the test's bounds, as in Fixture.
+              config -> config.setKeepAliveInterval(uint(60_000)));
+    }
+
+    /** Make the Server connect to the client's listener, now and after each connection closes. */
+    void startReverseConnect() {
+      var listenerAddress =
+          (InetSocketAddress) manager.snapshot().listeners().get(0).boundAddress();
+
+      server.addReverseConnectTarget(
+          ReverseConnectTarget.builder()
+              .setClientListenerUrl(
+                  "opc.tcp://%s:%d"
+                      .formatted(listenerAddress.getHostString(), listenerAddress.getPort()))
+              .setEndpointUrl(client.getConfig().getEndpoint().getEndpointUrl())
+              .setRegistrationPeriod(uint(100))
+              .build());
+    }
+
+    @Override
+    public void close() throws Exception {
+      try {
+        client.disconnectAsync().get(10, SECONDS);
+      } finally {
+        manager.shutdown();
+        server.shutdown().get(10, SECONDS);
+      }
     }
   }
 

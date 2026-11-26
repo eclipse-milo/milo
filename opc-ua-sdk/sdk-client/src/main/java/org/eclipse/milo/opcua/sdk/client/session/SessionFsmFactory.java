@@ -1198,24 +1198,18 @@ public class SessionFsmFactory {
   /**
    * Check whether the transport is disconnected in a way that nothing will undo on its own.
    *
-   * <p>The ChannelFsm is configured persistent, so a channel that drops unexpectedly is reconnected
-   * without any help from the Session. {@code NotConnected} is the exception: it is reached only
-   * when the application deliberately disconnects the transport, its only outbound edge is an
-   * explicit Connect, and every request attempted from it fails immediately. A Session has nothing
-   * left to reactivate over until the application connects again.
+   * <p>A transport that loses its connection reconnects without any help from the Session. One
+   * whose channel state is {@link ChannelStateObservable.ChannelState#DISCONNECTED} is the
+   * exception: it makes no attempt to connect until the application connects it again, and every
+   * request attempted over it fails. A Session has nothing left to reactivate over until then. A
+   * transport that does not report its channel state may reconnect.
    *
    * @param client the {@link OpcUaClient} the Session belongs to.
    * @return {@code true} if the transport is disconnected and will not reconnect on its own.
    */
   private static boolean isTransportDisconnectedForGood(OpcUaClient client) {
-    OpcClientTransport transport = client.getTransport();
-
-    if (transport instanceof OpcTcpClientTransport tcpClientTransport) {
-      return tcpClientTransport.getChannelFsm().getState()
-          == com.digitalpetri.netty.fsm.State.NotConnected;
-    } else {
-      return false;
-    }
+    return client.getTransport() instanceof ChannelStateObservable observable
+        && observable.getChannelState() == ChannelStateObservable.ChannelState.DISCONNECTED;
   }
 
   private static void handleGetSessionEvent(ActionContext<State, Event> ctx) {

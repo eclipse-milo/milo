@@ -332,6 +332,13 @@ class ReverseConnectAcceptorTest {
     }
 
     @Override
+    public ChannelState getChannelState() {
+      return currentChannel != null && currentChannel.isActive()
+          ? ChannelState.CONNECTED
+          : ChannelState.DISCONNECTED;
+    }
+
+    @Override
     public @Nullable Channel getCurrentChannel() {
       return currentChannel;
     }
