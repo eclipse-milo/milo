@@ -32,6 +32,12 @@
  * ephemeral key and the local client certificate identity selected for the user-token security
  * policy.
  *
+ * <p>The context also carries the client's server-certificate validator. A secured {@code opc.tcp}
+ * SecureChannel has already checked the endpoint's certificate, but on an endpoint whose
+ * SecurityPolicy is {@code None} nothing has, and the username provider validates that certificate
+ * before encrypting the password to it: with its own validator when it was given one, otherwise
+ * with the client's.
+ *
  * <h2>CreateSession negotiation</h2>
  *
  * <p>Username providers may need an additional CreateSession header before ActivateSession. The
