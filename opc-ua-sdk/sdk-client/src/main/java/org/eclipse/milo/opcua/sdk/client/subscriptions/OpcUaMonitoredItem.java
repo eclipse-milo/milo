@@ -63,6 +63,23 @@ public class OpcUaMonitoredItem {
    */
   private boolean createInFlight = false;
 
+  /**
+   * Number of ModifyMonitoredItems requests currently in flight for the active {@link
+   * #itemIncarnation}. When overlapping modifies occur, {@link #parameterGeneration} is also
+   * advanced so neither overlapping response can mark the item {@link SyncState#SYNCHRONIZED}
+   * without a final non-overlapping reconciliation pass. Guarded by {@link #stateLock}.
+   */
+  private int activeModifies = 0;
+
+  /**
+   * Monotonic counter incremented under {@link #stateLock} whenever any configurable parameter
+   * changes (including while {@link SyncState#INITIAL}) or when overlapping modifies begin.
+   * Comparing the value captured when a Create or Modify request was built against the value when
+   * its Good result is applied prevents in-flight parameter changes or reordered overlapping
+   * modifies from leaving the item falsely synchronized.
+   */
+  private long parameterGeneration = 0L;
+
   private volatile @Nullable Object userObject;
   private volatile @Nullable DataValueListener dataValueListener;
   private volatile @Nullable EventValueListener eventValueListener;
@@ -111,6 +128,7 @@ public class OpcUaMonitoredItem {
   public void setSamplingInterval(double samplingInterval) {
     synchronized (stateLock) {
       this.samplingInterval = samplingInterval;
+      parameterGeneration++;
 
       if (syncState != SyncState.INITIAL) {
         Modifications pending = getOrCreateModificationsLocked();
@@ -132,6 +150,7 @@ public class OpcUaMonitoredItem {
   public void setQueueSize(UInteger queueSize) {
     synchronized (stateLock) {
       this.queueSize = queueSize;
+      parameterGeneration++;
 
       if (syncState != SyncState.INITIAL) {
         Modifications pending = getOrCreateModificationsLocked();
@@ -152,6 +171,7 @@ public class OpcUaMonitoredItem {
   public void setDiscardOldest(boolean discardOldest) {
     synchronized (stateLock) {
       this.discardOldest = discardOldest;
+      parameterGeneration++;
 
       if (syncState != SyncState.INITIAL) {
         Modifications pending = getOrCreateModificationsLocked();
@@ -173,6 +193,7 @@ public class OpcUaMonitoredItem {
   public void setFilter(@Nullable MonitoringFilter filter) {
     synchronized (stateLock) {
       this.filter = filter;
+      parameterGeneration++;
 
       if (syncState != SyncState.INITIAL) {
         Modifications pending = getOrCreateModificationsLocked();
@@ -461,7 +482,8 @@ public class OpcUaMonitoredItem {
               filter,
               queueSize,
               discardOldest,
-              itemIncarnation));
+              itemIncarnation,
+              parameterGeneration));
     }
   }
 
@@ -487,6 +509,15 @@ public class OpcUaMonitoredItem {
         return Optional.empty();
       }
 
+      long capturedIncarnation = this.itemIncarnation;
+      long capturedGeneration = this.parameterGeneration;
+      if (activeModifies > 0) {
+        // Overlapping modifies can reorder on the wire, so advance parameterGeneration after
+        // capturing to guarantee neither overlapping response can mark the item SYNCHRONIZED.
+        this.parameterGeneration++;
+      }
+      activeModifies++;
+
       return Optional.of(
           new PreparedModifyRequest(
               currentServerState.monitoredItemId,
@@ -495,14 +526,21 @@ public class OpcUaMonitoredItem {
               pending.filter().orElse(filter),
               pending.queueSize().orElse(queueSize),
               pending.discardOldest().orElse(discardOldest),
-              itemIncarnation));
+              capturedIncarnation,
+              capturedGeneration));
+    }
+  }
+
+  void releaseModify(PreparedModifyRequest prepared) {
+    synchronized (stateLock) {
+      releaseModifyLocked(prepared);
     }
   }
 
   Optional<PreparedDeleteRequest> tryBeginDelete() {
     synchronized (stateLock) {
       ServerState currentServerState = this.serverState;
-      if (currentServerState == null) {
+      if (currentServerState == null || activeModifies > 0) {
         return Optional.empty();
       }
 
@@ -517,7 +555,7 @@ public class OpcUaMonitoredItem {
 
   void applyCreateResult(MonitoredItemCreateResult result) {
     synchronized (stateLock) {
-      applyCreateResultLocked(result, monitoringMode, discardOldest);
+      applyCreateResultLocked(result, monitoringMode, parameterGeneration, discardOldest);
     }
   }
 
@@ -529,7 +567,8 @@ public class OpcUaMonitoredItem {
         return;
       }
 
-      applyCreateResultLocked(result, prepared.monitoringMode, discardOldest);
+      applyCreateResultLocked(
+          result, prepared.monitoringMode, prepared.parameterGeneration, prepared.discardOldest);
     }
   }
 
@@ -537,12 +576,14 @@ public class OpcUaMonitoredItem {
   private void applyCreateResultLocked(
       MonitoredItemCreateResult result,
       MonitoringMode createdMonitoringMode,
-      boolean createdDiscardOldest) {
+      long sentParameterGeneration,
+      boolean sentDiscardOldest) {
 
     StatusCode statusCode = result.getStatusCode();
 
     if (statusCode.isGood()) {
       itemIncarnation++;
+      activeModifies = 0;
       serverState =
           new ServerState(
               result.getMonitoredItemId(),
@@ -550,9 +591,15 @@ public class OpcUaMonitoredItem {
               result.getRevisedSamplingInterval(),
               result.getFilterResult(),
               result.getRevisedQueueSize(),
-              createdDiscardOldest);
+              sentDiscardOldest);
 
-      syncState = SyncState.SYNCHRONIZED;
+      if (parameterGeneration == sentParameterGeneration) {
+        modifications = null;
+        syncState = SyncState.SYNCHRONIZED;
+      } else {
+        getOrCreateModificationsLocked();
+        syncState = SyncState.UNSYNCHRONIZED;
+      }
     } else {
       syncState = SyncState.INITIAL;
     }
@@ -577,23 +624,30 @@ public class OpcUaMonitoredItem {
         return;
       }
 
-      applyModifyResultLocked(result, currentServerState.monitoredItemId);
+      applyModifyResultLocked(
+          result, currentServerState.monitoredItemId, parameterGeneration, discardOldest);
     }
   }
 
   void applyModifyResult(MonitoredItemModifyResult result, PreparedModifyRequest prepared) {
     synchronized (stateLock) {
+      releaseModifyLocked(prepared);
+
       if (this.itemIncarnation != prepared.itemIncarnation) {
         return;
       }
 
-      applyModifyResultLocked(result, prepared.monitoredItemId);
+      applyModifyResultLocked(
+          result, prepared.monitoredItemId, prepared.parameterGeneration, prepared.discardOldest);
     }
   }
 
   /** Must be called while holding {@link #stateLock}. */
   private void applyModifyResultLocked(
-      MonitoredItemModifyResult result, UInteger sentMonitoredItemId) {
+      MonitoredItemModifyResult result,
+      UInteger sentMonitoredItemId,
+      long sentParameterGeneration,
+      boolean sentDiscardOldest) {
 
     ServerState currentServerState = this.serverState;
     if (currentServerState == null
@@ -604,8 +658,6 @@ public class OpcUaMonitoredItem {
     StatusCode statusCode = result.getStatusCode();
 
     if (statusCode.isGood()) {
-      modifications = null;
-
       serverState =
           new ServerState(
               currentServerState.monitoredItemId,
@@ -613,15 +665,31 @@ public class OpcUaMonitoredItem {
               result.getRevisedSamplingInterval(),
               result.getFilterResult(),
               result.getRevisedQueueSize(),
-              discardOldest);
+              sentDiscardOldest);
 
-      syncState = SyncState.SYNCHRONIZED;
+      if (parameterGeneration == sentParameterGeneration && activeModifies == 0) {
+        modifications = null;
+        syncState = SyncState.SYNCHRONIZED;
+      } else {
+        getOrCreateModificationsLocked();
+        syncState = SyncState.UNSYNCHRONIZED;
+      }
     } else {
       getOrCreateModificationsLocked();
       syncState = SyncState.UNSYNCHRONIZED;
     }
 
     this.modifyResult = statusCode;
+  }
+
+  /** Must be called while holding {@link #stateLock}. */
+  private void releaseModifyLocked(PreparedModifyRequest prepared) {
+    if (!prepared.released) {
+      prepared.released = true;
+      if (this.itemIncarnation == prepared.itemIncarnation && activeModifies > 0) {
+        activeModifies--;
+      }
+    }
   }
 
   void applyDeleteResult(StatusCode statusCode) {
@@ -655,6 +723,7 @@ public class OpcUaMonitoredItem {
 
     itemIncarnation++;
     createInFlight = false;
+    activeModifies = 0;
     syncState = SyncState.INITIAL;
     serverState = null;
     modifications = null;
@@ -677,7 +746,7 @@ public class OpcUaMonitoredItem {
 
   final boolean detachIfNotCreated() {
     synchronized (stateLock) {
-      if (createInFlight) {
+      if (createInFlight || activeModifies > 0) {
         return false;
       }
 
@@ -696,7 +765,7 @@ public class OpcUaMonitoredItem {
 
   final boolean needsServerDeletion() {
     synchronized (stateLock) {
-      return createInFlight || syncState != SyncState.INITIAL;
+      return createInFlight || activeModifies > 0 || syncState != SyncState.INITIAL;
     }
   }
 
@@ -720,6 +789,7 @@ public class OpcUaMonitoredItem {
     synchronized (stateLock) {
       itemIncarnation++;
       createInFlight = false;
+      activeModifies = 0;
       syncState = SyncState.INITIAL;
       serverState = null;
       modifications = null;
@@ -789,6 +859,7 @@ public class OpcUaMonitoredItem {
     private final UInteger queueSize;
     private final boolean discardOldest;
     private final long itemIncarnation;
+    private final long parameterGeneration;
     private boolean released;
 
     private PreparedCreateRequest(
@@ -799,7 +870,8 @@ public class OpcUaMonitoredItem {
         @Nullable MonitoringFilter filter,
         UInteger queueSize,
         boolean discardOldest,
-        long itemIncarnation) {
+        long itemIncarnation,
+        long parameterGeneration) {
 
       this.readValueId = readValueId;
       this.clientHandle = clientHandle;
@@ -809,6 +881,7 @@ public class OpcUaMonitoredItem {
       this.queueSize = queueSize;
       this.discardOldest = discardOldest;
       this.itemIncarnation = itemIncarnation;
+      this.parameterGeneration = parameterGeneration;
     }
 
     MonitoredItemCreateRequest toRequest() {
@@ -822,6 +895,14 @@ public class OpcUaMonitoredItem {
     long itemIncarnation() {
       return itemIncarnation;
     }
+
+    long parameterGeneration() {
+      return parameterGeneration;
+    }
+
+    boolean discardOldest() {
+      return discardOldest;
+    }
   }
 
   static final class PreparedModifyRequest {
@@ -833,6 +914,8 @@ public class OpcUaMonitoredItem {
     private final UInteger queueSize;
     private final boolean discardOldest;
     private final long itemIncarnation;
+    private final long parameterGeneration;
+    private boolean released;
 
     private PreparedModifyRequest(
         UInteger monitoredItemId,
@@ -841,7 +924,8 @@ public class OpcUaMonitoredItem {
         @Nullable MonitoringFilter filter,
         UInteger queueSize,
         boolean discardOldest,
-        long itemIncarnation) {
+        long itemIncarnation,
+        long parameterGeneration) {
 
       this.monitoredItemId = monitoredItemId;
       this.clientHandle = clientHandle;
@@ -850,6 +934,7 @@ public class OpcUaMonitoredItem {
       this.queueSize = queueSize;
       this.discardOldest = discardOldest;
       this.itemIncarnation = itemIncarnation;
+      this.parameterGeneration = parameterGeneration;
     }
 
     MonitoredItemModifyRequest toRequest() {
@@ -861,6 +946,14 @@ public class OpcUaMonitoredItem {
 
     long itemIncarnation() {
       return itemIncarnation;
+    }
+
+    long parameterGeneration() {
+      return parameterGeneration;
+    }
+
+    boolean discardOldest() {
+      return discardOldest;
     }
   }
 

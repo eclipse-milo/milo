@@ -32,7 +32,11 @@
  * both locks takes the lifecycle lock before the item collection lock. Each {@link
  * org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaMonitoredItem} serializes its own state
  * transitions with an internal lock acquired innermost, after any Subscription lock, and never held
- * across service calls or callbacks.
+ * across service calls or callbacks. Parameter updates made while a CreateMonitoredItems or
+ * ModifyMonitoredItems call is in flight are preserved: a Good response leaves the item
+ * unsynchronized so the next synchronization pass sends the latest desired parameters, while a
+ * failed CreateMonitoredItems leaves the item {@code INITIAL} so the next create attempt uses them
+ * directly.
  *
  * <p>Discovering a monitored-item partition limit may wait for Session activation and server I/O.
  * Reset invalidates that cache without waiting for an in-progress lookup, because Session recovery

@@ -1226,58 +1226,77 @@ public class OpcUaSubscription {
     var itemsToModify = new ArrayList<MonitoredItemModifyRequest>(items.size());
     var itemRequests =
         new ArrayList<Optional<OpcUaMonitoredItem.PreparedModifyRequest>>(items.size());
+    boolean releaseTransferred = false;
 
-    synchronized (lifecycleLock) {
-      if (incarnation != context.incarnation()) {
-        return invalidStateAttempt(items, 0);
-      }
+    try {
+      synchronized (lifecycleLock) {
+        if (incarnation != context.incarnation()) {
+          return invalidStateAttempt(items, 0);
+        }
 
-      synchronized (monitoredItemsLock) {
-        for (OpcUaMonitoredItem item : items) {
-          Optional<OpcUaMonitoredItem.PreparedModifyRequest> prepared =
-              isMonitoredItemMapped(item) ? item.tryBeginModify() : Optional.empty();
+        synchronized (monitoredItemsLock) {
+          for (OpcUaMonitoredItem item : items) {
+            Optional<OpcUaMonitoredItem.PreparedModifyRequest> prepared =
+                isMonitoredItemMapped(item) ? item.tryBeginModify() : Optional.empty();
 
-          itemRequests.add(prepared);
+            itemRequests.add(prepared);
+          }
         }
       }
-    }
 
-    // Encode filters outside all subscription and item locks.
-    for (Optional<OpcUaMonitoredItem.PreparedModifyRequest> prepared : itemRequests) {
-      prepared.ifPresent(p -> itemsToModify.add(p.toRequest()));
-    }
-
-    if (itemsToModify.isEmpty()) {
-      var serviceOperationResults =
-          new ArrayList<MonitoredItemServiceOperationResult>(items.size());
-
-      for (OpcUaMonitoredItem item : items) {
-        serviceOperationResults.add(
-            new MonitoredItemServiceOperationResult(
-                item, new StatusCode(StatusCodes.Bad_InvalidState), null));
+      // Encode filters outside all subscription and item locks; any Throwable thrown while
+      // building a request leaves releaseTransferred=false so finally releases every reservation.
+      for (Optional<OpcUaMonitoredItem.PreparedModifyRequest> prepared : itemRequests) {
+        prepared.ifPresent(p -> itemsToModify.add(p.toRequest()));
       }
 
-      return new MonitoredItemPartitionAttempt(serviceOperationResults, null, 0);
+      if (itemsToModify.isEmpty()) {
+        var serviceOperationResults =
+            new ArrayList<MonitoredItemServiceOperationResult>(items.size());
+
+        for (OpcUaMonitoredItem item : items) {
+          serviceOperationResults.add(
+              new MonitoredItemServiceOperationResult(
+                  item, new StatusCode(StatusCodes.Bad_InvalidState), null));
+        }
+
+        return new MonitoredItemPartitionAttempt(serviceOperationResults, null, 0);
+      }
+
+      LOGGER.debug(
+          "id={}, modifyMonitoredItems partition.size(): {}",
+          context.serverState().subscriptionId,
+          items.size());
+
+      CompletableFuture<ModifyMonitoredItemsResponse> responseFuture =
+          requireNonNull(
+              client.modifyMonitoredItemsAsync(
+                  context.serverState().getSubscriptionId(),
+                  TimestampsToReturn.Both,
+                  itemsToModify));
+
+      // Tie result application and activeModifies release to completion of the async request so
+      // interrupting the caller thread cannot release activeModifies while the request is active.
+      CompletableFuture<MonitoredItemPartitionAttempt> attemptFuture =
+          responseFuture.handle(
+              (response, ex) -> {
+                try {
+                  return applyModifyMonitoredItemsOutcome(
+                      context, items, itemRequests, itemsToModify.size(), response, ex);
+                } finally {
+                  releaseModifyRequests(items, itemRequests);
+                }
+              });
+
+      releaseTransferred = true;
+
+      return awaitMonitoredItemPartitionAttempt(
+          attemptFuture, context, items, itemRequests, itemsToModify.size());
+    } finally {
+      if (!releaseTransferred) {
+        releaseModifyRequests(items, itemRequests);
+      }
     }
-
-    LOGGER.debug(
-        "id={}, modifyMonitoredItems partition.size(): {}",
-        context.serverState().subscriptionId,
-        items.size());
-
-    CompletableFuture<ModifyMonitoredItemsResponse> responseFuture =
-        requireNonNull(
-            client.modifyMonitoredItemsAsync(
-                context.serverState().getSubscriptionId(), TimestampsToReturn.Both, itemsToModify));
-
-    CompletableFuture<MonitoredItemPartitionAttempt> attemptFuture =
-        responseFuture.handle(
-            (response, ex) ->
-                applyModifyMonitoredItemsOutcome(
-                    context, items, itemRequests, itemsToModify.size(), response, ex));
-
-    return awaitMonitoredItemPartitionAttempt(
-        attemptFuture, context, items, itemRequests, itemsToModify.size());
   }
 
   private MonitoredItemPartitionAttempt applyModifyMonitoredItemsOutcome(
@@ -1364,6 +1383,18 @@ public class OpcUaSubscription {
     }
 
     return new MonitoredItemPartitionAttempt(serviceOperationResults, null, operationCount);
+  }
+
+  private static void releaseModifyRequests(
+      List<OpcUaMonitoredItem> items,
+      List<Optional<OpcUaMonitoredItem.PreparedModifyRequest>> itemRequests) {
+
+    for (int i = 0; i < itemRequests.size(); i++) {
+      Optional<OpcUaMonitoredItem.PreparedModifyRequest> prepared = itemRequests.get(i);
+      if (prepared.isPresent()) {
+        items.get(i).releaseModify(prepared.get());
+      }
+    }
   }
 
   /**

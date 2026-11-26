@@ -156,13 +156,17 @@ public class OpcUaMonitoredItemStateConcurrencyTest {
             "round " + round + ": parameter setter threw while racing applyModifyResult()");
 
         if (item.getSyncState() == SyncState.UNSYNCHRONIZED) {
-          MonitoredItemModifyRequest request = item.tryBeginModify().orElseThrow().toRequest();
-          assertNotNull(
-              request,
-              "round "
-                  + round
-                  + ": an UNSYNCHRONIZED item must always have pending modifications to build a"
-                  + " ModifyMonitoredItems request");
+          PreparedModifyRequest prepared = item.tryBeginModify().orElseThrow();
+          try {
+            assertNotNull(
+                prepared.toRequest(),
+                "round "
+                    + round
+                    + ": an UNSYNCHRONIZED item must always have pending modifications to build a"
+                    + " ModifyMonitoredItems request");
+          } finally {
+            item.releaseModify(prepared);
+          }
         }
       }
     }
@@ -258,10 +262,15 @@ public class OpcUaMonitoredItemStateConcurrencyTest {
               new StatusCode(StatusCodes.Bad_UserAccessDenied), 0.0, uint(0), null));
 
       assertEquals(SyncState.UNSYNCHRONIZED, item.getSyncState());
-      MonitoredItemModifyRequest request = item.tryBeginModify().orElseThrow().toRequest();
-      assertEquals(uint(7), request.getMonitoredItemId());
-      assertEquals(
-          item.getSamplingInterval(), request.getRequestedParameters().getSamplingInterval());
+      PreparedModifyRequest prepared = item.tryBeginModify().orElseThrow();
+      try {
+        MonitoredItemModifyRequest request = prepared.toRequest();
+        assertEquals(uint(7), request.getMonitoredItemId());
+        assertEquals(
+            item.getSamplingInterval(), request.getRequestedParameters().getSamplingInterval());
+      } finally {
+        item.releaseModify(prepared);
+      }
     }
 
     /**
@@ -295,9 +304,13 @@ public class OpcUaMonitoredItemStateConcurrencyTest {
 
       item.setSamplingInterval(500.0);
       PreparedModifyRequest preparedModify = item.tryBeginModify().orElseThrow();
-      assertNotNull(
-          preparedModify.toRequest(),
-          "control: UNSYNCHRONIZED item with ServerState builds ModifyMonitoredItems request");
+      try {
+        assertNotNull(
+            preparedModify.toRequest(),
+            "control: UNSYNCHRONIZED item with ServerState builds ModifyMonitoredItems request");
+      } finally {
+        item.releaseModify(preparedModify);
+      }
     }
 
     /**
