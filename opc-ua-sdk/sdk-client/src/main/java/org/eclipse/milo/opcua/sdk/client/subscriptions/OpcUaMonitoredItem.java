@@ -35,9 +35,33 @@ import org.jspecify.annotations.Nullable;
 
 public class OpcUaMonitoredItem {
 
+  /**
+   * Guards coordinated state transitions across {@link #syncState}, {@link #serverState}, {@link
+   * #modifications}, {@link #itemIncarnation}, in-flight operation reservations, the configurable
+   * parameters, the operation results, and {@link #clientHandle}.
+   *
+   * <p>Always acquired innermost, after any {@link OpcUaSubscription} lock, and never held across
+   * service calls or listener callbacks.
+   */
+  private final Object stateLock = new Object();
+
   private volatile SyncState syncState = SyncState.INITIAL;
-  private volatile ServerState serverState;
-  private volatile Modifications modifications;
+  private volatile @Nullable ServerState serverState;
+  private @Nullable Modifications modifications;
+
+  /**
+   * Monotonic lifecycle incarnation for this Java item object, incremented under {@link #stateLock}
+   * whenever a server-side MonitoredItem is created, deleted, reset, or detached. Prevents late
+   * responses or reservation releases from an earlier lifecycle from mutating a newer one.
+   */
+  private long itemIncarnation = 0L;
+
+  /**
+   * {@code true} while a CreateMonitoredItems request for this item is in flight. Prevents
+   * duplicate concurrent creates and prevents {@link #detachIfNotCreated()} from dropping a pending
+   * removal before the create completes. Guarded by {@link #stateLock}.
+   */
+  private boolean createInFlight = false;
 
   private volatile @Nullable Object userObject;
   private volatile @Nullable DataValueListener dataValueListener;
@@ -59,6 +83,12 @@ public class OpcUaMonitoredItem {
 
   private volatile @Nullable UInteger clientHandle;
 
+  /**
+   * The {@link OpcUaSubscription} that currently owns this item's {@link #clientHandle}, or {@code
+   * null} when detached. Guarded by {@link #stateLock}.
+   */
+  private @Nullable OpcUaSubscription owner;
+
   private final ReadValueId readValueId;
 
   public OpcUaMonitoredItem(ReadValueId readValueId) {
@@ -79,16 +109,15 @@ public class OpcUaMonitoredItem {
    * @see OpcUaSubscription#synchronizeMonitoredItems()
    */
   public void setSamplingInterval(double samplingInterval) {
-    this.samplingInterval = samplingInterval;
+    synchronized (stateLock) {
+      this.samplingInterval = samplingInterval;
 
-    if (syncState != SyncState.INITIAL) {
-      if (modifications == null) {
-        modifications = new Modifications();
+      if (syncState != SyncState.INITIAL) {
+        Modifications pending = getOrCreateModificationsLocked();
+        pending.samplingInterval = samplingInterval;
+
+        syncState = SyncState.UNSYNCHRONIZED;
       }
-
-      modifications.samplingInterval = samplingInterval;
-
-      syncState = SyncState.UNSYNCHRONIZED;
     }
   }
 
@@ -101,16 +130,15 @@ public class OpcUaMonitoredItem {
    * @see OpcUaSubscription#synchronizeMonitoredItems()
    */
   public void setQueueSize(UInteger queueSize) {
-    this.queueSize = queueSize;
+    synchronized (stateLock) {
+      this.queueSize = queueSize;
 
-    if (syncState != SyncState.INITIAL) {
-      if (modifications == null) {
-        modifications = new Modifications();
+      if (syncState != SyncState.INITIAL) {
+        Modifications pending = getOrCreateModificationsLocked();
+        pending.queueSize = queueSize;
+
+        syncState = SyncState.UNSYNCHRONIZED;
       }
-
-      modifications.queueSize = queueSize;
-
-      syncState = SyncState.UNSYNCHRONIZED;
     }
   }
 
@@ -122,16 +150,15 @@ public class OpcUaMonitoredItem {
    * @param discardOldest the new DiscardOldest parameter value.
    */
   public void setDiscardOldest(boolean discardOldest) {
-    this.discardOldest = discardOldest;
+    synchronized (stateLock) {
+      this.discardOldest = discardOldest;
 
-    if (syncState != SyncState.INITIAL) {
-      if (modifications == null) {
-        modifications = new Modifications();
+      if (syncState != SyncState.INITIAL) {
+        Modifications pending = getOrCreateModificationsLocked();
+        pending.discardOldest = discardOldest;
+
+        syncState = SyncState.UNSYNCHRONIZED;
       }
-
-      modifications.discardOldest = discardOldest;
-
-      syncState = SyncState.UNSYNCHRONIZED;
     }
   }
 
@@ -144,16 +171,15 @@ public class OpcUaMonitoredItem {
    * @see OpcUaSubscription#synchronizeMonitoredItems()
    */
   public void setFilter(@Nullable MonitoringFilter filter) {
-    this.filter = filter;
+    synchronized (stateLock) {
+      this.filter = filter;
 
-    if (syncState != SyncState.INITIAL) {
-      if (modifications == null) {
-        modifications = new Modifications();
+      if (syncState != SyncState.INITIAL) {
+        Modifications pending = getOrCreateModificationsLocked();
+        pending.filter = filter;
+
+        syncState = SyncState.UNSYNCHRONIZED;
       }
-
-      modifications.filter = filter;
-
-      syncState = SyncState.UNSYNCHRONIZED;
     }
   }
 
@@ -347,7 +373,49 @@ public class OpcUaMonitoredItem {
    * @param clientHandle the Client-assigned id for this MonitoredItem.
    */
   void setClientHandle(@Nullable UInteger clientHandle) {
-    this.clientHandle = clientHandle;
+    synchronized (stateLock) {
+      this.clientHandle = clientHandle;
+      if (clientHandle == null) {
+        this.owner = null;
+      }
+    }
+  }
+
+  final @Nullable UInteger internalClientHandle() {
+    return clientHandle;
+  }
+
+  final @Nullable UInteger internalClientHandleIfOwnedBy(OpcUaSubscription subscription) {
+    synchronized (stateLock) {
+      return this.owner == subscription ? this.clientHandle : null;
+    }
+  }
+
+  final boolean isOwnedBy(OpcUaSubscription subscription) {
+    synchronized (stateLock) {
+      return this.owner == subscription && this.clientHandle != null;
+    }
+  }
+
+  final boolean tryClaim(OpcUaSubscription subscription, UInteger clientHandle) {
+    synchronized (stateLock) {
+      if (this.owner != null || this.clientHandle != null) {
+        return false;
+      }
+
+      this.owner = subscription;
+      this.clientHandle = clientHandle;
+      return true;
+    }
+  }
+
+  final @Nullable UInteger internalMonitoredItemId() {
+    ServerState current = this.serverState;
+    return current != null ? current.monitoredItemId : null;
+  }
+
+  final SyncState internalSyncState() {
+    return syncState;
   }
 
   /**
@@ -356,7 +424,9 @@ public class OpcUaMonitoredItem {
    * @param monitoringMode the current MonitoringMode for this MonitoredItem.
    */
   void setMonitoringMode(MonitoringMode monitoringMode) {
-    this.monitoringMode = monitoringMode;
+    synchronized (stateLock) {
+      this.monitoringMode = monitoringMode;
+    }
   }
 
   /**
@@ -373,65 +443,106 @@ public class OpcUaMonitoredItem {
     return Optional.ofNullable(serverState);
   }
 
-  MonitoredItemCreateRequest newCreateRequest() {
-    if (clientHandle == null) {
-      throw new IllegalStateException("no clientHandle");
+  Optional<PreparedCreateRequest> tryBeginCreate() {
+    synchronized (stateLock) {
+      UInteger clientHandle = this.clientHandle;
+      if (clientHandle == null || syncState != SyncState.INITIAL || createInFlight) {
+        return Optional.empty();
+      }
+
+      createInFlight = true;
+
+      return Optional.of(
+          new PreparedCreateRequest(
+              readValueId,
+              clientHandle,
+              monitoringMode,
+              samplingInterval,
+              filter,
+              queueSize,
+              discardOldest,
+              itemIncarnation));
     }
-
-    ExtensionObject filterXo = null;
-
-    MonitoringFilter filter = this.filter;
-    if (filter != null) {
-      filterXo = ExtensionObject.encode(DefaultEncodingContext.INSTANCE, filter);
-    }
-
-    return new MonitoredItemCreateRequest(
-        readValueId,
-        monitoringMode,
-        new MonitoringParameters(
-            clientHandle, samplingInterval, filterXo, queueSize, discardOldest));
   }
 
-  MonitoredItemModifyRequest newModifyRequest() {
-    if (serverState == null) {
-      throw new IllegalStateException("no ServerState");
+  void releaseCreate(PreparedCreateRequest prepared) {
+    synchronized (stateLock) {
+      releaseCreateLocked(prepared);
     }
-    if (modifications == null) {
-      throw new IllegalStateException("no pending modification");
+  }
+
+  Optional<PreparedModifyRequest> tryBeginModify() {
+    synchronized (stateLock) {
+      ServerState currentServerState = this.serverState;
+      if (currentServerState == null) {
+        if (syncState != SyncState.INITIAL) {
+          syncState = SyncState.INITIAL;
+          modifications = null;
+        }
+        return Optional.empty();
+      }
+
+      Modifications pending = this.modifications;
+      if (pending == null) {
+        return Optional.empty();
+      }
+
+      return Optional.of(
+          new PreparedModifyRequest(
+              currentServerState.monitoredItemId,
+              clientHandle,
+              pending.samplingInterval().orElse(samplingInterval),
+              pending.filter().orElse(filter),
+              pending.queueSize().orElse(queueSize),
+              pending.discardOldest().orElse(discardOldest),
+              itemIncarnation));
     }
+  }
 
-    Double newRequestedSamplingInterval = modifications.samplingInterval().orElse(samplingInterval);
-    MonitoringFilter newFilter = modifications.filter().orElse(filter);
-    UInteger newRequestedQueueSize = modifications.queueSize().orElse(queueSize);
-    Boolean newDiscardOldest = modifications.discardOldest().orElse(discardOldest);
+  Optional<UInteger> tryBeginDelete() {
+    return Optional.ofNullable(internalMonitoredItemId());
+  }
 
-    ExtensionObject newFilterXo = null;
-    if (newFilter != null) {
-      newFilterXo = ExtensionObject.encode(DefaultEncodingContext.INSTANCE, newFilter);
-    }
-
-    return new MonitoredItemModifyRequest(
-        serverState.monitoredItemId,
-        new MonitoringParameters(
-            clientHandle,
-            newRequestedSamplingInterval,
-            newFilterXo,
-            newRequestedQueueSize,
-            newDiscardOldest));
+  Optional<UInteger> tryBeginSetMonitoringMode() {
+    return Optional.ofNullable(internalMonitoredItemId());
   }
 
   void applyCreateResult(MonitoredItemCreateResult result) {
+    synchronized (stateLock) {
+      applyCreateResultLocked(result, monitoringMode, discardOldest);
+    }
+  }
+
+  void applyCreateResult(MonitoredItemCreateResult result, PreparedCreateRequest prepared) {
+    synchronized (stateLock) {
+      releaseCreateLocked(prepared);
+
+      if (this.itemIncarnation != prepared.itemIncarnation) {
+        return;
+      }
+
+      applyCreateResultLocked(result, prepared.monitoringMode, discardOldest);
+    }
+  }
+
+  /** Must be called while holding {@link #stateLock}. */
+  private void applyCreateResultLocked(
+      MonitoredItemCreateResult result,
+      MonitoringMode createdMonitoringMode,
+      boolean createdDiscardOldest) {
+
     StatusCode statusCode = result.getStatusCode();
 
     if (statusCode.isGood()) {
+      itemIncarnation++;
       serverState =
           new ServerState(
               result.getMonitoredItemId(),
-              monitoringMode,
+              createdMonitoringMode,
               result.getRevisedSamplingInterval(),
               result.getFilterResult(),
               result.getRevisedQueueSize(),
-              discardOldest);
+              createdDiscardOldest);
 
       syncState = SyncState.SYNCHRONIZED;
     } else {
@@ -441,17 +552,55 @@ public class OpcUaMonitoredItem {
     this.createResult = statusCode;
   }
 
+  /** Must be called while holding {@link #stateLock}. */
+  private void releaseCreateLocked(PreparedCreateRequest prepared) {
+    if (!prepared.released) {
+      prepared.released = true;
+      if (this.itemIncarnation == prepared.itemIncarnation) {
+        createInFlight = false;
+      }
+    }
+  }
+
   void applyModifyResult(MonitoredItemModifyResult result) {
+    synchronized (stateLock) {
+      ServerState currentServerState = this.serverState;
+      if (currentServerState == null) {
+        return;
+      }
+
+      applyModifyResultLocked(result, currentServerState.monitoredItemId);
+    }
+  }
+
+  void applyModifyResult(MonitoredItemModifyResult result, PreparedModifyRequest prepared) {
+    synchronized (stateLock) {
+      if (this.itemIncarnation != prepared.itemIncarnation) {
+        return;
+      }
+
+      applyModifyResultLocked(result, prepared.monitoredItemId);
+    }
+  }
+
+  /** Must be called while holding {@link #stateLock}. */
+  private void applyModifyResultLocked(
+      MonitoredItemModifyResult result, UInteger sentMonitoredItemId) {
+
+    ServerState currentServerState = this.serverState;
+    if (currentServerState == null
+        || !currentServerState.monitoredItemId.equals(sentMonitoredItemId)) {
+      return;
+    }
+
     StatusCode statusCode = result.getStatusCode();
 
     if (statusCode.isGood()) {
       modifications = null;
 
-      UInteger monitoredItemId = serverState.monitoredItemId;
-
       serverState =
           new ServerState(
-              monitoredItemId,
+              currentServerState.monitoredItemId,
               monitoringMode,
               result.getRevisedSamplingInterval(),
               result.getFilterResult(),
@@ -460,6 +609,7 @@ public class OpcUaMonitoredItem {
 
       syncState = SyncState.SYNCHRONIZED;
     } else {
+      getOrCreateModificationsLocked();
       syncState = SyncState.UNSYNCHRONIZED;
     }
 
@@ -467,16 +617,57 @@ public class OpcUaMonitoredItem {
   }
 
   void applyDeleteResult(StatusCode statusCode) {
-    syncState = SyncState.INITIAL;
-    serverState = null;
-    modifications = null;
-    clientHandle = null;
+    applyDeleteResult(statusCode, null);
+  }
 
-    deleteResult = statusCode;
+  void applyDeleteResult(StatusCode statusCode, @Nullable UInteger readdedClientHandle) {
+    synchronized (stateLock) {
+      itemIncarnation++;
+      createInFlight = false;
+      syncState = SyncState.INITIAL;
+      serverState = null;
+      modifications = null;
+
+      if (readdedClientHandle != null) {
+        clientHandle = readdedClientHandle;
+      } else {
+        clientHandle = null;
+        owner = null;
+      }
+
+      deleteResult = statusCode;
+    }
   }
 
   void applySetMonitoringModeResult(StatusCode statusCode) {
-    this.setMonitoringModeResult = statusCode;
+    synchronized (stateLock) {
+      this.setMonitoringModeResult = statusCode;
+    }
+  }
+
+  final boolean detachIfNotCreated() {
+    synchronized (stateLock) {
+      if (createInFlight) {
+        return false;
+      }
+
+      if (syncState == SyncState.INITIAL || serverState == null) {
+        itemIncarnation++;
+        syncState = SyncState.INITIAL;
+        modifications = null;
+        clientHandle = null;
+        owner = null;
+        return true;
+      }
+
+      return false;
+    }
+  }
+
+  final boolean needsServerDeletion() {
+    synchronized (stateLock) {
+      return createInFlight || syncState != SyncState.INITIAL;
+    }
   }
 
   void notifyDataValueReceived(DataValue value) {
@@ -496,14 +687,32 @@ public class OpcUaMonitoredItem {
   }
 
   void reset() {
-    syncState = SyncState.INITIAL;
-    serverState = null;
-    modifications = null;
+    synchronized (stateLock) {
+      itemIncarnation++;
+      createInFlight = false;
+      syncState = SyncState.INITIAL;
+      serverState = null;
+      modifications = null;
 
-    createResult = null;
-    modifyResult = null;
-    deleteResult = null;
-    setMonitoringModeResult = null;
+      createResult = null;
+      modifyResult = null;
+      deleteResult = null;
+      setMonitoringModeResult = null;
+    }
+  }
+
+  /** Must be called while holding {@link #stateLock}. */
+  private Modifications getOrCreateModificationsLocked() {
+    Modifications pending = this.modifications;
+    if (pending == null) {
+      pending = new Modifications();
+      this.modifications = pending;
+    }
+    return pending;
+  }
+
+  private static @Nullable ExtensionObject encodeFilter(@Nullable MonitoringFilter filter) {
+    return filter != null ? ExtensionObject.encode(DefaultEncodingContext.INSTANCE, filter) : null;
   }
 
   /** A callback that receives notification of new values for an {@link OpcUaMonitoredItem}. */
@@ -540,12 +749,97 @@ public class OpcUaMonitoredItem {
     void onEventReceived(OpcUaMonitoredItem item, Variant[] eventValues);
   }
 
+  static final class PreparedCreateRequest {
+
+    private final ReadValueId readValueId;
+    private final UInteger clientHandle;
+    private final MonitoringMode monitoringMode;
+    private final Double samplingInterval;
+    private final @Nullable MonitoringFilter filter;
+    private final UInteger queueSize;
+    private final boolean discardOldest;
+    private final long itemIncarnation;
+    private boolean released;
+
+    private PreparedCreateRequest(
+        ReadValueId readValueId,
+        UInteger clientHandle,
+        MonitoringMode monitoringMode,
+        Double samplingInterval,
+        @Nullable MonitoringFilter filter,
+        UInteger queueSize,
+        boolean discardOldest,
+        long itemIncarnation) {
+
+      this.readValueId = readValueId;
+      this.clientHandle = clientHandle;
+      this.monitoringMode = monitoringMode;
+      this.samplingInterval = samplingInterval;
+      this.filter = filter;
+      this.queueSize = queueSize;
+      this.discardOldest = discardOldest;
+      this.itemIncarnation = itemIncarnation;
+    }
+
+    MonitoredItemCreateRequest toRequest() {
+      return new MonitoredItemCreateRequest(
+          readValueId,
+          monitoringMode,
+          new MonitoringParameters(
+              clientHandle, samplingInterval, encodeFilter(filter), queueSize, discardOldest));
+    }
+
+    long itemIncarnation() {
+      return itemIncarnation;
+    }
+  }
+
+  static final class PreparedModifyRequest {
+
+    private final UInteger monitoredItemId;
+    private final @Nullable UInteger clientHandle;
+    private final Double samplingInterval;
+    private final @Nullable MonitoringFilter filter;
+    private final UInteger queueSize;
+    private final boolean discardOldest;
+    private final long itemIncarnation;
+
+    private PreparedModifyRequest(
+        UInteger monitoredItemId,
+        @Nullable UInteger clientHandle,
+        Double samplingInterval,
+        @Nullable MonitoringFilter filter,
+        UInteger queueSize,
+        boolean discardOldest,
+        long itemIncarnation) {
+
+      this.monitoredItemId = monitoredItemId;
+      this.clientHandle = clientHandle;
+      this.samplingInterval = samplingInterval;
+      this.filter = filter;
+      this.queueSize = queueSize;
+      this.discardOldest = discardOldest;
+      this.itemIncarnation = itemIncarnation;
+    }
+
+    MonitoredItemModifyRequest toRequest() {
+      return new MonitoredItemModifyRequest(
+          monitoredItemId,
+          new MonitoringParameters(
+              clientHandle, samplingInterval, encodeFilter(filter), queueSize, discardOldest));
+    }
+
+    long itemIncarnation() {
+      return itemIncarnation;
+    }
+  }
+
   static class Modifications {
 
-    private volatile @Nullable Double samplingInterval;
-    private volatile @Nullable MonitoringFilter filter;
-    private volatile @Nullable UInteger queueSize;
-    private volatile @Nullable Boolean discardOldest;
+    private @Nullable Double samplingInterval;
+    private @Nullable MonitoringFilter filter;
+    private @Nullable UInteger queueSize;
+    private @Nullable Boolean discardOldest;
 
     Optional<Double> samplingInterval() {
       return Optional.ofNullable(samplingInterval);

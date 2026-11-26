@@ -337,13 +337,23 @@ public class OpcUaMonitoredItemTest extends AbstractClientServerTest {
     }
 
     @Override
-    public Optional<UInteger> getMonitoredItemId() {
+    Optional<UInteger> tryBeginDelete() {
       if (resetOnNextMonitoredItemIdRead) {
         resetOnNextMonitoredItemIdRead = false;
         reset();
       }
 
-      return super.getMonitoredItemId();
+      return super.tryBeginDelete();
+    }
+
+    @Override
+    Optional<UInteger> tryBeginSetMonitoringMode() {
+      if (resetOnNextMonitoredItemIdRead) {
+        resetOnNextMonitoredItemIdRead = false;
+        reset();
+      }
+
+      return super.tryBeginSetMonitoringMode();
     }
   }
 }

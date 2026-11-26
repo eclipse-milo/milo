@@ -29,7 +29,10 @@
  * calls. Completing a transition hands the slot to the next waiter through a serial executor, with
  * inline fallback when the caller-owned transport executor rejects dispatch. Reset and item
  * add/remove operations coordinate collection membership and ClientHandle ownership; code requiring
- * both locks takes the lifecycle lock before the item collection lock.
+ * both locks takes the lifecycle lock before the item collection lock. Each {@link
+ * org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaMonitoredItem} serializes its own state
+ * transitions with an internal lock acquired innermost, after any Subscription lock, and never held
+ * across service calls or callbacks.
  *
  * <p>Discovering a monitored-item partition limit may wait for Session activation and server I/O.
  * Reset invalidates that cache without waiting for an in-progress lookup, because Session recovery
