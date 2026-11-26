@@ -46,10 +46,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -336,6 +338,7 @@ public class SessionFsmFactory {
               Event.CreateSessionFailure e = (Event.CreateSessionFailure) ctx.event();
 
               handleFailureToOpenSession(client, ctx, e.failure);
+              notifySessionAttemptFailed(ctx, e.failure);
             });
 
     /* External Transition Actions */
@@ -431,6 +434,7 @@ public class SessionFsmFactory {
               Event.ActivateSessionFailure e = (Event.ActivateSessionFailure) ctx.event();
 
               handleFailureToOpenSession(client, ctx, e.failure);
+              notifySessionAttemptFailed(ctx, e.failure);
             });
 
     /* External Transition Actions */
@@ -501,6 +505,7 @@ public class SessionFsmFactory {
                   (Event.TransferSubscriptionsFailure) ctx.event();
 
               handleFailureToOpenSession(client, ctx, e.failure);
+              notifySessionAttemptFailed(ctx, e.failure);
             });
 
     /* External Transition Actions */
@@ -563,6 +568,7 @@ public class SessionFsmFactory {
               Event.InitializeFailure e = (Event.InitializeFailure) ctx.event();
 
               handleFailureToOpenSession(client, ctx, e.failure);
+              notifySessionAttemptFailed(ctx, e.failure);
             });
 
     /* External Transition Actions */
@@ -793,13 +799,7 @@ public class SessionFsmFactory {
             ctx -> {
               OpcUaSession session = KEY_SESSION.get(ctx);
 
-              SessionFsm.SessionActivityListeners sessionActivityListeners =
-                  KEY_SESSION_ACTIVITY_LISTENERS.get(ctx);
-
-              sessionActivityListeners.executor.execute(
-                  () ->
-                      sessionActivityListeners.sessionActivityListeners.forEach(
-                          listener -> listener.onSessionActive(session)));
+              notifySessionActivityListeners(ctx, listener -> listener.onSessionActive(session));
             });
 
     // onSessionInactive() callbacks
@@ -810,13 +810,7 @@ public class SessionFsmFactory {
             ctx -> {
               OpcUaSession session = KEY_SESSION.get(ctx);
 
-              SessionFsm.SessionActivityListeners sessionActivityListeners =
-                  KEY_SESSION_ACTIVITY_LISTENERS.get(ctx);
-
-              sessionActivityListeners.executor.execute(
-                  () ->
-                      sessionActivityListeners.sessionActivityListeners.forEach(
-                          listener -> listener.onSessionInactive(session)));
+              notifySessionActivityListeners(ctx, listener -> listener.onSessionInactive(session));
             });
 
     /* Internal Transition Actions */
@@ -1103,6 +1097,9 @@ public class SessionFsmFactory {
               // The Session can't be closed on the Server without a channel to send the request
               // over; it is left to expire when the Session timeout elapses (Part 4 §5.6.2).
               handleFailureToOpenSession(client, ctx, e.failure);
+
+              // Not reported to onSessionAttemptFailed(): no attempt follows, and only the
+              // application disconnecting the transport gets the FSM here.
             });
 
     fb.when(State.Reactivating)
@@ -1115,6 +1112,7 @@ public class SessionFsmFactory {
               Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
 
               handleFailureToOpenSession(client, ctx, e.failure);
+              notifySessionAttemptFailed(ctx, e.failure);
 
               // Reactivation is being abandoned in favor of creating a new Session. The old one may
               // still exist on the Server (the fault might have been e.g.
@@ -1138,6 +1136,7 @@ public class SessionFsmFactory {
               Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
 
               handleFailureToOpenSession(client, ctx, e.failure);
+              notifySessionAttemptFailed(ctx, e.failure);
             });
 
     fb.when(State.Reactivating)
@@ -1261,6 +1260,61 @@ public class SessionFsmFactory {
     if (pendingSession != null) {
       abandonSession(ctx, client, pendingSession);
     }
+  }
+
+  /**
+   * Tell the {@link SessionActivityListener}s that an attempt failed and another will follow.
+   *
+   * <p>Call this on the edges a failed attempt takes into {@link State#CreatingWait} or {@link
+   * State#ReactivatingWait}, and not on a {@link Event.CloseSession}: the application ending the
+   * attempts is not a failure it needs to hear about.
+   */
+  private static void notifySessionAttemptFailed(FsmContext<State, Event> ctx, Throwable failure) {
+    Throwable cause = unwrapCompletionException(failure);
+
+    notifySessionActivityListeners(ctx, listener -> listener.onSessionAttemptFailed(cause));
+  }
+
+  /**
+   * Get the exception a request failed with, without the {@link CompletionException}s a future
+   * chain wrapped it in.
+   */
+  private static Throwable unwrapCompletionException(Throwable failure) {
+    Throwable cause = failure;
+
+    while (cause instanceof CompletionException && cause.getCause() != null) {
+      cause = cause.getCause();
+    }
+
+    return cause;
+  }
+
+  /**
+   * Run {@code notification} for each {@link SessionActivityListener} on the listeners' sequential
+   * executor, so listeners see notifications in the order the transitions that queued them ran. A
+   * listener that throws is logged and the others are still notified.
+   */
+  private static void notifySessionActivityListeners(
+      FsmContext<State, Event> ctx, Consumer<SessionActivityListener> notification) {
+
+    SessionFsm.SessionActivityListeners sessionActivityListeners =
+        KEY_SESSION_ACTIVITY_LISTENERS.get(ctx);
+
+    String instanceId = ctx.getUserContext().toString();
+
+    sessionActivityListeners.executor.execute(
+        () -> {
+          for (SessionActivityListener listener :
+              sessionActivityListeners.sessionActivityListeners) {
+            try {
+              notification.accept(listener);
+            } catch (Throwable t) {
+              try (MDCCloseable ignored = MDC.putCloseable("instance-id", instanceId)) {
+                LOGGER.warn("SessionActivityListener failed: {}", listener, t);
+              }
+            }
+          }
+        });
   }
 
   private static CompletableFuture<Unit> closeSession(
