@@ -152,9 +152,10 @@ public class SessionFsm {
    * been established yet, i.e. it is not reachable via {@link #KEY_SESSION} because the FSM has not
    * reached {@link State#Active}.
    *
-   * <p>Set on entry to {@link State#Activating} and removed on entry to {@link State#Active}. If
-   * establishment fails before then the Session is closed on the Server rather than left to expire
-   * on its own when the Session timeout elapses.
+   * <p>Set as soon as the {@link CreateSessionResponse} arrives (before client-side verification
+   * runs) and removed when establishment fails or on entry to {@link State#Active}. If verification
+   * refuses the response or a later establishment step fails, the Session is closed on the Server
+   * rather than left to expire on its own when the Session timeout elapses.
    */
   static final FsmContext.Key<CreateSessionResponse> KEY_PENDING_SESSION =
       new FsmContext.Key<>("pendingSession", CreateSessionResponse.class);
