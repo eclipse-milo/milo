@@ -16,6 +16,8 @@ import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Optional;
+import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
+import org.eclipse.milo.opcua.stack.core.security.CertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
@@ -29,6 +31,10 @@ import org.jspecify.annotations.Nullable;
  * needs extra material, such as an enhanced ECC or RSA-DH username-token policy that requires the
  * server's receiver public key and the client's application certificate identity to produce an
  * {@code EccEncryptedSecret}.
+ *
+ * <p>The SDK also passes the client's server-certificate validator. A provider that encrypts a
+ * secret to the endpoint's server certificate uses it where the SecureChannel has not already
+ * checked that certificate, such as on an endpoint whose SecurityPolicy is {@code None}.
  */
 public final class IdentityProviderContext {
 
@@ -39,6 +45,7 @@ public final class IdentityProviderContext {
   private final @Nullable KeyPair clientApplicationKeyPair;
   private final X509Certificate @Nullable [] clientCertificateChain;
   private final @Nullable ChannelSignatureInputs channelSignatureInputs;
+  private final @Nullable CertificateValidator certificateValidator;
 
   /**
    * Create a context for providers that only need the endpoint and server nonce.
@@ -107,12 +114,14 @@ public final class IdentityProviderContext {
         receiverEphemeralPublicKey,
         clientApplicationKeyPair,
         clientCertificateChain,
+        null,
         null);
   }
 
   /**
    * Create a context that additionally carries the SecureChannel-bound inputs needed to build a
-   * channel-bound user-token signature for an enhanced (ECC or RSA-DH) user-token policy.
+   * channel-bound user-token signature for an enhanced (ECC or RSA-DH) user-token policy, and the
+   * client's server-certificate validator.
    *
    * @param endpoint the endpoint being activated.
    * @param serverNonce the server nonce returned by CreateSession or the latest ActivateSession.
@@ -125,6 +134,8 @@ public final class IdentityProviderContext {
    *     policy, or {@code null}.
    * @param channelSignatureInputs the SecureChannel-bound signature inputs, or {@code null} when
    *     they are unavailable (for example, a legacy provider path).
+   * @param certificateValidator the validator the client uses for server certificates, or {@code
+   *     null}.
    */
   public IdentityProviderContext(
       EndpointDescription endpoint,
@@ -133,7 +144,8 @@ public final class IdentityProviderContext {
       @Nullable ByteString receiverEphemeralPublicKey,
       @Nullable KeyPair clientApplicationKeyPair,
       X509Certificate @Nullable [] clientCertificateChain,
-      @Nullable ChannelSignatureInputs channelSignatureInputs) {
+      @Nullable ChannelSignatureInputs channelSignatureInputs,
+      @Nullable CertificateValidator certificateValidator) {
 
     this.endpoint = requireNonNull(endpoint, "endpoint");
     this.serverNonce = requireNonNull(serverNonce, "serverNonce");
@@ -145,6 +157,7 @@ public final class IdentityProviderContext {
             ? Arrays.copyOf(clientCertificateChain, clientCertificateChain.length)
             : null;
     this.channelSignatureInputs = channelSignatureInputs;
+    this.certificateValidator = certificateValidator;
   }
 
   public EndpointDescription getEndpoint() {
@@ -206,5 +219,19 @@ public final class IdentityProviderContext {
    */
   public Optional<ChannelSignatureInputs> getChannelSignatureInputs() {
     return Optional.ofNullable(channelSignatureInputs);
+  }
+
+  /**
+   * Get the validator the client uses for server certificates.
+   *
+   * <p>This is the validator {@link OpcUaClientConfig#getCertificateValidator()} returns: the one
+   * set on the client, its certificate group's, or, when neither is set, one that accepts every
+   * certificate. The SDK always supplies it. It is empty only in a context created without one,
+   * such as by a provider's legacy {@code getIdentityToken(EndpointDescription, ByteString)} path.
+   *
+   * @return the client's server-certificate validator.
+   */
+  public Optional<CertificateValidator> getCertificateValidator() {
+    return Optional.ofNullable(certificateValidator);
   }
 }

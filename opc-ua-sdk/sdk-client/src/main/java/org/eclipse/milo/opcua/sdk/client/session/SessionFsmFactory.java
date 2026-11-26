@@ -1881,7 +1881,8 @@ public class SessionFsmFactory {
         receiverEphemeralPublicKey,
         keyPair,
         certificateChain,
-        channelSignatureInputs);
+        channelSignatureInputs,
+        client.getConfig().getCertificateValidator());
   }
 
   @SuppressWarnings("Duplicates")

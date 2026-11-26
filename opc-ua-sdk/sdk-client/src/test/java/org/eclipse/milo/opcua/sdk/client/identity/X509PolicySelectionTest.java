@@ -121,7 +121,8 @@ class X509PolicySelectionTest {
             ByteString.NULL_VALUE);
     SignedIdentityToken signed =
         provider.getIdentityToken(
-            new IdentityProviderContext(endpoint, serverNonce, null, null, null, null, inputs));
+            new IdentityProviderContext(
+                endpoint, serverNonce, null, null, null, null, inputs, null));
 
     assertEquals("compatible", signed.getToken().getPolicyId());
     assertEquals(1, privateKeyReads.get());

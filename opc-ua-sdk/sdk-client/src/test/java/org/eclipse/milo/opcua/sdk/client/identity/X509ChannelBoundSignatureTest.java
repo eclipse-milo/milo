@@ -96,7 +96,8 @@ class X509ChannelBoundSignatureTest {
                     null,
                     null,
                     null,
-                    inputs))
+                    inputs,
+                    null))
             .getSignature();
 
     byte[] leafData =

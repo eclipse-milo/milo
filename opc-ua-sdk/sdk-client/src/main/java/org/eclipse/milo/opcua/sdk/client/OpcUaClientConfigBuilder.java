@@ -22,6 +22,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
 import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
+import org.eclipse.milo.opcua.sdk.client.identity.UsernameProvider;
 import org.eclipse.milo.opcua.stack.core.ReturnDiagnostics;
 import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.channel.SecurityKeysListener;
@@ -298,6 +299,13 @@ public class OpcUaClientConfigBuilder {
    *
    * <p>Overrides the validator of the configured {@link CertificateGroup}. When neither this nor a
    * group is set, server certificates are not validated.
+   *
+   * <p>A {@link UsernameProvider} encrypts the password to the endpoint's server certificate. On a
+   * secured {@code opc.tcp} endpoint this validator checks that certificate when the SecureChannel
+   * opens and again at CreateSession. On an endpoint whose SecurityPolicy is {@code None}, or on a
+   * transport other than {@code opc.tcp}, the SecureChannel checks nothing, and the provider checks
+   * the certificate before encrypting to it: with this validator, unless the provider was
+   * constructed with a validator of its own.
    *
    * @param certificateValidator the validator for server certificates.
    * @return this builder.

@@ -23,11 +23,13 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.crypto.Cipher;
+import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfigBuilder;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -40,6 +42,7 @@ import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.UserTokenSecurityPolicyRules;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
@@ -49,6 +52,7 @@ import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.CipherFactory;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +66,21 @@ import org.slf4j.LoggerFactory;
  * additional-header key material carried in {@link IdentityProviderContext} and produces an {@link
  * EccEncryptedSecret}. The supplied password bytes are cleared after token construction.
  *
+ * <p>OPC UA Part 4 (7.41) lets a client encrypt the password only to a server certificate it
+ * trusts. On a secured {@code opc.tcp} endpoint the client's validator, set with {@link
+ * OpcUaClientConfigBuilder#setCertificateValidator}, has already checked the endpoint's certificate
+ * when the SecureChannel opened and again at CreateSession, and this provider does not check it
+ * again. On an endpoint whose SecurityPolicy is {@code None}, or on a transport other than {@code
+ * opc.tcp}, nothing has checked it, so before encrypting the password to it the provider validates
+ * it: with the validator passed to its constructor or, when none was passed, with the client's
+ * validator. When neither the provider nor the client has a validator, the certificate is not
+ * validated.
+ *
+ * <p>A username {@link UserTokenPolicy} whose security policy is {@code None} sends the password as
+ * plain UTF-8, which only a {@code SignAndEncrypt} SecureChannel or a TLS transport keeps private
+ * (Part 4 (7.40.4)). The provider sends it as the policy asks, and logs a WARN the first time it
+ * sends a password that way over a {@code None} or {@code Sign} SecureChannel.
+ *
  * <p>When an endpoint advertises more than one username {@link UserTokenPolicy}, the provider
  * prefers one whose security policy is usable on the current SecureChannel and skips those that are
  * not (for example an ECC or RSA-DH policy offered on a {@code None} channel), as required by OPC
@@ -72,31 +91,39 @@ public class UsernameProvider implements IdentityProvider {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UsernameProvider.class);
 
+  private final AtomicBoolean unencryptedPasswordWarningLogged = new AtomicBoolean(false);
+
   private final String username;
   private final Supplier<byte[]> passwordSupplier;
-  private final CertificateValidator certificateValidator;
+  private final @Nullable CertificateValidator certificateValidator;
   private final Function<List<UserTokenPolicy>, UserTokenPolicy> policyChooser;
 
   /**
-   * Construct a {@link UsernameProvider} that does not validate the remote certificate and selects
-   * the first available {@link UserTokenPolicy} with {@link UserTokenType#UserName}.
+   * Construct a {@link UsernameProvider} that validates the server certificate with the client's
+   * validator and selects the first available {@link UserTokenPolicy} with {@link
+   * UserTokenType#UserName}.
+   *
+   * <p>The certificate validated is the one the password is encrypted to where the SecureChannel
+   * has not already checked it, as on an endpoint whose SecurityPolicy is {@code None}. When the
+   * client has no validator, it is not validated.
    *
    * @param username the username to authenticate with.
    * @param password the password to authenticate with.
    */
   public UsernameProvider(String username, String password) {
-    this(username, password, new CertificateValidator.InsecureCertificateValidator());
+    this(username, password, null, ps -> ps.get(0));
   }
 
   /**
-   * Construct a {@link UsernameProvider} that validates the remote certificate using {@code
-   * certificateValidator} and selects the first available {@link UserTokenPolicy} with {@link
-   * UserTokenType#UserName}.
+   * Construct a {@link UsernameProvider} that validates the server certificate with {@code
+   * certificateValidator} instead of the client's validator, and selects the first available {@link
+   * UserTokenPolicy} with {@link UserTokenType#UserName}.
    *
    * @param username the username to authenticate with.
    * @param password the password to authenticate with.
-   * @param certificateValidator the {@link CertificateValidator} used to validate the remote
-   *     certificate.
+   * @param certificateValidator the {@link CertificateValidator} used to validate the server
+   *     certificate the password is encrypted to, where the SecureChannel has not already checked
+   *     it, as on an endpoint whose SecurityPolicy is {@code None}.
    */
   public UsernameProvider(
       String username, String password, CertificateValidator certificateValidator) {
@@ -104,16 +131,19 @@ public class UsernameProvider implements IdentityProvider {
   }
 
   /**
-   * Construct a {@link UsernameProvider} that validates the remote certificate using {@code
-   * certificateValidator} and selects a {@link UserTokenPolicy} using {@code policyChooser}.
+   * Construct a {@link UsernameProvider} that validates the server certificate with {@code
+   * certificateValidator}, or with the client's validator when it is {@code null}, and selects a
+   * {@link UserTokenPolicy} using {@code policyChooser}.
    *
    * <p>Useful if the server might return more than one {@link UserTokenPolicy} with {@link
    * UserTokenType#UserName}.
    *
    * @param username the username to authenticate with.
    * @param password the password to authenticate with.
-   * @param certificateValidator the {@link CertificateValidator} used to validate the remote
-   *     certificate.
+   * @param certificateValidator the {@link CertificateValidator} used to validate the server
+   *     certificate the password is encrypted to, where the SecureChannel has not already checked
+   *     it, as on an endpoint whose SecurityPolicy is {@code None}; or {@code null} to use the
+   *     client's validator.
    * @param policyChooser a function that selects a {@link UserTokenPolicy} to use. The provided
    *     list is non-null and non-empty; when the endpoint advertises more than one username policy
    *     it is restricted to the policies usable on the current SecureChannel (per Part 4 (7.41)),
@@ -125,7 +155,7 @@ public class UsernameProvider implements IdentityProvider {
   public UsernameProvider(
       String username,
       String password,
-      CertificateValidator certificateValidator,
+      @Nullable CertificateValidator certificateValidator,
       Function<List<UserTokenPolicy>, UserTokenPolicy> policyChooser) {
 
     this(
@@ -136,31 +166,33 @@ public class UsernameProvider implements IdentityProvider {
   }
 
   /**
-   * Construct a {@link UsernameProvider} that does not validate the remote certificate and selects
-   * the first available {@link UserTokenPolicy} with {@link UserTokenType#UserName}.
+   * Construct a {@link UsernameProvider} that validates the server certificate with the client's
+   * validator and selects the first available {@link UserTokenPolicy} with {@link
+   * UserTokenType#UserName}.
+   *
+   * <p>The certificate validated is the one the password is encrypted to where the SecureChannel
+   * has not already checked it, as on an endpoint whose SecurityPolicy is {@code None}. When the
+   * client has no validator, it is not validated.
    *
    * @param username the username to authenticate with.
    * @param passwordSupplier a supplier providing the password bytes. The supplied byte[] will be
    *     zeroed out after being retrieved and used.
    */
   public UsernameProvider(String username, Supplier<byte[]> passwordSupplier) {
-    this(
-        username,
-        passwordSupplier,
-        new CertificateValidator.InsecureCertificateValidator(),
-        ps -> ps.get(0));
+    this(username, passwordSupplier, null, ps -> ps.get(0));
   }
 
   /**
-   * Construct a {@link UsernameProvider} that validates the remote certificate using {@code
-   * certificateValidator} and selects the first available {@link UserTokenPolicy} with {@link
-   * UserTokenType#UserName}.
+   * Construct a {@link UsernameProvider} that validates the server certificate with {@code
+   * certificateValidator} instead of the client's validator, and selects the first available {@link
+   * UserTokenPolicy} with {@link UserTokenType#UserName}.
    *
    * @param username the username to authenticate with.
    * @param passwordSupplier a supplier providing the password bytes. The supplied byte[] will be
    *     zeroed out after being retrieved and used.
-   * @param certificateValidator the {@link CertificateValidator} used to validate the remote
-   *     certificate.
+   * @param certificateValidator the {@link CertificateValidator} used to validate the server
+   *     certificate the password is encrypted to, where the SecureChannel has not already checked
+   *     it, as on an endpoint whose SecurityPolicy is {@code None}.
    */
   public UsernameProvider(
       String username,
@@ -171,8 +203,9 @@ public class UsernameProvider implements IdentityProvider {
   }
 
   /**
-   * Construct a {@link UsernameProvider} that validates the remote certificate using {@code
-   * certificateValidator} and selects a {@link UserTokenPolicy} using {@code policyChooser}.
+   * Construct a {@link UsernameProvider} that validates the server certificate with {@code
+   * certificateValidator}, or with the client's validator when it is {@code null}, and selects a
+   * {@link UserTokenPolicy} using {@code policyChooser}.
    *
    * <p>Useful if the server might return more than one {@link UserTokenPolicy} with {@link
    * UserTokenType#UserName}.
@@ -180,8 +213,10 @@ public class UsernameProvider implements IdentityProvider {
    * @param username the username to authenticate with.
    * @param passwordSupplier a supplier providing the password bytes. The supplied byte[] will be
    *     zeroed out after being retrieved and used.
-   * @param certificateValidator the {@link CertificateValidator} used to validate the remote
-   *     certificate.
+   * @param certificateValidator the {@link CertificateValidator} used to validate the server
+   *     certificate the password is encrypted to, where the SecureChannel has not already checked
+   *     it, as on an endpoint whose SecurityPolicy is {@code None}; or {@code null} to use the
+   *     client's validator.
    * @param policyChooser a function that selects a {@link UserTokenPolicy} to use. The provided
    *     list is non-null and non-empty; when the endpoint advertises more than one username policy
    *     it is restricted to the policies usable on the current SecureChannel (per Part 4 (7.41)),
@@ -193,7 +228,7 @@ public class UsernameProvider implements IdentityProvider {
   public UsernameProvider(
       String username,
       Supplier<byte[]> passwordSupplier,
-      CertificateValidator certificateValidator,
+      @Nullable CertificateValidator certificateValidator,
       Function<List<UserTokenPolicy>, UserTokenPolicy> policyChooser) {
 
     this.username = username;
@@ -280,6 +315,8 @@ public class UsernameProvider implements IdentityProvider {
       ByteBuf buffer = Unpooled.buffer();
 
       if (securityPolicy == SecurityPolicy.None) {
+        warnIfPasswordTravelsUnencrypted(endpoint, tokenPolicy);
+
         buffer.writeBytes(passwordBytes);
       } else if (securityPolicy.getProfile().usesEnhancedUserTokenSecret()) {
 
@@ -324,11 +361,12 @@ public class UsernameProvider implements IdentityProvider {
           // to encrypt the username and password must be trusted. Otherwise, if it's a secure
           // connection, the certificate will have already been validated and verified when the
           // secure channel or session was created.
-          certificateValidator.validateCertificateChain(
-              certificateChain,
-              endpoint.getServer().getApplicationUri(),
-              new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())},
-              securityPolicy.getProfile());
+          resolveCertificateValidator(context)
+              .validateCertificateChain(
+                  certificateChain,
+                  endpoint.getServer().getApplicationUri(),
+                  new String[] {EndpointUtil.getHost(endpoint.getEndpointUrl())},
+                  securityPolicy.getProfile());
         }
 
         int plainTextBlockSize =
@@ -373,6 +411,50 @@ public class UsernameProvider implements IdentityProvider {
       return new SignedIdentityToken(token, new SignatureData(null, null));
     } finally {
       Arrays.fill(passwordBytes, (byte) 0);
+    }
+  }
+
+  /**
+   * Return the validator for the server certificate the password is encrypted to: this provider's
+   * own when it has one, otherwise the client's, otherwise one that accepts every certificate.
+   *
+   * @param context the identity-provider context for the session activation.
+   * @return the validator to check the server certificate with.
+   */
+  private CertificateValidator resolveCertificateValidator(IdentityProviderContext context) {
+    if (certificateValidator != null) {
+      return certificateValidator;
+    } else {
+      return context
+          .getCertificateValidator()
+          .orElseGet(CertificateValidator.InsecureCertificateValidator::new);
+    }
+  }
+
+  /**
+   * Log a WARN, once per provider, when a password the token does not encrypt is about to cross a
+   * {@code None} or {@code Sign} SecureChannel, where anyone on the path can read it (Part 4
+   * (7.40.4)).
+   *
+   * <p>Transports other than {@code opc.tcp} run over TLS, which encrypts the password in transit.
+   *
+   * @param endpoint the endpoint being activated.
+   * @param tokenPolicy the selected username token policy, whose security policy is {@code None}.
+   */
+  private void warnIfPasswordTravelsUnencrypted(
+      EndpointDescription endpoint, UserTokenPolicy tokenPolicy) {
+
+    boolean channelEncrypts =
+        endpoint.getSecurityMode() == MessageSecurityMode.SignAndEncrypt
+            || !Stack.TCP_UASC_UABINARY_TRANSPORT_URI.equals(endpoint.getTransportProfileUri());
+
+    if (!channelEncrypts && unencryptedPasswordWarningLogged.compareAndSet(false, true)) {
+      LOGGER.warn(
+          "Sending password unencrypted to {}: UserTokenPolicy '{}' has SecurityPolicy None and"
+              + " the SecureChannel's MessageSecurityMode is {}. Logged once per UsernameProvider.",
+          endpoint.getEndpointUrl(),
+          tokenPolicy.getPolicyId(),
+          endpoint.getSecurityMode());
     }
   }
 
