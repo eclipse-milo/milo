@@ -11,7 +11,6 @@
 package org.eclipse.milo.opcua.sdk.server.servicesets.impl.helpers;
 
 import static org.eclipse.milo.opcua.sdk.server.util.UaEnumUtil.browseResultMasks;
-import static org.eclipse.milo.opcua.sdk.server.util.UaEnumUtil.nodeClasses;
 
 import com.google.common.primitives.Ints;
 import java.util.ArrayList;
@@ -20,6 +19,8 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
@@ -58,6 +59,10 @@ import org.slf4j.LoggerFactory;
 public class BrowseHelper {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BrowseHelper.class);
+
+  private static final BrowseAttributes EMPTY_BROWSE_ATTRIBUTES =
+      new BrowseAttributes(
+          QualifiedName.NULL_VALUE, LocalizedText.NULL_VALUE, NodeClass.Unspecified);
 
   public static List<BrowseResult> browse(
       OpcUaServer server, AccessContext context, BrowseRequest browseRequest) {
@@ -127,32 +132,36 @@ public class BrowseHelper {
         pb.referenceDescriptionResult = referenceDescriptionResult;
       } else if (referenceDescriptionResult
           instanceof ReferenceDescriptionResult.ReferenceDescriptionList rdl) {
+        // Every target in rdl was normalized against ServerTable and NamespaceTable above, so
+        // local targets (including any originally addressed by this server's URI) resolve to a
+        // local NodeId and are checked; only remote targets skip checkBrowseAccess.
         List<NodeId> nodeIdsToCheck =
             rdl.referenceDescriptions.stream()
-                .map(
-                    r ->
-                        r.getNodeId()
-                            .toNodeId(server.getNamespaceTable())
-                            .orElse(NodeId.NULL_VALUE))
+                .flatMap(r -> r.getNodeId().toNodeId(server.getNamespaceTable()).stream())
                 .toList();
 
         Map<NodeId, AccessResult> referenceAccessResults =
-            server.getAccessController().checkBrowseAccess(session, nodeIdsToCheck);
+            nodeIdsToCheck.isEmpty()
+                ? Map.of()
+                : server.getAccessController().checkBrowseAccess(session, nodeIdsToCheck);
 
         var filteredReferences = new ArrayList<ReferenceDescription>();
 
         for (ReferenceDescription reference : rdl.referenceDescriptions) {
-          NodeId nodeId =
-              reference.getNodeId().toNodeId(server.getNamespaceTable()).orElse(NodeId.NULL_VALUE);
+          Optional<NodeId> localNodeId = reference.getNodeId().toNodeId(server.getNamespaceTable());
 
-          AccessResult result = referenceAccessResults.get(nodeId);
-
-          if (result.isAllowed()) {
+          if (localNodeId.isEmpty()) {
             filteredReferences.add(reference);
+          } else {
+            AccessResult result = referenceAccessResults.get(localNodeId.get());
+
+            if (result != null && result.isAllowed()) {
+              filteredReferences.add(reference);
+            }
           }
         }
 
-        // Filter out references to Nodes that the Session doesn't have Browse permission for.
+        // Filter out references to local Nodes that the Session doesn't have Browse permission for.
         pb.referenceDescriptionResult = ReferenceDescriptionResult.of(filteredReferences);
       }
     }
@@ -177,6 +186,9 @@ public class BrowseHelper {
 
     var referenceDescriptionsList = new ArrayList<ReferenceDescriptionResult>();
 
+    NamespaceTable namespaceTable = server.getNamespaceTable();
+    ServerTable serverTable = server.getServerTable();
+
     for (int i = 0; i < nodesToBrowse.size(); i++) {
       BrowseDescription browseDescription = nodesToBrowse.get(i);
       AddressSpace.ReferenceResult result = referenceResults.get(i);
@@ -195,11 +207,27 @@ public class BrowseHelper {
               .filter(reference -> filterReferenceType(server, browseDescription, reference))
               .toList();
 
-      // The target of each of these references is going to need "BrowseAttributes" read
-      // and possibly the TypeDefinition browsed for. How can we batch these up?
+      // Resolve and normalize every target once against ServerTable and NamespaceTable so local
+      // targets addressed by this server's URI are classified as local, and unrepresentable targets
+      // (unregistered server/namespace) are skipped before attribute reads, filtering, or encoding.
+      var resolvedRefs = new ArrayList<ResolvedReference>(stage1Refs.size());
+      for (Reference reference : stage1Refs) {
+        Optional<ExpandedNodeId> normalizedTarget =
+            BrowseUtil.normalize(reference.getTargetNodeId(), serverTable, namespaceTable);
+
+        if (normalizedTarget.isEmpty()) {
+          LOGGER.warn(
+              "Skipping Browse reference from {} to unrepresentable target {}",
+              browseDescription.getNodeId(),
+              reference.getTargetNodeId().toParseableString());
+          continue;
+        }
+
+        resolvedRefs.add(new ResolvedReference(reference, normalizedTarget.get()));
+      }
 
       List<ExpandedNodeId> targetNodeIds =
-          stage1Refs.stream().map(Reference::getTargetNodeId).collect(Collectors.toList());
+          resolvedRefs.stream().map(ResolvedReference::targetNodeId).toList();
 
       List<BrowseAttributes> browseAttributes = readBrowseAttributes(server, targetNodeIds);
 
@@ -209,19 +237,20 @@ public class BrowseHelper {
 
       var referenceDescriptions = new ArrayList<ReferenceDescription>();
 
-      for (int j = 0; j < stage1Refs.size(); j++) {
-        Reference reference = stage1Refs.get(j);
+      for (int j = 0; j < resolvedRefs.size(); j++) {
+        ResolvedReference resolved = resolvedRefs.get(j);
         BrowseAttributes attributes = browseAttributes.get(j);
         ExpandedNodeId typeDefinitionId = typeDefinitionIds.get(j);
 
-        if (filterNodeClass(browseDescription, attributes.nodeClass())) {
+        if (filterNodeClass(
+            browseDescription, resolved.targetNodeId(), serverTable, attributes.nodeClass())) {
           ReferenceDescription referenceDescription =
               createReferenceDescription(
                   browseDescription,
-                  reference,
+                  resolved.reference(),
+                  resolved.targetNodeId(),
                   attributes,
-                  typeDefinitionId,
-                  server.getNamespaceTable());
+                  typeDefinitionId);
 
           referenceDescriptions.add(referenceDescription);
         }
@@ -236,9 +265,9 @@ public class BrowseHelper {
   private static ReferenceDescription createReferenceDescription(
       BrowseDescription browseDescription,
       Reference reference,
+      ExpandedNodeId normalizedTargetNodeId,
       BrowseAttributes browseAttributes,
-      ExpandedNodeId typeDefinitionId,
-      NamespaceTable namespaceTable) {
+      ExpandedNodeId typeDefinitionId) {
 
     EnumSet<BrowseResultMask> masks =
         browseResultMasks(browseDescription.getResultMask().longValue());
@@ -250,21 +279,18 @@ public class BrowseHelper {
 
     boolean forward = masks.contains(BrowseResultMask.IsForward) && reference.isForward();
 
-    ExpandedNodeId targetNodeId = reference.getTargetNodeId();
-    targetNodeId = BrowseUtil.normalize(targetNodeId, namespaceTable);
-
     return new ReferenceDescription(
         referenceTypeId,
         forward,
-        targetNodeId,
+        normalizedTargetNodeId,
         masks.contains(BrowseResultMask.BrowseName)
-            ? browseAttributes.browseName()
+            ? Objects.requireNonNullElse(browseAttributes.browseName(), QualifiedName.NULL_VALUE)
             : QualifiedName.NULL_VALUE,
         masks.contains(BrowseResultMask.DisplayName)
-            ? browseAttributes.displayName()
+            ? Objects.requireNonNullElse(browseAttributes.displayName(), LocalizedText.NULL_VALUE)
             : LocalizedText.NULL_VALUE,
         masks.contains(BrowseResultMask.NodeClass)
-            ? browseAttributes.nodeClass()
+            ? Objects.requireNonNullElse(browseAttributes.nodeClass(), NodeClass.Unspecified)
             : NodeClass.Unspecified,
         typeDefinitionId);
   }
@@ -348,18 +374,33 @@ public class BrowseHelper {
   private static List<BrowseAttributes> readBrowseAttributes(
       OpcUaServer server, List<ExpandedNodeId> nodeIds) {
 
-    final var browseAttributes = new ArrayList<BrowseAttributes>();
+    var browseAttributes =
+        new ArrayList<>(Collections.nCopies(nodeIds.size(), EMPTY_BROWSE_ATTRIBUTES));
 
-    var readValueIds = new ArrayList<ReadValueId>();
+    // Only targets that resolve to a local NodeId are read from the local AddressSpaceManager;
+    // remote targets and unregistered namespaces keep EMPTY_BROWSE_ATTRIBUTES.
+    var readValueIds = new ArrayList<ReadValueId>(nodeIds.size() * 3);
+    var readIndices = new ArrayList<Integer>(nodeIds.size());
 
-    for (ExpandedNodeId xni : nodeIds) {
-      NodeId nodeId = xni.toNodeId(server.getNamespaceTable()).orElse(NodeId.NULL_VALUE);
-      readValueIds.add(
-          new ReadValueId(nodeId, AttributeId.BrowseName.uid(), null, QualifiedName.NULL_VALUE));
-      readValueIds.add(
-          new ReadValueId(nodeId, AttributeId.DisplayName.uid(), null, QualifiedName.NULL_VALUE));
-      readValueIds.add(
-          new ReadValueId(nodeId, AttributeId.NodeClass.uid(), null, QualifiedName.NULL_VALUE));
+    NamespaceTable namespaceTable = server.getNamespaceTable();
+
+    for (int i = 0; i < nodeIds.size(); i++) {
+      Optional<NodeId> localNodeId = nodeIds.get(i).toNodeId(namespaceTable);
+
+      if (localNodeId.isPresent()) {
+        NodeId nodeId = localNodeId.get();
+        readValueIds.add(
+            new ReadValueId(nodeId, AttributeId.BrowseName.uid(), null, QualifiedName.NULL_VALUE));
+        readValueIds.add(
+            new ReadValueId(nodeId, AttributeId.DisplayName.uid(), null, QualifiedName.NULL_VALUE));
+        readValueIds.add(
+            new ReadValueId(nodeId, AttributeId.NodeClass.uid(), null, QualifiedName.NULL_VALUE));
+        readIndices.add(i);
+      }
+    }
+
+    if (readValueIds.isEmpty()) {
+      return browseAttributes;
     }
 
     var context = new ReadContext(server, null);
@@ -369,15 +410,34 @@ public class BrowseHelper {
             .getAddressSpaceManager()
             .read(context, 0.0, TimestampsToReturn.Neither, readValueIds);
 
-    for (int i = 0; i < values.size(); i += 3) {
-      QualifiedName browseName = (QualifiedName) values.get(i).value().value();
-      LocalizedText displayName = (LocalizedText) values.get(i + 1).value().value();
-      NodeClass nodeClass = (NodeClass) values.get(i + 2).value().value();
+    for (int i = 0; i < readIndices.size(); i++) {
+      int base = i * 3;
+      QualifiedName browseName =
+          extractAttribute(values.get(base), QualifiedName.class, QualifiedName.NULL_VALUE);
+      LocalizedText displayName =
+          extractAttribute(values.get(base + 1), LocalizedText.class, LocalizedText.NULL_VALUE);
+      NodeClass nodeClass =
+          extractAttribute(values.get(base + 2), NodeClass.class, NodeClass.Unspecified);
 
-      browseAttributes.add(new BrowseAttributes(browseName, displayName, nodeClass));
+      browseAttributes.set(
+          readIndices.get(i), new BrowseAttributes(browseName, displayName, nodeClass));
     }
 
     return browseAttributes;
+  }
+
+  private static <T> T extractAttribute(@Nullable DataValue dataValue, Class<T> type, T fallback) {
+    if (dataValue == null) {
+      return fallback;
+    }
+
+    StatusCode statusCode = dataValue.statusCode();
+    if (statusCode != null && statusCode.isBad()) {
+      return fallback;
+    }
+
+    Object value = dataValue.value() != null ? dataValue.value().value() : null;
+    return type.isInstance(value) ? type.cast(value) : fallback;
   }
 
   private static List<ExpandedNodeId> browseTypeDefinitions(
@@ -408,7 +468,9 @@ public class BrowseHelper {
           case Object, Variable -> {
             try {
               ExpandedNodeId typeDefinitionId = browseTypeDefinition(server, nodeId);
-              typeDefinitionId = BrowseUtil.normalize(typeDefinitionId, namespaceTable);
+              typeDefinitionId =
+                  BrowseUtil.normalize(typeDefinitionId, server.getServerTable(), namespaceTable)
+                      .orElse(ExpandedNodeId.NULL_VALUE);
 
               typeDefinitions.add(typeDefinitionId);
             } catch (UaException e) {
@@ -487,20 +549,48 @@ public class BrowseHelper {
             && referenceTypeTree.isSubtypeOf(reference.getReferenceTypeId(), referenceTypeId));
   }
 
-  private static boolean filterNodeClass(BrowseDescription browseDescription, NodeClass nodeClass) {
+  /**
+   * Filter a target Node against {@link BrowseDescription#getNodeClassMask()} per OPC 10000-4
+   * §5.9.2.2 Table 34.
+   *
+   * <p>A mask of {@code 0} matches every target, including remote targets and local targets whose
+   * NodeClass is unknown ({@link NodeClass#Unspecified}). For a non-zero mask, a remote target
+   * whose NodeClass is unknown ignores the mask and is returned, while a local target with an
+   * unknown NodeClass is excluded because {@link NodeClass#Unspecified} has no mask bit.
+   */
+  static boolean filterNodeClass(
+      BrowseDescription browseDescription,
+      ExpandedNodeId targetNodeId,
+      ServerTable serverTable,
+      NodeClass nodeClass) {
 
     long mask = browseDescription.getNodeClassMask().longValue();
 
-    EnumSet<NodeClass> nodeClasses =
-        (mask == 0L) ? EnumSet.allOf(NodeClass.class) : nodeClasses(mask);
+    if (mask == 0L) {
+      return true;
+    }
 
-    return nodeClasses.contains(nodeClass);
+    if (!targetNodeId.isLocal(serverTable)
+        && (nodeClass == null || nodeClass == NodeClass.Unspecified)) {
+      return true;
+    }
+
+    return nodeClass != null
+        && nodeClass != NodeClass.Unspecified
+        && (mask & nodeClass.getValue()) == nodeClass.getValue();
   }
 
+  private record ResolvedReference(Reference reference, ExpandedNodeId targetNodeId) {}
+
   private record BrowseAttributes(
-      @Nullable QualifiedName browseName,
-      @Nullable LocalizedText displayName,
-      @Nullable NodeClass nodeClass) {}
+      QualifiedName browseName, LocalizedText displayName, NodeClass nodeClass) {
+
+    private BrowseAttributes {
+      browseName = Objects.requireNonNullElse(browseName, QualifiedName.NULL_VALUE);
+      displayName = Objects.requireNonNullElse(displayName, LocalizedText.NULL_VALUE);
+      nodeClass = Objects.requireNonNullElse(nodeClass, NodeClass.Unspecified);
+    }
+  }
 
   private record PendingContinuation(int index, List<ReferenceDescription> references) {}
 

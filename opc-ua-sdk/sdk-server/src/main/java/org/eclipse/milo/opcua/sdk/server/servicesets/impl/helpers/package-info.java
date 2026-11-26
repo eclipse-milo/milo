@@ -32,5 +32,23 @@
  * org.eclipse.milo.opcua.sdk.server.Session} in one atomic call so prior-request reclamation,
  * single-request {@code Bad_NoContinuationPoints} enforcement, and concurrent {@code BrowseNext}
  * slot reuse share one lock.
+ *
+ * <h2>Remote and unreadable targets</h2>
+ *
+ * <p>Browse resolves and normalizes each reference target once against the server's {@link
+ * org.eclipse.milo.opcua.stack.core.ServerTable} and {@link
+ * org.eclipse.milo.opcua.stack.core.NamespaceTable} before reading attributes, applying {@code
+ * nodeClassMask}, or checking browse access. A target addressed by this server's own URI (index
+ * {@code 0}) is normalized to local form and subjected to the same local reads, filters, and {@link
+ * org.eclipse.milo.opcua.sdk.server.access.AccessController#checkBrowseAccess} checks as {@code
+ * serverIndex == 0}. Unrepresentable targets (unregistered remote server URIs or server indices,
+ * remote targets with unmapped numeric namespace indices, or local targets with unregistered
+ * namespace URIs or unregistered numeric namespace indices) are logged and skipped rather than
+ * emitting malformed {@code ReferenceDescription}s or aborting binary encoding. Valid remote
+ * targets skip local reads and local browse-access checks and fall back to {@code
+ * QualifiedName.NULL_VALUE}, {@code LocalizedText.NULL_VALUE}, and {@code NodeClass.Unspecified}.
+ * Per OPC 10000-4 §5.9.2.2 Table 34, a zero {@code nodeClassMask} returns all targets, whereas a
+ * non-zero mask ignores unknown {@code NodeClass} for remote targets only and excludes local
+ * targets whose {@code NodeClass} is unknown.
  */
 package org.eclipse.milo.opcua.sdk.server.servicesets.impl.helpers;
