@@ -61,13 +61,14 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
       Collections.synchronizedList(new ArrayList<>());
 
   private final AtomicBoolean helloSent = new AtomicBoolean(false);
-  private Timeout helloTimeout;
+  private @Nullable Timeout helloTimeout;
 
   private final UascClientConfig config;
   private final ClientApplicationContext application;
   private final Supplier<String> endpointUrlSupplier;
   private final Supplier<Long> requestIdSupplier;
   private final CompletableFuture<ClientSecureChannel> handshakeFuture;
+  private boolean acknowledgeReceived;
   private boolean secureChannelHandshakeStarted;
   private final boolean sendHelloWhenAddedToActiveChannel;
 
@@ -166,11 +167,23 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
   }
 
   @Override
+  public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+    if (helloTimeout != null) {
+      helloTimeout.cancel();
+      helloTimeout = null;
+    }
+
+    failHandshake(new UaException(StatusCodes.Bad_ConnectionClosed, "connection closed"));
+
+    super.channelInactive(ctx);
+  }
+
+  @Override
   public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
     handlerContext = ctx;
 
     if (sendHelloWhenAddedToActiveChannel) {
-      sendHelloIfChannelActive(ctx);
+      sendHelloIfChannelActive();
     }
 
     super.handlerAdded(ctx);
@@ -179,6 +192,19 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
   @Override
   public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
     handlerContext = null;
+
+    if (helloTimeout != null) {
+      helloTimeout.cancel();
+      helloTimeout = null;
+    }
+
+    // If this handler is removed after taking over the Hello/Acknowledge exchange but before
+    // handing off to UascClientMessageHandler, cancelling helloTimeout removes the only deadline on
+    // handshakeFuture and channelInactive() will no longer reach this handler.
+    if (helloSent.get() && !secureChannelHandshakeStarted && !handshakeFuture.isDone()) {
+      failHandshake(new UaException(StatusCodes.Bad_ConnectionClosed, "connection closed"));
+      ctx.close();
+    }
 
     super.handlerRemoved(ctx);
   }
@@ -216,6 +242,11 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
         ctx.channel().remoteAddress(),
         cause.getMessage(),
         cause);
+
+    if (helloTimeout != null) {
+      helloTimeout.cancel();
+      helloTimeout = null;
+    }
 
     // If the handshake hasn't completed yet this cause will be more
     // accurate than the generic "connection closed" exception that
@@ -306,11 +337,26 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
   }
 
   private void onAcknowledge(ChannelHandlerContext ctx, ByteBuf buffer) {
-    if (helloTimeout != null && !helloTimeout.cancel()) {
-      helloTimeout = null;
-      failHandshake(new UaException(StatusCodes.Bad_Timeout, "timed out waiting for acknowledge"));
+    if (acknowledgeReceived) {
+      failHandshake(
+          new UaException(
+              StatusCodes.Bad_TcpMessageTypeInvalid, "unexpected MessageType: Acknowledge"));
       ctx.close();
       return;
+    }
+
+    acknowledgeReceived = true;
+
+    if (helloTimeout != null) {
+      boolean cancelled = helloTimeout.cancel();
+      helloTimeout = null;
+
+      if (!cancelled) {
+        failHandshake(
+            new UaException(StatusCodes.Bad_Timeout, "timed out waiting for acknowledge"));
+        ctx.close();
+        return;
+      }
     }
 
     LOGGER.debug("Received Acknowledge message on channel={}.", ctx.channel());
@@ -360,6 +406,10 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
     ctx.executor()
         .execute(
             () -> {
+              if (ctx.isRemoved() || !ctx.channel().isActive() || handshakeFuture.isDone()) {
+                return;
+              }
+
               secureChannelHandshakeStarted = true;
               var messageHandler =
                   new UascClientMessageHandler(

@@ -30,7 +30,10 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.security.KeyPair;
@@ -49,6 +52,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.channel.ChannelParameters;
 import org.eclipse.milo.opcua.stack.core.channel.ChannelSecurity;
 import org.eclipse.milo.opcua.stack.core.channel.ChunkDecoder;
@@ -98,6 +102,7 @@ import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
+import org.eclipse.milo.opcua.stack.transport.client.SecureChannelHandshakeException;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.ClientSecureChannel;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
@@ -511,6 +516,112 @@ class OpcTcpTransportTest extends SecurityFixture {
       executor.shutdownNow();
       serverTransport.unbind();
     }
+  }
+
+  // Servers such as Milo's RateLimitingHandler accept a TCP connection and immediately close it
+  // without sending Acknowledge. connect() must fail promptly with Bad_ConnectionClosed rather
+  // than waiting out the acknowledge timeout and reporting Bad_Timeout.
+  @Test
+  void connectFailsImmediatelyWithBadConnectionClosedWhenServerClosesBeforeAcknowledge()
+      throws Exception {
+    InetAddress loopback = InetAddress.getLoopbackAddress();
+    var serverSocket = new ServerSocket(0, 50, loopback);
+    Thread acceptLoop =
+        new Thread(
+            () -> {
+              while (!serverSocket.isClosed()) {
+                try (Socket socket = serverSocket.accept()) {
+                  socket.setSoTimeout(5_000);
+                  // Send FIN without Acknowledge, then drain any client Hello bytes until the
+                  // client closes so the OS does not emit RST on close().
+                  socket.shutdownOutput();
+                  socket.getInputStream().readAllBytes();
+                } catch (IOException ignored) {
+                  // Server socket closed during teardown or client closed early.
+                }
+              }
+            },
+            "accept-and-close-peer");
+    acceptLoop.setDaemon(true);
+    acceptLoop.start();
+
+    try {
+      String host =
+          loopback instanceof Inet6Address
+              ? "[" + loopback.getHostAddress() + "]"
+              : loopback.getHostAddress();
+      String endpointUrl = "opc.tcp://" + host + ":" + serverSocket.getLocalPort() + "/test";
+
+      var endpoint =
+          new EndpointDescription(
+              endpointUrl,
+              null,
+              ByteString.NULL_VALUE,
+              MessageSecurityMode.None,
+              SecurityPolicy.None.getUri(),
+              null,
+              TransportProfile.TCP_UASC_UABINARY.getUri(),
+              ubyte(0));
+
+      var applicationContext =
+          new ClientApplicationContext() {
+            @Override
+            public EndpointDescription getEndpoint() {
+              return endpoint;
+            }
+
+            @Override
+            public Optional<CertificateIdentity> getCertificateIdentity(
+                SecurityPolicyProfile securityPolicyProfile) {
+              return Optional.empty();
+            }
+
+            @Override
+            public CertificateValidator getCertificateValidator() {
+              return new CertificateValidator.InsecureCertificateValidator();
+            }
+
+            @Override
+            public EncodingContext getEncodingContext() {
+              return DefaultEncodingContext.INSTANCE;
+            }
+
+            @Override
+            public UInteger getRequestTimeout() {
+              return uint(30_000);
+            }
+          };
+
+      OpcTcpClientTransportConfig config =
+          OpcTcpClientTransportConfig.newBuilder().setAcknowledgeTimeout(uint(30_000)).build();
+
+      var transport = new OpcTcpClientTransport(config);
+
+      try {
+        ExecutionException failure =
+            assertThrows(
+                ExecutionException.class,
+                () -> transport.connect(applicationContext).get(5, TimeUnit.SECONDS),
+                "connect() must fail well inside the 30s acknowledge timeout");
+
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+          assertFalse(
+              cause instanceof SecureChannelHandshakeException,
+              "closure before Acknowledge must not be wrapped in SecureChannelHandshakeException");
+        }
+
+        assertEquals(
+            StatusCodes.Bad_ConnectionClosed,
+            UaException.extractStatusCode(failure).orElseThrow().value());
+      } finally {
+        transport.disconnect().get(5, TimeUnit.SECONDS);
+      }
+    } finally {
+      serverSocket.close();
+      acceptLoop.join(TimeUnit.SECONDS.toMillis(5));
+    }
+
+    assertFalse(acceptLoop.isAlive(), "accept loop thread must exit after closing server socket");
   }
 
   private ClientApplicationContext noSecurityClientApplicationContext() {
