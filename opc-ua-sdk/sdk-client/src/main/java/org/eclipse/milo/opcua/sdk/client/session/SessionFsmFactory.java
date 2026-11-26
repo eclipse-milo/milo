@@ -344,8 +344,8 @@ public class SessionFsmFactory {
             ctx -> {
               Event.CreateSessionFailure e = (Event.CreateSessionFailure) ctx.event();
 
-              handleFailureToOpenSession(client, ctx, e.failure);
               notifySessionAttemptFailed(client, ctx, e.failure);
+              handleFailureToOpenSession(client, ctx, e.failure);
             });
 
     /* External Transition Actions */
@@ -440,8 +440,8 @@ public class SessionFsmFactory {
             ctx -> {
               Event.ActivateSessionFailure e = (Event.ActivateSessionFailure) ctx.event();
 
-              handleFailureToOpenSession(client, ctx, e.failure);
               notifySessionAttemptFailed(client, ctx, e.failure);
+              handleFailureToOpenSession(client, ctx, e.failure);
             });
 
     /* External Transition Actions */
@@ -511,8 +511,8 @@ public class SessionFsmFactory {
               Event.TransferSubscriptionsFailure e =
                   (Event.TransferSubscriptionsFailure) ctx.event();
 
-              handleFailureToOpenSession(client, ctx, e.failure);
               notifySessionAttemptFailed(client, ctx, e.failure);
+              handleFailureToOpenSession(client, ctx, e.failure);
             });
 
     /* External Transition Actions */
@@ -574,8 +574,8 @@ public class SessionFsmFactory {
             ctx -> {
               Event.InitializeFailure e = (Event.InitializeFailure) ctx.event();
 
-              handleFailureToOpenSession(client, ctx, e.failure);
               notifySessionAttemptFailed(client, ctx, e.failure);
+              handleFailureToOpenSession(client, ctx, e.failure);
             });
 
     /* External Transition Actions */
@@ -1118,8 +1118,8 @@ public class SessionFsmFactory {
 
               Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
 
-              handleFailureToOpenSession(client, ctx, e.failure);
               notifySessionAttemptFailed(client, ctx, e.failure);
+              handleFailureToOpenSession(client, ctx, e.failure);
 
               // Reactivation is being abandoned in favor of creating a new Session. The old one may
               // still exist on the Server (the fault might have been e.g.
@@ -1142,8 +1142,8 @@ public class SessionFsmFactory {
             ctx -> {
               Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
 
-              handleFailureToOpenSession(client, ctx, e.failure);
               notifySessionAttemptFailed(client, ctx, e.failure);
+              handleFailureToOpenSession(client, ctx, e.failure);
             });
 
     fb.when(State.Reactivating)
@@ -1285,6 +1285,11 @@ public class SessionFsmFactory {
    * <p>Call this on the edges a failed attempt takes into {@link State#CreatingWait} or {@link
    * State#ReactivatingWait}, and not on a {@link Event.CloseSession}: the application ending the
    * attempts is not a failure it needs to hear about.
+   *
+   * <p>Call it before {@link #handleFailureToOpenSession}, which hands the failure to whoever waits
+   * for the Session, so the check sees the transport as it was when the attempt failed. Otherwise
+   * an application that connects again as soon as {@code connect()} fails can move the transport
+   * out of its disconnected state first, and an attempt made while it was disconnected is reported.
    */
   private static void notifySessionAttemptFailed(
       OpcUaClient client, FsmContext<State, Event> ctx, Throwable failure) {
