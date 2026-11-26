@@ -15,7 +15,9 @@
  * browse inheritance and encoding references within a session, honoring operation limits and
  * following continuation points until the server returns a null or empty token. A Bad BrowseNext
  * result fails the build instead of leaving a node with only its earlier pages. Lazy trees resolve
- * types on demand and discard stale work when their session or cache generation changes.
+ * types on demand and discard stale work when their session or cache generation changes. Lazy trees
+ * and managers cache failed resolutions until cleared, except when an attempt is aborted by thread
+ * interruption.
  *
  * <p>DataType managers register codecs from the resolved metadata. A structure's DefaultEncodingId
  * supplies its binary encoding ID when the server omits HasEncoding references. The effective ID

@@ -13,11 +13,14 @@ package org.eclipse.milo.opcua.sdk.client.typetree;
 import static java.util.Objects.requireNonNullElse;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
 import org.eclipse.milo.opcua.sdk.client.OperationLimits;
@@ -85,13 +88,21 @@ final class ClientBrowseUtils {
    */
   static void checkSessionUnchanged(OpcUaClient client, NodeId sessionId) throws UaException {
     OpcUaSession session;
+    RuntimeException failure = null;
     try {
       session = client.getSessionAsync().getNow(null);
     } catch (RuntimeException e) {
+      failure = e;
       session = null;
     }
 
     if (session == null || !sessionId.equals(session.getSessionId())) {
+      if (failure != null) {
+        throw new UaException(
+            StatusCodes.Bad_SessionClosed,
+            "session closed or changed during type tree build",
+            failure);
+      }
       throw new UaException(
           StatusCodes.Bad_SessionClosed, "session closed or changed during type tree build");
     }
@@ -494,5 +505,41 @@ final class ClientBrowseUtils {
     }
 
     return binaryEncodingId;
+  }
+
+  /**
+   * Check whether {@code failure} has an {@link InterruptedException} in its cause or suppressed
+   * exception graph.
+   *
+   * <p>This check is side-effect-free and never modifies {@link Thread#isInterrupted()}; callers
+   * that observe an asynchronously failed future must not interrupt a healthy calling thread.
+   *
+   * @param failure the failure to inspect.
+   * @return {@code true} if {@code failure} or any reachable cause/suppressed exception is an
+   *     {@link InterruptedException}.
+   */
+  static boolean hasInterruptedCause(Throwable failure) {
+    Set<Throwable> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+    var pending = new ArrayDeque<Throwable>();
+    pending.add(failure);
+
+    while (!pending.isEmpty()) {
+      Throwable current = pending.removeFirst();
+      if (!visited.add(current)) {
+        continue;
+      }
+      if (current instanceof InterruptedException) {
+        return true;
+      }
+      Throwable cause = current.getCause();
+      if (cause != null) {
+        pending.addLast(cause);
+      }
+      for (Throwable suppressed : current.getSuppressed()) {
+        pending.addLast(suppressed);
+      }
+    }
+
+    return false;
   }
 }
