@@ -40,7 +40,8 @@
  * <p>Legacy RSA username-token decryption uses the shared stack {@link
  * org.eclipse.milo.opcua.stack.core.util.CipherFactory}. The selected token policy supplies
  * explicit OAEP parameters, independently of the channel's policy and the configured JCA provider's
- * defaults.
+ * defaults. Ciphertexts must be a positive multiple of the asymmetric cipher block size, and all
+ * padding bytes after the decrypted secret and ServerNonce must be zero.
  *
  * <h2>Extension guidance</h2>
  *

@@ -96,7 +96,8 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
 
       try {
         plainTextBytes = decryptTokenData(session, algorithm, tokenBytes);
-      } catch (UaException ignored) {
+      } catch (UaException e) {
+        logTokenFailure("Failed to decrypt legacy username token", session, e);
         throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
       }
 
@@ -134,16 +135,33 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
       System.arraycopy(plainTextBytes, 4, passwordBytes, 0, passwordBytes.length);
       System.arraycopy(plainTextBytes, 4 + passwordBytes.length, nonceBytes, 0, lastNonceLength);
 
-      if (MessageDigest.isEqual(lastNonce.bytes(), nonceBytes)) {
+      boolean nonceValid = MessageDigest.isEqual(lastNonce.bytes(), nonceBytes);
+
+      int paddingDiff = 0;
+      for (int i = Integer.BYTES + (int) length; i < plainTextBytes.length; i++) {
+        paddingDiff |= plainTextBytes[i] & 0xFF;
+      }
+      boolean paddingValid = paddingDiff == 0;
+
+      if (nonceValid && paddingValid) {
         String password = new String(passwordBytes, StandardCharsets.UTF_8);
         UsernameIdentity identity = authenticateUsernamePassword(session, username, password);
 
         if (identity != null) {
           return identity;
         } else {
+          LOGGER.debug(
+              "Legacy encrypted username token authentication failed for session {}",
+              session.getSessionId());
           throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
         }
       } else {
+        LOGGER.debug(
+            "Legacy encrypted username token validation failed for session {} (nonceValid={},"
+                + " paddingValid={})",
+            session.getSessionId(),
+            nonceValid,
+            paddingValid);
         throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
       }
     } else {

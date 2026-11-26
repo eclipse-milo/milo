@@ -15,6 +15,7 @@ import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import javax.crypto.Cipher;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.SessionServerCertificate;
@@ -169,10 +170,15 @@ public abstract class AbstractIdentityValidator implements IdentityValidator {
   /**
    * Decrypt the data contained in a {@link UserNameIdentityToken} or {@link IssuedIdentityToken}.
    *
+   * <p>Returns only the decrypted plaintext bytes rather than a ciphertext-sized buffer, and
+   * rejects ciphertexts whose length is not a positive multiple of the asymmetric cipher block
+   * size.
+   *
    * @param session the current {@link Session}.
+   * @param algorithm the asymmetric encryption algorithm.
    * @param dataBytes the encrypted data.
    * @return the decrypted data.
-   * @throws UaException if decryption fails.
+   * @throws UaException if the ciphertext length is invalid or decryption fails.
    * @see IssuedIdentityToken#getTokenData()
    * @see UserNameIdentityToken#getPassword()
    */
@@ -186,8 +192,18 @@ public abstract class AbstractIdentityValidator implements IdentityValidator {
 
     int cipherTextBlockSize =
         SecureChannel.getAsymmetricCipherTextBlockSize(certificate, algorithm);
-    int blockCount = dataBytes.length / cipherTextBlockSize;
+    if (cipherTextBlockSize <= 0
+        || dataBytes.length == 0
+        || dataBytes.length % cipherTextBlockSize != 0) {
+      throw new UaException(
+          StatusCodes.Bad_SecurityChecksFailed,
+          "ciphertext length "
+              + dataBytes.length
+              + " is not a positive multiple of block size "
+              + cipherTextBlockSize);
+    }
 
+    int blockCount = dataBytes.length / cipherTextBlockSize;
     int plainTextBufferSize = cipherTextBlockSize * blockCount;
 
     byte[] plainTextBytes = new byte[plainTextBufferSize];
@@ -214,11 +230,13 @@ public abstract class AbstractIdentityValidator implements IdentityValidator {
 
         cipher.doFinal(passwordNioBuffer, plainTextNioBuffer);
       }
+
+      return Arrays.copyOf(plainTextBytes, plainTextNioBuffer.position());
     } catch (GeneralSecurityException e) {
       throw new UaException(StatusCodes.Bad_SecurityChecksFailed, e);
+    } finally {
+      Arrays.fill(plainTextBytes, (byte) 0);
     }
-
-    return plainTextBytes;
   }
 
   private Cipher getCipher(SecurityAlgorithm algorithm, KeyPair keyPair) throws UaException {

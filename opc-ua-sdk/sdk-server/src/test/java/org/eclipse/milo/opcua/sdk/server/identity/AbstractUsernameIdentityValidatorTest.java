@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.sdk.server.identity;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -51,6 +52,7 @@ import org.eclipse.milo.opcua.sdk.server.SessionServerCertificate;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity.UsernameIdentity;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.channel.SecureChannel;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryDecoder;
 import org.eclipse.milo.opcua.stack.core.security.AeadCipherUtil;
@@ -265,6 +267,192 @@ class AbstractUsernameIdentityValidatorTest {
 
     assertEquals(USERNAME, identity.getUsername());
     assertEquals(1, validator.decryptCount);
+    assertEquals(1, validator.authenticateCount);
+  }
+
+  // Part 4 §7.40.2.2: clients should not add padding after the ServerNonce, but if they do,
+  // all-zero padding bytes are valid and must authenticate.
+  @Test
+  void oaepZeroPaddingAfterNonceAuthenticates() throws Exception {
+    CryptoUsernameIdentityValidator validator = new CryptoUsernameIdentityValidator(true);
+    byte[] ciphertext =
+        encrypt(
+            SecurityPolicy.Basic256Sha256,
+            tokenDataWithPadding(PASSWORD, SERVER_NONCE.bytesOrEmpty(), new byte[16]));
+
+    UsernameIdentity identity =
+        validator.validate(
+            encryptedSession(SecurityPolicy.Basic256Sha256),
+            encryptedToken(SecurityPolicy.Basic256Sha256, ciphertext));
+
+    assertEquals(USERNAME, identity.getUsername());
+    assertEquals(1, validator.decryptCount);
+    assertEquals(1, validator.authenticateCount);
+  }
+
+  // Part 4 §7.40.2.2 and §7.40.2.1: any non-zero padding byte after 4 + Length must fail with
+  // Bad_IdentityTokenInvalid and no cause, before application authentication runs.
+  @Test
+  void oaepNonZeroPaddingFailsUniformlyWithoutAuthenticating() throws Exception {
+    CryptoUsernameIdentityValidator validator = new CryptoUsernameIdentityValidator(true);
+
+    byte[] allFfPadding = new byte[16];
+    Arrays.fill(allFfPadding, (byte) 0xFF);
+    byte[] asciiPadding = "trailing-padding!!".getBytes(StandardCharsets.US_ASCII);
+    byte[] lastByteNonZeroPadding = new byte[16];
+    lastByteNonZeroPadding[lastByteNonZeroPadding.length - 1] = 0x01;
+
+    List<byte[]> invalidPaddings = List.of(allFfPadding, asciiPadding, lastByteNonZeroPadding);
+
+    for (byte[] padding : invalidPaddings) {
+      byte[] ciphertext =
+          encrypt(
+              SecurityPolicy.Basic256Sha256,
+              tokenDataWithPadding(PASSWORD, SERVER_NONCE.bytesOrEmpty(), padding));
+
+      UaException exception =
+          assertThrows(
+              UaException.class,
+              () ->
+                  validator.validate(
+                      encryptedSession(SecurityPolicy.Basic256Sha256),
+                      encryptedToken(SecurityPolicy.Basic256Sha256, ciphertext)));
+
+      assertUniformEncryptedTokenFailure(exception);
+    }
+
+    assertEquals(invalidPaddings.size(), validator.decryptCount);
+    assertEquals(0, validator.authenticateCount);
+  }
+
+  // Malformed ciphertexts whose length is not a positive multiple of the RSA block size (trailing
+  // partial block or empty ciphertext) must always be rejected.
+  @Test
+  void oaepCiphertextWithPartialTrailingBlockIsRejected() throws Exception {
+    CryptoUsernameIdentityValidator validator = new CryptoUsernameIdentityValidator(true);
+    byte[] validCiphertext =
+        encrypt(SecurityPolicy.Basic256Sha256, tokenData(PASSWORD, SERVER_NONCE.bytesOrEmpty()));
+    byte[] trailingBytesCiphertext = Arrays.copyOf(validCiphertext, validCiphertext.length + 7);
+    Arrays.fill(
+        trailingBytesCiphertext,
+        validCiphertext.length,
+        trailingBytesCiphertext.length,
+        (byte) 0x42);
+
+    for (byte[] malformedCiphertext : List.of(trailingBytesCiphertext, new byte[0])) {
+      UaException exception =
+          assertThrows(
+              UaException.class,
+              () ->
+                  validator.validate(
+                      encryptedSession(SecurityPolicy.Basic256Sha256),
+                      encryptedToken(SecurityPolicy.Basic256Sha256, malformedCiphertext)));
+
+      assertUniformEncryptedTokenFailure(exception);
+    }
+
+    assertEquals(2, validator.decryptCount);
+    assertEquals(0, validator.authenticateCount);
+  }
+
+  // decryptTokenData must return only the decrypted plaintext bytes (not a ciphertext-sized buffer
+  // padded with unwritten zeros) across single-block and multi-block ciphertexts.
+  @Test
+  void decryptTokenDataReturnsExactDecryptedBytesAndLength() throws Exception {
+    CryptoUsernameIdentityValidator validator = new CryptoUsernameIdentityValidator(true);
+    Session session = encryptedSession(SecurityPolicy.Basic256Sha256);
+    SecurityAlgorithm algorithm = SecurityPolicy.Basic256Sha256.getAsymmetricEncryptionAlgorithm();
+
+    byte[] singleBlockPlainText = tokenData(PASSWORD, SERVER_NONCE.bytesOrEmpty());
+    byte[] singleBlockCiphertext = encrypt(SecurityPolicy.Basic256Sha256, singleBlockPlainText);
+    byte[] singleBlockDecrypted =
+        validator.decryptTokenData(session, algorithm, singleBlockCiphertext);
+
+    assertEquals(
+        singleBlockPlainText.length,
+        singleBlockDecrypted.length,
+        "single-block decrypted array must match plaintext length, not ciphertext block size");
+    assertArrayEquals(singleBlockPlainText, singleBlockDecrypted);
+
+    byte[] multiBlockPlainText =
+        tokenDataWithPadding("p".repeat(190), SERVER_NONCE.bytesOrEmpty(), new byte[8]);
+    byte[] multiBlockCiphertext = encryptBlocks(SecurityPolicy.Basic256Sha256, multiBlockPlainText);
+    assertEquals(512, multiBlockCiphertext.length, "test payload should span two 256-byte blocks");
+
+    byte[] multiBlockDecrypted =
+        validator.decryptTokenData(session, algorithm, multiBlockCiphertext);
+
+    assertEquals(
+        multiBlockPlainText.length,
+        multiBlockDecrypted.length,
+        "multi-block decrypted array must match total decrypted plaintext length");
+    assertArrayEquals(multiBlockPlainText, multiBlockDecrypted);
+  }
+
+  // decryptTokenData must return only the decrypted bytes rather than a ciphertext-sized buffer,
+  // so a Length field claiming bytes past the decrypted plaintext cannot read unwritten zeros.
+  @Test
+  void oaepLengthExtendingBeyondDecryptedPlaintextIsRejected() throws Exception {
+    CryptoUsernameIdentityValidator validator = new CryptoUsernameIdentityValidator(true);
+    byte[] plainText = tokenData(PASSWORD, SERVER_NONCE.bytesOrEmpty());
+    // Claim 16 extra bytes beyond what was actually encrypted, still well under the 256-byte
+    // ciphertext block size.
+    int inflatedLength = (plainText.length - Integer.BYTES) + 16;
+    byte[] inflatedLengthBytes = uint32LittleEndian(inflatedLength);
+    System.arraycopy(inflatedLengthBytes, 0, plainText, 0, Integer.BYTES);
+
+    byte[] ciphertext = encrypt(SecurityPolicy.Basic256Sha256, plainText);
+
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                validator.validate(
+                    encryptedSession(SecurityPolicy.Basic256Sha256),
+                    encryptedToken(SecurityPolicy.Basic256Sha256, ciphertext)));
+
+    assertUniformEncryptedTokenFailure(exception);
+    assertEquals(1, validator.decryptCount);
+    assertEquals(0, validator.authenticateCount);
+  }
+
+  // Multi-block RSA-OAEP decryption must trim the returned buffer to the exact total decrypted
+  // length across all blocks and apply padding validation to trailing bytes in the final block.
+  @Test
+  void multiBlockOaepEnforcesPaddingAcrossDecryptedBlocks() throws Exception {
+    String longPassword = "p".repeat(190);
+    byte[] zeroPadding = new byte[8];
+    byte[] nonZeroPadding = new byte[] {0, 0, 0, 0, 0, 0, 0, 0x7F};
+
+    byte[] zeroPaddedCiphertext =
+        encryptBlocks(
+            SecurityPolicy.Basic256Sha256,
+            tokenDataWithPadding(longPassword, SERVER_NONCE.bytesOrEmpty(), zeroPadding));
+    byte[] nonZeroPaddedCiphertext =
+        encryptBlocks(
+            SecurityPolicy.Basic256Sha256,
+            tokenDataWithPadding(longPassword, SERVER_NONCE.bytesOrEmpty(), nonZeroPadding));
+
+    assertEquals(512, zeroPaddedCiphertext.length, "test payload should span two 256-byte blocks");
+
+    CryptoUsernameIdentityValidator validator = new CryptoUsernameIdentityValidator(true);
+
+    UsernameIdentity zeroPaddedIdentity =
+        validator.validate(
+            encryptedSession(SecurityPolicy.Basic256Sha256),
+            encryptedToken(SecurityPolicy.Basic256Sha256, zeroPaddedCiphertext));
+    assertEquals(USERNAME, zeroPaddedIdentity.getUsername());
+
+    UaException rejected =
+        assertThrows(
+            UaException.class,
+            () ->
+                validator.validate(
+                    encryptedSession(SecurityPolicy.Basic256Sha256),
+                    encryptedToken(SecurityPolicy.Basic256Sha256, nonZeroPaddedCiphertext)));
+    assertUniformEncryptedTokenFailure(rejected);
+
+    assertEquals(2, validator.decryptCount);
     assertEquals(1, validator.authenticateCount);
   }
 
@@ -1063,6 +1251,22 @@ class AbstractUsernameIdentityValidatorTest {
     return cipher.doFinal(plainText);
   }
 
+  private static byte[] encryptBlocks(SecurityPolicy securityPolicy, byte[] plainText)
+      throws Exception {
+    SecurityAlgorithm algorithm = securityPolicy.getAsymmetricEncryptionAlgorithm();
+    int plainTextBlockSize =
+        SecureChannel.getAsymmetricPlainTextBlockSize(rsaCertificate, algorithm);
+    Cipher cipher = CipherFactory.createForEncryption(algorithm, rsaCertificate.getPublicKey());
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+    for (int offset = 0; offset < plainText.length; offset += plainTextBlockSize) {
+      int chunkLength = Math.min(plainTextBlockSize, plainText.length - offset);
+      out.write(cipher.doFinal(plainText, offset, chunkLength));
+    }
+
+    return out.toByteArray();
+  }
+
   private static byte[] zeroedCopy(byte[] bytes) {
     byte[] copy = bytes.clone();
     Arrays.fill(copy, (byte) 0);
@@ -1075,6 +1279,10 @@ class AbstractUsernameIdentityValidatorTest {
   }
 
   private static byte[] tokenData(String password, byte[] nonce) {
+    return tokenDataWithPadding(password, nonce, new byte[0]);
+  }
+
+  private static byte[] tokenDataWithPadding(String password, byte[] nonce, byte[] padding) {
     byte[] passwordBytes = password.getBytes(StandardCharsets.UTF_8);
     byte[] lengthBytes = uint32LittleEndian(passwordBytes.length + nonce.length);
 
@@ -1083,6 +1291,7 @@ class AbstractUsernameIdentityValidatorTest {
       os.write(lengthBytes);
       os.write(passwordBytes);
       os.write(nonce);
+      os.write(padding);
       return os.toByteArray();
     } catch (IOException e) {
       throw new AssertionError(e);
