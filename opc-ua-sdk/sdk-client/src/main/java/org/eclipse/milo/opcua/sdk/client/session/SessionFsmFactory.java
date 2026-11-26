@@ -22,6 +22,7 @@ import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION_ACTIVITY_LISTENERS;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION_FUTURE;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION_INITIALIZERS;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SHELVED_CLOSE_SESSION;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_WAIT_FUTURE;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_WAIT_TIME;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
@@ -213,6 +214,12 @@ public class SessionFsmFactory {
         .viaAny()
         .execute(FsmContext::processShelvedEvents);
 
+    // Every route a CloseSession takes, shelved or not, ends here.
+    fb.onTransitionTo(State.Inactive)
+        .from(s -> s != State.Inactive)
+        .viaAny()
+        .execute(ctx -> KEY_SHELVED_CLOSE_SESSION.remove(ctx));
+
     /* Internal Transition Actions */
 
     fb.onInternalTransition(State.Inactive)
@@ -338,7 +345,7 @@ public class SessionFsmFactory {
               Event.CreateSessionFailure e = (Event.CreateSessionFailure) ctx.event();
 
               handleFailureToOpenSession(client, ctx, e.failure);
-              notifySessionAttemptFailed(ctx, e.failure);
+              notifySessionAttemptFailed(client, ctx, e.failure);
             });
 
     /* External Transition Actions */
@@ -416,7 +423,7 @@ public class SessionFsmFactory {
 
     fb.onInternalTransition(State.Creating)
         .via(Event.CloseSession.class)
-        .execute(ctx -> ctx.shelveEvent(ctx.event()));
+        .execute(SessionFsmFactory::shelveCloseSession);
   }
 
   private static void configureActivatingState(FsmBuilder<State, Event> fb, OpcUaClient client) {
@@ -434,7 +441,7 @@ public class SessionFsmFactory {
               Event.ActivateSessionFailure e = (Event.ActivateSessionFailure) ctx.event();
 
               handleFailureToOpenSession(client, ctx, e.failure);
-              notifySessionAttemptFailed(ctx, e.failure);
+              notifySessionAttemptFailed(client, ctx, e.failure);
             });
 
     /* External Transition Actions */
@@ -486,7 +493,7 @@ public class SessionFsmFactory {
 
     fb.onInternalTransition(State.Activating)
         .via(Event.CloseSession.class)
-        .execute(ctx -> ctx.shelveEvent(ctx.event()));
+        .execute(SessionFsmFactory::shelveCloseSession);
   }
 
   private static void configureTransferringState(FsmBuilder<State, Event> fb, OpcUaClient client) {
@@ -505,7 +512,7 @@ public class SessionFsmFactory {
                   (Event.TransferSubscriptionsFailure) ctx.event();
 
               handleFailureToOpenSession(client, ctx, e.failure);
-              notifySessionAttemptFailed(ctx, e.failure);
+              notifySessionAttemptFailed(client, ctx, e.failure);
             });
 
     /* External Transition Actions */
@@ -552,7 +559,7 @@ public class SessionFsmFactory {
 
     fb.onInternalTransition(State.Transferring)
         .via(Event.CloseSession.class)
-        .execute(ctx -> ctx.shelveEvent(ctx.event()));
+        .execute(SessionFsmFactory::shelveCloseSession);
   }
 
   private static void configureInitializingState(FsmBuilder<State, Event> fb, OpcUaClient client) {
@@ -568,7 +575,7 @@ public class SessionFsmFactory {
               Event.InitializeFailure e = (Event.InitializeFailure) ctx.event();
 
               handleFailureToOpenSession(client, ctx, e.failure);
-              notifySessionAttemptFailed(ctx, e.failure);
+              notifySessionAttemptFailed(client, ctx, e.failure);
             });
 
     /* External Transition Actions */
@@ -650,7 +657,7 @@ public class SessionFsmFactory {
 
     fb.onInternalTransition(State.Initializing)
         .via(Event.CloseSession.class)
-        .execute(ctx -> ctx.shelveEvent(ctx.event()));
+        .execute(SessionFsmFactory::shelveCloseSession);
   }
 
   private static void configureActiveState(FsmBuilder<State, Event> fb, OpcUaClient client) {
@@ -1112,7 +1119,7 @@ public class SessionFsmFactory {
               Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
 
               handleFailureToOpenSession(client, ctx, e.failure);
-              notifySessionAttemptFailed(ctx, e.failure);
+              notifySessionAttemptFailed(client, ctx, e.failure);
 
               // Reactivation is being abandoned in favor of creating a new Session. The old one may
               // still exist on the Server (the fault might have been e.g.
@@ -1136,7 +1143,7 @@ public class SessionFsmFactory {
               Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
 
               handleFailureToOpenSession(client, ctx, e.failure);
-              notifySessionAttemptFailed(ctx, e.failure);
+              notifySessionAttemptFailed(client, ctx, e.failure);
             });
 
     fb.when(State.Reactivating)
@@ -1185,7 +1192,7 @@ public class SessionFsmFactory {
 
     fb.onInternalTransition(State.Reactivating)
         .via(Event.CloseSession.class)
-        .execute(ctx -> ctx.shelveEvent(ctx.event()));
+        .execute(SessionFsmFactory::shelveCloseSession);
   }
 
   /**
@@ -1263,13 +1270,33 @@ public class SessionFsmFactory {
   }
 
   /**
+   * Shelve a CloseSession that arrived while an attempt is in progress, so the attempt can end
+   * first, and remember that it waits there.
+   */
+  private static void shelveCloseSession(ActionContext<State, Event> ctx) {
+    KEY_SHELVED_CLOSE_SESSION.set(ctx, (Event.CloseSession) ctx.event());
+
+    ctx.shelveEvent(ctx.event());
+  }
+
+  /**
    * Tell the {@link SessionActivityListener}s that an attempt failed and another will follow.
    *
    * <p>Call this on the edges a failed attempt takes into {@link State#CreatingWait} or {@link
    * State#ReactivatingWait}, and not on a {@link Event.CloseSession}: the application ending the
    * attempts is not a failure it needs to hear about.
    */
-  private static void notifySessionAttemptFailed(FsmContext<State, Event> ctx, Throwable failure) {
+  private static void notifySessionAttemptFailed(
+      OpcUaClient client, FsmContext<State, Event> ctx, Throwable failure) {
+
+    // Once the application has started to disconnect, a failed attempt is its own doing, and no
+    // retry follows that could succeed: a shelved CloseSession is processed as soon as the FSM
+    // reaches the wait state, and over a transport disconnected for good every attempt fails until
+    // the application connects again.
+    if (KEY_SHELVED_CLOSE_SESSION.get(ctx) != null || isTransportDisconnectedForGood(client)) {
+      return;
+    }
+
     Throwable cause = unwrapCompletionException(failure);
 
     notifySessionActivityListeners(ctx, listener -> listener.onSessionAttemptFailed(cause));

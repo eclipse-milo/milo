@@ -47,8 +47,9 @@ public interface SessionActivityListener {
    * own. It reactivates the Session after a connection loss, or creates and activates a new one,
    * and retries each failed attempt after a delay, for as long as it stays connected. This is
    * called once for every failed attempt, the first one made by {@code connect()} included, whose
-   * failure also completes {@code connect()} exceptionally. It is not called when disconnecting
-   * ends the attempts.
+   * failure also completes {@code connect()} exceptionally. It is not called once the application
+   * has started to disconnect: an attempt that fails while the client is disconnecting, or over a
+   * transport the application disconnected, is not reported.
    *
    * <p>When the Server rejected a request, {@code failure} is the {@link UaServiceFaultException}
    * carrying the Server's StatusCode, e.g. {@code Bad_UserAccessDenied}, {@code

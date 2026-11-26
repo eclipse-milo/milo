@@ -14,15 +14,21 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.channel.Channel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
 import org.eclipse.milo.opcua.sdk.client.SessionActivityListener;
 import org.eclipse.milo.opcua.sdk.client.UaSession;
 import org.eclipse.milo.opcua.sdk.client.identity.UsernameProvider;
@@ -37,6 +43,7 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
@@ -52,11 +59,15 @@ import org.junit.jupiter.api.Test;
  * account, and the callback is the only way the application learns why the Session isn't coming
  * back and that it should disconnect.
  *
- * <p>Each test runs a Server whose identity validator accepts a fixed number of logins and rejects
- * the rest, the way a Server does after the client's password has been changed or revoked. The
- * password travels unencrypted, which is when Milo's Server rejects it with {@code
+ * <p>Each test runs a Server whose identity validator the test switches between accepting and
+ * rejecting logins, the way a Server behaves once the client's password has been changed or
+ * revoked. The password travels unencrypted, which is when Milo's Server rejects it with {@code
  * Bad_UserAccessDenied}; it answers {@code Bad_IdentityTokenInvalid} to a rejected password that
  * arrived encrypted.
+ *
+ * <p>The tests that check that nothing is reported end with a Session the client activates
+ * afterward. Listeners hear about it after anything reported before it, so its {@code
+ * onSessionActive} shows, without waiting for a timeout, that nothing else was reported.
  */
 class SessionAttemptFailedTest {
 
@@ -68,11 +79,14 @@ class SessionAttemptFailedTest {
   // without unwrapping the future chain, and in order after the onSessionInactive it follows.
   @Test
   void rejectedReactivationIsReportedWithTheServerStatusAfterSessionInactive() throws Exception {
-    try (var fixture = new Fixture(1)) {
+    try (var fixture = new Fixture()) {
       var listener = new RecordingListener();
       fixture.client.addSessionActivityListener(listener);
 
+      fixture.acceptLogins();
       fixture.client.connect();
+
+      fixture.rejectLogins();
       fixture.loseConnection();
 
       assertEquals(
@@ -86,9 +100,11 @@ class SessionAttemptFailedTest {
   // listener that acts on every failure must not miss the first one.
   @Test
   void failedFirstAttemptMadeByConnectIsReported() throws Exception {
-    try (var fixture = new Fixture(0)) {
+    try (var fixture = new Fixture()) {
       var listener = new RecordingListener();
       fixture.client.addSessionActivityListener(listener);
+
+      fixture.rejectLogins();
 
       UaException connectFailure = assertThrows(UaException.class, fixture.client::connect);
 
@@ -97,11 +113,34 @@ class SessionAttemptFailedTest {
     }
   }
 
+  // The Server can refuse the Session itself, before the client's identity is ever checked.
+  @Test
+  void createSessionRejectedByTheServerIsReported() throws Exception {
+    OpcUaServerConfigLimits noSessions =
+        new OpcUaServerConfigLimits() {
+          @Override
+          public UInteger getMaxSessions() {
+            return uint(0);
+          }
+        };
+
+    try (var fixture = new Fixture(noSessions)) {
+      var listener = new RecordingListener();
+      fixture.client.addSessionActivityListener(listener);
+
+      assertThrows(UaException.class, fixture.client::connect);
+
+      assertEquals(
+          List.of("onSessionAttemptFailed(UaServiceFaultException, Bad_TooManySessions)"),
+          listener.next(1));
+    }
+  }
+
   // Listener code belongs to the application. A listener that throws must not stop the client
   // from recovering, or keep the listeners after it from hearing about the failed attempts.
   @Test
   void listenerThatThrowsDoesNotStopTheRetriesOrTheOtherListeners() throws Exception {
-    try (var fixture = new Fixture(1)) {
+    try (var fixture = new Fixture()) {
       var throwingListener =
           new SessionActivityListener() {
             @Override
@@ -113,7 +152,10 @@ class SessionAttemptFailedTest {
       fixture.client.addSessionActivityListener(throwingListener);
       fixture.client.addSessionActivityListener(listener);
 
+      fixture.acceptLogins();
       fixture.client.connect();
+
+      fixture.rejectLogins();
       fixture.loseConnection();
 
       assertEquals(
@@ -128,21 +170,94 @@ class SessionAttemptFailedTest {
   // application that disconnects on a failure a failure caused by its own disconnect.
   @Test
   void disconnectWhileWaitingToRetryIsNotReported() throws Exception {
-    try (var fixture = new Fixture(0)) {
+    try (var fixture = new Fixture()) {
       var listener = new RecordingListener();
       fixture.client.addSessionActivityListener(listener);
 
-      assertThrows(UaException.class, fixture.client::connect);
-      fixture.client.disconnectAsync().get(10, SECONDS);
+      fixture.rejectLogins();
+      // The retry is due a second after connect() fails. Should the test take longer than that to
+      // start the disconnect, the retry waits on the Server until the disconnect has started.
+      fixture.holdLoginsAfter(1);
 
-      // A later failed attempt is queued behind anything the disconnect reported, so its arrival
-      // shows that nothing was reported in between.
       assertThrows(UaException.class, fixture.client::connect);
+
+      CompletableFuture<OpcUaClient> disconnected = fixture.client.disconnectAsync();
+      fixture.releaseHeldLogins();
+      disconnected.get(10, SECONDS);
+
+      fixture.acceptLogins();
+      fixture.client.connect();
 
       assertEquals(
-          List.of(REJECTED, REJECTED),
+          List.of(REJECTED, "onSessionActive"),
           listener.next(2),
-          "the disconnect between two failed connects must not be reported as a failed attempt");
+          "the disconnect after the failed connect must not be reported as a failed attempt");
+    }
+  }
+
+  // A disconnect that starts while an attempt is in progress waits for the attempt to end, and no
+  // retry follows it however the attempt ends. Reporting the attempt's failure would hand the
+  // application a failure, caused by nothing it can act on, after its disconnect had returned.
+  @Test
+  void attemptInProgressWhenTheDisconnectStartsIsNotReported() throws Exception {
+    try (var fixture = new Fixture()) {
+      var listener = new RecordingListener();
+      fixture.client.addSessionActivityListener(listener);
+
+      fixture.rejectLogins();
+      fixture.holdLoginsAfter(0);
+
+      CompletableFuture<OpcUaClient> connected = fixture.client.connectAsync();
+      fixture.awaitHeldLogin();
+
+      CompletableFuture<OpcUaClient> disconnected = fixture.client.disconnectAsync();
+      fixture.releaseHeldLogins();
+      disconnected.get(10, SECONDS);
+
+      ExecutionException attemptFailure =
+          assertThrows(ExecutionException.class, () -> connected.get(10, SECONDS));
+      assertEquals(
+          StatusCodes.Bad_UserAccessDenied,
+          UaException.extractStatusCode(attemptFailure).orElseThrow().value(),
+          "the attempt in progress must have failed with the Server's rejection");
+
+      fixture.acceptLogins();
+      fixture.client.connect();
+
+      assertEquals(
+          List.of("onSessionActive"),
+          listener.next(1),
+          "the attempt that failed after the disconnect started must not be reported");
+    }
+  }
+
+  // Disconnecting the client while connect() is still connecting the transport leaves the client
+  // creating Sessions over a transport that nothing will connect again. Those attempts cannot
+  // succeed until the application connects, and it has disconnected, so none is reported. The
+  // test opens the Session over a transport that is not connected, which is where connect()
+  // continues once that disconnect has run.
+  @Test
+  void attemptsOverATransportThatIsDisconnectedForGoodAreNotReported() throws Exception {
+    try (var fixture = new Fixture()) {
+      var listener = new RecordingListener();
+      fixture.client.addSessionActivityListener(listener);
+
+      CompletableFuture<OpcUaSession> opened = fixture.client.getSessionFsm().openSession();
+
+      assertThrows(
+          ExecutionException.class,
+          () -> opened.get(10, SECONDS),
+          "an attempt over the disconnected transport must have failed");
+
+      // Connecting the transport lets a later attempt succeed, whichever attempt connectAsync()
+      // joins; its onSessionActive is all that may be reported.
+      fixture.acceptLogins();
+      fixture.client.connectAsync();
+
+      assertEquals(
+          List.of("onSessionActive"),
+          listener.next(1),
+          "attempts over a transport the application disconnected must not be reported");
     }
   }
 
@@ -191,9 +306,12 @@ class SessionAttemptFailedTest {
   }
 
   /**
-   * A running Server that accepts the first {@code acceptedLogins} logins and rejects every later
-   * one with {@code Bad_UserAccessDenied}, and a client, not yet connected, that logs in with a
-   * user name and password.
+   * A running Server whose logins the test controls, and a client, not yet connected, that logs in
+   * with a user name and password.
+   *
+   * <p>The Server rejects logins with {@code Bad_UserAccessDenied} until the test makes it accept
+   * them. The test can also make it hold logins, which keeps an attempt in progress, with its
+   * ActivateSession waiting for the Server's answer, until the test releases them.
    */
   private static final class Fixture implements AutoCloseable {
 
@@ -202,11 +320,20 @@ class SessionAttemptFailedTest {
             "username", UserTokenType.UserName, null, null, SecurityPolicy.None.getUri());
 
     private final AtomicInteger logins = new AtomicInteger(0);
+    private final Semaphore heldLogins = new Semaphore(0);
+    private final CountDownLatch heldLoginsReleased = new CountDownLatch(1);
+
+    private volatile boolean acceptingLogins = false;
+    private volatile int loginsAnsweredAtOnce = Integer.MAX_VALUE;
 
     private final OpcUaServer server;
     private final OpcUaClient client;
 
-    Fixture(int acceptedLogins) throws Exception {
+    Fixture() throws Exception {
+      this(new OpcUaServerConfigLimits() {});
+    }
+
+    Fixture(OpcUaServerConfigLimits limits) throws Exception {
       int port = TestPortAllocator.allocatePort();
 
       EndpointConfig endpoint =
@@ -224,13 +351,12 @@ class SessionAttemptFailedTest {
       server =
           TestServer.create(
                   port,
-                  new OpcUaServerConfigLimits() {},
+                  limits,
                   config ->
                       config
                           .setEndpoints(Set.of(endpoint))
                           .setIdentityValidator(
-                              new UsernameIdentityValidator(
-                                  challenge -> logins.incrementAndGet() <= acceptedLogins)))
+                              new UsernameIdentityValidator(challenge -> answerLogin())))
               .getServer();
       server.startup().get(10, SECONDS);
 
@@ -245,6 +371,34 @@ class SessionAttemptFailedTest {
                       .setKeepAliveInterval(uint(60_000)));
     }
 
+    /** Make the Server accept every login it answers from now on. */
+    void acceptLogins() {
+      acceptingLogins = true;
+    }
+
+    /** Make the Server reject every login it answers from now on. */
+    void rejectLogins() {
+      acceptingLogins = false;
+    }
+
+    /**
+     * Make the Server answer only the first {@code count} logins at once, and hold every later one
+     * until {@link #releaseHeldLogins()}.
+     */
+    void holdLoginsAfter(int count) {
+      loginsAnsweredAtOnce = count;
+    }
+
+    /** Wait until the Server holds a login, i.e. an attempt waits for the Server's answer. */
+    void awaitHeldLogin() throws InterruptedException {
+      assertTrue(heldLogins.tryAcquire(10, SECONDS), "no login reached the Server");
+    }
+
+    /** Answer the held logins, and every later one at once, as the Server answers them now. */
+    void releaseHeldLogins() {
+      heldLoginsReleased.countDown();
+    }
+
     /** Drop the SecureChannel, which moves the Session from Active to ReactivatingWait. */
     void loseConnection() throws Exception {
       var transport = (OpcTcpClientTransport) client.getTransport();
@@ -255,11 +409,29 @@ class SessionAttemptFailedTest {
 
     @Override
     public void close() throws Exception {
+      // A held login would keep the disconnect waiting for the attempt it belongs to.
+      releaseHeldLogins();
+
       try {
         client.disconnectAsync().get(10, SECONDS);
       } finally {
         server.shutdown().get(10, SECONDS);
       }
+    }
+
+    private boolean answerLogin() {
+      if (logins.incrementAndGet() > loginsAnsweredAtOnce) {
+        heldLogins.release();
+
+        try {
+          heldLoginsReleased.await();
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          return false;
+        }
+      }
+
+      return acceptingLogins;
     }
   }
 
