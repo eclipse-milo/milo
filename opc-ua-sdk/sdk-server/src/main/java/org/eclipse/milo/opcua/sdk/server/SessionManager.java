@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.server.access.ReadAccessScope;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.identity.IdentityValidator;
+import org.eclipse.milo.opcua.sdk.server.util.EndpointFilter;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
@@ -71,7 +72,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.SignedSoftwareCertific
 import org.eclipse.milo.opcua.stack.core.types.structured.UserIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
-import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.eclipse.milo.opcua.stack.core.util.TaskQueue;
 import org.eclipse.milo.opcua.stack.transport.server.EndpointSelectionKey;
@@ -277,33 +277,17 @@ public class SessionManager {
     SecurityPolicy securityPolicy = context.getSecureChannel().getSecurityPolicy();
     String transportProfileUri = context.getTransportProfile().getUri();
 
-    EndpointDescription[] serverEndpoints =
+    List<EndpointDescription> candidateEndpoints =
         server.getApplicationContext().getEndpointDescriptions().stream()
-            .filter(
-                ed -> {
-                  String endpointUrl = ed.getEndpointUrl();
-                  return endpointUrl == null || !endpointUrl.endsWith("/discovery");
-                })
-            .filter(ed -> endpointMatchesUrl(ed, request.getEndpointUrl()))
+            .filter(ed -> !EndpointFilter.isDiscoveryEndpoint(ed))
             .filter(ed -> Objects.equal(transportProfileUri, ed.getTransportProfileUri()))
+            .distinct()
+            .toList();
+
+    EndpointDescription[] serverEndpoints =
+        EndpointFilter.filterByHostOrDefault(candidateEndpoints, request.getEndpointUrl()).stream()
             .map(SessionManager::stripNonEssentialFields)
             .toArray(EndpointDescription[]::new);
-
-    if (serverEndpoints.length == 0) {
-      // GetEndpoints in UaStackServer returns *all* endpoints regardless of a hostname
-      // match in the endpoint URL if the result after filtering is 0 endpoints. Do the
-      // same here.
-      serverEndpoints =
-          server.getApplicationContext().getEndpointDescriptions().stream()
-              .filter(
-                  ed -> {
-                    String endpointUrl = ed.getEndpointUrl();
-                    return endpointUrl == null || !endpointUrl.endsWith("/discovery");
-                  })
-              .filter(ed -> Objects.equal(transportProfileUri, ed.getTransportProfileUri()))
-              .map(SessionManager::stripNonEssentialFields)
-              .toArray(EndpointDescription[]::new);
-    }
 
     ByteString clientNonce = request.getClientNonce();
 
@@ -877,21 +861,6 @@ public class SessionManager {
         clientCertificate,
         clientCertificateChain,
         secureChannel.getChannelThumbprint());
-  }
-
-  /**
-   * @param endpoint an {@link EndpointDescription}.
-   * @param requestedEndpointUrl an endpoint URL.
-   * @return {@code true} if the host in {@code endpoint} matches the host in {@code
-   *     requestedEndpointUrl}.
-   */
-  private static boolean endpointMatchesUrl(
-      EndpointDescription endpoint, String requestedEndpointUrl) {
-    String endpointHost = EndpointUtil.getHost(requireNonNullElse(endpoint.getEndpointUrl(), ""));
-    String requestedHost = EndpointUtil.getHost(requireNonNullElse(requestedEndpointUrl, ""));
-
-    return requireNonNullElse(endpointHost, "")
-        .equalsIgnoreCase(requireNonNullElse(requestedHost, ""));
   }
 
   /**

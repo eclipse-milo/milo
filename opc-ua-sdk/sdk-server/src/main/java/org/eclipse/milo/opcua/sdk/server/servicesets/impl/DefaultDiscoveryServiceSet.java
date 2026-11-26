@@ -10,16 +10,15 @@
 
 package org.eclipse.milo.opcua.sdk.server.servicesets.impl;
 
-import static java.util.stream.Collectors.toList;
 import static org.eclipse.milo.opcua.sdk.server.servicesets.AbstractServiceSet.createResponseHeader;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Supplier;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.servicesets.DiscoveryServiceSet;
+import org.eclipse.milo.opcua.sdk.server.util.EndpointFilter;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.ApplicationType;
@@ -35,7 +34,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.RegisterServer2Request
 import org.eclipse.milo.opcua.stack.core.types.structured.RegisterServer2Response;
 import org.eclipse.milo.opcua.stack.core.types.structured.RegisterServerRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.RegisterServerResponse;
-import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,33 +79,36 @@ public class DefaultDiscoveryServiceSet implements DiscoveryServiceSet {
             ? List.of(request.getProfileUris())
             : Collections.emptyList();
 
-    List<EndpointDescription> allEndpoints =
+    List<EndpointDescription> profileEndpoints =
         server.getApplicationContext().getEndpointDescriptions().stream()
-            .filter(
-                ed -> {
-                  String endpointUrl = ed.getEndpointUrl();
-                  return endpointUrl == null || !endpointUrl.endsWith("/discovery");
-                })
             .filter(ed -> filterProfileUris(ed, profileUris))
             .distinct()
             .toList();
 
-    ApplicationDescription filteredApplicationDescription =
-        getFilteredApplicationDescription(request.getEndpointUrl());
+    List<EndpointDescription> candidateEndpoints =
+        profileEndpoints.stream().filter(ed -> !EndpointFilter.isDiscoveryEndpoint(ed)).toList();
 
-    List<EndpointDescription> matchingEndpoints =
-        allEndpoints.stream()
-            .filter(endpoint -> filterEndpointUrls(endpoint, request.getEndpointUrl()))
+    List<EndpointDescription> selectedEndpoints =
+        EndpointFilter.filterByHostOrDefault(candidateEndpoints, request.getEndpointUrl());
+
+    if (selectedEndpoints.isEmpty()) {
+      return new GetEndpointsResponse(createResponseHeader(request), new EndpointDescription[0]);
+    }
+
+    ApplicationDescription filteredApplicationDescription =
+        createApplicationDescription(
+            EndpointFilter.filterDiscoveryUrlsForEndpoints(profileEndpoints, selectedEndpoints),
+            request.getEndpointUrl());
+
+    List<EndpointDescription> endpoints =
+        selectedEndpoints.stream()
             .map(
                 endpoint -> replaceApplicationDescription(endpoint, filteredApplicationDescription))
             .distinct()
             .toList();
 
     return new GetEndpointsResponse(
-        createResponseHeader(request),
-        matchingEndpoints.isEmpty()
-            ? allEndpoints.toArray(new EndpointDescription[0])
-            : matchingEndpoints.toArray(new EndpointDescription[0]));
+        createResponseHeader(request), endpoints.toArray(new EndpointDescription[0]));
   }
 
   @Override
@@ -119,7 +120,11 @@ public class DefaultDiscoveryServiceSet implements DiscoveryServiceSet {
             : Collections.emptyList();
 
     List<ApplicationDescription> applicationDescriptions = new ArrayList<>();
-    applicationDescriptions.add(getFilteredApplicationDescription(request.getEndpointUrl()));
+    applicationDescriptions.add(
+        createApplicationDescription(
+            EndpointFilter.filterDiscoveryUrls(
+                server.getApplicationContext().getEndpointDescriptions(), request.getEndpointUrl()),
+            request.getEndpointUrl()));
     applicationDescriptions.addAll(additionalServers.get());
 
     applicationDescriptions =
@@ -155,18 +160,6 @@ public class DefaultDiscoveryServiceSet implements DiscoveryServiceSet {
     return profileUris.isEmpty() || profileUris.contains(endpoint.getTransportProfileUri());
   }
 
-  private boolean filterEndpointUrls(EndpointDescription endpoint, String endpointUrl) {
-    try {
-      String requestedHost = EndpointUtil.getHost(endpointUrl);
-      String endpointHost = EndpointUtil.getHost(endpoint.getEndpointUrl());
-
-      return Objects.requireNonNullElse(requestedHost, "").equalsIgnoreCase(endpointHost);
-    } catch (Throwable e) {
-      logger.debug("Unable to create URI.", e);
-      return false;
-    }
-  }
-
   private EndpointDescription replaceApplicationDescription(
       EndpointDescription endpoint, ApplicationDescription applicationDescription) {
 
@@ -181,47 +174,10 @@ public class DefaultDiscoveryServiceSet implements DiscoveryServiceSet {
         endpoint.getSecurityLevel());
   }
 
-  private ApplicationDescription getFilteredApplicationDescription(String endpointUrl) {
-    List<String> allDiscoveryUrls =
-        server.getApplicationContext().getEndpointDescriptions().stream()
-            .map(EndpointDescription::getEndpointUrl)
-            .filter(Objects::nonNull)
-            .filter(url -> url.endsWith("/discovery"))
-            .distinct()
-            .collect(toList());
+  private ApplicationDescription createApplicationDescription(
+      List<String> discoveryUrls, String endpointUrl) {
 
-    if (allDiscoveryUrls.isEmpty()) {
-      allDiscoveryUrls =
-          server.getApplicationContext().getEndpointDescriptions().stream()
-              .map(EndpointDescription::getEndpointUrl)
-              .filter(Objects::nonNull)
-              .distinct()
-              .toList();
-    }
-
-    List<String> matchingDiscoveryUrls =
-        allDiscoveryUrls.stream()
-            .filter(
-                discoveryUrl -> {
-                  try {
-
-                    String requestedHost = EndpointUtil.getHost(endpointUrl);
-                    String discoveryHost = EndpointUtil.getHost(discoveryUrl);
-
-                    logger.debug(
-                        "requestedHost={}, discoveryHost={}", requestedHost, discoveryHost);
-
-                    return Objects.requireNonNullElse(requestedHost, "")
-                        .equalsIgnoreCase(discoveryHost);
-                  } catch (Throwable e) {
-                    logger.debug("Unable to create URI.", e);
-                    return false;
-                  }
-                })
-            .distinct()
-            .collect(toList());
-
-    logger.debug("Matching discovery URLs: {}", matchingDiscoveryUrls);
+    logger.debug("Discovery URLs for {}: {}", endpointUrl, discoveryUrls);
 
     return new ApplicationDescription(
         server.getConfig().getApplicationUri(),
@@ -230,9 +186,7 @@ public class DefaultDiscoveryServiceSet implements DiscoveryServiceSet {
         ApplicationType.Server,
         null,
         null,
-        matchingDiscoveryUrls.isEmpty()
-            ? allDiscoveryUrls.toArray(new String[0])
-            : matchingDiscoveryUrls.toArray(new String[0]));
+        discoveryUrls.toArray(new String[0]));
   }
 
   private boolean filterServerUris(ApplicationDescription ad, List<String> serverUris) {

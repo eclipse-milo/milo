@@ -35,6 +35,16 @@
  * security policy or certificate request cannot be served by the current runtime are omitted from
  * discovery advertisements.
  *
+ * <p>{@link org.eclipse.milo.opcua.sdk.server.servicesets.impl.DefaultDiscoveryServiceSet} and
+ * {@link org.eclipse.milo.opcua.sdk.server.SessionManager} share the same request-host filtering
+ * rule through {@link org.eclipse.milo.opcua.sdk.server.util.EndpointFilter}. Both services return
+ * the resolved endpoints whose host matches the client's request URL; when no advertised host
+ * matches, both fall back to one default HostName per transport profile — the first resolved
+ * endpoint's non-null host for that profile, preserving configured endpoint order — and discovery
+ * responses filter {@code ApplicationDescription.discoveryUrls} to match. This keeps {@code
+ * GetEndpoints} and {@code CreateSession} endpoint lists aligned for clients that perform Part 4
+ * §5.5.1 session endpoint validation.
+ *
  * <h2>Lifecycle extensions</h2>
  *
  * <p>{@link org.eclipse.milo.opcua.sdk.server.OpcUaServer#addLifecycleParticipant(
