@@ -21,6 +21,7 @@ import org.eclipse.milo.opcua.sdk.server.ManagedNamespaceWithLifecycle;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.access.RolePermissionsSupport;
 import org.eclipse.milo.opcua.sdk.server.items.BaseMonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.items.MonitoredDataItem;
 import org.eclipse.milo.opcua.sdk.server.methods.AbstractMethodInvocationHandler;
@@ -79,6 +80,7 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
         .addStartupTask(
             () -> {
               loadNodes();
+              clearRolePermissions();
               configureServerObject();
               configureConditionRefresh();
 
@@ -220,9 +222,43 @@ public class OpcUaNamespace extends ManagedNamespaceWithLifecycle {
 
     serverTypeNode.getServerRedundancyNode().setRedundancySupport(RedundancySupport.None);
 
+    configureNamespaceMetadata();
     configureGetMonitoredItems();
     configureResendData();
     configureAliasMethods();
+  }
+
+  private void clearRolePermissions() {
+    // Namespace 0 does not publish role permissions by default (OPC 10000-3 §5.2.9, §5.2.10).
+    // Clear nodeset-loaded values so RolePermissions and UserRolePermissions both answer
+    // Bad_AttributeIdInvalid unless an application explicitly configures them, and attach the
+    // shared derived UserRolePermissions filter so opting into RolePermissions on any standard
+    // node derives session-filtered UserRolePermissions and enforces ReadRolePermissions
+    // automatically unless overridden.
+    var derivedFilter = RolePermissionsSupport.derivedUserRolePermissionsFilter();
+    getNodeManager()
+        .getNodes()
+        .forEach(
+            n -> {
+              n.setRolePermissions(null);
+              n.getFilterChain().addLast(derivedFilter);
+            });
+  }
+
+  private void configureNamespaceMetadata() {
+    // Namespace 0 does not publish default role permissions (OPC 10000-3 §5.2.9, OPC 10000-5
+    // §6.3.13). Remove the optional properties rather than exposing null-valued defaults.
+    UaNode defaultRolePermissions =
+        getNodeManager().get(NodeIds.OPCUANamespaceMetadata_DefaultRolePermissions);
+    if (defaultRolePermissions != null) {
+      defaultRolePermissions.delete();
+    }
+
+    UaNode defaultUserRolePermissions =
+        getNodeManager().get(NodeIds.OPCUANamespaceMetadata_DefaultUserRolePermissions);
+    if (defaultUserRolePermissions != null) {
+      defaultUserRolePermissions.delete();
+    }
   }
 
   private void configureAliasMethods() {

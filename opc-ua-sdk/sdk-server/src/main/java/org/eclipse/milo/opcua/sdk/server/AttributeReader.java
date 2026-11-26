@@ -13,7 +13,9 @@ package org.eclipse.milo.opcua.sdk.server;
 import static org.eclipse.milo.opcua.stack.core.util.ArrayUtil.transformArray;
 
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.NumericRange;
+import org.eclipse.milo.opcua.sdk.core.WriteMask;
 import org.eclipse.milo.opcua.sdk.core.nodes.Node;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableTypeNode;
@@ -30,6 +32,7 @@ import org.eclipse.milo.opcua.stack.core.types.DataTypeEncoding;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
+import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.StructureDefinition;
 import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
 import org.jspecify.annotations.Nullable;
@@ -189,16 +192,63 @@ public class AttributeReader {
                 }
               }
             }
+            if (value == null) {
+              return new DataValue(StatusCodes.Bad_AttributeIdInvalid);
+            }
+            break;
           }
 
         case RolePermissions:
+          if (value == null) {
+            if (context.getSession().isPresent() && node instanceof UaNode) {
+              // UaNode.readAttribute already evaluated the session-scoped WriteMask (returning an
+              // empty RolePermissionType[0] array when writable or throwing on denial/failure), so
+              // null here means RolePermissions is unsupported for this Session.
+              return new DataValue(StatusCodes.Bad_AttributeIdInvalid);
+            }
+
+            try {
+              if (isRolePermissionsWritable(context, node)) {
+                // OPC 10000-3 §5.2.9: a Node that supports RolePermissions overrides exposes an
+                // empty array when no override is configured rather than Bad_AttributeIdInvalid.
+                value = new RolePermissionType[0];
+              } else {
+                return new DataValue(StatusCodes.Bad_AttributeIdInvalid);
+              }
+            } catch (UaException e) {
+              e.getDiagnostic().ifPresent(diagnostics);
+              return new DataValue(e.getStatusCode());
+            }
+          }
+          // UaNode.readAttribute already sanitizes and authorizes Session-scoped reads of
+          // RolePermissions and UserRolePermissions once; only sanitize here for sessionless or
+          // custom UaServerNode implementations so wire encoding never dereferences malformed
+          // entries.
+          if ((context.getSession().isEmpty() || !(node instanceof UaNode))
+              && value instanceof RolePermissionType[] rolePermissions) {
+            value = sanitizeRolePermissions(rolePermissions);
+          }
+          break;
+
         case UserRolePermissions:
-        case AccessRestrictions:
-        case AccessLevelEx:
-        case InverseName:
           if (value == null) {
             return new DataValue(StatusCodes.Bad_AttributeIdInvalid);
           }
+          if ((context.getSession().isEmpty() || !(node instanceof UaNode))
+              && value instanceof RolePermissionType[] rolePermissions) {
+            value = sanitizeRolePermissions(rolePermissions);
+          }
+          break;
+
+        case AccessRestrictions:
+        case AccessLevelEx:
+        case InverseName:
+        case WriteMask:
+        case UserWriteMask:
+          if (value == null) {
+            return new DataValue(StatusCodes.Bad_AttributeIdInvalid);
+          }
+          break;
       }
 
       if (indexRange != null && !indexRange.isEmpty()) {
@@ -218,6 +268,43 @@ public class AttributeReader {
           .applyTimestamps(attributeId, timestamps)
           .build();
     }
+  }
+
+  private static boolean isRolePermissionsWritable(AccessContext context, UaServerNode node)
+      throws UaException {
+
+    Object writeMask;
+    try {
+      writeMask = node.readAttribute(context, AttributeId.WriteMask);
+    } catch (UaException e) {
+      if (e.getStatusCode().getValue() == StatusCodes.Bad_AttributeIdInvalid) {
+        return false;
+      }
+      throw e;
+    }
+
+    if (writeMask == null) {
+      return false;
+    } else if (writeMask instanceof UInteger mask) {
+      return WriteMask.fromMask(mask).contains(WriteMask.RolePermissions);
+    } else {
+      throw new UaException(StatusCodes.Bad_TypeMismatch);
+    }
+  }
+
+  private static RolePermissionType[] sanitizeRolePermissions(
+      RolePermissionType[] rolePermissions) {
+
+    return Stream.of(rolePermissions)
+        .filter(AttributeReader::isValidRolePermission)
+        .toArray(RolePermissionType[]::new);
+  }
+
+  private static boolean isValidRolePermission(@Nullable RolePermissionType rolePermission) {
+    return rolePermission != null
+        && rolePermission.getRoleId() != null
+        && rolePermission.getPermissions() != null
+        && rolePermission.getPermissions().getValue() != null;
   }
 
   private static ExtensionObject transcode(

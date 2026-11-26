@@ -17,6 +17,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -41,6 +42,7 @@ import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Matrix;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -48,7 +50,11 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.structured.AccessLevelExType;
+import org.eclipse.milo.opcua.stack.core.types.structured.PermissionType;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
+import org.eclipse.milo.opcua.stack.core.types.structured.RolePermissionType;
 import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -956,7 +962,121 @@ public class AttributeWriterTest extends AbstractClientServerTest {
                 b.setUserWriteMask(UInteger.valueOf(0));
                 return b.buildAndAdd();
               });
+
+          UaVariableNode.build(
+              context,
+              b -> {
+                b.setNodeId(new NodeId(2, "WritableRolePermissions"));
+                b.setBrowseName(new QualifiedName(2, "WritableRolePermissions"));
+                b.setDisplayName(LocalizedText.english("WritableRolePermissions"));
+                b.setDataType(NodeIds.Int32);
+                b.setWriteMask(UInteger.valueOf(WriteMask.RolePermissions.getValue()));
+                b.setUserWriteMask(UInteger.valueOf(WriteMask.RolePermissions.getValue()));
+                return b.buildAndAdd();
+              });
         });
+  }
+
+  // OPC 10000-3 §5.2.9: writing an empty RolePermissions array removes the Node's override (stored
+  // as null), while writing null ExtensionObject elements is rejected with Bad_TypeMismatch.
+  @Test
+  void writeEmptyRolePermissionsClearsOverride() throws Exception {
+    NodeId nodeId = new NodeId(2, "WritableRolePermissions");
+    UaServerNode node = getManagedNode("WritableRolePermissions");
+    var override =
+        new RolePermissionType[] {
+          new RolePermissionType(
+              NodeIds.WellKnownRole_Anonymous,
+              PermissionType.of(
+                  PermissionType.Field.Browse,
+                  PermissionType.Field.Read,
+                  PermissionType.Field.ReadRolePermissions,
+                  PermissionType.Field.WriteRolePermissions))
+        };
+
+    // Set an explicit override through the Write service.
+    StatusCode setStatus =
+        client.write(
+                List.of(
+                    new WriteValue(
+                        nodeId,
+                        AttributeId.RolePermissions.uid(),
+                        null,
+                        DataValue.valueOnly(new Variant(override)))))
+            .getResults()[0];
+    assertEquals(StatusCode.GOOD, setStatus);
+    assertArrayEquals(override, node.getRolePermissions());
+
+    // Clear the override by writing an empty RolePermissionType[0] through the Write service.
+    StatusCode clearStatus =
+        client.write(
+                List.of(
+                    new WriteValue(
+                        nodeId,
+                        AttributeId.RolePermissions.uid(),
+                        null,
+                        DataValue.valueOnly(new Variant(new RolePermissionType[0])))))
+            .getResults()[0];
+    assertEquals(StatusCode.GOOD, clearStatus);
+    assertNull(node.getRolePermissions());
+
+    // OPC 10000-3 §5.2.9: reading RolePermissions on a writable node with no override returns
+    // Good with an empty array rather than Bad_AttributeIdInvalid, while non-writable nodes with
+    // no override still return Bad_AttributeIdInvalid.
+    DataValue clearedRead =
+        client.read(
+                0.0,
+                TimestampsToReturn.Neither,
+                List.of(
+                    new ReadValueId(
+                        nodeId, AttributeId.RolePermissions.uid(), null, QualifiedName.NULL_VALUE)))
+            .getResults()[0];
+    assertEquals(StatusCode.GOOD, clearedRead.statusCode());
+    assertArrayEquals(new ExtensionObject[0], (ExtensionObject[]) clearedRead.value().value());
+
+    DataValue nonWritableRead =
+        client.read(
+                0.0,
+                TimestampsToReturn.Neither,
+                List.of(
+                    new ReadValueId(
+                        new NodeId(2, "ReadWriteVariable"),
+                        AttributeId.RolePermissions.uid(),
+                        null,
+                        QualifiedName.NULL_VALUE)))
+            .getResults()[0];
+    assertEquals(new StatusCode(StatusCodes.Bad_AttributeIdInvalid), nonWritableRead.statusCode());
+
+    // Direct AttributeWriter call with RolePermissionType[0] also normalizes to null, while a null
+    // ExtensionObject element is rejected with Bad_TypeMismatch.
+    assertEquals(
+        StatusCode.GOOD,
+        AttributeWriter.writeAttribute(
+            AccessContext.INTERNAL,
+            node,
+            AttributeId.RolePermissions,
+            DataValue.valueOnly(new Variant(override)),
+            null));
+    assertArrayEquals(override, node.getRolePermissions());
+
+    assertEquals(
+        StatusCode.GOOD,
+        AttributeWriter.writeAttribute(
+            AccessContext.INTERNAL,
+            node,
+            AttributeId.RolePermissions,
+            DataValue.valueOnly(new Variant(new RolePermissionType[0])),
+            null));
+    assertNull(node.getRolePermissions());
+
+    assertEquals(
+        new StatusCode(StatusCodes.Bad_TypeMismatch),
+        AttributeWriter.writeAttribute(
+            AccessContext.INTERNAL,
+            node,
+            AttributeId.RolePermissions,
+            DataValue.valueOnly(new Variant(new ExtensionObject[] {null})),
+            null));
   }
 
   private UaServerNode getManagedNode(String identifier) {

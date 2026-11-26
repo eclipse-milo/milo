@@ -29,7 +29,10 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigLimits;
 import org.eclipse.milo.opcua.sdk.server.OperationDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.access.AccessController;
 import org.eclipse.milo.opcua.sdk.server.access.AccessController.AccessResult;
+import org.eclipse.milo.opcua.sdk.server.access.DefaultAccessController;
+import org.eclipse.milo.opcua.sdk.server.access.RolePermissionsReadScope;
 import org.eclipse.milo.opcua.sdk.server.servicesets.AbstractServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.AttributeServiceSet;
 import org.eclipse.milo.opcua.sdk.server.servicesets.Service;
@@ -163,8 +166,24 @@ public class DefaultAttributeServiceSet extends AbstractServiceSet implements At
       throw new UaException(StatusCodes.Bad_TimestampsToReturnInvalid);
     }
 
+    AccessController accessController = server.getAccessController();
+    if (accessController.getClass() == DefaultAccessController.class) {
+      try (RolePermissionsReadScope ignored = RolePermissionsReadScope.open(session)) {
+        return executeRead(request, session, nodesToRead, accessController);
+      }
+    } else {
+      return executeRead(request, session, nodesToRead, accessController);
+    }
+  }
+
+  private ReadResponse executeRead(
+      ReadRequest request,
+      Session session,
+      List<ReadValueId> nodesToRead,
+      AccessController accessController) {
+
     Map<ReadValueId, AccessResult> accessResults =
-        server.getAccessController().checkReadAccess(session, nodesToRead);
+        accessController.checkReadAccess(session, nodesToRead);
 
     ServiceDiagnostics diagnostics =
         ServiceDiagnostics.create(server, session, Service.ATTRIBUTE_READ, request);

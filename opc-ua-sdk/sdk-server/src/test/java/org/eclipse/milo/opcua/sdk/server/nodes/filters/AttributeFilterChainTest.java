@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
@@ -25,6 +26,8 @@ import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -247,5 +250,138 @@ public class AttributeFilterChainTest {
 
     // Should throw NullPointerException for consistency with addFirst/addLast
     assertThrows(NullPointerException.class, () -> chain.remove(null));
+  }
+
+  // AttributeFilters.getValue, setValue, and getSetValue must delegate non-intercepted attributes
+  // via ctx.readAttribute/ctx.writeAttribute rather than falling back to getAttribute/setAttribute,
+  // so downstream readAttribute and writeAttribute hooks remain reachable.
+  @Test
+  public void testAttributeFiltersForwardReadAndWriteAttribute() throws UaException {
+    var downstreamReadCalled = new AtomicBoolean(false);
+    var downstreamWriteCalled = new AtomicBoolean(false);
+    var downstream =
+        new AttributeFilter() {
+          @Override
+          public Object readAttribute(AttributeFilterContext ctx, AttributeId attributeId)
+              throws UaException {
+            downstreamReadCalled.set(true);
+            if (attributeId == AttributeId.Description) {
+              return LocalizedText.english("from-readAttribute");
+            }
+            if (attributeId == AttributeId.Value) {
+              return new DataValue(new Variant("downstream-value"));
+            }
+            return ctx.readAttribute(attributeId);
+          }
+
+          @Override
+          public void writeAttribute(
+              AttributeFilterContext ctx, AttributeId attributeId, Object value)
+              throws UaException {
+            downstreamWriteCalled.set(true);
+            throw new UaException(StatusCodes.Bad_OutOfRange);
+          }
+        };
+
+    // 1. AttributeFilters.getValue: intercepts Value read, delegates non-Value readAttribute and
+    // ALL writeAttribute calls (both Value and non-Value) downstream.
+    var getValueChain = new AttributeFilterChain();
+    getValueChain.addLast(
+        AttributeFilters.getValue(ctx -> new DataValue(new Variant("supplied-value"))), downstream);
+
+    assertEquals(
+        "supplied-value",
+        ((DataValue) getValueChain.readAttribute(null, null, AttributeId.Value)).value().value());
+    assertEquals(
+        LocalizedText.english("from-readAttribute"),
+        getValueChain.readAttribute(null, null, AttributeId.Description));
+    assertTrue(downstreamReadCalled.get());
+
+    assertEquals(
+        StatusCodes.Bad_OutOfRange,
+        assertThrows(
+                UaException.class,
+                () ->
+                    getValueChain.writeAttribute(
+                        null, null, AttributeId.Description, LocalizedText.english("x")))
+            .getStatusCode()
+            .getValue());
+    assertTrue(downstreamWriteCalled.get());
+
+    downstreamWriteCalled.set(false);
+    assertEquals(
+        StatusCodes.Bad_OutOfRange,
+        assertThrows(
+                UaException.class,
+                () ->
+                    getValueChain.writeAttribute(
+                        null, null, AttributeId.Value, new DataValue(new Variant("x"))))
+            .getStatusCode()
+            .getValue());
+    assertTrue(downstreamWriteCalled.get());
+
+    // 2. AttributeFilters.setValue: intercepts Value write, delegates ALL readAttribute calls
+    // (both Value and non-Value) and non-Value writeAttribute calls downstream.
+    var setValueTarget = new AtomicReference<DataValue>();
+    var setValueChain = new AttributeFilterChain();
+    setValueChain.addLast(
+        AttributeFilters.setValue((ctx, dv) -> setValueTarget.set(dv)), downstream);
+
+    downstreamReadCalled.set(false);
+    assertEquals(
+        "downstream-value",
+        ((DataValue) setValueChain.readAttribute(null, null, AttributeId.Value)).value().value());
+    assertEquals(
+        LocalizedText.english("from-readAttribute"),
+        setValueChain.readAttribute(null, null, AttributeId.Description));
+    assertTrue(downstreamReadCalled.get());
+
+    setValueChain.writeAttribute(
+        null, null, AttributeId.Value, new DataValue(new Variant("written")));
+    assertEquals("written", setValueTarget.get().value().value());
+
+    downstreamWriteCalled.set(false);
+    assertEquals(
+        StatusCodes.Bad_OutOfRange,
+        assertThrows(
+                UaException.class,
+                () ->
+                    setValueChain.writeAttribute(
+                        null, null, AttributeId.Description, LocalizedText.english("x")))
+            .getStatusCode()
+            .getValue());
+    assertTrue(downstreamWriteCalled.get());
+
+    // 3. AttributeFilters.getSetValue: intercepts Value read/write, delegates non-Value
+    // readAttribute and writeAttribute downstream.
+    var getSetTarget = new AtomicReference<DataValue>();
+    var getSetChain = new AttributeFilterChain();
+    getSetChain.addLast(
+        AttributeFilters.getSetValue(
+            ctx -> new DataValue(new Variant("getSet-value")), (ctx, dv) -> getSetTarget.set(dv)),
+        downstream);
+
+    assertEquals(
+        "getSet-value",
+        ((DataValue) getSetChain.readAttribute(null, null, AttributeId.Value)).value().value());
+    assertEquals(
+        LocalizedText.english("from-readAttribute"),
+        getSetChain.readAttribute(null, null, AttributeId.Description));
+
+    getSetChain.writeAttribute(
+        null, null, AttributeId.Value, new DataValue(new Variant("getSet-write")));
+    assertEquals("getSet-write", getSetTarget.get().value().value());
+
+    downstreamWriteCalled.set(false);
+    assertEquals(
+        StatusCodes.Bad_OutOfRange,
+        assertThrows(
+                UaException.class,
+                () ->
+                    getSetChain.writeAttribute(
+                        null, null, AttributeId.Description, LocalizedText.english("x")))
+            .getStatusCode()
+            .getValue());
+    assertTrue(downstreamWriteCalled.get());
   }
 }

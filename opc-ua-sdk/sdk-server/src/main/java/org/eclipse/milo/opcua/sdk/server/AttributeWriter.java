@@ -126,7 +126,11 @@ public class AttributeWriter {
           }
         }
       } else if (node instanceof UaVariableTypeNode variableTypeNode) {
-        EnumSet<WriteMask> writeMasks = WriteMask.fromMask(variableTypeNode.getWriteMask());
+        UInteger rawWriteMask = variableTypeNode.getWriteMask();
+        EnumSet<WriteMask> writeMasks =
+            rawWriteMask != null
+                ? WriteMask.fromMask(rawWriteMask)
+                : EnumSet.noneOf(WriteMask.class);
 
         if (!writeMasks.contains(WriteMask.ValueForVariableType)) {
           return new StatusCode(StatusCodes.Bad_NotWritable);
@@ -134,11 +138,24 @@ public class AttributeWriter {
       } else {
         return new StatusCode(StatusCodes.Bad_AttributeIdInvalid);
       }
+    } else if (attributeId == AttributeId.RolePermissions) {
+      try {
+        Set<WriteMask> writeMasks = WriteMask.fromMask(readWriteMask(context, node));
+        if (!writeMasks.contains(WriteMask.RolePermissions)) {
+          return new StatusCode(StatusCodes.Bad_NotWritable);
+        }
+      } catch (UaException e) {
+        e.getDiagnostic().ifPresent(diagnostics);
+        return e.getStatusCode();
+      }
     } else {
       // attributeId != AttributeId.Value && attributeId != AttributeId.UserRolePermissions
+      // && attributeId != AttributeId.RolePermissions
       WriteMask writeMask = WriteMask.forAttribute(attributeId);
 
-      Set<WriteMask> writeMasks = WriteMask.fromMask(node.getWriteMask());
+      UInteger rawWriteMask = node.getWriteMask();
+      Set<WriteMask> writeMasks =
+          rawWriteMask != null ? WriteMask.fromMask(rawWriteMask) : EnumSet.noneOf(WriteMask.class);
       if (!writeMasks.contains(writeMask)) {
         return new StatusCode(StatusCodes.Bad_NotWritable);
       }
@@ -257,7 +274,29 @@ public class AttributeWriter {
     }
   }
 
-  private static Object convertAttributeValue(
+  private static UInteger readWriteMask(AccessContext context, UaServerNode node)
+      throws UaException {
+
+    Object writeMask;
+    try {
+      writeMask = node.readAttribute(context, AttributeId.WriteMask);
+    } catch (UaException e) {
+      if (e.getStatusCode().getValue() == StatusCodes.Bad_AttributeIdInvalid) {
+        return UInteger.MIN;
+      }
+      throw e;
+    }
+
+    if (writeMask == null) {
+      return UInteger.MIN;
+    } else if (writeMask instanceof UInteger mask) {
+      return mask;
+    } else {
+      throw new UaException(StatusCodes.Bad_TypeMismatch);
+    }
+  }
+
+  private static @Nullable Object convertAttributeValue(
       UaNodeContext nodeContext, AttributeId attributeId, @Nullable Object value)
       throws UaException {
     if (value == null) {
@@ -354,13 +393,14 @@ public class AttributeWriter {
     throw new UaException(StatusCodes.Bad_TypeMismatch);
   }
 
-  private static RolePermissionType[] convertRolePermissions(
+  private static RolePermissionType @Nullable [] convertRolePermissions(
       UaNodeContext nodeContext, Object value) throws UaException {
 
-    if (value instanceof RolePermissionType[] rolePermissions) {
-      return rolePermissions;
+    RolePermissionType[] rolePermissions;
+    if (value instanceof RolePermissionType[] rpt) {
+      rolePermissions = rpt;
     } else if (value instanceof ExtensionObject[] extensionObjects) {
-      RolePermissionType[] rolePermissions = new RolePermissionType[extensionObjects.length];
+      rolePermissions = new RolePermissionType[extensionObjects.length];
 
       for (int i = 0; i < extensionObjects.length; i++) {
         UaStructuredType decoded = decodeExtensionObject(nodeContext, extensionObjects[i]);
@@ -370,15 +410,21 @@ public class AttributeWriter {
           throw new UaException(StatusCodes.Bad_TypeMismatch);
         }
       }
-
-      return rolePermissions;
+    } else {
+      throw new UaException(StatusCodes.Bad_TypeMismatch);
     }
 
-    throw new UaException(StatusCodes.Bad_TypeMismatch);
+    // OPC 10000-3 §5.2.9: writing an empty RolePermissions array removes the Node's override so
+    // it reverts to inherited or default permissions.
+    return rolePermissions.length == 0 ? null : rolePermissions;
   }
 
   private static UaStructuredType decodeExtensionObject(
-      UaNodeContext nodeContext, ExtensionObject extensionObject) throws UaException {
+      UaNodeContext nodeContext, @Nullable ExtensionObject extensionObject) throws UaException {
+
+    if (extensionObject == null || extensionObject.isNull()) {
+      throw new UaException(StatusCodes.Bad_TypeMismatch);
+    }
 
     try {
       return extensionObject.decode(nodeContext.getServer().getStaticEncodingContext());

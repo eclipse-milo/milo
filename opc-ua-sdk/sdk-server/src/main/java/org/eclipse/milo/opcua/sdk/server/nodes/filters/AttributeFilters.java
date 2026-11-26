@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.sdk.server.nodes.filters;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.jspecify.annotations.Nullable;
 
@@ -23,12 +24,29 @@ public final class AttributeFilters {
   public static AttributeFilter getValue(Function<AttributeFilterContext, DataValue> get) {
     return new AttributeFilter() {
       @Override
-      public Object getAttribute(AttributeFilterContext ctx, AttributeId attributeId) {
+      public @Nullable Object getAttribute(AttributeFilterContext ctx, AttributeId attributeId) {
         if (attributeId == AttributeId.Value) {
           return get.apply(ctx);
         } else {
           return ctx.getAttribute(attributeId);
         }
+      }
+
+      @Override
+      public @Nullable Object readAttribute(AttributeFilterContext ctx, AttributeId attributeId)
+          throws UaException {
+        if (attributeId == AttributeId.Value) {
+          return get.apply(ctx);
+        } else {
+          return ctx.readAttribute(attributeId);
+        }
+      }
+
+      @Override
+      public void writeAttribute(
+          AttributeFilterContext ctx, AttributeId attributeId, @Nullable Object value)
+          throws UaException {
+        ctx.writeAttribute(attributeId, value);
       }
     };
   }
@@ -36,11 +54,29 @@ public final class AttributeFilters {
   public static AttributeFilter setValue(BiConsumer<AttributeFilterContext, DataValue> set) {
     return new AttributeFilter() {
       @Override
-      public void setAttribute(AttributeFilterContext ctx, AttributeId attributeId, Object value) {
+      public @Nullable Object readAttribute(AttributeFilterContext ctx, AttributeId attributeId)
+          throws UaException {
+        return ctx.readAttribute(attributeId);
+      }
+
+      @Override
+      public void setAttribute(
+          AttributeFilterContext ctx, AttributeId attributeId, @Nullable Object value) {
         if (attributeId == AttributeId.Value) {
           set.accept(ctx, (DataValue) value);
         } else {
           ctx.setAttribute(attributeId, value);
+        }
+      }
+
+      @Override
+      public void writeAttribute(
+          AttributeFilterContext ctx, AttributeId attributeId, @Nullable Object value)
+          throws UaException {
+        if (attributeId == AttributeId.Value) {
+          set.accept(ctx, (DataValue) value);
+        } else {
+          ctx.writeAttribute(attributeId, value);
         }
       }
     };
@@ -61,12 +97,33 @@ public final class AttributeFilters {
       }
 
       @Override
+      public @Nullable Object readAttribute(AttributeFilterContext ctx, AttributeId attributeId)
+          throws UaException {
+        if (attributeId == AttributeId.Value) {
+          return get.apply(ctx);
+        } else {
+          return ctx.readAttribute(attributeId);
+        }
+      }
+
+      @Override
       public void setAttribute(
           AttributeFilterContext ctx, AttributeId attributeId, @Nullable Object value) {
         if (attributeId == AttributeId.Value) {
           set.accept(ctx, (DataValue) value);
         } else {
           ctx.setAttribute(attributeId, value);
+        }
+      }
+
+      @Override
+      public void writeAttribute(
+          AttributeFilterContext ctx, AttributeId attributeId, @Nullable Object value)
+          throws UaException {
+        if (attributeId == AttributeId.Value) {
+          set.accept(ctx, (DataValue) value);
+        } else {
+          ctx.writeAttribute(attributeId, value);
         }
       }
     };

@@ -18,6 +18,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnosticsAccessMode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.SessionsDiagnosticsSummaryTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.SessionDiagnosticsVariableTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnosticsArrayTypeNode;
@@ -53,13 +54,13 @@ class SessionsDiagnosticsSummaryObjectTest {
   }
 
   /**
-   * The staged-graph hook must converge with the legacy post-hoc patch: security diagnostics
-   * Variables and their fields carry the standard security array's RolePermissions,
-   * UserRolePermissions, and AccessRestrictions, while ordinary SessionDiagnostics Variables retain
+   * In RESTRICTED mode, security diagnostics Variables and their fields receive the security
+   * array's AccessRestrictions while leaving local RolePermissions and UserRolePermissions null so
+   * they inherit the array's live policy dynamically. Ordinary SessionDiagnostics Variables retain
    * their separate standard permissions.
    */
   @Test
-  void securityDiagnosticsAccessControlProtectsOnlySecurityDiagnosticsSubtree() {
+  void securityDiagnosticsAccessControlProtectsOnlySecurityDiagnosticsSubtreeInRestrictedMode() {
     var summaryNode = mock(SessionsDiagnosticsSummaryTypeNode.class);
     var securityArray = mock(SessionSecurityDiagnosticsArrayTypeNode.class);
     var securityDiagnostics = mock(SessionSecurityDiagnosticsTypeNode.class);
@@ -83,7 +84,55 @@ class SessionsDiagnosticsSummaryObjectTest {
     when(securityArray.getAccessRestrictions()).thenReturn(accessRestrictions);
 
     InstantiationRequest.OnNode hook =
-        SessionsDiagnosticsSummaryObject.securityDiagnosticsAccessControl(summaryNode);
+        SessionsDiagnosticsSummaryObject.securityDiagnosticsAccessControl(
+            summaryNode, SessionSecurityDiagnosticsAccessMode.RESTRICTED);
+
+    hook.accept(mock(InstanceDeclaration.class), securityDiagnostics, null, graph);
+    hook.accept(mock(InstanceDeclaration.class), securityField, securityDiagnostics, graph);
+    hook.accept(mock(InstanceDeclaration.class), ordinaryDiagnostics, null, graph);
+    hook.accept(mock(InstanceDeclaration.class), ordinaryField, ordinaryDiagnostics, graph);
+
+    verify(securityDiagnostics).setRolePermissions(null);
+    verify(securityDiagnostics).setUserRolePermissions(null);
+    verify(securityDiagnostics).setAccessRestrictions(accessRestrictions);
+    verify(securityField).setRolePermissions(null);
+    verify(securityField).setUserRolePermissions(null);
+    verify(securityField).setAccessRestrictions(accessRestrictions);
+    verifyNoInteractions(ordinaryDiagnostics, ordinaryField);
+  }
+
+  /**
+   * In LEGACY mode (where no dynamic role filters are installed on the elements), the staged-graph
+   * hook copies any stored RolePermissions, UserRolePermissions, and AccessRestrictions directly
+   * onto the security diagnostics subtree while leaving ordinary SessionDiagnostics untouched.
+   */
+  @Test
+  void securityDiagnosticsAccessControlCopiesStoredPermissionsInLegacyMode() {
+    var summaryNode = mock(SessionsDiagnosticsSummaryTypeNode.class);
+    var securityArray = mock(SessionSecurityDiagnosticsArrayTypeNode.class);
+    var securityDiagnostics = mock(SessionSecurityDiagnosticsTypeNode.class);
+    var securityField = mock(UaVariableNode.class);
+    var ordinaryDiagnostics = mock(SessionDiagnosticsVariableTypeNode.class);
+    var ordinaryField = mock(UaVariableNode.class);
+    var graph = mock(StagedGraph.class);
+    var rolePermissions =
+        new RolePermissionType[] {
+          new RolePermissionType(
+              NodeIds.WellKnownRole_SecurityAdmin,
+              PermissionType.of(PermissionType.Field.Browse, PermissionType.Field.Read))
+        };
+    var accessRestrictions =
+        AccessRestrictionType.of(
+            AccessRestrictionType.Field.SigningRequired,
+            AccessRestrictionType.Field.EncryptionRequired);
+
+    when(summaryNode.getSessionSecurityDiagnosticsArrayNode()).thenReturn(securityArray);
+    when(securityArray.getRolePermissions()).thenReturn(rolePermissions);
+    when(securityArray.getAccessRestrictions()).thenReturn(accessRestrictions);
+
+    InstantiationRequest.OnNode hook =
+        SessionsDiagnosticsSummaryObject.securityDiagnosticsAccessControl(
+            summaryNode, SessionSecurityDiagnosticsAccessMode.LEGACY);
 
     hook.accept(mock(InstanceDeclaration.class), securityDiagnostics, null, graph);
     hook.accept(mock(InstanceDeclaration.class), securityField, securityDiagnostics, graph);
