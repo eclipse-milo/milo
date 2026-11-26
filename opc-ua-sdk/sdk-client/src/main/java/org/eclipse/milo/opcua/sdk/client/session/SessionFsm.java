@@ -133,6 +133,17 @@ public class SessionFsm {
   static final FsmContext.Key<CloseFuture> KEY_CLOSE_FUTURE =
       new FsmContext.Key<>("closeFuture", CloseFuture.class);
 
+  /**
+   * A CloseSession that arrived while an attempt was in progress, and waits on the shelf until the
+   * attempt ends.
+   *
+   * <p>Set when a CloseSession is shelved and removed on entry to {@link State#Inactive}, which
+   * every route a CloseSession takes ends in. While it is set no attempt is retried, so a failed
+   * attempt is not reported to {@link SessionActivityListener#onSessionAttemptFailed(Throwable)}.
+   */
+  static final FsmContext.Key<Event.CloseSession> KEY_SHELVED_CLOSE_SESSION =
+      new FsmContext.Key<>("shelvedCloseSession", Event.CloseSession.class);
+
   static final FsmContext.Key<OpcUaSession> KEY_SESSION =
       new FsmContext.Key<>("session", OpcUaSession.class);
 

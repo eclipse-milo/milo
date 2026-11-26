@@ -45,8 +45,10 @@ import io.netty.util.Timeout;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.stack.core.Stack;
@@ -61,13 +63,15 @@ import org.eclipse.milo.opcua.stack.core.types.structured.RequestHeader;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.eclipse.milo.opcua.stack.transport.client.AbstractUascClientTransport;
+import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
 import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.ClientSecureChannel;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OpcWebSocketClientTransport extends AbstractUascClientTransport {
+public class OpcWebSocketClientTransport extends AbstractUascClientTransport
+    implements ChannelStateObservable {
 
   private static final FsmContext.Key<ClientApplicationContext> KEY_CLIENT_APPLICATION =
       new FsmContext.Key<>("clientApplication", ClientApplicationContext.class);
@@ -79,6 +83,9 @@ public class OpcWebSocketClientTransport extends AbstractUascClientTransport {
   private final ChannelFsm channelFsm;
 
   private final OpcWebSocketClientTransportConfig config;
+
+  private final List<ChannelStateObservable.TransitionListener> transitionListeners =
+      new CopyOnWriteArrayList<>();
 
   public OpcWebSocketClientTransport(OpcWebSocketClientTransportConfig config) {
     super(config);
@@ -102,6 +109,18 @@ public class OpcWebSocketClientTransport extends AbstractUascClientTransport {
     var factory = new ChannelFsmFactory(fsmConfig);
 
     channelFsm = factory.newChannelFsm();
+
+    channelFsm.addTransitionListener(
+        (from, to, via) -> {
+          if (via instanceof Event.ConnectFailure connectFailure) {
+            notifyConnectFailure(connectFailure.failure);
+          }
+          if (from != State.Connected && to == State.Connected) {
+            notifyTransitionListeners(true);
+          } else if (from == State.Connected && to != State.Connected) {
+            notifyTransitionListeners(false);
+          }
+        });
   }
 
   @Override
@@ -124,6 +143,63 @@ public class OpcWebSocketClientTransport extends AbstractUascClientTransport {
   @Override
   protected CompletableFuture<Channel> getChannel() {
     return channelFsm.getChannel();
+  }
+
+  @Override
+  public void addTransitionListener(ChannelStateObservable.TransitionListener listener) {
+    transitionListeners.add(listener);
+  }
+
+  @Override
+  public void removeTransitionListener(ChannelStateObservable.TransitionListener listener) {
+    transitionListeners.remove(listener);
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>The state follows this transport's {@link ChannelFsm}:
+   *
+   * <ul>
+   *   <li>{@code NotConnected} is {@link ChannelState#DISCONNECTED}: before the first connect, and
+   *       after {@link #disconnect()}.
+   *   <li>{@code Connecting} is {@link ChannelState#CONNECTING}.
+   *   <li>{@code Connected} is {@link ChannelState#CONNECTED}.
+   *   <li>{@code ReconnectWait} and {@code Reconnecting} are {@link ChannelState#RECONNECTING}: the
+   *       transport reconnects on its own after a failed connect or a lost channel.
+   *   <li>{@code Disconnecting} is {@link ChannelState#DISCONNECTING}.
+   * </ul>
+   */
+  @Override
+  public ChannelState getChannelState() {
+    return switch (channelFsm.getState()) {
+      case NotConnected -> ChannelState.DISCONNECTED;
+      case Connecting -> ChannelState.CONNECTING;
+      case Connected -> ChannelState.CONNECTED;
+      // Idle is reached only by a lazy ChannelFsm, which reconnects on the next request.
+      case Idle, ReconnectWait, Reconnecting -> ChannelState.RECONNECTING;
+      case Disconnecting -> ChannelState.DISCONNECTING;
+    };
+  }
+
+  private void notifyConnectFailure(Throwable failure) {
+    for (ChannelStateObservable.TransitionListener listener : transitionListeners) {
+      try {
+        listener.onConnectFailure(failure);
+      } catch (Throwable t) {
+        logger.warn("Channel connect failure listener failed.", t);
+      }
+    }
+  }
+
+  private void notifyTransitionListeners(boolean connected) {
+    for (ChannelStateObservable.TransitionListener listener : transitionListeners) {
+      try {
+        listener.onStateTransition(connected);
+      } catch (Throwable t) {
+        logger.warn("Channel state transition listener failed.", t);
+      }
+    }
   }
 
   private class ClientChannelActions implements ChannelActions {

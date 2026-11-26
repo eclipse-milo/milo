@@ -19,7 +19,11 @@
  * waits to run. Consumers such as the publishing manager observe inactive before the subsequent
  * active notification, which lets them suspend and recover their work in that order. Rejected
  * dispatch runs inline to preserve this lifecycle ordering; the client does not shut down the
- * caller's executor.
+ * caller's executor. Every failed attempt that the state machine will retry is reported in the same
+ * order, with its cause, so an application can see why the Session is not coming back and
+ * disconnect to stop the retries. An attempt that fails after the application started to disconnect
+ * is not reported, whether it was in progress then or runs over a transport that is disconnected. A
+ * listener that throws is logged and does not affect the state machine or the other listeners.
  *
  * <p>Initializers participate in Session activation. They must complete before operations waiting
  * for an active Session can proceed. Cleanup during initialization must therefore avoid waiting on

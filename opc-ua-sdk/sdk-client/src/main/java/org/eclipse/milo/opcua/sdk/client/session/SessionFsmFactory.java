@@ -22,6 +22,7 @@ import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION_ACTIVITY_LISTENERS;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION_FUTURE;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SESSION_INITIALIZERS;
+import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_SHELVED_CLOSE_SESSION;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_WAIT_FUTURE;
 import static org.eclipse.milo.opcua.sdk.client.session.SessionFsm.KEY_WAIT_TIME;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
@@ -46,10 +47,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -211,6 +214,12 @@ public class SessionFsmFactory {
         .viaAny()
         .execute(FsmContext::processShelvedEvents);
 
+    // Every route a CloseSession takes, shelved or not, ends here.
+    fb.onTransitionTo(State.Inactive)
+        .from(s -> s != State.Inactive)
+        .viaAny()
+        .execute(ctx -> KEY_SHELVED_CLOSE_SESSION.remove(ctx));
+
     /* Internal Transition Actions */
 
     fb.onInternalTransition(State.Inactive)
@@ -335,6 +344,7 @@ public class SessionFsmFactory {
             ctx -> {
               Event.CreateSessionFailure e = (Event.CreateSessionFailure) ctx.event();
 
+              notifySessionAttemptFailed(client, ctx, e.failure);
               handleFailureToOpenSession(client, ctx, e.failure);
             });
 
@@ -413,7 +423,7 @@ public class SessionFsmFactory {
 
     fb.onInternalTransition(State.Creating)
         .via(Event.CloseSession.class)
-        .execute(ctx -> ctx.shelveEvent(ctx.event()));
+        .execute(SessionFsmFactory::shelveCloseSession);
   }
 
   private static void configureActivatingState(FsmBuilder<State, Event> fb, OpcUaClient client) {
@@ -430,6 +440,7 @@ public class SessionFsmFactory {
             ctx -> {
               Event.ActivateSessionFailure e = (Event.ActivateSessionFailure) ctx.event();
 
+              notifySessionAttemptFailed(client, ctx, e.failure);
               handleFailureToOpenSession(client, ctx, e.failure);
             });
 
@@ -482,7 +493,7 @@ public class SessionFsmFactory {
 
     fb.onInternalTransition(State.Activating)
         .via(Event.CloseSession.class)
-        .execute(ctx -> ctx.shelveEvent(ctx.event()));
+        .execute(SessionFsmFactory::shelveCloseSession);
   }
 
   private static void configureTransferringState(FsmBuilder<State, Event> fb, OpcUaClient client) {
@@ -500,6 +511,7 @@ public class SessionFsmFactory {
               Event.TransferSubscriptionsFailure e =
                   (Event.TransferSubscriptionsFailure) ctx.event();
 
+              notifySessionAttemptFailed(client, ctx, e.failure);
               handleFailureToOpenSession(client, ctx, e.failure);
             });
 
@@ -547,7 +559,7 @@ public class SessionFsmFactory {
 
     fb.onInternalTransition(State.Transferring)
         .via(Event.CloseSession.class)
-        .execute(ctx -> ctx.shelveEvent(ctx.event()));
+        .execute(SessionFsmFactory::shelveCloseSession);
   }
 
   private static void configureInitializingState(FsmBuilder<State, Event> fb, OpcUaClient client) {
@@ -562,6 +574,7 @@ public class SessionFsmFactory {
             ctx -> {
               Event.InitializeFailure e = (Event.InitializeFailure) ctx.event();
 
+              notifySessionAttemptFailed(client, ctx, e.failure);
               handleFailureToOpenSession(client, ctx, e.failure);
             });
 
@@ -644,7 +657,7 @@ public class SessionFsmFactory {
 
     fb.onInternalTransition(State.Initializing)
         .via(Event.CloseSession.class)
-        .execute(ctx -> ctx.shelveEvent(ctx.event()));
+        .execute(SessionFsmFactory::shelveCloseSession);
   }
 
   private static void configureActiveState(FsmBuilder<State, Event> fb, OpcUaClient client) {
@@ -793,13 +806,7 @@ public class SessionFsmFactory {
             ctx -> {
               OpcUaSession session = KEY_SESSION.get(ctx);
 
-              SessionFsm.SessionActivityListeners sessionActivityListeners =
-                  KEY_SESSION_ACTIVITY_LISTENERS.get(ctx);
-
-              sessionActivityListeners.executor.execute(
-                  () ->
-                      sessionActivityListeners.sessionActivityListeners.forEach(
-                          listener -> listener.onSessionActive(session)));
+              notifySessionActivityListeners(ctx, listener -> listener.onSessionActive(session));
             });
 
     // onSessionInactive() callbacks
@@ -810,13 +817,7 @@ public class SessionFsmFactory {
             ctx -> {
               OpcUaSession session = KEY_SESSION.get(ctx);
 
-              SessionFsm.SessionActivityListeners sessionActivityListeners =
-                  KEY_SESSION_ACTIVITY_LISTENERS.get(ctx);
-
-              sessionActivityListeners.executor.execute(
-                  () ->
-                      sessionActivityListeners.sessionActivityListeners.forEach(
-                          listener -> listener.onSessionInactive(session)));
+              notifySessionActivityListeners(ctx, listener -> listener.onSessionInactive(session));
             });
 
     /* Internal Transition Actions */
@@ -1103,6 +1104,9 @@ public class SessionFsmFactory {
               // The Session can't be closed on the Server without a channel to send the request
               // over; it is left to expire when the Session timeout elapses (Part 4 §5.6.2).
               handleFailureToOpenSession(client, ctx, e.failure);
+
+              // Not reported to onSessionAttemptFailed(): no attempt follows, and only the
+              // application disconnecting the transport gets the FSM here.
             });
 
     fb.when(State.Reactivating)
@@ -1114,6 +1118,7 @@ public class SessionFsmFactory {
 
               Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
 
+              notifySessionAttemptFailed(client, ctx, e.failure);
               handleFailureToOpenSession(client, ctx, e.failure);
 
               // Reactivation is being abandoned in favor of creating a new Session. The old one may
@@ -1137,6 +1142,7 @@ public class SessionFsmFactory {
             ctx -> {
               Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
 
+              notifySessionAttemptFailed(client, ctx, e.failure);
               handleFailureToOpenSession(client, ctx, e.failure);
             });
 
@@ -1186,30 +1192,24 @@ public class SessionFsmFactory {
 
     fb.onInternalTransition(State.Reactivating)
         .via(Event.CloseSession.class)
-        .execute(ctx -> ctx.shelveEvent(ctx.event()));
+        .execute(SessionFsmFactory::shelveCloseSession);
   }
 
   /**
    * Check whether the transport is disconnected in a way that nothing will undo on its own.
    *
-   * <p>The ChannelFsm is configured persistent, so a channel that drops unexpectedly is reconnected
-   * without any help from the Session. {@code NotConnected} is the exception: it is reached only
-   * when the application deliberately disconnects the transport, its only outbound edge is an
-   * explicit Connect, and every request attempted from it fails immediately. A Session has nothing
-   * left to reactivate over until the application connects again.
+   * <p>A transport that loses its connection reconnects without any help from the Session. One
+   * whose channel state is {@link ChannelStateObservable.ChannelState#DISCONNECTED} is the
+   * exception: it makes no attempt to connect until the application connects it again, and every
+   * request attempted over it fails. A Session has nothing left to reactivate over until then. A
+   * transport that does not report its channel state may reconnect.
    *
    * @param client the {@link OpcUaClient} the Session belongs to.
    * @return {@code true} if the transport is disconnected and will not reconnect on its own.
    */
   private static boolean isTransportDisconnectedForGood(OpcUaClient client) {
-    OpcClientTransport transport = client.getTransport();
-
-    if (transport instanceof OpcTcpClientTransport tcpClientTransport) {
-      return tcpClientTransport.getChannelFsm().getState()
-          == com.digitalpetri.netty.fsm.State.NotConnected;
-    } else {
-      return false;
-    }
+    return client.getTransport() instanceof ChannelStateObservable observable
+        && observable.getChannelState() == ChannelStateObservable.ChannelState.DISCONNECTED;
   }
 
   private static void handleGetSessionEvent(ActionContext<State, Event> ctx) {
@@ -1261,6 +1261,86 @@ public class SessionFsmFactory {
     if (pendingSession != null) {
       abandonSession(ctx, client, pendingSession);
     }
+  }
+
+  /**
+   * Shelve a CloseSession that arrived while an attempt is in progress, so the attempt can end
+   * first, and remember that it waits there.
+   */
+  private static void shelveCloseSession(ActionContext<State, Event> ctx) {
+    KEY_SHELVED_CLOSE_SESSION.set(ctx, (Event.CloseSession) ctx.event());
+
+    ctx.shelveEvent(ctx.event());
+  }
+
+  /**
+   * Tell the {@link SessionActivityListener}s that an attempt failed and another will follow.
+   *
+   * <p>Call this on the edges a failed attempt takes into {@link State#CreatingWait} or {@link
+   * State#ReactivatingWait}, and not on a {@link Event.CloseSession}: the application ending the
+   * attempts is not a failure it needs to hear about.
+   *
+   * <p>Call it before {@link #handleFailureToOpenSession}, which hands the failure to whoever waits
+   * for the Session, so the check sees the transport as it was when the attempt failed. Otherwise
+   * an application that connects again as soon as {@code connect()} fails can move the transport
+   * out of its disconnected state first, and an attempt made while it was disconnected is reported.
+   */
+  private static void notifySessionAttemptFailed(
+      OpcUaClient client, FsmContext<State, Event> ctx, Throwable failure) {
+
+    // Once the application has started to disconnect, a failed attempt is its own doing, and no
+    // retry follows that could succeed: a shelved CloseSession is processed as soon as the FSM
+    // reaches the wait state, and over a transport disconnected for good every attempt fails until
+    // the application connects again.
+    if (KEY_SHELVED_CLOSE_SESSION.get(ctx) != null || isTransportDisconnectedForGood(client)) {
+      return;
+    }
+
+    Throwable cause = unwrapCompletionException(failure);
+
+    notifySessionActivityListeners(ctx, listener -> listener.onSessionAttemptFailed(cause));
+  }
+
+  /**
+   * Get the exception a request failed with, without the {@link CompletionException}s a future
+   * chain wrapped it in.
+   */
+  private static Throwable unwrapCompletionException(Throwable failure) {
+    Throwable cause = failure;
+
+    while (cause instanceof CompletionException && cause.getCause() != null) {
+      cause = cause.getCause();
+    }
+
+    return cause;
+  }
+
+  /**
+   * Run {@code notification} for each {@link SessionActivityListener} on the listeners' sequential
+   * executor, so listeners see notifications in the order the transitions that queued them ran. A
+   * listener that throws is logged and the others are still notified.
+   */
+  private static void notifySessionActivityListeners(
+      FsmContext<State, Event> ctx, Consumer<SessionActivityListener> notification) {
+
+    SessionFsm.SessionActivityListeners sessionActivityListeners =
+        KEY_SESSION_ACTIVITY_LISTENERS.get(ctx);
+
+    String instanceId = ctx.getUserContext().toString();
+
+    sessionActivityListeners.executor.execute(
+        () -> {
+          for (SessionActivityListener listener :
+              sessionActivityListeners.sessionActivityListeners) {
+            try {
+              notification.accept(listener);
+            } catch (Throwable t) {
+              try (MDCCloseable ignored = MDC.putCloseable("instance-id", instanceId)) {
+                LOGGER.warn("SessionActivityListener failed: {}", listener, t);
+              }
+            }
+          }
+        });
   }
 
   private static CompletableFuture<Unit> closeSession(
