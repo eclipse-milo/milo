@@ -15,11 +15,16 @@ import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
@@ -39,6 +44,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.AnonymousIdentityToken
 import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.IssuedIdentityToken;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserNameIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.X509IdentityToken;
@@ -84,8 +90,14 @@ public class Session {
 
   private final LinkedList<String> clientUserIdHistory = new LinkedList<>();
 
-  private final Map<ByteString, ContinuationPoint> browseContinuationPoints =
-      new ConcurrentHashMap<>();
+  // Insertion-ordered so the oldest prior-request continuation points can be reclaimed first.
+  // All accesses synchronize on synchronizedBrowseContinuationPoints, which is also the monitor
+  // used by Collections.synchronizedMap.
+  private final LinkedHashMap<ByteString, ContinuationPoint> browseContinuationPoints =
+      new LinkedHashMap<>();
+
+  private final Map<ByteString, ContinuationPoint> synchronizedBrowseContinuationPoints =
+      Collections.synchronizedMap(browseContinuationPoints);
 
   private final Semaphore callSemaphore = new Semaphore(CONCURRENT_CALL_LIMIT, true);
 
@@ -248,8 +260,207 @@ public class Session {
     }
   }
 
+  /**
+   * Get the synchronized, insertion-ordered map of active browse {@link ContinuationPoint}s held
+   * for this Session.
+   *
+   * <p>Individual map operations are thread-safe, and iterating over the returned map requires
+   * synchronizing on it. Callers implementing Browse or BrowseNext should prefer {@link
+   * #addBrowseContinuationPoints(List, int)}, {@link #nextBrowseContinuationPoint(ByteString)}, and
+   * {@link #releaseBrowseContinuationPoint(ByteString)}, which enforce per-session limits and
+   * automatic reclamation atomically.
+   *
+   * @return the synchronized map of active browse continuation points.
+   */
   public Map<ByteString, ContinuationPoint> getBrowseContinuationPoints() {
-    return browseContinuationPoints;
+    return synchronizedBrowseContinuationPoints;
+  }
+
+  /**
+   * Store a single browse {@link ContinuationPoint} for this Session, reclaiming the oldest
+   * continuation points from prior requests if necessary to stay within {@code
+   * maxContinuationPoints}.
+   *
+   * @param continuationPoint the continuation point to store.
+   * @param maxContinuationPoints the maximum number of active continuation points allowed for this
+   *     Session, or {@code 0} for no limit.
+   * @return {@code true} if the continuation point was stored, or {@code false} if this Session is
+   *     closed.
+   * @throws IllegalArgumentException if {@code maxContinuationPoints} is negative or the
+   *     continuation point id is null or empty.
+   */
+  public boolean addBrowseContinuationPoint(
+      ContinuationPoint continuationPoint, int maxContinuationPoints) {
+
+    return addBrowseContinuationPoints(List.of(continuationPoint), maxContinuationPoints) == 1;
+  }
+
+  /**
+   * Store up to {@code maxContinuationPoints} browse {@link ContinuationPoint}s requested by a
+   * single Browse call, in operation order.
+   *
+   * <p>When {@code maxContinuationPoints} is positive, the oldest continuation points from prior
+   * requests on this Session are freed as needed to make room (OPC UA Part 4 §7.9). Continuation
+   * points allocated for this call are never evicted to satisfy later entries in the same call;
+   * once the limit is reached, remaining entries are not stored. A {@code maxContinuationPoints} of
+   * {@code 0} imposes no limit (OPC UA Part 5 §6.3.2).
+   *
+   * <p>If this Session is closed, no continuation points are stored and {@code 0} is returned.
+   *
+   * @param continuationPoints the continuation points requested by a single Browse call, in
+   *     operation order.
+   * @param maxContinuationPoints the maximum number of active continuation points allowed for this
+   *     Session, or {@code 0} for no limit.
+   * @return the number of leading elements from {@code continuationPoints} that were stored.
+   * @throws IllegalArgumentException if {@code maxContinuationPoints} is negative, any continuation
+   *     point id is null or empty, or the batch contains duplicate ids.
+   */
+  public int addBrowseContinuationPoints(
+      List<ContinuationPoint> continuationPoints, int maxContinuationPoints) {
+
+    if (maxContinuationPoints < 0) {
+      throw new IllegalArgumentException(
+          "maxContinuationPoints must be >= 0: " + maxContinuationPoints);
+    }
+
+    Objects.requireNonNull(continuationPoints, "continuationPoints");
+
+    if (continuationPoints.isEmpty()) {
+      return 0;
+    }
+
+    // Validate every entry before mutating session state so invalid input cannot evict prior
+    // continuation points or partially commit a batch.
+    Set<ByteString> batchIds = new HashSet<>(continuationPoints.size());
+    for (ContinuationPoint continuationPoint : continuationPoints) {
+      Objects.requireNonNull(continuationPoint, "continuationPoint");
+      ByteString id = continuationPoint.id();
+      if (id == null || id.isNullOrEmpty()) {
+        throw new IllegalArgumentException("continuationPoint id must not be null or empty");
+      }
+      if (!batchIds.add(id)) {
+        throw new IllegalArgumentException("duplicate continuationPoint id in batch");
+      }
+    }
+
+    synchronized (synchronizedBrowseContinuationPoints) {
+      if (closed.get()) {
+        return 0;
+      }
+
+      int stored = 0;
+      Set<ByteString> currentRequestIds = new HashSet<>();
+
+      for (ContinuationPoint continuationPoint : continuationPoints) {
+        ByteString id = continuationPoint.id();
+
+        if (maxContinuationPoints > 0) {
+          if (currentRequestIds.size() >= maxContinuationPoints) {
+            break;
+          }
+
+          int targetSizeBeforePut =
+              browseContinuationPoints.containsKey(id)
+                  ? maxContinuationPoints
+                  : maxContinuationPoints - 1;
+
+          int toEvict = browseContinuationPoints.size() - targetSizeBeforePut;
+          if (toEvict > 0) {
+            evictOldestBrowseContinuationPoints(toEvict, currentRequestIds, id);
+          }
+        }
+
+        browseContinuationPoints.put(id, continuationPoint);
+        currentRequestIds.add(id);
+        stored++;
+      }
+
+      return stored;
+    }
+  }
+
+  private void evictOldestBrowseContinuationPoints(
+      int count, Set<ByteString> protectedIds, ByteString incomingId) {
+
+    int remaining = count;
+    Iterator<ByteString> iterator = browseContinuationPoints.keySet().iterator();
+
+    while (remaining > 0 && iterator.hasNext()) {
+      ByteString existingId = iterator.next();
+      if (!protectedIds.contains(existingId) && !existingId.equals(incomingId)) {
+        iterator.remove();
+        remaining--;
+      }
+    }
+  }
+
+  /**
+   * Advance the browse {@link ContinuationPoint} identified by {@code id} and return the next page
+   * of references.
+   *
+   * <p>When more references remain after the returned page, the continuation point is updated in
+   * place under the session lock without temporarily releasing its slot. When the returned page
+   * exhausts the remaining references, the continuation point is removed.
+   *
+   * @param id the continuation point identifier supplied by BrowseNext.
+   * @return the next page of references, or empty if this Session is closed or {@code id} is not an
+   *     active continuation point.
+   */
+  public Optional<ContinuationPoint.Page> nextBrowseContinuationPoint(@Nullable ByteString id) {
+    if (id == null || id.isNullOrEmpty()) {
+      return Optional.empty();
+    }
+
+    synchronized (synchronizedBrowseContinuationPoints) {
+      if (closed.get()) {
+        return Optional.empty();
+      }
+
+      ContinuationPoint c = browseContinuationPoints.get(id);
+      if (c == null) {
+        return Optional.empty();
+      }
+
+      int max = c.max();
+      List<ReferenceDescription> references = c.references();
+
+      if (max > 0 && references.size() > max) {
+        List<ReferenceDescription> current = List.copyOf(references.subList(0, max));
+        List<ReferenceDescription> remaining = ContinuationPoint.slice(references, max);
+
+        browseContinuationPoints.put(id, new ContinuationPoint(c.id(), remaining, max));
+
+        return Optional.of(new ContinuationPoint.Page(c.id(), current));
+      } else {
+        browseContinuationPoints.remove(id);
+
+        return Optional.of(new ContinuationPoint.Page(null, List.copyOf(references)));
+      }
+    }
+  }
+
+  /**
+   * Release the browse {@link ContinuationPoint} identified by {@code id}.
+   *
+   * @param id the continuation point identifier to release.
+   * @return {@code true} if an active continuation point was removed, or {@code false} if none
+   *     matched.
+   */
+  public boolean releaseBrowseContinuationPoint(@Nullable ByteString id) {
+    if (id == null || id.isNullOrEmpty()) {
+      return false;
+    }
+
+    synchronized (synchronizedBrowseContinuationPoints) {
+      return browseContinuationPoints.remove(id) != null;
+    }
+  }
+
+  /** Remove all active browse {@link ContinuationPoint}s held for this Session. */
+  public void clearBrowseContinuationPoints() {
+    synchronized (synchronizedBrowseContinuationPoints) {
+      browseContinuationPoints.clear();
+    }
   }
 
   public void setSecureChannelId(long secureChannelId) {
@@ -526,6 +737,8 @@ public class Session {
     if (timeoutFuture != null) {
       timeoutFuture.cancel(false);
     }
+
+    clearBrowseContinuationPoints();
 
     subscriptionManager.sessionClosed(deleteSubscriptions);
 

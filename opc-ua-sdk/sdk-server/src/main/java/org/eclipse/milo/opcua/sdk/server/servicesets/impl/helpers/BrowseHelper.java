@@ -15,6 +15,7 @@ import static org.eclipse.milo.opcua.sdk.server.util.UaEnumUtil.nodeClasses;
 
 import com.google.common.primitives.Ints;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -166,25 +167,7 @@ public class BrowseHelper {
             ? Integer.MAX_VALUE
             : Ints.saturatedCast(browseRequest.getRequestedMaxReferencesPerNode().longValue());
 
-    var browseResults = new ArrayList<BrowseResult>();
-
-    for (ReferenceDescriptionResult referenceDescriptionResult : allReferenceDescriptionResults) {
-      if (referenceDescriptionResult instanceof ReferenceDescriptionResult.BadNoReferences bnr) {
-        browseResults.add(new BrowseResult(bnr.statusCode, null, new ReferenceDescription[0]));
-      } else if (referenceDescriptionResult
-          instanceof ReferenceDescriptionResult.ReferenceDescriptionList rdl) {
-        BrowseResult browseResult =
-            createBrowseResult(
-                server, context.getSession().orElse(null), max, rdl.referenceDescriptions);
-
-        browseResults.add(browseResult);
-      } else {
-        // Skipping an operation would shift every later result onto the wrong operation.
-        throw new IllegalStateException("no result for a BrowseDescription");
-      }
-    }
-
-    return browseResults;
+    return createBrowseResults(server, session, max, allReferenceDescriptionResults);
   }
 
   private static List<ReferenceDescriptionResult> createReferenceDescriptions(
@@ -286,32 +269,80 @@ public class BrowseHelper {
         typeDefinitionId);
   }
 
-  private static BrowseResult createBrowseResult(
-      OpcUaServer server, Session session, int max, List<ReferenceDescription> references) {
+  private static List<BrowseResult> createBrowseResults(
+      OpcUaServer server,
+      Session session,
+      int max,
+      List<ReferenceDescriptionResult> allReferenceDescriptionResults) {
 
-    if (references.size() > max) {
-      if (session.getBrowseContinuationPoints().size()
-          > server.getConfig().getLimits().getMaxBrowseContinuationPoints().intValue()) {
+    int maxBrowseContinuationPoints =
+        server.getConfig().getLimits().getMaxBrowseContinuationPoints().intValue();
 
-        return new BrowseResult(
-            new StatusCode(StatusCodes.Bad_NoContinuationPoints),
-            null,
-            new ReferenceDescription[0]);
+    var browseResults = new BrowseResult[allReferenceDescriptionResults.size()];
+    var pagedResults = new ArrayList<PendingContinuation>();
+
+    for (int i = 0; i < allReferenceDescriptionResults.size(); i++) {
+      ReferenceDescriptionResult referenceDescriptionResult = allReferenceDescriptionResults.get(i);
+
+      if (referenceDescriptionResult instanceof ReferenceDescriptionResult.BadNoReferences bnr) {
+        browseResults[i] = new BrowseResult(bnr.statusCode, null, new ReferenceDescription[0]);
+      } else if (referenceDescriptionResult
+          instanceof ReferenceDescriptionResult.ReferenceDescriptionList rdl) {
+        List<ReferenceDescription> references = rdl.referenceDescriptions;
+
+        if (references.size() > max) {
+          pagedResults.add(new PendingContinuation(i, references));
+        } else {
+          browseResults[i] =
+              new BrowseResult(
+                  StatusCode.GOOD, null, references.toArray(new ReferenceDescription[0]));
+        }
       } else {
-        List<ReferenceDescription> subList = references.subList(0, max);
-        List<ReferenceDescription> current = List.copyOf(subList);
-        subList.clear();
-
-        ContinuationPoint c = new ContinuationPoint(references, max);
-        session.getBrowseContinuationPoints().put(c.id(), c);
-
-        return new BrowseResult(
-            StatusCode.GOOD, c.id(), current.toArray(new ReferenceDescription[0]));
+        // Skipping an operation would shift every later result onto the wrong operation.
+        throw new IllegalStateException("no result for a BrowseDescription");
       }
-    } else {
-      return new BrowseResult(
-          StatusCode.GOOD, null, references.toArray(new ReferenceDescription[0]));
     }
+
+    if (!pagedResults.isEmpty()) {
+      int candidateCount =
+          maxBrowseContinuationPoints > 0
+              ? Math.min(pagedResults.size(), maxBrowseContinuationPoints)
+              : pagedResults.size();
+
+      var continuationPoints = new ArrayList<ContinuationPoint>(candidateCount);
+      var firstPages = new ArrayList<List<ReferenceDescription>>(candidateCount);
+
+      for (int i = 0; i < candidateCount; i++) {
+        List<ReferenceDescription> snapshot = List.copyOf(pagedResults.get(i).references());
+        List<ReferenceDescription> firstPage = List.copyOf(snapshot.subList(0, max));
+
+        firstPages.add(firstPage);
+        continuationPoints.add(ContinuationPoint.ofRemaining(snapshot, max, max));
+      }
+
+      int allocated =
+          session.addBrowseContinuationPoints(continuationPoints, maxBrowseContinuationPoints);
+
+      for (int i = 0; i < pagedResults.size(); i++) {
+        int resultIndex = pagedResults.get(i).index();
+
+        if (i < allocated) {
+          browseResults[resultIndex] =
+              new BrowseResult(
+                  StatusCode.GOOD,
+                  continuationPoints.get(i).id(),
+                  firstPages.get(i).toArray(new ReferenceDescription[0]));
+        } else {
+          browseResults[resultIndex] =
+              new BrowseResult(
+                  new StatusCode(StatusCodes.Bad_NoContinuationPoints),
+                  null,
+                  new ReferenceDescription[0]);
+        }
+      }
+    }
+
+    return new ArrayList<>(Arrays.asList(browseResults));
   }
 
   private static List<BrowseAttributes> readBrowseAttributes(
@@ -470,6 +501,8 @@ public class BrowseHelper {
       @Nullable QualifiedName browseName,
       @Nullable LocalizedText displayName,
       @Nullable NodeClass nodeClass) {}
+
+  private record PendingContinuation(int index, List<ReferenceDescription> references) {}
 
   private static class PendingBrowse {
 

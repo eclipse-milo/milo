@@ -19,7 +19,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.RegisterNodesContext;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace.UnregisterNodesContext;
-import org.eclipse.milo.opcua.sdk.server.ContinuationPoint;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.servicesets.ViewServiceSet;
@@ -160,7 +159,7 @@ public class DefaultViewServiceSet implements ViewServiceSet {
       return failedUaFuture(StatusCodes.Bad_NothingToDo);
     }
 
-    if (nodesToBrowse.size() > server.getConfig().getLimits().getMaxNodesPerBrowse().intValue()) {
+    if (exceedsMaxNodesPerBrowse(nodesToBrowse.size())) {
       return failedUaFuture(StatusCodes.Bad_TooManyOperations);
     }
 
@@ -189,59 +188,53 @@ public class DefaultViewServiceSet implements ViewServiceSet {
       throw new UaException(StatusCodes.Bad_NothingToDo);
     }
 
-    if (continuationPoints.size()
-        > server.getConfig().getLimits().getMaxBrowseContinuationPoints().intValue()) {
-
+    // OPC 10000-5 §6.3.11: MaxNodesPerBrowse bounds both Browse.nodesToBrowse and
+    // BrowseNext.continuationPoints; 0 indicates no server-imposed limit.
+    if (exceedsMaxNodesPerBrowse(continuationPoints.size())) {
       throw new UaException(StatusCodes.Bad_TooManyOperations);
     }
 
-    var results = new ArrayList<BrowseResult>();
+    var header = createResponseHeader(request);
 
-    for (ByteString bs : continuationPoints) {
-      if (request.getReleaseContinuationPoints()) {
-        results.add(release(session, bs));
-      } else {
-        results.add(references(session, bs));
+    if (Boolean.TRUE.equals(request.getReleaseContinuationPoints())) {
+      // OPC 10000-4 §5.9.3.2 Table 37: when releaseContinuationPoints is TRUE, release all passed
+      // continuation points and return empty results and diagnosticInfos arrays.
+      for (ByteString bs : continuationPoints) {
+        session.releaseBrowseContinuationPoint(bs);
       }
+
+      return new BrowseNextResponse(header, new BrowseResult[0], new DiagnosticInfo[0]);
     }
 
-    var header = createResponseHeader(request);
+    var results = new ArrayList<BrowseResult>(continuationPoints.size());
+
+    for (ByteString bs : continuationPoints) {
+      results.add(references(session, bs));
+    }
 
     return new BrowseNextResponse(
         header, results.toArray(BrowseResult[]::new), new DiagnosticInfo[0]);
   }
 
-  private static BrowseResult release(Session session, ByteString bs) {
-    ContinuationPoint c = session.getBrowseContinuationPoints().remove(bs);
+  private boolean exceedsMaxNodesPerBrowse(int count) {
+    long maxNodesPerBrowse = server.getConfig().getLimits().getMaxNodesPerBrowse().longValue();
 
-    return c != null
-        ? new BrowseResult(StatusCode.GOOD, null, null)
-        : new BrowseResult(new StatusCode(StatusCodes.Bad_ContinuationPointInvalid), null, null);
+    return maxNodesPerBrowse > 0L && count > maxNodesPerBrowse;
   }
 
   private static BrowseResult references(Session session, ByteString bs) {
-    ContinuationPoint c = session.getBrowseContinuationPoints().remove(bs);
-
-    if (c != null) {
-      int max = c.max();
-      List<ReferenceDescription> references = c.references();
-
-      if (references.size() > max) {
-        List<ReferenceDescription> subList = references.subList(0, max);
-        List<ReferenceDescription> current = List.copyOf(subList);
-        subList.clear();
-
-        session.getBrowseContinuationPoints().put(c.id(), c);
-
-        return new BrowseResult(
-            StatusCode.GOOD, c.id(), current.toArray(new ReferenceDescription[0]));
-      } else {
-        return new BrowseResult(
-            StatusCode.GOOD, null, references.toArray(new ReferenceDescription[0]));
-      }
-    } else {
-      return new BrowseResult(new StatusCode(StatusCodes.Bad_ContinuationPointInvalid), null, null);
-    }
+    return session
+        .nextBrowseContinuationPoint(bs)
+        .map(
+            page ->
+                new BrowseResult(
+                    StatusCode.GOOD,
+                    page.continuationPoint(),
+                    page.references().toArray(new ReferenceDescription[0])))
+        .orElseGet(
+            () ->
+                new BrowseResult(
+                    new StatusCode(StatusCodes.Bad_ContinuationPointInvalid), null, null));
   }
 
   private RegisterNodesResponse registerNodes(RegisterNodesRequest request, Session session)
