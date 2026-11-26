@@ -109,6 +109,13 @@ public class CertificateValidationUtil {
    * <p>Each certificate has its signature and subject/issuer chaining checked. Revocation and other
    * more detailed checks are not done at this stage.
    *
+   * <p>When a path cannot be anchored in the trust or issuer list, path building is retried using
+   * the presented chain's own self-signed root (the certificate itself when self-signed, or the
+   * last CA certificate in a multi-certificate chain) after verifying its self-signature. If that
+   * secondary build succeeds, the chain is complete and validly signed but untrusted, and {@link
+   * StatusCodes#Bad_CertificateUntrusted} is thrown; otherwise {@link
+   * StatusCodes#Bad_SecurityChecksFailed} is thrown with the original cause.
+   *
    * <p>The {@link CertPath} and {@link TrustAnchor} from the result is meant to be further
    * validated by {@link #validateTrustedCertPath(CertPath, TrustAnchor, Collection, Set, boolean)},
    * which can return more detailed failure {@link StatusCodes} in its exceptions after the trusted
@@ -120,7 +127,9 @@ public class CertificateValidationUtil {
    *     not considered "trusted" when it comes to determining if the resulting path is "trusted".
    * @return a {@link PKIXCertPathBuilderResult} with a {@link TrustAnchor} and {@link CertPath},
    *     which combined make up the full trusted path.
-   * @throws UaException if a trusted path cannot be built.
+   * @throws UaException with {@link StatusCodes#Bad_CertificateUntrusted} if a complete, validly
+   *     signed chain contains no trusted certificate, or {@link
+   *     StatusCodes#Bad_SecurityChecksFailed} if no valid path can be built.
    */
   public static PKIXCertPathBuilderResult buildTrustedCertPath(
       List<X509Certificate> certificateChain,
@@ -161,8 +170,19 @@ public class CertificateValidationUtil {
       }
     }
 
-    PKIXCertPathBuilderResult certPathResult =
-        buildCertPath(certificateChain, trustedCertificates, issuerCertificates, trustAnchors);
+    PKIXCertPathBuilderResult certPathResult;
+    try {
+      certPathResult =
+          buildCertPath(certificateChain, trustedCertificates, issuerCertificates, trustAnchors);
+    } catch (UaException e) {
+      if (isCompleteUntrustedChain(certificateChain, trustedCertificates)) {
+        throw new UaException(
+            StatusCodes.Bad_CertificateUntrusted,
+            "certificate chain did not contain a trusted certificate");
+      }
+
+      throw e;
+    }
 
     CertPath certPath = certPathResult.getCertPath();
     TrustAnchor trustAnchor = certPathResult.getTrustAnchor();
@@ -186,6 +206,43 @@ public class CertificateValidationUtil {
     }
 
     return certPathResult;
+  }
+
+  private static boolean isCompleteUntrustedChain(
+      List<X509Certificate> certificateChain, Collection<X509Certificate> trustedCertificates) {
+
+    X509Certificate candidateRoot = certificateChain.get(certificateChain.size() - 1);
+
+    if (certificateChain.size() > 1) {
+      if (candidateRoot.getBasicConstraints() < 0) {
+        return false;
+      }
+
+      boolean[] keyUsage = candidateRoot.getKeyUsage();
+      if (keyUsage != null && !hasKeyUsage(keyUsage, 5)) {
+        return false;
+      }
+    }
+
+    try {
+      if (!certificateIsSelfSigned(candidateRoot)) {
+        return false;
+      }
+
+      PKIXCertPathBuilderResult secondary =
+          buildCertPath(
+              certificateChain, List.of(), List.of(), Set.of(new TrustAnchor(candidateRoot, null)));
+
+      List<X509Certificate> certificates = new ArrayList<>();
+      secondary.getCertPath().getCertificates().stream()
+          .map(X509Certificate.class::cast)
+          .forEach(certificates::add);
+      certificates.add(secondary.getTrustAnchor().getTrustedCert());
+
+      return certificates.stream().noneMatch(trustedCertificates::contains);
+    } catch (UaException ignored) {
+      return false;
+    }
   }
 
   /**
