@@ -83,9 +83,11 @@ import org.slf4j.LoggerFactory;
  * CertificateValidator.InsecureCertificateValidator}, which accepts every certificate.
  *
  * <p>A username {@link UserTokenPolicy} whose security policy is {@code None} sends the password as
- * plain UTF-8, which only a {@code SignAndEncrypt} SecureChannel or a TLS transport keeps private
+ * plain UTF-8, which only a {@code SignAndEncrypt} SecureChannel or a TLS connection keeps private
  * (Part 4 (7.40.4)). The provider sends it as the policy asks, and logs a WARN the first time it
- * sends a password that way over a {@code None} or {@code Sign} SecureChannel on {@code opc.tcp}.
+ * sends a password that way over a {@code None} or {@code Sign} SecureChannel, unless the endpoint
+ * URL's scheme is {@code https}, {@code opc.https} or {@code opc.wss}, the schemes for which the
+ * client opens a TLS connection.
  *
  * <p>When an endpoint advertises more than one username {@link UserTokenPolicy}, the provider
  * prefers one whose security policy is usable on the current SecureChannel and skips those that are
@@ -96,6 +98,9 @@ import org.slf4j.LoggerFactory;
 public class UsernameProvider implements IdentityProvider {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UsernameProvider.class);
+
+  /** The endpoint URL schemes for which the client transports open a TLS connection. */
+  private static final List<String> TLS_SCHEMES = List.of("https", "opc.https", "opc.wss");
 
   private final AtomicBoolean unencryptedPasswordWarningLogged = new AtomicBoolean(false);
 
@@ -439,12 +444,14 @@ public class UsernameProvider implements IdentityProvider {
 
   /**
    * Log a WARN, once per provider, when a password the token does not encrypt is about to cross a
-   * {@code None} or {@code Sign} SecureChannel on {@code opc.tcp}, where anyone on the path can
-   * read it (Part 4 (7.40.4)).
+   * {@code None} or {@code Sign} SecureChannel without TLS, where anyone on the path can read it
+   * (Part 4 (7.40.4)).
    *
-   * <p>The HTTPS and WebSocket transport profiles run over TLS, which encrypts the password in
-   * transit. An endpoint built by hand may name no transport profile; it is taken to be {@code
-   * opc.tcp}, so the WARN errs toward being logged.
+   * <p>The endpoint URL's scheme decides TLS, as it does in the transports: the HTTPS transport
+   * opens a TLS connection for {@code https} and {@code opc.https}, and the WebSocket transport for
+   * {@code opc.wss}. On every other scheme, {@code opc.tcp}, {@code http} and {@code opc.ws} among
+   * them, a {@code None} or {@code Sign} SecureChannel leaves the password in the clear, whatever
+   * the transport profile.
    *
    * @param endpoint the endpoint being activated.
    * @param tokenPolicy the selected username token policy, whose security policy is {@code None}.
@@ -452,15 +459,12 @@ public class UsernameProvider implements IdentityProvider {
   private void warnIfPasswordTravelsUnencrypted(
       EndpointDescription endpoint, UserTokenPolicy tokenPolicy) {
 
-    String transportProfileUri = endpoint.getTransportProfileUri();
+    String scheme = EndpointUtil.getScheme(endpoint.getEndpointUrl());
 
-    boolean opcTcp =
-        transportProfileUri == null
-            || transportProfileUri.isEmpty()
-            || Stack.TCP_UASC_UABINARY_TRANSPORT_URI.equals(transportProfileUri);
+    boolean tls = scheme != null && TLS_SCHEMES.stream().anyMatch(scheme::equalsIgnoreCase);
 
     boolean encryptedInTransit =
-        endpoint.getSecurityMode() == MessageSecurityMode.SignAndEncrypt || !opcTcp;
+        endpoint.getSecurityMode() == MessageSecurityMode.SignAndEncrypt || tls;
 
     if (!encryptedInTransit && unencryptedPasswordWarningLogged.compareAndSet(false, true)) {
       LOGGER.warn(

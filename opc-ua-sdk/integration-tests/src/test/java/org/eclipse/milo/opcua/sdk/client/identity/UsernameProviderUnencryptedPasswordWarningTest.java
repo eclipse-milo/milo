@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Part 4 (7.40.4): a username token whose SecurityPolicy is {@code None} carries the password as
- * plain UTF-8, which only a {@code SignAndEncrypt} SecureChannel or a TLS transport keeps private.
+ * plain UTF-8, which only a {@code SignAndEncrypt} SecureChannel or a TLS connection keeps private.
  * {@link UsernameProvider} sends it as the token policy asks, and logs a WARN when nothing else
  * protects it, so an operator can see that a password crosses the network in the clear.
  *
@@ -70,8 +70,19 @@ class UsernameProviderUnencryptedPasswordWarningTest {
     assertEquals(1, warningCount(log, endpoint));
   }
 
-  // A SignAndEncrypt SecureChannel, or a transport that runs over TLS, keeps the password private
-  // in transit, so a WARN there would be a false alarm.
+  // The WebSocket and HTTPS transports open a TLS connection only for an opc.wss, https or
+  // opc.https endpoint URL. Over opc.ws or http, a None SecureChannel leaves the password in the
+  // clear, as it does on opc.tcp.
+  @ParameterizedTest
+  @MethodSource("endpointsWithoutTls")
+  void warnsWhenTransportDoesNotUseTls(EndpointDescription endpoint) throws Exception {
+    String log = stderrOf(() -> activate(new UsernameProvider("user1", PASSWORD), endpoint));
+
+    assertEquals(1, warningCount(log, endpoint));
+  }
+
+  // A SignAndEncrypt SecureChannel, or a TLS connection, keeps the password private in transit, so
+  // a WARN there would be a false alarm.
   @ParameterizedTest
   @MethodSource("endpointsThatEncryptThePassword")
   void doesNotWarnWhenChannelOrTransportEncryptsPassword(EndpointDescription endpoint)
@@ -115,7 +126,7 @@ class UsernameProviderUnencryptedPasswordWarningTest {
   }
 
   // An opc.tcp endpoint built by hand may name no transport profile. Its None SecureChannel still
-  // carries the password in the clear, so the provider must not take it for a TLS transport.
+  // carries the password in the clear, so the WARN must not depend on the profile.
   @ParameterizedTest
   @NullAndEmptySource
   void warnsForOpcTcpEndpointWithoutTransportProfile(String transportProfileUri) throws Exception {
@@ -126,6 +137,24 @@ class UsernameProviderUnencryptedPasswordWarningTest {
     assertEquals(1, warningCount(log, endpoint));
   }
 
+  private static Stream<Named<EndpointDescription>> endpointsWithoutTls() {
+    return Stream.of(
+        Named.of(
+            "opc.ws endpoint URL",
+            endpoint(
+                "opc.ws://localhost:12686/milo",
+                SecurityPolicy.None,
+                MessageSecurityMode.None,
+                Stack.WSS_UASC_UABINARY_TRANSPORT_URI)),
+        Named.of(
+            "http endpoint URL",
+            endpoint(
+                "http://localhost:12686/milo",
+                SecurityPolicy.None,
+                MessageSecurityMode.None,
+                Stack.HTTPS_UABINARY_TRANSPORT_URI)));
+  }
+
   private static Stream<Named<EndpointDescription>> endpointsThatEncryptThePassword() {
     return Stream.of(
         Named.of(
@@ -133,12 +162,26 @@ class UsernameProviderUnencryptedPasswordWarningTest {
             opcTcpEndpoint(
                 MessageSecurityMode.SignAndEncrypt, Stack.TCP_UASC_UABINARY_TRANSPORT_URI)),
         Named.of(
-            "HTTPS transport",
+            "https endpoint URL",
             endpoint(
                 "https://localhost:12686/milo",
                 SecurityPolicy.None,
                 MessageSecurityMode.None,
-                Stack.HTTPS_UABINARY_TRANSPORT_URI)));
+                Stack.HTTPS_UABINARY_TRANSPORT_URI)),
+        Named.of(
+            "opc.https endpoint URL",
+            endpoint(
+                "opc.https://localhost:12686/milo",
+                SecurityPolicy.None,
+                MessageSecurityMode.None,
+                Stack.HTTPS_UABINARY_TRANSPORT_URI)),
+        Named.of(
+            "opc.wss endpoint URL",
+            endpoint(
+                "opc.wss://localhost:12686/milo",
+                SecurityPolicy.None,
+                MessageSecurityMode.None,
+                Stack.WSS_UASC_UABINARY_TRANSPORT_URI)));
   }
 
   private static void activate(UsernameProvider provider, EndpointDescription endpoint)
