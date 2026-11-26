@@ -18,6 +18,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.net.InetAddress;
 import java.security.KeyPair;
 import java.security.Provider;
 import java.security.cert.CRL;
@@ -26,16 +27,23 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
-import java.security.cert.CertificateParsingException;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.security.auth.x500.X500Principal;
+import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1Encoding;
+import org.bouncycastle.asn1.ASN1IA5String;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.ASN1OctetString;
+import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.style.IETFUtils;
@@ -43,12 +51,14 @@ import org.bouncycastle.asn1.x500.style.RFC4519Style;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
 import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.Extensions;
 import org.bouncycastle.asn1.x509.ExtensionsGenerator;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.asn1.x509.KeyPurposeId;
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.openssl.MiscPEMGenerator;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
@@ -60,8 +70,12 @@ import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CertificateUtil {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(CertificateUtil.class);
 
   public static final int SUBJECT_ALT_NAME_DNS_NAME = GeneralName.dNSName;
   public static final int SUBJECT_ALT_NAME_IP_ADDRESS = GeneralName.iPAddress;
@@ -220,11 +234,15 @@ public class CertificateUtil {
         new JcaPKCS10CertificationRequestBuilder(
             certificate.getSubjectX500Principal(), certificate.getPublicKey());
 
-    GeneralNames subjectAltNames =
-        new GeneralNames(getSubjectAltNames(certificate).toArray(new GeneralName[0]));
+    List<GeneralName> subjectAltNames = getSubjectAltNames(certificate);
 
     ExtensionsGenerator extGen = new ExtensionsGenerator();
-    extGen.addExtension(Extension.subjectAlternativeName, false, subjectAltNames);
+    if (!subjectAltNames.isEmpty()) {
+      extGen.addExtension(
+          Extension.subjectAlternativeName,
+          false,
+          new GeneralNames(subjectAltNames.toArray(new GeneralName[0])));
+    }
 
     KeyUsage keyUsage =
         new KeyUsage(
@@ -450,64 +468,170 @@ public class CertificateUtil {
     return stringWriter.toString();
   }
 
-  private static List<GeneralName> getSubjectAltNames(X509Certificate certificate) {
+  private record SubjectAltNameEntry(GeneralName generalName, Object value) {}
+
+  private static @Nullable ASN1Sequence readSubjectAltNameSequence(X509Certificate certificate) {
     try {
-      List<GeneralName> generalNames = new ArrayList<>();
-
-      Collection<List<?>> subjectAltNames = certificate.getSubjectAlternativeNames();
-      if (subjectAltNames == null) subjectAltNames = Collections.emptyList();
-
-      for (List<?> idAndValue : subjectAltNames) {
-        if (idAndValue != null && idAndValue.size() == 2) {
-          Object id = idAndValue.get(0);
-          String value = Objects.toString(idAndValue.get(1));
-
-          if (Objects.equals(id, SUBJECT_ALT_NAME_DNS_NAME)) {
-            generalNames.add(new GeneralName(SUBJECT_ALT_NAME_DNS_NAME, value));
-          } else if (Objects.equals(id, SUBJECT_ALT_NAME_IP_ADDRESS)) {
-            generalNames.add(new GeneralName(SUBJECT_ALT_NAME_IP_ADDRESS, value));
-          } else if (Objects.equals(id, SUBJECT_ALT_NAME_URI)) {
-            generalNames.add(new GeneralName(SUBJECT_ALT_NAME_URI, value));
-          }
-        }
+      byte[] encoded = certificate.getEncoded();
+      if (encoded == null) {
+        return null;
       }
 
-      return generalNames;
-    } catch (CertificateParsingException e) {
-      return Collections.emptyList();
+      var certificateHolder = new X509CertificateHolder(encoded);
+      Extensions extensions = certificateHolder.getExtensions();
+      if (extensions == null) {
+        return null;
+      }
+
+      Extension sanExtension = extensions.getExtension(Extension.subjectAlternativeName);
+      if (sanExtension == null) {
+        return null;
+      }
+
+      ASN1OctetString extnValue = sanExtension.getExtnValue();
+      if (extnValue == null) {
+        return null;
+      }
+
+      ASN1Primitive parsed = ASN1Primitive.fromByteArray(extnValue.getOctets());
+      return ASN1Sequence.getInstance(parsed);
+    } catch (CertificateEncodingException
+        | IOException
+        | IllegalArgumentException
+        | IllegalStateException e) {
+      LOGGER.debug("Failed to parse SubjectAlternativeName extension", e);
+      return null;
     }
   }
 
+  private static List<SubjectAltNameEntry> readSubjectAltNameEntries(X509Certificate certificate) {
+    ASN1Sequence sequence = readSubjectAltNameSequence(certificate);
+    if (sequence == null) {
+      return Collections.emptyList();
+    }
+
+    List<SubjectAltNameEntry> entries = new ArrayList<>(sequence.size());
+
+    for (ASN1Encodable element : sequence) {
+      try {
+        GeneralName generalName = GeneralName.getInstance(element);
+        Object value = extractGeneralNameValue(generalName);
+        if (value != null) {
+          entries.add(new SubjectAltNameEntry(generalName, value));
+        }
+      } catch (IllegalArgumentException | IllegalStateException e) {
+        LOGGER.debug("Skipping malformed SubjectAlternativeName entry", e);
+      }
+    }
+
+    return entries;
+  }
+
+  private static @Nullable Object extractGeneralNameValue(GeneralName generalName) {
+    ASN1Encodable name = generalName.getName();
+
+    try {
+      return switch (generalName.getTagNo()) {
+        case GeneralName.rfc822Name, GeneralName.dNSName -> {
+          String value = ASN1IA5String.getInstance(name).getString();
+          yield isIa5(value) ? value : null;
+        }
+        case GeneralName.uniformResourceIdentifier -> {
+          String value = ASN1IA5String.getInstance(name).getString();
+          yield (!value.isBlank() && isIa5(value)) ? value : null;
+        }
+        case GeneralName.directoryName ->
+            new X500Principal(X500Name.getInstance(name).getEncoded(ASN1Encoding.DER))
+                .getName(X500Principal.RFC2253);
+        case GeneralName.iPAddress -> {
+          byte[] octets = ASN1OctetString.getInstance(name).getOctets();
+          if (octets.length != 4 && octets.length != 16) {
+            yield null;
+          }
+          yield InetAddress.getByAddress(octets).getHostAddress();
+        }
+        case GeneralName.registeredID -> ASN1ObjectIdentifier.getInstance(name).getId();
+        case GeneralName.otherName, GeneralName.x400Address, GeneralName.ediPartyName ->
+            name.toASN1Primitive().getEncoded(ASN1Encoding.DER);
+        default -> null;
+      };
+    } catch (IOException | IllegalArgumentException | IllegalStateException e) {
+      LOGGER.debug(
+          "Failed to extract SubjectAlternativeName entry with tag {}", generalName.getTagNo(), e);
+      return null;
+    }
+  }
+
+  private static boolean isIa5(String value) {
+    for (int i = 0; i < value.length(); i++) {
+      if (value.charAt(i) > 0x7F) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  private static List<GeneralName> getSubjectAltNames(X509Certificate certificate) {
+    List<GeneralName> generalNames = new ArrayList<>();
+
+    for (SubjectAltNameEntry entry : readSubjectAltNameEntries(certificate)) {
+      int tagNo = entry.generalName().getTagNo();
+      if (tagNo == SUBJECT_ALT_NAME_DNS_NAME
+          || tagNo == SUBJECT_ALT_NAME_IP_ADDRESS
+          || tagNo == SUBJECT_ALT_NAME_URI) {
+        generalNames.add(entry.generalName());
+      }
+    }
+
+    return generalNames;
+  }
+
   /**
-   * Extract the value of a given SubjectAltName field from a {@link X509Certificate}.
+   * Extract the values of a given SubjectAltName field from an {@link X509Certificate}.
    *
    * @param certificate the certificate.
    * @param field the field number.
-   * @return an {@link Optional} containing the value in the field.
+   * @return a list of values for the given field, or an empty list if none are present.
    * @see #SUBJECT_ALT_NAME_IP_ADDRESS
    * @see #SUBJECT_ALT_NAME_DNS_NAME
    * @see #SUBJECT_ALT_NAME_URI
    */
   public static List<Object> getSubjectAltNameField(X509Certificate certificate, int field) {
-    try {
-      List<Object> values = new ArrayList<>();
+    List<Object> values = new ArrayList<>();
 
-      Collection<List<?>> subjectAltNames = certificate.getSubjectAlternativeNames();
-      if (subjectAltNames == null) subjectAltNames = Collections.emptyList();
-
-      for (List<?> idAndValue : subjectAltNames) {
-        if (idAndValue != null && idAndValue.size() == 2) {
-          if (idAndValue.get(0).equals(field)) {
-            Object value = idAndValue.get(1);
-            if (value != null) values.add(value);
-          }
-        }
+    for (SubjectAltNameEntry entry : readSubjectAltNameEntries(certificate)) {
+      if (entry.generalName().getTagNo() == field) {
+        values.add(entry.value());
       }
-
-      return values;
-    } catch (CertificateParsingException e) {
-      return Collections.emptyList();
     }
+
+    return values;
+  }
+
+  /**
+   * Count the raw SubjectAltName entries with the given {@link GeneralName} tag number, including
+   * entries whose values fail decoding or validation.
+   *
+   * @param certificate the certificate.
+   * @param field the {@link GeneralName} tag number.
+   * @return the number of raw SubjectAltName entries with tag {@code field}.
+   */
+  public static int getSubjectAltNameEntryCount(X509Certificate certificate, int field) {
+    ASN1Sequence sequence = readSubjectAltNameSequence(certificate);
+    if (sequence == null) {
+      return 0;
+    }
+
+    int count = 0;
+
+    for (ASN1Encodable element : sequence) {
+      if (element instanceof ASN1TaggedObject taggedObject && taggedObject.hasContextTag(field)) {
+        count++;
+      }
+    }
+
+    return count;
   }
 
   /**
