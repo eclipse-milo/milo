@@ -24,7 +24,11 @@
  * RSA-encrypted with the endpoint certificate for legacy policies, or protected with the enhanced
  * ECC/RSA-DH session ephemeral key negotiated in CreateSession. The username validator owns the
  * common token validation, nonce check, size limits, and decryption path before handing the
- * resulting username and password to the application-specific authentication method.
+ * resulting username and password to the application-specific authentication method. On both
+ * encrypted paths, decryption, validation, password-limit, and credential failures return a uniform
+ * {@code Bad_IdentityTokenInvalid} without a client-visible cause (with underlying details logged
+ * at debug), whereas unencrypted username tokens return {@code Bad_UserAccessDenied} when
+ * application authentication rejects the credentials.
  *
  * <h2>Certificate-token signatures</h2>
  *

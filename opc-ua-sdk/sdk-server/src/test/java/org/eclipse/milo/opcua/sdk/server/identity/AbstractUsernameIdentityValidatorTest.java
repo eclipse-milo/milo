@@ -15,20 +15,31 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPublicKey;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import javax.crypto.Cipher;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
@@ -40,12 +51,22 @@ import org.eclipse.milo.opcua.sdk.server.SessionServerCertificate;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity.UsernameIdentity;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
+import org.eclipse.milo.opcua.stack.core.encoding.binary.OpcUaBinaryDecoder;
+import org.eclipse.milo.opcua.stack.core.security.AeadCipherUtil;
 import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.EccEncryptedSecret;
+import org.eclipse.milo.opcua.stack.core.security.EccKeyAgreementUtil;
+import org.eclipse.milo.opcua.stack.core.security.EccPublicKeyCodec;
+import org.eclipse.milo.opcua.stack.core.security.EccSignatureUtil;
+import org.eclipse.milo.opcua.stack.core.security.FiniteFieldDhKeyAgreementUtil;
 import org.eclipse.milo.opcua.stack.core.security.SecurityAlgorithm;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
+import org.eclipse.milo.opcua.stack.core.security.SecurityProviderResolver;
+import org.eclipse.milo.opcua.stack.core.security.SecurityProviderResolver.ProviderProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
@@ -53,9 +74,12 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserNameIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.CipherFactory;
+import org.eclipse.milo.opcua.stack.core.util.HkdfUtil;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
+import org.eclipse.milo.opcua.stack.core.util.SignatureUtil;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -333,14 +357,18 @@ class AbstractUsernameIdentityValidatorTest {
     when(session.getUserTokenEphemeralPublicKey()).thenReturn(Optional.of(wrongReceiverPublicKey));
     TestUsernameValidator validator = new TestUsernameValidator("password");
 
-    assertThrows(
-        UaException.class,
-        () ->
-            validator.validateIdentityToken(
-                session,
-                fixture.token(),
-                policy(profile.securityPolicy()),
-                new SignatureData(null, null)));
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                validator.validateIdentityToken(
+                    session,
+                    fixture.token(),
+                    policy(profile.securityPolicy()),
+                    new SignatureData(null, null)));
+
+    assertUniformEncryptedTokenFailure(exception);
+    assertEquals(0, validator.authenticateCount);
   }
 
   // Part 6 6.8.2 makes the receiver key single-use: once a token consumes it, a replay without
@@ -408,14 +436,18 @@ class AbstractUsernameIdentityValidatorTest {
             profile.securityPolicy().getUri());
     TestUsernameValidator validator = new TestUsernameValidator("password");
 
-    assertThrows(
-        UaException.class,
-        () ->
-            validator.validateIdentityToken(
-                session(fixture, SERVER_NONCE),
-                malformedToken,
-                policy(profile.securityPolicy()),
-                new SignatureData(null, null)));
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                validator.validateIdentityToken(
+                    session(fixture, SERVER_NONCE),
+                    malformedToken,
+                    policy(profile.securityPolicy()),
+                    new SignatureData(null, null)));
+
+    assertUniformEncryptedTokenFailure(exception);
+    assertEquals(0, validator.authenticateCount);
   }
 
   // Enhanced token-secret nonce mismatches should map to the same service result as the legacy RSA
@@ -436,7 +468,170 @@ class AbstractUsernameIdentityValidatorTest {
                     policy(profile.securityPolicy()),
                     new SignatureData(null, null)));
 
-    assertEquals(StatusCodes.Bad_UserAccessDenied, exception.getStatusCode().getValue());
+    assertUniformEncryptedTokenFailure(exception);
+    assertEquals(0, validator.authenticateCount);
+  }
+
+  // Part 4 §7.40.2.1 and §7.40.2.3: every EncryptedSecret validation, decryption, padding, nonce,
+  // and credential failure on the enhanced path must collapse to Bad_IdentityTokenInvalid with no
+  // cause, clearing the session's ephemeral key pair each time, and only a valid token with a wrong
+  // password may reach application authentication.
+  @ParameterizedTest
+  @MethodSource("representativeEnhancedProfiles")
+  void enhancedEncryptedSecretFailuresHaveUniformStatusAndNoCause(SecurityPolicyProfile profile)
+      throws Exception {
+    ApplicationIdentity clientIdentity = applicationIdentity(profile);
+    ApplicationIdentity otherClientIdentity = applicationIdentity(profile);
+    TokenFixture validFixture = tokenFixture(profile, PASSWORD, clientIdentity);
+
+    ByteString validSecret = validFixture.token().getPassword();
+    byte[] validSecretBytes = validSecret.bytesOrEmpty();
+    ParsedEnhancedSecretParts validParts = parseEnhancedSecretParts(profile, validSecret);
+
+    // E2: valid EncryptedSecret carrying the wrong password.
+    TokenFixture wrongPasswordFixture = tokenFixture(profile, "wrong", clientIdentity);
+
+    // E3: wrong nonce inside the encrypted payload, right password.
+    ByteString wrongNonceSecret =
+        EccEncryptedSecret.encrypt(
+            profile,
+            clientIdentity.keyPair(),
+            new X509Certificate[] {clientIdentity.certificate()},
+            validFixture.receiverPublicKey(),
+            ByteString.of(new byte[] {0x01}),
+            ByteString.of(PASSWORD.getBytes(StandardCharsets.UTF_8)),
+            false);
+
+    // E4: encrypted to a different receiver ephemeral key than the session's.
+    KeyPair otherReceiverKeyPair = EccEncryptedSecret.generateEphemeralKeyPair(profile);
+    ByteString otherReceiverPublicKey =
+        EccEncryptedSecret.encodeEphemeralPublicKey(profile, otherReceiverKeyPair.getPublic());
+    ByteString otherReceiverSecret =
+        EccEncryptedSecret.encrypt(
+            profile,
+            clientIdentity.keyPair(),
+            new X509Certificate[] {clientIdentity.certificate()},
+            otherReceiverPublicKey,
+            SERVER_NONCE,
+            ByteString.of(PASSWORD.getBytes(StandardCharsets.UTF_8)),
+            false);
+
+    // E5: payload byte flipped, original signature kept.
+    byte[] flippedPayloadKeptSigBytes = Arrays.copyOf(validSecretBytes, validSecretBytes.length);
+    flippedPayloadKeptSigBytes[validParts.encryptedPayloadStart()] ^= 0x01;
+    ByteString flippedPayloadKeptSigSecret = ByteString.of(flippedPayloadKeptSigBytes);
+
+    // E6: payload byte flipped, re-signed so signature passes and AEAD decryption fails.
+    byte[] flippedPayloadResignedBytes = Arrays.copyOf(validSecretBytes, validSecretBytes.length);
+    flippedPayloadResignedBytes[validParts.encryptedPayloadStart()] ^= 0x01;
+    byte[] newSignature =
+        signEnhanced(
+            profile,
+            clientIdentity.keyPair().getPrivate(),
+            ByteBuffer.wrap(flippedPayloadResignedBytes, 0, validParts.signatureStart()));
+    System.arraycopy(
+        newSignature,
+        0,
+        flippedPayloadResignedBytes,
+        validParts.signatureStart(),
+        newSignature.length);
+    ByteString flippedPayloadResignedSecret = ByteString.of(flippedPayloadResignedBytes);
+
+    // E7: SigningTime one hour old, re-encrypted with updated AAD header and re-signed.
+    ByteString staleSigningTimeSecret =
+        rewriteEnhancedSecret(
+            profile,
+            clientIdentity,
+            validFixture.receiverEphemeralKeyPair(),
+            validSecret,
+            parts ->
+                Unpooled.wrappedBuffer(parts.bytes())
+                    .setLongLE(
+                        parts.signingTimeIndex(),
+                        new DateTime(Instant.now().minus(Duration.ofHours(1))).getUtcTime()),
+            UnaryOperator.identity());
+
+    // E8: embedded certificate does not match the SecureChannel's client certificate.
+    ByteString mismatchedCertSecret =
+        EccEncryptedSecret.encrypt(
+            profile,
+            otherClientIdentity.keyPair(),
+            new X509Certificate[] {otherClientIdentity.certificate()},
+            validFixture.receiverPublicKey(),
+            SERVER_NONCE,
+            ByteString.of(PASSWORD.getBytes(StandardCharsets.UTF_8)),
+            false);
+
+    // E9: last byte truncated.
+    ByteString truncatedSecret =
+        ByteString.of(Arrays.copyOf(validSecretBytes, validSecretBytes.length - 1));
+
+    // Corrupted payload padding inside a validly signed and AEAD-authenticated payload.
+    ByteString badPaddingSecret =
+        rewriteEnhancedSecret(
+            profile,
+            clientIdentity,
+            validFixture.receiverEphemeralKeyPair(),
+            validSecret,
+            parts -> {},
+            AbstractUsernameIdentityValidatorTest::corruptEnhancedPayloadPadding);
+
+    // Control assertions: confirm each mutation triggers the intended distinct decrypt failure
+    // before asserting that the validator masks all of them uniformly.
+    assertEnhancedDecryptFailsWith(
+        profile, validFixture, wrongNonceSecret, StatusCodes.Bad_NonceInvalid);
+    assertEnhancedDecryptFailsWith(
+        profile, validFixture, otherReceiverSecret, StatusCodes.Bad_NonceInvalid);
+    assertEnhancedDecryptFailsWith(
+        profile, validFixture, flippedPayloadKeptSigSecret, StatusCodes.Bad_SecurityChecksFailed);
+    assertEnhancedDecryptFailsWith(
+        profile, validFixture, flippedPayloadResignedSecret, StatusCodes.Bad_SecurityChecksFailed);
+    assertEnhancedDecryptFailsWith(
+        profile, validFixture, staleSigningTimeSecret, StatusCodes.Bad_InvalidTimestamp);
+    assertEnhancedDecryptFailsWith(
+        profile, validFixture, mismatchedCertSecret, StatusCodes.Bad_CertificateInvalid);
+    assertEnhancedDecryptFailsWith(
+        profile, validFixture, truncatedSecret, StatusCodes.Bad_DecodingError);
+    assertEnhancedDecryptFailsWith(
+        profile, validFixture, badPaddingSecret, StatusCodes.Bad_DecodingError);
+
+    TestUsernameValidator validator = new TestUsernameValidator(PASSWORD);
+    List<TokenFixture> cases =
+        List.of(
+            wrongPasswordFixture,
+            withSecret(validFixture, wrongNonceSecret),
+            withSecret(validFixture, otherReceiverSecret),
+            withSecret(validFixture, flippedPayloadKeptSigSecret),
+            withSecret(validFixture, flippedPayloadResignedSecret),
+            withSecret(validFixture, staleSigningTimeSecret),
+            withSecret(validFixture, mismatchedCertSecret),
+            withSecret(validFixture, truncatedSecret),
+            withSecret(validFixture, badPaddingSecret));
+
+    for (TokenFixture failureCase : cases) {
+      MutableSessionKey mutableKey = mutableSessionKey(failureCase);
+      Session session = session(failureCase, SERVER_NONCE, mutableKey);
+
+      UaException exception =
+          assertThrows(
+              UaException.class,
+              () ->
+                  validator.validateIdentityToken(
+                      session,
+                      failureCase.token(),
+                      policy(profile.securityPolicy()),
+                      new SignatureData(null, null)));
+
+      assertUniformEncryptedTokenFailure(exception);
+      assertTrue(
+          mutableKey.keyPair().isEmpty() && mutableKey.publicKey().isEmpty(),
+          "ephemeral key pair must be cleared even when enhanced token validation fails");
+    }
+
+    assertEquals(
+        1,
+        validator.authenticateCount,
+        "only the wrong-password token should reach application authentication");
   }
 
   // Part 4 (7.41): enhanced username secrets require a secured channel because a None channel
@@ -525,7 +720,8 @@ class AbstractUsernameIdentityValidatorTest {
                     policy(profile.securityPolicy()),
                     new SignatureData(null, null)));
 
-    assertEquals(StatusCodes.Bad_EncodingLimitsExceeded, exception.getStatusCode().getValue());
+    assertUniformEncryptedTokenFailure(exception);
+    assertEquals(0, validator.authenticateCount);
   }
 
   // The enhanced path must not disturb the long-standing unencrypted username token behavior.
@@ -1004,6 +1200,7 @@ class AbstractUsernameIdentityValidatorTest {
   private static class TestUsernameValidator extends AbstractUsernameIdentityValidator {
 
     private final String expectedPassword;
+    private int authenticateCount;
 
     private TestUsernameValidator(String expectedPassword) {
       this.expectedPassword = expectedPassword;
@@ -1013,6 +1210,7 @@ class AbstractUsernameIdentityValidatorTest {
     protected Identity.UsernameIdentity authenticateUsernamePassword(
         Session session, String username, String password) {
 
+      authenticateCount++;
       return expectedPassword.equals(password) ? new DefaultUsernameIdentity(username) : null;
     }
   }
@@ -1184,4 +1382,292 @@ class AbstractUsernameIdentityValidatorTest {
       KeyPair receiverEphemeralKeyPair,
       ByteString receiverPublicKey,
       UserNameIdentityToken token) {}
+
+  private static final byte[] ENHANCED_SECRET_LABEL =
+      "opcua-secret".getBytes(StandardCharsets.UTF_8);
+
+  private static TokenFixture withSecret(TokenFixture base, ByteString secret) {
+    UserNameIdentityToken original = base.token();
+    return new TokenFixture(
+        base.clientCertificate(),
+        base.receiverEphemeralKeyPair(),
+        base.receiverPublicKey(),
+        new UserNameIdentityToken(
+            original.getPolicyId(),
+            original.getUserName(),
+            secret,
+            original.getEncryptionAlgorithm()));
+  }
+
+  private static void assertEnhancedDecryptFailsWith(
+      SecurityPolicyProfile profile,
+      TokenFixture fixture,
+      ByteString encodedSecret,
+      long expectedStatusCode) {
+    UaException exception =
+        assertThrows(
+            UaException.class,
+            () ->
+                EccEncryptedSecret.decrypt(
+                    profile,
+                    fixture.receiverEphemeralKeyPair(),
+                    fixture.receiverPublicKey(),
+                    fixture.clientCertificate(),
+                    SERVER_NONCE,
+                    encodedSecret));
+
+    assertEquals(expectedStatusCode, exception.getStatusCode().value());
+  }
+
+  private static ByteString rewriteEnhancedSecret(
+      SecurityPolicyProfile profile,
+      ApplicationIdentity sender,
+      KeyPair receiverEphemeralKeyPair,
+      ByteString encryptedSecret,
+      Consumer<ParsedEnhancedSecretParts> headerMutator,
+      UnaryOperator<byte[]> plaintextMutator)
+      throws Exception {
+
+    ParsedEnhancedSecretParts parts = parseEnhancedSecretParts(profile, encryptedSecret);
+    byte[] bytes = Arrays.copyOf(parts.bytes(), parts.bytes().length);
+    EnhancedSecretKeyMaterial keyMaterial =
+        deriveEnhancedSecretKeyMaterial(profile, receiverEphemeralKeyPair, parts);
+
+    byte[] originalHeader = Arrays.copyOfRange(bytes, 0, parts.encryptedPayloadStart());
+    byte[] originalCiphertext =
+        Arrays.copyOfRange(bytes, parts.encryptedPayloadStart(), parts.signatureStart());
+    Cipher decryptCipher =
+        initEnhancedAeadCipher(profile, Cipher.DECRYPT_MODE, keyMaterial, originalHeader);
+    byte[] plainText = decryptCipher.doFinal(originalCiphertext);
+
+    ParsedEnhancedSecretParts mutableParts =
+        new ParsedEnhancedSecretParts(
+            bytes,
+            parts.signingTimeIndex(),
+            parts.encryptedPayloadStart(),
+            parts.signatureStart(),
+            parts.senderPublicKey(),
+            parts.receiverPublicKey());
+    headerMutator.accept(mutableParts);
+
+    byte[] newHeader = Arrays.copyOfRange(bytes, 0, parts.encryptedPayloadStart());
+    Cipher encryptCipher =
+        initEnhancedAeadCipher(profile, Cipher.ENCRYPT_MODE, keyMaterial, newHeader);
+    byte[] newEncryptedPayload = encryptCipher.doFinal(plaintextMutator.apply(plainText));
+    assertEquals(
+        parts.signatureStart() - parts.encryptedPayloadStart(), newEncryptedPayload.length);
+
+    System.arraycopy(
+        newEncryptedPayload, 0, bytes, parts.encryptedPayloadStart(), newEncryptedPayload.length);
+
+    byte[] signature =
+        signEnhanced(
+            profile,
+            sender.keyPair().getPrivate(),
+            ByteBuffer.wrap(bytes, 0, parts.signatureStart()));
+    System.arraycopy(signature, 0, bytes, parts.signatureStart(), signature.length);
+
+    return ByteString.of(bytes);
+  }
+
+  private static byte[] corruptEnhancedPayloadPadding(byte[] plainText) {
+    byte[] corrupted = Arrays.copyOf(plainText, plainText.length);
+    int paddingSize = corrupted[corrupted.length - 2] & 0xFF;
+
+    if (paddingSize > 0) {
+      corrupted[corrupted.length - 2 - paddingSize] ^= 0x01;
+    } else {
+      corrupted[corrupted.length - 1] = 0x01;
+    }
+
+    return corrupted;
+  }
+
+  private static ParsedEnhancedSecretParts parseEnhancedSecretParts(
+      SecurityPolicyProfile profile, ByteString encryptedSecret) {
+    byte[] bytes = encryptedSecret.bytesOrEmpty();
+    ByteBuf buffer = Unpooled.wrappedBuffer(bytes);
+    OpcUaBinaryDecoder decoder = new OpcUaBinaryDecoder(DefaultEncodingContext.INSTANCE);
+    decoder.setBuffer(buffer);
+
+    decoder.decodeNodeId();
+    decoder.decodeByte(null);
+    decoder.decodeUInt32();
+    decoder.decodeString();
+    ByteString embeddedCert = decoder.decodeByteString();
+    int signingTimeIndex = buffer.readerIndex();
+    decoder.decodeDateTime();
+    decoder.decodeUInt16();
+    ByteString senderPublicKey = decoder.decodeByteString();
+    ByteString receiverPublicKey = decoder.decodeByteString();
+    int encryptedPayloadStart = buffer.readerIndex();
+
+    int sigLength = enhancedSignatureLength(profile, embeddedCert);
+    int signatureStart = bytes.length - sigLength;
+
+    return new ParsedEnhancedSecretParts(
+        bytes,
+        signingTimeIndex,
+        encryptedPayloadStart,
+        signatureStart,
+        senderPublicKey,
+        receiverPublicKey);
+  }
+
+  private static int enhancedSignatureLength(
+      SecurityPolicyProfile profile, ByteString embeddedCert) {
+    return switch (profile.authAxis()) {
+      case ECDSA_NIST_P256_SHA256, ECDSA_BRAINPOOL_P256R1_SHA256 ->
+          EccSignatureUtil.ECDSA_P256_SHA256_P1363_SIGNATURE_LENGTH;
+      case ECDSA_NIST_P384_SHA384, ECDSA_BRAINPOOL_P384R1_SHA384 ->
+          EccSignatureUtil.ECDSA_P384_SHA384_P1363_SIGNATURE_LENGTH;
+      case ED25519 -> EccSignatureUtil.ED25519_SIGNATURE_LENGTH;
+      case ED448 -> EccSignatureUtil.ED448_SIGNATURE_LENGTH;
+      case RSA_PKCS1_SHA256 -> {
+        try {
+          X509Certificate cert = CertificateUtil.decodeCertificate(embeddedCert.bytesOrEmpty());
+          RSAPublicKey rsaKey = (RSAPublicKey) cert.getPublicKey();
+          yield (rsaKey.getModulus().bitLength() + 7) / 8;
+        } catch (UaException e) {
+          throw new AssertionError(e);
+        }
+      }
+      default -> throw new IllegalArgumentException("unsupported auth axis: " + profile.authAxis());
+    };
+  }
+
+  private static byte[] signEnhanced(
+      SecurityPolicyProfile profile, PrivateKey privateKey, ByteBuffer data) throws UaException {
+    if (profile.authAxis() == SecurityPolicyProfile.AuthAxis.RSA_PKCS1_SHA256) {
+      return SignatureUtil.sign(SecurityAlgorithm.RsaSha256, privateKey, data);
+    }
+    return EccSignatureUtil.sign(profile, privateKey, data);
+  }
+
+  private static Cipher initEnhancedAeadCipher(
+      SecurityPolicyProfile profile,
+      int mode,
+      EnhancedSecretKeyMaterial keyMaterial,
+      byte[] headerBytes)
+      throws UaException {
+    ProviderProfile providerProfile = SecurityProviderResolver.create().resolve(profile);
+    ByteBuffer aad = ByteBuffer.wrap(headerBytes);
+
+    return switch (profile.chunkProtectionAxis()) {
+      case AES_GCM ->
+          AeadCipherUtil.initAesGcm(
+              providerProfile,
+              mode,
+              keyMaterial.encryptionKey(),
+              keyMaterial.initializationVector(),
+              aad);
+      case CHACHA20_POLY1305 ->
+          AeadCipherUtil.initChaCha20Poly1305(
+              providerProfile,
+              mode,
+              keyMaterial.encryptionKey(),
+              keyMaterial.initializationVector(),
+              aad);
+      default ->
+          throw new IllegalArgumentException(
+              "unsupported chunk axis: " + profile.chunkProtectionAxis());
+    };
+  }
+
+  private static EnhancedSecretKeyMaterial deriveEnhancedSecretKeyMaterial(
+      SecurityPolicyProfile profile,
+      KeyPair receiverEphemeralKeyPair,
+      ParsedEnhancedSecretParts parts)
+      throws UaException {
+    ProviderProfile providerProfile = SecurityProviderResolver.create().resolve(profile);
+    PublicKey senderEphemeralPublicKey =
+        switch (profile.keyAgreementAxis()) {
+          case ECDH_NIST_P256 ->
+              EccPublicKeyCodec.decodeNistP256(parts.senderPublicKey(), providerProfile);
+          case ECDH_NIST_P384 ->
+              EccPublicKeyCodec.decodeNistP384(parts.senderPublicKey(), providerProfile);
+          case ECDH_BRAINPOOL_P256R1 ->
+              EccPublicKeyCodec.decodeBrainpoolP256r1(parts.senderPublicKey(), providerProfile);
+          case ECDH_BRAINPOOL_P384R1 ->
+              EccPublicKeyCodec.decodeBrainpoolP384r1(parts.senderPublicKey(), providerProfile);
+          case X25519 -> EccPublicKeyCodec.decodeX25519(parts.senderPublicKey(), providerProfile);
+          case X448 -> EccPublicKeyCodec.decodeX448(parts.senderPublicKey(), providerProfile);
+          case FFDH_3072 ->
+              FiniteFieldDhKeyAgreementUtil.decodeFfdhe3072(
+                  parts.senderPublicKey(), providerProfile);
+          default ->
+              throw new IllegalArgumentException(
+                  "unsupported key agreement axis: " + profile.keyAgreementAxis());
+        };
+    byte[] sharedSecret =
+        switch (profile.keyAgreementAxis()) {
+          case ECDH_NIST_P256 ->
+              EccKeyAgreementUtil.agreeNistP256(
+                  providerProfile, receiverEphemeralKeyPair.getPrivate(), senderEphemeralPublicKey);
+          case ECDH_NIST_P384 ->
+              EccKeyAgreementUtil.agreeNistP384(
+                  providerProfile, receiverEphemeralKeyPair.getPrivate(), senderEphemeralPublicKey);
+          case ECDH_BRAINPOOL_P256R1 ->
+              EccKeyAgreementUtil.agreeBrainpoolP256r1(
+                  providerProfile, receiverEphemeralKeyPair.getPrivate(), senderEphemeralPublicKey);
+          case ECDH_BRAINPOOL_P384R1 ->
+              EccKeyAgreementUtil.agreeBrainpoolP384r1(
+                  providerProfile, receiverEphemeralKeyPair.getPrivate(), senderEphemeralPublicKey);
+          case X25519 ->
+              EccKeyAgreementUtil.agreeX25519(
+                  providerProfile, receiverEphemeralKeyPair.getPrivate(), senderEphemeralPublicKey);
+          case X448 ->
+              EccKeyAgreementUtil.agreeX448(
+                  providerProfile, receiverEphemeralKeyPair.getPrivate(), senderEphemeralPublicKey);
+          case FFDH_3072 ->
+              FiniteFieldDhKeyAgreementUtil.agreeFfdhe3072(
+                  providerProfile, receiverEphemeralKeyPair.getPrivate(), senderEphemeralPublicKey);
+          default ->
+              throw new IllegalArgumentException(
+                  "unsupported key agreement axis: " + profile.keyAgreementAxis());
+        };
+
+    int totalLength =
+        profile.symmetricEncryptionKeySize()
+            + EccKeyAgreementUtil.AEAD_INITIALIZATION_VECTOR_LENGTH;
+    byte[] senderBytes = parts.senderPublicKey().bytesOrEmpty();
+    byte[] receiverBytes = parts.receiverPublicKey().bytesOrEmpty();
+    byte[] salt =
+        new byte[2 + ENHANCED_SECRET_LABEL.length + senderBytes.length + receiverBytes.length];
+    salt[0] = (byte) (totalLength & 0xFF);
+    salt[1] = (byte) ((totalLength >>> 8) & 0xFF);
+    System.arraycopy(ENHANCED_SECRET_LABEL, 0, salt, 2, ENHANCED_SECRET_LABEL.length);
+    System.arraycopy(senderBytes, 0, salt, 2 + ENHANCED_SECRET_LABEL.length, senderBytes.length);
+    System.arraycopy(
+        receiverBytes,
+        0,
+        salt,
+        2 + ENHANCED_SECRET_LABEL.length + senderBytes.length,
+        receiverBytes.length);
+
+    byte[] keyMaterial =
+        switch (profile.keyAgreementAxis()) {
+          case ECDH_NIST_P384, ECDH_BRAINPOOL_P384R1, X448 ->
+              HkdfUtil.hkdfSha384(sharedSecret, salt, salt, totalLength);
+          case ECDH_NIST_P256, ECDH_BRAINPOOL_P256R1, X25519, FFDH_3072 ->
+              HkdfUtil.hkdfSha256(sharedSecret, salt, salt, totalLength);
+          default ->
+              throw new IllegalArgumentException(
+                  "unsupported key agreement axis: " + profile.keyAgreementAxis());
+        };
+
+    return new EnhancedSecretKeyMaterial(
+        Arrays.copyOfRange(keyMaterial, 0, profile.symmetricEncryptionKeySize()),
+        Arrays.copyOfRange(keyMaterial, profile.symmetricEncryptionKeySize(), totalLength));
+  }
+
+  private record EnhancedSecretKeyMaterial(byte[] encryptionKey, byte[] initializationVector) {}
+
+  private record ParsedEnhancedSecretParts(
+      byte[] bytes,
+      int signingTimeIndex,
+      int encryptedPayloadStart,
+      int signatureStart,
+      ByteString senderPublicKey,
+      ByteString receiverPublicKey) {}
 }

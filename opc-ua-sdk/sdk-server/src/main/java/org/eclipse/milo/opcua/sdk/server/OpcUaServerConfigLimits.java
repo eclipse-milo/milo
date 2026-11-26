@@ -146,7 +146,8 @@ public interface OpcUaServerConfigLimits {
    * more than this many milliseconds. OPC UA Part 4 defines no normative freshness window for this
    * timestamp; the window only bounds replay exposure, and replay is already bounded by the
    * per-activation server-nonce echo. Deployments with clock-skewed clients that lack an RTC/NTP
-   * can raise this limit to avoid spurious {@code Bad_InvalidTimestamp} rejections.
+   * can raise this limit to avoid spurious {@code Bad_IdentityTokenInvalid} rejections from stale
+   * SigningTime values.
    *
    * @return the maximum allowed enhanced username-token SigningTime skew, in milliseconds.
    */
