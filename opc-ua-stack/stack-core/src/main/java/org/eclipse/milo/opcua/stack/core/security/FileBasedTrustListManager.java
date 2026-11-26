@@ -48,6 +48,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.WatchKeyRunner;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,11 +74,14 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
 
   private final Lock mutationLock = new ReentrantLock();
 
-  private final AtomicReference<TrustListSnapshot> snapshot =
-      new AtomicReference<>(TrustListSnapshot.empty());
+  private final AtomicReference<State> state =
+      new AtomicReference<>(new State(TrustListSnapshot.empty(), false));
 
-  private Thread watchThread;
-  private WatchService watchService;
+  private volatile @Nullable Thread watchThread;
+  private volatile @Nullable WatchService watchService;
+
+  /** Timeout in milliseconds to wait for the watcher thread during {@link #close()}. */
+  long watchThreadJoinTimeoutMillis = 5000L;
 
   private final Path issuerCertsDir;
   private final Path issuerCrlDir;
@@ -104,28 +108,50 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
    * Load the configured directories and start watching them for changes.
    *
    * @throws IOException if the directories cannot be watched.
+   * @throws IllegalStateException if this manager has been closed.
    */
   public void initialize() throws IOException {
-    watchService = FileSystems.getDefault().newWatchService();
+    if (state.get().closed()) {
+      throw new IllegalStateException("FileBasedTrustListManager is closed");
+    }
 
-    Map<WatchKey, Runnable> watchKeys = new ConcurrentHashMap<>();
-    watchKeys.put(register(issuerCertsDir), this::synchronizeIssuerCertificates);
-    watchKeys.put(register(issuerCrlDir), this::synchronizeIssuerCrls);
-    watchKeys.put(register(trustedCertsDir), this::synchronizeTrustedCertificates);
-    watchKeys.put(register(trustedCrlDir), this::synchronizeTrustedCrls);
+    WatchService service = FileSystems.getDefault().newWatchService();
 
-    synchronizeIssuerCertificates();
-    synchronizeIssuerCrls();
-    synchronizeTrustedCertificates();
-    synchronizeTrustedCrls();
+    try {
+      Map<WatchKey, Runnable> watchKeys = new ConcurrentHashMap<>();
+      watchKeys.put(register(service, issuerCertsDir), this::synchronizeIssuerCertificates);
+      watchKeys.put(register(service, issuerCrlDir), this::synchronizeIssuerCrls);
+      watchKeys.put(register(service, trustedCertsDir), this::synchronizeTrustedCertificates);
+      watchKeys.put(register(service, trustedCrlDir), this::synchronizeTrustedCrls);
 
-    watchThread = new Thread(new WatchKeyRunner(watchService, watchKeys));
-    watchThread.setName("milo-trust-list-watcher");
-    watchThread.setDaemon(true);
-    watchThread.start();
+      watchService = service;
+
+      synchronizeIssuerCertificates();
+      synchronizeIssuerCrls();
+      synchronizeTrustedCertificates();
+      synchronizeTrustedCrls();
+
+      if (state.get().closed()) {
+        throw new IllegalStateException("FileBasedTrustListManager is closed");
+      }
+
+      Thread thread = new Thread(new WatchKeyRunner(service, watchKeys));
+      thread.setName("milo-trust-list-watcher");
+      thread.setDaemon(true);
+      watchThread = thread;
+      thread.start();
+    } catch (IOException | RuntimeException e) {
+      try {
+        service.close();
+      } catch (IOException closeFailure) {
+        e.addSuppressed(closeFailure);
+      }
+
+      throw e;
+    }
   }
 
-  private WatchKey register(Path directory) throws IOException {
+  private static WatchKey register(WatchService watchService, Path directory) throws IOException {
     return directory.register(
         watchService,
         StandardWatchEventKinds.ENTRY_CREATE,
@@ -133,31 +159,77 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
         StandardWatchEventKinds.ENTRY_MODIFY);
   }
 
+  /**
+   * Stop watching the configured directories and clear the in-memory trust lists.
+   *
+   * <p>If this thread is interrupted while waiting for shutdown to finish, the interrupt status is
+   * restored, the trust lists are still cleared, and an {@link IOException} is thrown. Subsequent
+   * updates fail with {@link IllegalStateException}.
+   *
+   * @throws IOException if closing the watch service fails or waiting for shutdown is interrupted.
+   */
   @Override
   public void close() throws IOException {
-    if (watchService != null) {
-      watchService.close();
-    }
+    clearAndMarkClosed();
 
-    if (watchThread != null) {
-      try {
-        watchThread.join(5000);
-      } catch (InterruptedException e) {
-        throw new IOException(e);
+    IOException failure = null;
+
+    try {
+      WatchService service = watchService;
+      if (service != null) {
+        try {
+          service.close();
+        } catch (IOException e) {
+          failure = e;
+          Thread thread = watchThread;
+          if (thread != null) {
+            thread.interrupt();
+          }
+        }
+      }
+
+      Thread thread = watchThread;
+      if (thread != null) {
+        try {
+          thread.join(watchThreadJoinTimeoutMillis);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          failure = combineFailures(failure, new IOException(e));
+        }
+      }
+    } finally {
+      if (failure == null) {
+        try {
+          mutationLock.lockInterruptibly();
+          try {
+            clearAndMarkClosed();
+          } finally {
+            mutationLock.unlock();
+          }
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          clearAndMarkClosed();
+          failure = new IOException(e);
+        }
+      } else if (mutationLock.tryLock()) {
+        try {
+          clearAndMarkClosed();
+        } finally {
+          mutationLock.unlock();
+        }
+      } else {
+        clearAndMarkClosed();
       }
     }
 
-    mutationLock.lock();
-    try {
-      snapshot.set(TrustListSnapshot.empty().withLastUpdateTime(snapshot.get().lastUpdateTime()));
-    } finally {
-      mutationLock.unlock();
+    if (failure != null) {
+      throw failure;
     }
   }
 
   @Override
   public TrustListSnapshot getSnapshot() {
-    return snapshot.get();
+    return state.get().snapshot();
   }
 
   /**
@@ -166,16 +238,27 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
    * <p>Files for added and removed entries are written before the snapshot is published. A write or
    * delete that fails is logged; the published snapshot still reflects the requested state, and a
    * later directory reload reconciles it with the directory contents.
+   *
+   * @throws IllegalStateException if this manager has been closed.
    */
   @Override
   public TrustListSnapshot update(UnaryOperator<TrustListSnapshot> update) {
     mutationLock.lock();
     try {
-      TrustListSnapshot current = snapshot.get();
+      State currentState = state.get();
+      if (currentState.closed()) {
+        throw new IllegalStateException("FileBasedTrustListManager is closed");
+      }
+
+      TrustListSnapshot current = currentState.snapshot();
       TrustListSnapshot updated = Objects.requireNonNull(update.apply(current));
 
       if (updated == current) {
-        return current;
+        return state.get().snapshot();
+      }
+
+      if (state.get().closed()) {
+        throw new IllegalStateException("FileBasedTrustListManager is closed");
       }
 
       updateFiles(
@@ -204,9 +287,8 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
           FileBasedTrustListManager::deleteCrlsFromDir);
 
       TrustListSnapshot committed = updated.withLastUpdateTime(DateTime.now());
-      snapshot.set(committed);
 
-      return committed;
+      return publishSnapshot(committed);
     } finally {
       mutationLock.unlock();
     }
@@ -214,22 +296,22 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
 
   @Override
   public List<X509CRL> getIssuerCrls() {
-    return snapshot.get().issuerCrls();
+    return state.get().snapshot().issuerCrls();
   }
 
   @Override
   public List<X509CRL> getTrustedCrls() {
-    return snapshot.get().trustedCrls();
+    return state.get().snapshot().trustedCrls();
   }
 
   @Override
   public List<X509Certificate> getIssuerCertificates() {
-    return snapshot.get().issuerCertificates();
+    return state.get().snapshot().issuerCertificates();
   }
 
   @Override
   public List<X509Certificate> getTrustedCertificates() {
-    return snapshot.get().trustedCertificates();
+    return state.get().snapshot().trustedCertificates();
   }
 
   @Override
@@ -288,8 +370,36 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
 
   @Override
   public DateTime getLastUpdateTime() {
-    return snapshot.get().lastUpdateTime();
+    return state.get().snapshot().lastUpdateTime();
   }
+
+  @Nullable Thread getWatchThread() {
+    return watchThread;
+  }
+
+  private void clearAndMarkClosed() {
+    state.updateAndGet(
+        current ->
+            new State(
+                TrustListSnapshot.empty().withLastUpdateTime(current.snapshot().lastUpdateTime()),
+                true));
+  }
+
+  private TrustListSnapshot publishSnapshot(TrustListSnapshot next) {
+    return state
+        .updateAndGet(current -> current.closed() ? current : new State(next, false))
+        .snapshot();
+  }
+
+  private static IOException combineFailures(@Nullable IOException primary, IOException next) {
+    if (primary == null) {
+      return next;
+    }
+    primary.addSuppressed(next);
+    return primary;
+  }
+
+  private record State(TrustListSnapshot snapshot, boolean closed) {}
 
   /** Write files for entries added to {@code replacement} and delete files for entries removed. */
   private static <T> void updateFiles(
@@ -335,14 +445,22 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
 
   /**
    * Reload one directory and publish the current snapshot with that directory's list replaced. If
-   * the directory cannot be listed the previous snapshot is kept.
+   * the directory cannot be listed the previous snapshot is kept. If this manager has been closed,
+   * the reload is skipped and cannot repopulate the cleared snapshot.
    */
-  private void synchronize(String name, Reload reload) {
+  void synchronize(String name, Reload reload) {
     LOGGER.debug("Synchronizing {}...", name);
 
     mutationLock.lock();
     try {
-      snapshot.set(reload.apply(snapshot.get()).withLastUpdateTime(DateTime.now()));
+      State currentState = state.get();
+      if (currentState.closed()) {
+        return;
+      }
+
+      TrustListSnapshot reloaded =
+          reload.apply(currentState.snapshot()).withLastUpdateTime(DateTime.now());
+      publishSnapshot(reloaded);
     } catch (IOException e) {
       LOGGER.warn("Error synchronizing {}", name, e);
     } finally {
@@ -351,7 +469,7 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
   }
 
   @FunctionalInterface
-  private interface Reload {
+  interface Reload {
     TrustListSnapshot apply(TrustListSnapshot current) throws IOException;
   }
 

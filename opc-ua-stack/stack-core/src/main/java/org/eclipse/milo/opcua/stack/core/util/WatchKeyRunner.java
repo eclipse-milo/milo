@@ -32,7 +32,7 @@ public class WatchKeyRunner implements Runnable {
 
   @Override
   public void run() {
-    while (true) {
+    while (!Thread.currentThread().isInterrupted()) {
       try {
         WatchKey key = watchService.take();
 
@@ -53,7 +53,9 @@ public class WatchKeyRunner implements Runnable {
         logger.info("Watcher got closed");
         return;
       } catch (InterruptedException e) {
-        logger.error("Watcher interrupted.", e);
+        Thread.currentThread().interrupt();
+        logger.info("Watcher interrupted");
+        return;
       }
     }
   }
