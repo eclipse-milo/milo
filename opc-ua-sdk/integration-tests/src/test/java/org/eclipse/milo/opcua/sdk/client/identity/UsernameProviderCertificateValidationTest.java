@@ -11,6 +11,7 @@
 package org.eclipse.milo.opcua.sdk.client.identity;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -89,7 +90,8 @@ class UsernameProviderCertificateValidationTest {
   }
 
   // A client that set a strict validator must not send its password to a server that validator
-  // does not trust just because the endpoint is None and the provider was built without one.
+  // does not trust just because the endpoint is None and the provider was built without one. The
+  // refusal must come before the ActivateSession is sent, not only before the server can read it.
   @Test
   void providerWithoutValidatorRefusesCertificateTheClientValidatorDoesNotTrust() throws Exception {
 
@@ -100,11 +102,23 @@ class UsernameProviderCertificateValidationTest {
                     .setCertificateValidator(validatorTrusting(List.of()))
                     .setIdentityProvider(new UsernameProvider("user1", "password")));
 
+    long rejectedSessionsBefore = rejectedSessionCount();
+
     try {
       UaException failure = assertThrows(UaException.class, client::connect);
 
-      assertEquals(StatusCodes.Bad_SecurityChecksFailed, failure.getStatusCode().value());
-      assertEquals(List.of(), usernamesReceived, "the server must receive no username token");
+      // An ActivateSession that reached the server either passed the identity validator, which
+      // records the username, or was rejected, which counts a rejected session.
+      assertAll(
+          () -> assertEquals(StatusCodes.Bad_SecurityChecksFailed, failure.getStatusCode().value()),
+          () ->
+              assertEquals(
+                  rejectedSessionsBefore,
+                  rejectedSessionCount(),
+                  "the server rejected an ActivateSession; the client must send none"),
+          () ->
+              assertEquals(
+                  List.of(), usernamesReceived, "the server must receive no username token"));
     } finally {
       client.disconnect();
     }
@@ -184,6 +198,10 @@ class UsernameProviderCertificateValidationTest {
           builder.setRequestTimeout(uint(5_000));
           configure.accept(builder);
         });
+  }
+
+  private long rejectedSessionCount() {
+    return server.getDiagnosticsSummary().getRejectedSessionCount().sum();
   }
 
   private static CertificateValidator validatorTrusting(List<X509Certificate> certificates) {

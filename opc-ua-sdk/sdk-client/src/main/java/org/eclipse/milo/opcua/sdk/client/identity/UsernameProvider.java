@@ -67,19 +67,25 @@ import org.slf4j.LoggerFactory;
  * EccEncryptedSecret}. The supplied password bytes are cleared after token construction.
  *
  * <p>OPC UA Part 4 (7.41) lets a client encrypt the password only to a server certificate it
- * trusts. On a secured {@code opc.tcp} endpoint the client's validator, set with {@link
- * OpcUaClientConfigBuilder#setCertificateValidator}, has already checked the endpoint's certificate
- * when the SecureChannel opened and again at CreateSession, and this provider does not check it
- * again. On an endpoint whose SecurityPolicy is {@code None}, or on a transport other than {@code
- * opc.tcp}, nothing has checked it, so before encrypting the password to it the provider validates
- * it: with the validator passed to its constructor or, when none was passed, with the client's
- * validator. When neither the provider nor the client has a validator, the certificate is not
- * validated.
+ * trusts. On an endpoint whose SecurityPolicy is not {@code None}, the client's validator has
+ * already checked the endpoint's certificate at CreateSession and, on a transport that runs a UASC
+ * SecureChannel ({@code opc.tcp} or WebSocket), also when the SecureChannel opened. On an endpoint
+ * whose SecurityPolicy is {@code None}, nothing has checked it.
+ *
+ * <p>The provider validates the certificate before encrypting the password to it on a {@code None}
+ * endpoint and on every transport other than {@code opc.tcp}. It uses the validator passed to its
+ * constructor or, when none was passed, the client's validator: the one set with {@link
+ * OpcUaClientConfigBuilder#setCertificateValidator} or, when none is set, the validator of the
+ * certificate group set with {@link OpcUaClientConfigBuilder#setCertificateGroup}. When neither the
+ * provider nor the client has a validator, the certificate is not validated. The legacy {@link
+ * #getIdentityToken(EndpointDescription, ByteString)} has no client validator, so there a provider
+ * without a validator of its own falls back to {@link
+ * CertificateValidator.InsecureCertificateValidator}, which accepts every certificate.
  *
  * <p>A username {@link UserTokenPolicy} whose security policy is {@code None} sends the password as
  * plain UTF-8, which only a {@code SignAndEncrypt} SecureChannel or a TLS transport keeps private
  * (Part 4 (7.40.4)). The provider sends it as the policy asks, and logs a WARN the first time it
- * sends a password that way over a {@code None} or {@code Sign} SecureChannel.
+ * sends a password that way over a {@code None} or {@code Sign} SecureChannel on {@code opc.tcp}.
  *
  * <p>When an endpoint advertises more than one username {@link UserTokenPolicy}, the provider
  * prefers one whose security policy is usable on the current SecureChannel and skips those that are
@@ -433,10 +439,12 @@ public class UsernameProvider implements IdentityProvider {
 
   /**
    * Log a WARN, once per provider, when a password the token does not encrypt is about to cross a
-   * {@code None} or {@code Sign} SecureChannel, where anyone on the path can read it (Part 4
-   * (7.40.4)).
+   * {@code None} or {@code Sign} SecureChannel on {@code opc.tcp}, where anyone on the path can
+   * read it (Part 4 (7.40.4)).
    *
-   * <p>Transports other than {@code opc.tcp} run over TLS, which encrypts the password in transit.
+   * <p>The HTTPS and WebSocket transport profiles run over TLS, which encrypts the password in
+   * transit. An endpoint built by hand may name no transport profile; it is taken to be {@code
+   * opc.tcp}, so the WARN errs toward being logged.
    *
    * @param endpoint the endpoint being activated.
    * @param tokenPolicy the selected username token policy, whose security policy is {@code None}.
@@ -444,11 +452,17 @@ public class UsernameProvider implements IdentityProvider {
   private void warnIfPasswordTravelsUnencrypted(
       EndpointDescription endpoint, UserTokenPolicy tokenPolicy) {
 
-    boolean channelEncrypts =
-        endpoint.getSecurityMode() == MessageSecurityMode.SignAndEncrypt
-            || !Stack.TCP_UASC_UABINARY_TRANSPORT_URI.equals(endpoint.getTransportProfileUri());
+    String transportProfileUri = endpoint.getTransportProfileUri();
 
-    if (!channelEncrypts && unencryptedPasswordWarningLogged.compareAndSet(false, true)) {
+    boolean opcTcp =
+        transportProfileUri == null
+            || transportProfileUri.isEmpty()
+            || Stack.TCP_UASC_UABINARY_TRANSPORT_URI.equals(transportProfileUri);
+
+    boolean encryptedInTransit =
+        endpoint.getSecurityMode() == MessageSecurityMode.SignAndEncrypt || !opcTcp;
+
+    if (!encryptedInTransit && unencryptedPasswordWarningLogged.compareAndSet(false, true)) {
       LOGGER.warn(
           "Sending password unencrypted to {}: UserTokenPolicy '{}' has SecurityPolicy None and"
               + " the SecureChannel's MessageSecurityMode is {}. Logged once per UsernameProvider.",

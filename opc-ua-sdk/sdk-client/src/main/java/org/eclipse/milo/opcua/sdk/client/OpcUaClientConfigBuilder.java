@@ -300,12 +300,13 @@ public class OpcUaClientConfigBuilder {
    * <p>Overrides the validator of the configured {@link CertificateGroup}. When neither this nor a
    * group is set, server certificates are not validated.
    *
-   * <p>A {@link UsernameProvider} encrypts the password to the endpoint's server certificate. On a
-   * secured {@code opc.tcp} endpoint this validator checks that certificate when the SecureChannel
-   * opens and again at CreateSession. On an endpoint whose SecurityPolicy is {@code None}, or on a
-   * transport other than {@code opc.tcp}, the SecureChannel checks nothing, and the provider checks
-   * the certificate before encrypting to it: with this validator, unless the provider was
-   * constructed with a validator of its own.
+   * <p>A {@link UsernameProvider} encrypts the password to the endpoint's server certificate. On an
+   * endpoint whose SecurityPolicy is not {@code None}, this validator checks that certificate at
+   * CreateSession and, on a transport that runs a UASC SecureChannel ({@code opc.tcp} or
+   * WebSocket), also when the SecureChannel opens. On an endpoint whose SecurityPolicy is {@code
+   * None}, nothing else checks it, so the provider checks the certificate before encrypting to it,
+   * as it also does on every transport other than {@code opc.tcp}: with this validator, unless the
+   * provider was constructed with a validator of its own.
    *
    * @param certificateValidator the validator for server certificates.
    * @return this builder.
