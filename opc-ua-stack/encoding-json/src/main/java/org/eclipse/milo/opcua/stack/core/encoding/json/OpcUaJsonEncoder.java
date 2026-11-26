@@ -61,6 +61,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.util.ArrayUtil;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.eclipse.milo.opcua.stack.core.util.UriUtil;
 import org.jspecify.annotations.NonNull;
 
 public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
@@ -555,7 +556,7 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
         }
         jsonWriter.value(expanded.toParseableString());
       }
-    } catch (IOException e) {
+    } catch (IOException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
     }
   }
@@ -584,7 +585,7 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
           if (index.serverIndex().intValue() != 0) {
             String uri = encodingContext.getServerTable().get(index.serverIndex().intValue());
             if (uri != null) {
-              sb.append("svu=").append(uri).append(";");
+              sb.append("svu=").append(UriUtil.escape(uri)).append(";");
             } else {
               throw new UaSerializationException(
                   StatusCodes.Bad_EncodingError,
@@ -594,7 +595,7 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
         } else if (value.server() instanceof ServerUri uri) {
           UInteger index = encodingContext.getServerTable().getIndex(uri.serverUri());
           if (index == null || index.intValue() != 0) {
-            sb.append("svu=").append(uri.serverUri()).append(";");
+            sb.append("svu=").append(UriUtil.escape(uri.serverUri())).append(";");
           }
         }
 
@@ -602,7 +603,7 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
           if (index.namespaceIndex().intValue() != 0) {
             String uri = encodingContext.getNamespaceTable().get(index.namespaceIndex().intValue());
             if (uri != null) {
-              sb.append("nsu=").append(uri).append(";");
+              sb.append("nsu=").append(UriUtil.escape(uri)).append(";");
             } else {
               throw new UaSerializationException(
                   StatusCodes.Bad_EncodingError,
@@ -611,7 +612,7 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
           }
         } else if (value.namespace() instanceof NamespaceUri uri) {
           if (!uri.namespaceUri().equals(Namespaces.OPC_UA)) {
-            sb.append("nsu=").append(uri.namespaceUri()).append(";");
+            sb.append("nsu=").append(UriUtil.escape(uri.namespaceUri())).append(";");
           }
         }
 
@@ -704,14 +705,14 @@ public class OpcUaJsonEncoder implements UaEncoder, AutoCloseable {
         } else {
           String namespaceUri = encodingContext.getNamespaceTable().get(index);
           if (namespaceUri != null) {
-            jsonWriter.value("nsu=%s;%s".formatted(namespaceUri, value.name()));
+            jsonWriter.value("nsu=" + UriUtil.escape(namespaceUri) + ";" + value.name());
           } else {
             throw new UaSerializationException(
                 StatusCodes.Bad_EncodingError, "namespace index=" + index + " not found");
           }
         }
       }
-    } catch (IOException e) {
+    } catch (IOException | IllegalArgumentException e) {
       throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
     }
   }

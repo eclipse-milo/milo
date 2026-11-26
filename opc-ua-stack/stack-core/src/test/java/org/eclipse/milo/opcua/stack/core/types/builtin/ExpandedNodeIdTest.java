@@ -14,15 +14,21 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ushort;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.Base64;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.ServerTable;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class ExpandedNodeIdTest {
 
@@ -174,6 +180,132 @@ public class ExpandedNodeIdTest {
 
     assertEquals("http://foo.com/bar", xni.getNamespaceUri());
     assertEquals("O=::/#pc;B=::/#pc;S=pc;", xni.getIdentifier());
+  }
+
+  // OPC 10000-6 §5.1.12 examples: %3B in nsu= decodes to ';' and re-encodes identically.
+  @ParameterizedTest
+  @MethodSource("specExampleProvider")
+  void parseAndFormatOpcUaPart6SpecExamples(String wireText, ExpandedNodeId expected) {
+    ExpandedNodeId parsed = ExpandedNodeId.parse(wireText);
+
+    assertEquals(expected, parsed);
+    assertEquals(wireText, parsed.toParseableString());
+  }
+
+  static Stream<Arguments> specExampleProvider() {
+    ByteString opaqueId = ByteString.of(Base64.getDecoder().decode("M/RbKBsRVkePCePcx24oRA=="));
+
+    return Stream.of(
+        Arguments.of(
+            "nsu=tag:acme.com,2023:schemas:data#off%3B;b=M/RbKBsRVkePCePcx24oRA==",
+            new ExpandedNodeId(
+                ServerReference.of(0),
+                NamespaceReference.of("tag:acme.com,2023:schemas:data#off;"),
+                opaqueId)),
+        Arguments.of(
+            "svu=http://smith.com/west/factory;nsu=tag:acme.com,2023:schemas:data#off%3B;b=M/RbKBsRVkePCePcx24oRA==",
+            new ExpandedNodeId(
+                ServerReference.of("http://smith.com/west/factory"),
+                NamespaceReference.of("tag:acme.com,2023:schemas:data#off;"),
+                opaqueId)));
+  }
+
+  // OPC 10000-6 §5.1.12: ';' and '%' in nsu= and svu= URIs must be percent-encoded on write and
+  // decoded on read so URIs survive round-trips without splitting at ';' or misinterpreting '%'.
+  @ParameterizedTest
+  @MethodSource("uriEscapingRoundTripProvider")
+  void toParseableStringAndParseRoundTripEncodedUris(
+      ExpandedNodeId original, String expectedWireText) {
+
+    String wireText = original.toParseableString();
+
+    assertEquals(expectedWireText, wireText);
+    assertEquals(original, ExpandedNodeId.parse(wireText));
+  }
+
+  static Stream<Arguments> uriEscapingRoundTripProvider() {
+    return Stream.of(
+        Arguments.of(
+            ExpandedNodeId.of("urn:example;version=2", "Tag1"),
+            "nsu=urn:example%3Bversion=2;s=Tag1"),
+        Arguments.of(ExpandedNodeId.of("urn:x;s=a", "b"), "nsu=urn:x%3Bs=a;s=b"),
+        Arguments.of(
+            ExpandedNodeId.of("urn:example:100%", "Tag1"), "nsu=urn:example:100%25;s=Tag1"),
+        Arguments.of(ExpandedNodeId.of("urn:a%3Bb%25c", "Tag1"), "nsu=urn:a%253Bb%2525c;s=Tag1"),
+        Arguments.of(
+            new ExpandedNodeId(
+                ServerReference.of("urn:server;east%1"),
+                NamespaceReference.of("urn:ns;2%3B"),
+                "Tag;100%%ZZ"),
+            "svu=urn:server%3Beast%251;nsu=urn:ns%3B2%253B;s=Tag;100%%ZZ"),
+        Arguments.of(
+            new ExpandedNodeId(
+                ServerReference.of("urn:server;east"), NamespaceReference.of(0), uint(42)),
+            "svu=urn:server%3Beast;i=42"));
+  }
+
+  // OPC 10000-6 §5.1.12 Table 4: parsing an external wire string with percent-encoded spaces or
+  // non-ASCII UTF-8 characters and formatting it back must emit a valid RFC 3986 ENCODEDURI rather
+  // than raw spaces or unencoded UTF-8 characters.
+  @ParameterizedTest
+  @MethodSource("externalWireParseThenFormatProvider")
+  void parseThenFormatPreservesValidEncodedUri(
+      String wireText, String expectedServerUri, String expectedNamespaceUri) {
+
+    ExpandedNodeId parsed = ExpandedNodeId.parse(wireText);
+
+    assertEquals(expectedServerUri, parsed.getServerUri());
+    assertEquals(expectedNamespaceUri, parsed.getNamespaceUri());
+    assertEquals(wireText, parsed.toParseableString());
+  }
+
+  static Stream<Arguments> externalWireParseThenFormatProvider() {
+    return Stream.of(
+        Arguments.of("nsu=http://example.com/a%20b;i=1", null, "http://example.com/a b"),
+        Arguments.of("nsu=http://example.com/caf%C3%A9;i=1", null, "http://example.com/café"),
+        Arguments.of(
+            "svu=http://example.com/west%20plant/caf%C3%A9;nsu=urn:ns%E6%B0%B4%3B;s=Tag%C3%A9",
+            "http://example.com/west plant/café", "urn:ns水;"));
+  }
+
+  // OPC 10000-6 §5.1.12: percent-encoded UTF-8 sequences in nsu= and svu= must decode as UTF-8,
+  // while the string identifier portion stays untouched.
+  @Test
+  void parseDecodesMultiByteUtf8PercentEscapesInUris() {
+    ExpandedNodeId parsed =
+        ExpandedNodeId.parse("svu=urn:srv%C3%A9%3B;nsu=urn:ns%E6%B0%B4%25;s=Tag%C3%A9");
+
+    assertEquals("urn:srvé;", parsed.getServerUri());
+    assertEquals("urn:ns水%", parsed.getNamespaceUri());
+    assertEquals("Tag%C3%A9", parsed.getIdentifier());
+    assertEquals(
+        "svu=urn:srv%C3%A9%3B;nsu=urn:ns%E6%B0%B4%25;s=Tag%C3%A9", parsed.toParseableString());
+  }
+
+  // Malformed percent-escapes or invalid UTF-8 sequences in nsu= or svu= must fail with
+  // Bad_NodeIdInvalid rather than leaving literal '%' or U+FFFD in the URI.
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "nsu=urn:example:100%;i=1",
+        "nsu=urn:example%3;i=1",
+        "nsu=urn:example%GG;i=1",
+        "nsu=urn:example%FF;i=1",
+        "nsu=urn:example%C3;i=1",
+        "nsu=urn:example%ED%A0%80;i=1",
+        "svu=urn:server:100%;i=1",
+        "svu=urn:server%3;i=1",
+        "svu=urn:server%GG;i=1",
+        "svu=urn:server%C3;nsu=urn:ok;i=1",
+        "nsu=urn:\uD800;i=1",
+        "svu=urn:\uD800;i=1",
+        "nsu=urn:%3B\uDC00;i=1"
+      })
+  void parseRejectsMalformedPercentEscapesInUris(String input) {
+    UaRuntimeException e =
+        assertThrows(UaRuntimeException.class, () -> ExpandedNodeId.parse(input));
+
+    assertEquals(StatusCodes.Bad_NodeIdInvalid, e.getStatusCode().value());
   }
 
   @Test
