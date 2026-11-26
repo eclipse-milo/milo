@@ -72,6 +72,20 @@ public class OpcUaMonitoredItem {
   private int activeModifies = 0;
 
   /**
+   * {@code true} while a SetMonitoringMode request for the active {@link #itemIncarnation} is in
+   * flight. Prevents overlapping mode changes from racing on the wire or applying out of order.
+   * Guarded by {@link #stateLock}.
+   */
+  private boolean setMonitoringModeInFlight = false;
+
+  /**
+   * Monotonic counter incremented under {@link #stateLock} whenever a SetMonitoringMode request is
+   * prepared. Prevents a delayed response from an earlier attempt from overwriting a newer mode on
+   * the same {@link #itemIncarnation}.
+   */
+  private long monitoringModeGeneration = 0L;
+
+  /**
    * Monotonic counter incremented under {@link #stateLock} whenever any configurable parameter
    * changes (including while {@link SyncState#INITIAL}) or when overlapping modifies begin.
    * Comparing the value captured when a Create or Modify request was built against the value when
@@ -440,17 +454,6 @@ public class OpcUaMonitoredItem {
   }
 
   /**
-   * Set the current MonitoringMode for this MonitoredItem.
-   *
-   * @param monitoringMode the current MonitoringMode for this MonitoredItem.
-   */
-  void setMonitoringMode(MonitoringMode monitoringMode) {
-    synchronized (stateLock) {
-      this.monitoringMode = monitoringMode;
-    }
-  }
-
-  /**
    * @return the current {@link SyncState} of this MonitoredItem.
    */
   public SyncState getSyncState() {
@@ -540,17 +543,13 @@ public class OpcUaMonitoredItem {
   Optional<PreparedDeleteRequest> tryBeginDelete() {
     synchronized (stateLock) {
       ServerState currentServerState = this.serverState;
-      if (currentServerState == null || activeModifies > 0) {
+      if (currentServerState == null || activeModifies > 0 || setMonitoringModeInFlight) {
         return Optional.empty();
       }
 
       return Optional.of(
           new PreparedDeleteRequest(currentServerState.monitoredItemId, itemIncarnation));
     }
-  }
-
-  Optional<UInteger> tryBeginSetMonitoringMode() {
-    return Optional.ofNullable(internalMonitoredItemId());
   }
 
   void applyCreateResult(MonitoredItemCreateResult result) {
@@ -584,6 +583,7 @@ public class OpcUaMonitoredItem {
     if (statusCode.isGood()) {
       itemIncarnation++;
       activeModifies = 0;
+      setMonitoringModeInFlight = false;
       serverState =
           new ServerState(
               result.getMonitoredItemId(),
@@ -724,6 +724,7 @@ public class OpcUaMonitoredItem {
     itemIncarnation++;
     createInFlight = false;
     activeModifies = 0;
+    setMonitoringModeInFlight = false;
     syncState = SyncState.INITIAL;
     serverState = null;
     modifications = null;
@@ -738,15 +739,96 @@ public class OpcUaMonitoredItem {
     deleteResult = statusCode;
   }
 
-  void applySetMonitoringModeResult(StatusCode statusCode) {
+  Optional<PreparedSetMonitoringModeRequest> tryBeginSetMonitoringMode() {
     synchronized (stateLock) {
+      ServerState currentServerState = this.serverState;
+      if (currentServerState == null || setMonitoringModeInFlight) {
+        return Optional.empty();
+      }
+
+      setMonitoringModeInFlight = true;
+      long generation = ++monitoringModeGeneration;
+
+      return Optional.of(
+          new PreparedSetMonitoringModeRequest(
+              currentServerState.monitoredItemId, this.itemIncarnation, generation));
+    }
+  }
+
+  void releaseSetMonitoringMode(PreparedSetMonitoringModeRequest prepared) {
+    synchronized (stateLock) {
+      releaseSetMonitoringModeLocked(prepared);
+    }
+  }
+
+  void applySetMonitoringModeResult(
+      StatusCode statusCode, PreparedSetMonitoringModeRequest prepared) {
+
+    synchronized (stateLock) {
+      releaseSetMonitoringModeLocked(prepared);
+
+      if (this.itemIncarnation != prepared.itemIncarnation
+          || this.monitoringModeGeneration != prepared.modeGeneration) {
+        return;
+      }
+
       this.setMonitoringModeResult = statusCode;
+    }
+  }
+
+  void applySetMonitoringModeResult(StatusCode statusCode, MonitoringMode monitoringMode) {
+    synchronized (stateLock) {
+      applySetMonitoringModeResultLocked(statusCode, monitoringMode);
+    }
+  }
+
+  void applySetMonitoringModeResult(
+      StatusCode statusCode,
+      MonitoringMode monitoringMode,
+      PreparedSetMonitoringModeRequest prepared) {
+
+    synchronized (stateLock) {
+      releaseSetMonitoringModeLocked(prepared);
+
+      if (this.itemIncarnation != prepared.itemIncarnation
+          || this.monitoringModeGeneration != prepared.modeGeneration) {
+        return;
+      }
+
+      applySetMonitoringModeResultLocked(statusCode, monitoringMode);
+    }
+  }
+
+  /** Must be called while holding {@link #stateLock}. */
+  private void applySetMonitoringModeResultLocked(
+      StatusCode statusCode, MonitoringMode monitoringMode) {
+
+    this.setMonitoringModeResult = statusCode;
+
+    if (statusCode.isGood()) {
+      this.monitoringMode = monitoringMode;
+
+      ServerState currentServerState = this.serverState;
+      if (currentServerState != null) {
+        this.serverState = currentServerState.withMonitoringMode(monitoringMode);
+      }
+    }
+  }
+
+  /** Must be called while holding {@link #stateLock}. */
+  private void releaseSetMonitoringModeLocked(PreparedSetMonitoringModeRequest prepared) {
+    if (!prepared.released) {
+      prepared.released = true;
+      if (this.itemIncarnation == prepared.itemIncarnation
+          && this.monitoringModeGeneration == prepared.modeGeneration) {
+        setMonitoringModeInFlight = false;
+      }
     }
   }
 
   final boolean detachIfNotCreated() {
     synchronized (stateLock) {
-      if (createInFlight || activeModifies > 0) {
+      if (createInFlight || activeModifies > 0 || setMonitoringModeInFlight) {
         return false;
       }
 
@@ -765,7 +847,10 @@ public class OpcUaMonitoredItem {
 
   final boolean needsServerDeletion() {
     synchronized (stateLock) {
-      return createInFlight || activeModifies > 0 || syncState != SyncState.INITIAL;
+      return createInFlight
+          || activeModifies > 0
+          || setMonitoringModeInFlight
+          || syncState != SyncState.INITIAL;
     }
   }
 
@@ -790,6 +875,7 @@ public class OpcUaMonitoredItem {
       itemIncarnation++;
       createInFlight = false;
       activeModifies = 0;
+      setMonitoringModeInFlight = false;
       syncState = SyncState.INITIAL;
       serverState = null;
       modifications = null;
@@ -976,6 +1062,30 @@ public class OpcUaMonitoredItem {
     }
   }
 
+  static final class PreparedSetMonitoringModeRequest {
+
+    private final UInteger monitoredItemId;
+    private final long itemIncarnation;
+    private final long modeGeneration;
+    private boolean released;
+
+    private PreparedSetMonitoringModeRequest(
+        UInteger monitoredItemId, long itemIncarnation, long modeGeneration) {
+
+      this.monitoredItemId = monitoredItemId;
+      this.itemIncarnation = itemIncarnation;
+      this.modeGeneration = modeGeneration;
+    }
+
+    UInteger monitoredItemId() {
+      return monitoredItemId;
+    }
+
+    long itemIncarnation() {
+      return itemIncarnation;
+    }
+  }
+
   static class Modifications {
 
     private @Nullable Double samplingInterval;
@@ -1051,6 +1161,16 @@ public class OpcUaMonitoredItem {
 
     public boolean getDiscardOldest() {
       return discardOldest;
+    }
+
+    private ServerState withMonitoringMode(MonitoringMode monitoringMode) {
+      return new ServerState(
+          monitoredItemId,
+          monitoringMode,
+          samplingInterval,
+          filterResult,
+          queueSize,
+          discardOldest);
     }
   }
 
