@@ -22,14 +22,17 @@
  * Policies resolving to SecurityPolicy.None are skipped. Selection uses the public key, including
  * its curve, so it does not access a supplied private key until signing.
  *
- * <h2>Endpoints without a usable policy</h2>
+ * <h2>Endpoints without a policy of the provider's kind</h2>
  *
- * <p>When the endpoint advertises no user-token policy a provider can use, such as no {@code
+ * <p>When the endpoint advertises no user-token policy of a provider's kind, such as no {@code
  * UserName} policy for the username provider, every built-in provider throws a {@link
  * org.eclipse.milo.opcua.stack.core.UaException} with {@code Bad_IdentityTokenRejected}. The
  * provider finds this before the client sends CreateSession, and {@code OpcUaClient.connect()}
- * reports the same StatusCode, so a caller can tell this mismatch from an unexpected failure. The
- * composite provider takes such a failure as its cue to try its next provider.
+ * reports the same StatusCode, so a caller can tell this mismatch from an unexpected failure. A
+ * policy of the right kind that the provider cannot use can fail with another StatusCode: the
+ * username provider throws {@code Bad_SecurityPolicyRejected} for a policy whose security policy it
+ * does not support or the SecureChannel does not allow. The composite provider takes any such
+ * failure as its cue to try its next provider.
  *
  * <h2>Session handoff</h2>
  *
@@ -67,7 +70,7 @@
  * getIdentityToken(...)} implementation should consume the returned receiver public key and fail
  * clearly when that material is missing. Providers for token types other than username should
  * return empty from the enhanced username-token negotiation hook. A provider that finds no
- * user-token policy it can use should throw {@code Bad_IdentityTokenRejected}, as the built-in
+ * user-token policy of its kind should throw {@code Bad_IdentityTokenRejected}, as the built-in
  * providers do.
  */
 package org.eclipse.milo.opcua.sdk.client.identity;
