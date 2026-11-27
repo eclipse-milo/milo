@@ -1416,9 +1416,10 @@ public class OpcUaSubscription {
       MonitoredItemOperationContext context, List<OpcUaMonitoredItem> partition) {
 
     List<OpcUaMonitoredItem> items = List.copyOf(partition);
-    // Server state may be cleared concurrently, so read each item id only once.
+    // Server state may be cleared concurrently, so snapshot each delete target once.
     var monitoredItemIds = new ArrayList<UInteger>(items.size());
-    var itemIds = new ArrayList<Optional<UInteger>>(items.size());
+    var itemRequests =
+        new ArrayList<Optional<OpcUaMonitoredItem.PreparedDeleteRequest>>(items.size());
     var clientHandles = new ArrayList<Optional<UInteger>>(items.size());
 
     synchronized (lifecycleLock) {
@@ -1428,11 +1429,22 @@ public class OpcUaSubscription {
 
       synchronized (monitoredItemsLock) {
         for (OpcUaMonitoredItem item : items) {
-          Optional<UInteger> itemId = item.tryBeginDelete();
+          Optional<OpcUaMonitoredItem.PreparedDeleteRequest> deleteRequest = Optional.empty();
+          Optional<UInteger> clientHandle = Optional.empty();
 
-          itemIds.add(itemId);
-          clientHandles.add(Optional.ofNullable(item.internalClientHandleIfOwnedBy(this)));
-          itemId.ifPresent(monitoredItemIds::add);
+          if (this.itemsToDelete.contains(item)) {
+            UInteger ownedHandle = item.internalClientHandleIfOwnedBy(this);
+            if (ownedHandle != null) {
+              deleteRequest = item.tryBeginDelete();
+              if (deleteRequest.isPresent()) {
+                clientHandle = Optional.of(ownedHandle);
+                monitoredItemIds.add(deleteRequest.get().monitoredItemId());
+              }
+            }
+          }
+
+          itemRequests.add(deleteRequest);
+          clientHandles.add(clientHandle);
         }
       }
     }
@@ -1464,16 +1476,22 @@ public class OpcUaSubscription {
         responseFuture.handle(
             (response, ex) ->
                 applyDeleteMonitoredItemsOutcome(
-                    context, items, itemIds, clientHandles, monitoredItemIds.size(), response, ex));
+                    context,
+                    items,
+                    itemRequests,
+                    clientHandles,
+                    monitoredItemIds.size(),
+                    response,
+                    ex));
 
     return awaitMonitoredItemPartitionAttempt(
-        attemptFuture, context, items, itemIds, monitoredItemIds.size());
+        attemptFuture, context, items, itemRequests, monitoredItemIds.size());
   }
 
   private MonitoredItemPartitionAttempt applyDeleteMonitoredItemsOutcome(
       MonitoredItemOperationContext context,
       List<OpcUaMonitoredItem> items,
-      List<Optional<UInteger>> itemIds,
+      List<Optional<OpcUaMonitoredItem.PreparedDeleteRequest>> itemRequests,
       List<Optional<UInteger>> clientHandles,
       int operationCount,
       @Nullable DeleteMonitoredItemsResponse response,
@@ -1512,7 +1530,7 @@ public class OpcUaSubscription {
       for (int i = 0; i < items.size(); i++) {
         OpcUaMonitoredItem item = items.get(i);
 
-        if (itemIds.get(i).isPresent()) {
+        if (itemRequests.get(i).isPresent()) {
           serviceOperationResults.add(
               new MonitoredItemServiceOperationResult(item, serviceError, null));
         } else {
@@ -1536,11 +1554,12 @@ public class OpcUaSubscription {
       int resultIndex = 0;
       for (int i = 0; i < items.size(); i++) {
         OpcUaMonitoredItem item = items.get(i);
+        Optional<OpcUaMonitoredItem.PreparedDeleteRequest> prepared = itemRequests.get(i);
 
-        if (itemIds.get(i).isPresent()) {
+        if (prepared.isPresent()) {
           StatusCode result = results[resultIndex++];
 
-          applyMonitoredItemDeleteResult(item, clientHandles.get(i), result);
+          applyMonitoredItemDeleteResult(item, clientHandles.get(i), prepared.get(), result);
 
           serviceOperationResults.add(
               new MonitoredItemServiceOperationResult(item, StatusCode.GOOD, result));
@@ -1557,28 +1576,33 @@ public class OpcUaSubscription {
 
   /**
    * Apply an operation-level DeleteMonitoredItems result without corrupting an item that was added
-   * back while the service call was in flight.
+   * back while the service call was in flight or reused in a newer incarnation.
    *
-   * <p>The Server has acted on the deletion, so the item's server state must be cleared either way.
-   * If the application added the item back, it remains in {@link #monitoredItems}; retain the
-   * ClientHandle captured for the request so a later {@link #createMonitoredItems()} can recreate
-   * the desired item. If it was not added back, it stays detached as before.
+   * <p>If the item is still on the incarnation captured when the request was prepared, the Server
+   * acted on that deletion so the item's server state is cleared. If the application added the item
+   * back to this Subscription while the delete was in flight, retain the ClientHandle captured for
+   * the request so a later {@link #createMonitoredItems()} can recreate it; otherwise detach it and
+   * remove the pending deletion. If the item has already moved to a newer incarnation, ignore the
+   * stale response and leave both the item and any newer pending deletion untouched.
    */
   private void applyMonitoredItemDeleteResult(
-      OpcUaMonitoredItem item, Optional<UInteger> clientHandle, StatusCode result) {
+      OpcUaMonitoredItem item,
+      Optional<UInteger> clientHandle,
+      OpcUaMonitoredItem.PreparedDeleteRequest prepared,
+      StatusCode result) {
 
     synchronized (monitoredItemsLock) {
       UInteger handle = clientHandle.orElse(null);
       boolean readded =
           handle != null && item.isOwnedBy(this) && monitoredItems.get(handle) == item;
 
-      item.applyDeleteResult(result, readded ? handle : null);
-
-      // An operation-level result means the Server acted on the deletion, either by deleting the
-      // item or by reporting that it was already gone. Remove the original pending deletion in the
-      // same critical section as applying the result, so a later remove is a distinct operation
-      // that this response cannot consume.
-      itemsToDelete.remove(item);
+      if (item.applyDeleteResult(result, readded ? handle : null, prepared)) {
+        // An operation-level result means the Server acted on the deletion, either by deleting the
+        // item or by reporting that it was already gone. Remove the original pending deletion in
+        // the same critical section as applying the result, so a later remove is a distinct
+        // operation that this response cannot consume.
+        itemsToDelete.remove(item);
+      }
     }
   }
 

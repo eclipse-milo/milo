@@ -285,8 +285,8 @@ public class MonitoredItemSetterRaceTest {
                       switch (step % 4) {
                         case 0 -> itemA.setSamplingInterval(100.0 + step);
                         case 1 -> itemA.setQueueSize(uint(2 + (step % 5)));
-                        case 2 -> itemA.setDiscardOldest((step & 1) == 0);
-                        case 3 -> itemA.setFilter((step & 1) == 0 ? filter : null);
+                        case 2 -> itemA.setDiscardOldest(((step / 4) & 1) == 0);
+                        case 3 -> itemA.setFilter(((step / 4) & 1) == 0 ? filter : null);
                         default -> throw new AssertionError();
                       }
                     } catch (Throwable t) {
@@ -724,6 +724,148 @@ public class MonitoredItemSetterRaceTest {
         subscription.delete();
       }
     }
+
+    /**
+     * A delayed DeleteMonitoredItems response from an earlier incarnation must not clear an item
+     * that was already detached by another delete pass and recreated on a second Subscription.
+     */
+    @Test
+    void delayedDeleteResponseDoesNotClearItemRecreatedOnSecondSubscription() throws Exception {
+      try (var fixture = new Fixture()) {
+        var sub1 = new OpcUaSubscription(fixture.client);
+        var sub2 = new OpcUaSubscription(fixture.client);
+        sub1.create();
+        sub2.create();
+        UInteger sub1Id = sub1.getSubscriptionId().orElseThrow();
+        UInteger sub2Id = sub2.getSubscriptionId().orElseThrow();
+
+        var item = OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_CurrentTime);
+        sub1.addMonitoredItem(item);
+        sub1.synchronizeMonitoredItems();
+        sub1.removeMonitoredItem(item);
+
+        // Hold Delete #1's Good response on the Server so Delete #2 overtakes it, detaches the
+        // item, and allows the item to be added and created on sub2.
+        fixture.serviceSet.gateNextDeleteResponse();
+        CompletableFuture<List<MonitoredItemServiceOperationResult>> delayedDeleteFuture =
+            CompletableFuture.supplyAsync(sub1::deleteMonitoredItems);
+
+        try {
+          fixture.serviceSet.awaitDeleteResponseHeld();
+
+          List<MonitoredItemServiceOperationResult> overtakingDelete = sub1.deleteMonitoredItems();
+          assertEquals(1, overtakingDelete.size());
+          assertTrue(item.getClientHandle().isEmpty());
+          assertTrue(item.getServerState().isEmpty());
+          assertEquals(0, fixture.serverMonitoredItemCount(sub1Id));
+
+          sub2.addMonitoredItem(item);
+          sub2.synchronizeMonitoredItems();
+          UInteger sub2MonitoredItemId = item.getMonitoredItemId().orElseThrow();
+          UInteger sub2ClientHandle = item.getClientHandle().orElseThrow();
+          Optional<StatusCode> deleteResultBefore = item.getDeleteResult();
+          assertEquals(1, fixture.serverMonitoredItemCount(sub2Id));
+
+          fixture.serviceSet.releaseDeleteResponse();
+          List<MonitoredItemServiceOperationResult> delayedResults =
+              delayedDeleteFuture.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+          assertEquals(1, delayedResults.size());
+          assertTrue(delayedResults.get(0).isGood());
+
+          assertEquals(
+              SyncState.SYNCHRONIZED,
+              item.getSyncState(),
+              "delayed delete response from sub1 must not clear item recreated on sub2");
+          assertEquals(sub2MonitoredItemId, item.getMonitoredItemId().orElseThrow());
+          assertEquals(sub2ClientHandle, item.getClientHandle().orElseThrow());
+          assertEquals(deleteResultBefore, item.getDeleteResult());
+          assertEquals(1, fixture.serverMonitoredItemCount(sub2Id));
+          assertTrue(sub2.isMonitoredItemsSynchronized());
+        } finally {
+          fixture.serviceSet.releaseDeleteResponse();
+        }
+
+        sub1.delete();
+        sub2.delete();
+      }
+    }
+
+    /**
+     * A delayed DeleteMonitoredItems response from an earlier incarnation must neither clear an
+     * item recreated on the same Subscription nor remove a newer pending deletion from
+     * itemsToDelete.
+     */
+    @Test
+    void delayedDeleteResponseDoesNotConsumeNewerPendingDeleteOnSameSubscription()
+        throws Exception {
+
+      try (var fixture = new Fixture()) {
+        var subscription = new OpcUaSubscription(fixture.client);
+        subscription.create();
+        UInteger subscriptionId = subscription.getSubscriptionId().orElseThrow();
+
+        var item = OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_CurrentTime);
+        subscription.addMonitoredItem(item);
+        subscription.synchronizeMonitoredItems();
+        subscription.removeMonitoredItem(item);
+
+        fixture.serviceSet.gateNextDeleteResponse();
+        CompletableFuture<List<MonitoredItemServiceOperationResult>> delayedDeleteFuture =
+            CompletableFuture.supplyAsync(subscription::deleteMonitoredItems);
+
+        try {
+          fixture.serviceSet.awaitDeleteResponseHeld();
+
+          // Delete #2 overtakes Delete #1 and detaches the item.
+          List<MonitoredItemServiceOperationResult> overtakingDelete =
+              subscription.deleteMonitoredItems();
+          assertEquals(1, overtakingDelete.size());
+          assertTrue(item.getClientHandle().isEmpty());
+
+          // Re-add, recreate, and remove the item again on the same Subscription.
+          subscription.addMonitoredItem(item);
+          subscription.synchronizeMonitoredItems();
+          UInteger recreatedId = item.getMonitoredItemId().orElseThrow();
+          UInteger recreatedHandle = item.getClientHandle().orElseThrow();
+          Optional<StatusCode> deleteResultBefore = item.getDeleteResult();
+          assertEquals(1, fixture.serverMonitoredItemCount(subscriptionId));
+
+          subscription.removeMonitoredItem(item);
+          assertFalse(subscription.isMonitoredItemsSynchronized());
+
+          // Release delayed Delete #1; it must leave both the recreated item and its newer pending
+          // deletion intact.
+          fixture.serviceSet.releaseDeleteResponse();
+          List<MonitoredItemServiceOperationResult> delayedResults =
+              delayedDeleteFuture.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+          assertEquals(1, delayedResults.size());
+          assertTrue(delayedResults.get(0).isGood());
+
+          assertEquals(SyncState.SYNCHRONIZED, item.getSyncState());
+          assertEquals(recreatedId, item.getMonitoredItemId().orElseThrow());
+          assertEquals(recreatedHandle, item.getClientHandle().orElseThrow());
+          assertEquals(deleteResultBefore, item.getDeleteResult());
+          assertFalse(
+              subscription.isMonitoredItemsSynchronized(),
+              "stale delete response must not consume the newer pending deletion");
+          assertEquals(1, fixture.serverMonitoredItemCount(subscriptionId));
+
+          // The newer deletion still runs and cleans up the recreated server-side item.
+          List<MonitoredItemServiceOperationResult> finalDelete =
+              subscription.deleteMonitoredItems();
+          assertEquals(1, finalDelete.size());
+          assertTrue(finalDelete.get(0).isGood());
+          assertEquals(0, fixture.serverMonitoredItemCount(subscriptionId));
+          assertTrue(subscription.isMonitoredItemsSynchronized());
+          assertEquals(SyncState.INITIAL, item.getSyncState());
+          assertTrue(item.getClientHandle().isEmpty());
+        } finally {
+          fixture.serviceSet.releaseDeleteResponse();
+        }
+
+        subscription.delete();
+      }
+    }
   }
 
   private static final class ThrowingPublicGettersItem extends OpcUaMonitoredItem {
@@ -890,6 +1032,10 @@ public class MonitoredItemSetterRaceTest {
     private final CountDownLatch createArrived = new CountDownLatch(1);
     private final CountDownLatch createGate = new CountDownLatch(1);
 
+    private final AtomicBoolean gateNextDeleteResponse = new AtomicBoolean(false);
+    private final CountDownLatch deleteResponseHeld = new CountDownLatch(1);
+    private final CountDownLatch deleteResponseGate = new CountDownLatch(1);
+
     CountingMonitoredItemServiceSet(OpcUaServer server) {
       super(server);
     }
@@ -907,6 +1053,20 @@ public class MonitoredItemSetterRaceTest {
 
     void releaseCreate() {
       createGate.countDown();
+    }
+
+    void gateNextDeleteResponse() {
+      gateNextDeleteResponse.set(true);
+    }
+
+    void awaitDeleteResponseHeld() throws InterruptedException {
+      assertTrue(
+          deleteResponseHeld.await(TIMEOUT_SECONDS, TimeUnit.SECONDS),
+          "gated DeleteMonitoredItems response never arrived");
+    }
+
+    void releaseDeleteResponse() {
+      deleteResponseGate.countDown();
     }
 
     @Override
@@ -949,7 +1109,22 @@ public class MonitoredItemSetterRaceTest {
         ServiceRequestContext context, DeleteMonitoredItemsRequest request) throws UaException {
 
       deleteCalls.incrementAndGet();
-      return super.onDeleteMonitoredItems(context, request);
+      DeleteMonitoredItemsResponse response = super.onDeleteMonitoredItems(context, request);
+
+      if (gateNextDeleteResponse.compareAndSet(true, false)) {
+        deleteResponseHeld.countDown();
+
+        try {
+          if (!deleteResponseGate.await(30, TimeUnit.SECONDS)) {
+            throw new UaException(StatusCodes.Bad_Timeout, "delete gate was never released");
+          }
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+        }
+      }
+
+      return response;
     }
   }
 
@@ -981,6 +1156,7 @@ public class MonitoredItemSetterRaceTest {
     @Override
     public void close() throws Exception {
       serviceSet.releaseCreate();
+      serviceSet.releaseDeleteResponse();
       try {
         client.disconnectAsync().get(5, TimeUnit.SECONDS);
       } finally {

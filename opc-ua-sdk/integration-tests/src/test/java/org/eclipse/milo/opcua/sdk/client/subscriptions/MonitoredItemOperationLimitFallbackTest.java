@@ -633,7 +633,7 @@ public class MonitoredItemOperationLimitFallbackTest {
     }
 
     @Override
-    Optional<UInteger> tryBeginDelete() {
+    Optional<PreparedDeleteRequest> tryBeginDelete() {
       if (resetOnNextMonitoredItemIdRead) {
         resetOnNextMonitoredItemIdRead = false;
         reset();

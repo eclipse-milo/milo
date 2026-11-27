@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Optional;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,6 +25,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaMonitoredItem.PreparedCreateRequest;
+import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaMonitoredItem.PreparedDeleteRequest;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaMonitoredItem.PreparedModifyRequest;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaMonitoredItem.SyncState;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -406,6 +408,48 @@ public class OpcUaMonitoredItemStateConcurrencyTest {
               + " SYNCHRONIZED");
       assertEquals(500.0, item.getRevisedSamplingInterval().orElseThrow());
     }
+
+    /**
+     * A DeleteMonitoredItems response captured for an earlier item incarnation must be ignored
+     * after the item is detached and recreated, even when the Server reuses the same
+     * MonitoredItemId and ClientHandle.
+     */
+    @Test
+    void applyDeleteResultForStaleIncarnationIsIgnored() {
+      var item = OpcUaMonitoredItem.newDataItem(NodeIds.Server_ServerStatus_CurrentTime);
+      item.setClientHandle(uint(1));
+      item.applyCreateResult(createdResult(1));
+
+      PreparedDeleteRequest staleDelete = item.tryBeginDelete().orElseThrow();
+      assertEquals(uint(1), staleDelete.monitoredItemId());
+
+      // Detach via another delete response and recreate on a new lifecycle with the same numeric
+      // MonitoredItemId=1 and ClientHandle=1.
+      item.applyDeleteResult(new StatusCode(StatusCodes.Bad_MonitoredItemIdInvalid));
+      item.setClientHandle(uint(1));
+      item.applyCreateResult(createdResult(1));
+      Optional<StatusCode> deleteResultBefore = item.getDeleteResult();
+
+      assertFalse(
+          item.applyDeleteResult(StatusCode.GOOD, null, staleDelete),
+          "a stale delete response must not detach a recreated item");
+      assertFalse(
+          item.applyDeleteResult(StatusCode.GOOD, uint(1), staleDelete),
+          "a stale delete response must not reset a recreated item back to INITIAL");
+
+      assertEquals(SyncState.SYNCHRONIZED, item.getSyncState());
+      assertEquals(uint(1), item.getMonitoredItemId().orElseThrow());
+      assertEquals(uint(1), item.getClientHandle().orElseThrow());
+      assertEquals(deleteResultBefore, item.getDeleteResult());
+
+      // Positive control: a delete prepared for the current incarnation applies and detaches.
+      PreparedDeleteRequest currentDelete = item.tryBeginDelete().orElseThrow();
+      assertTrue(item.applyDeleteResult(StatusCode.GOOD, null, currentDelete));
+      assertEquals(SyncState.INITIAL, item.getSyncState());
+      assertTrue(item.getServerState().isEmpty());
+      assertTrue(item.getClientHandle().isEmpty());
+      assertEquals(StatusCode.GOOD, item.getDeleteResult().orElseThrow());
+    }
   }
 
   private static void applySetter(OpcUaMonitoredItem item, int step, DataChangeFilter filter) {
@@ -413,8 +457,8 @@ public class OpcUaMonitoredItemStateConcurrencyTest {
     switch (step % 4) {
       case 0 -> item.setSamplingInterval(100.0 + (step % 10));
       case 1 -> item.setQueueSize(uint(1 + (step % 10)));
-      case 2 -> item.setDiscardOldest((step & 1) == 0);
-      case 3 -> item.setFilter((step & 1) == 0 ? filter : null);
+      case 2 -> item.setDiscardOldest(((step / 4) & 1) == 0);
+      case 3 -> item.setFilter(((step / 4) & 1) == 0 ? filter : null);
       default -> throw new AssertionError();
     }
   }

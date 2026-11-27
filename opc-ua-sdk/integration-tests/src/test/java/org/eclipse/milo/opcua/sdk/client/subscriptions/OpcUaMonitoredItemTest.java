@@ -337,7 +337,7 @@ public class OpcUaMonitoredItemTest extends AbstractClientServerTest {
     }
 
     @Override
-    Optional<UInteger> tryBeginDelete() {
+    Optional<PreparedDeleteRequest> tryBeginDelete() {
       if (resetOnNextMonitoredItemIdRead) {
         resetOnNextMonitoredItemIdRead = false;
         reset();

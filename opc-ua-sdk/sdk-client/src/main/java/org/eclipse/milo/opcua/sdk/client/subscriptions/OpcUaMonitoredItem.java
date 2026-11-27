@@ -499,8 +499,16 @@ public class OpcUaMonitoredItem {
     }
   }
 
-  Optional<UInteger> tryBeginDelete() {
-    return Optional.ofNullable(internalMonitoredItemId());
+  Optional<PreparedDeleteRequest> tryBeginDelete() {
+    synchronized (stateLock) {
+      ServerState currentServerState = this.serverState;
+      if (currentServerState == null) {
+        return Optional.empty();
+      }
+
+      return Optional.of(
+          new PreparedDeleteRequest(currentServerState.monitoredItemId, itemIncarnation));
+    }
   }
 
   Optional<UInteger> tryBeginSetMonitoringMode() {
@@ -622,21 +630,43 @@ public class OpcUaMonitoredItem {
 
   void applyDeleteResult(StatusCode statusCode, @Nullable UInteger readdedClientHandle) {
     synchronized (stateLock) {
-      itemIncarnation++;
-      createInFlight = false;
-      syncState = SyncState.INITIAL;
-      serverState = null;
-      modifications = null;
+      applyDeleteResultLocked(statusCode, readdedClientHandle);
+    }
+  }
 
-      if (readdedClientHandle != null) {
-        clientHandle = readdedClientHandle;
-      } else {
-        clientHandle = null;
-        owner = null;
+  boolean applyDeleteResult(
+      StatusCode statusCode,
+      @Nullable UInteger readdedClientHandle,
+      PreparedDeleteRequest prepared) {
+
+    synchronized (stateLock) {
+      if (this.itemIncarnation != prepared.itemIncarnation) {
+        return false;
       }
 
-      deleteResult = statusCode;
+      applyDeleteResultLocked(statusCode, readdedClientHandle);
+      return true;
     }
+  }
+
+  /** Must be called while holding {@link #stateLock}. */
+  private void applyDeleteResultLocked(
+      StatusCode statusCode, @Nullable UInteger readdedClientHandle) {
+
+    itemIncarnation++;
+    createInFlight = false;
+    syncState = SyncState.INITIAL;
+    serverState = null;
+    modifications = null;
+
+    if (readdedClientHandle != null) {
+      clientHandle = readdedClientHandle;
+    } else {
+      clientHandle = null;
+      owner = null;
+    }
+
+    deleteResult = statusCode;
   }
 
   void applySetMonitoringModeResult(StatusCode statusCode) {
@@ -827,6 +857,25 @@ public class OpcUaMonitoredItem {
           monitoredItemId,
           new MonitoringParameters(
               clientHandle, samplingInterval, encodeFilter(filter), queueSize, discardOldest));
+    }
+
+    long itemIncarnation() {
+      return itemIncarnation;
+    }
+  }
+
+  static final class PreparedDeleteRequest {
+
+    private final UInteger monitoredItemId;
+    private final long itemIncarnation;
+
+    private PreparedDeleteRequest(UInteger monitoredItemId, long itemIncarnation) {
+      this.monitoredItemId = monitoredItemId;
+      this.itemIncarnation = itemIncarnation;
+    }
+
+    UInteger monitoredItemId() {
+      return monitoredItemId;
     }
 
     long itemIncarnation() {
