@@ -18,10 +18,11 @@
  * <p>The resolver returns one {@link org.eclipse.milo.opcua.sdk.client.EndpointConfiguration}
  * containing the selected endpoint and the unmodified discovery list. Selection can apply an
  * advertised-host override, while Session endpoint validation still compares the original
- * advertised list against CreateSession. A refresh must preserve the selected URL, server
- * application URI, transport, security policy, mode and user token policies, since discovery is
- * unauthenticated and the token policies decide how credentials are protected. User identity and
- * certificate validation remain client configuration.
+ * advertised list against CreateSession and rejects mismatches with {@link
+ * org.eclipse.milo.opcua.sdk.client.SessionEndpointMismatchException}. A refresh must preserve the
+ * selected URL, server application URI, transport, security policy, mode and user token policies,
+ * since discovery is unauthenticated and the token policies decide how credentials are protected.
+ * User identity and certificate validation remain client configuration.
  *
  * <p>Refresh sits beside the transport's reconnect loop rather than inside it. Transports that
  * implement {@code ChannelStateObservable} report each failed attempt; the client classifies the

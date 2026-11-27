@@ -21,6 +21,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+import org.eclipse.milo.opcua.sdk.client.SessionEndpointMismatchException;
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
 import org.eclipse.milo.opcua.sdk.client.identity.UsernameProvider;
 import org.eclipse.milo.opcua.stack.core.Stack;
@@ -65,6 +66,9 @@ class SessionEndpointValidationTest {
   private static final String TRANSPORT_OPC_TCP = Stack.TCP_UASC_UABINARY_TRANSPORT_URI;
 
   private static final String TRANSPORT_HTTPS = Stack.HTTPS_UABINARY_TRANSPORT_URI;
+
+  private static final String EXPECTED_MISMATCH_MESSAGE =
+      "endpoints returned during discovery do not match session endpoints";
 
   @Test
   @DisplayName("Returns without validation when no discovery endpoints match the transport profile")
@@ -129,13 +133,14 @@ class SessionEndpointValidationTest {
                 TRANSPORT_OPC_TCP,
                 (short) 1));
 
-    UaException ex =
+    SessionEndpointMismatchException ex =
         assertThrows(
-            UaException.class,
+            SessionEndpointMismatchException.class,
             () ->
                 SessionFsmFactory.validateSessionEndpoints(TRANSPORT_OPC_TCP, discovery, session));
 
     assertEquals(StatusCodes.Bad_SecurityChecksFailed, ex.getStatusCode().getValue());
+    assertEquals(EXPECTED_MISMATCH_MESSAGE, ex.getMessage());
   }
 
   @Test
@@ -186,7 +191,7 @@ class SessionEndpointValidationTest {
         Arguments.of(DiffKind.SecurityLevel));
   }
 
-  @ParameterizedTest(name = "Mismatch due to differing {0} throws UaException")
+  @ParameterizedTest(name = "Mismatch due to differing {0} throws SessionEndpointMismatchException")
   @MethodSource("differingEndpoints")
   void testEndpointMismatchThrows(DiffKind kind) {
     EndpointDescription discoveryEp =
@@ -267,13 +272,14 @@ class SessionEndpointValidationTest {
     List<EndpointDescription> discovery = List.of(discoveryEp);
     List<EndpointDescription> session = List.of(sessionEp);
 
-    UaException ex =
+    SessionEndpointMismatchException ex =
         assertThrows(
-            UaException.class,
+            SessionEndpointMismatchException.class,
             () ->
                 SessionFsmFactory.validateSessionEndpoints(TRANSPORT_OPC_TCP, discovery, session));
 
     assertEquals(StatusCodes.Bad_SecurityChecksFailed, ex.getStatusCode().getValue());
+    assertEquals(EXPECTED_MISMATCH_MESSAGE, ex.getMessage());
   }
 
   // A caller-supplied discovery endpoint may omit its ApplicationDescription (server == null).
@@ -302,14 +308,15 @@ class SessionEndpointValidationTest {
             sessionEp.getTransportProfileUri(),
             sessionEp.getSecurityLevel());
 
-    UaException ex =
+    SessionEndpointMismatchException ex =
         assertThrows(
-            UaException.class,
+            SessionEndpointMismatchException.class,
             () ->
                 SessionFsmFactory.validateSessionEndpoints(
                     TRANSPORT_OPC_TCP, List.of(discoveryEp), List.of(sessionEp)));
 
     assertEquals(StatusCodes.Bad_SecurityChecksFailed, ex.getStatusCode().value());
+    assertEquals(EXPECTED_MISMATCH_MESSAGE, ex.getMessage());
   }
 
   // Symmetric null-safety check when the session endpoint carries server == null.
@@ -336,14 +343,15 @@ class SessionEndpointValidationTest {
             discoveryEp.getTransportProfileUri(),
             discoveryEp.getSecurityLevel());
 
-    UaException ex =
+    SessionEndpointMismatchException ex =
         assertThrows(
-            UaException.class,
+            SessionEndpointMismatchException.class,
             () ->
                 SessionFsmFactory.validateSessionEndpoints(
                     TRANSPORT_OPC_TCP, List.of(discoveryEp), List.of(sessionEp)));
 
     assertEquals(StatusCodes.Bad_SecurityChecksFailed, ex.getStatusCode().value());
+    assertEquals(EXPECTED_MISMATCH_MESSAGE, ex.getMessage());
   }
 
   // OPC 10000-4 §5.7.2.2: a missing server ApplicationDescription (server == null) must never be
@@ -371,14 +379,15 @@ class SessionEndpointValidationTest {
             sessionEp.getTransportProfileUri(),
             sessionEp.getSecurityLevel());
 
-    UaException ex =
+    SessionEndpointMismatchException ex =
         assertThrows(
-            UaException.class,
+            SessionEndpointMismatchException.class,
             () ->
                 SessionFsmFactory.validateSessionEndpoints(
                     TRANSPORT_OPC_TCP, List.of(discoveryEp), List.of(sessionEp)));
 
     assertEquals(StatusCodes.Bad_SecurityChecksFailed, ex.getStatusCode().value());
+    assertEquals(EXPECTED_MISMATCH_MESSAGE, ex.getMessage());
   }
 
   // OPC 10000-4 §5.7.2.2: two endpoints both missing server ApplicationDescription must still fail
@@ -396,9 +405,9 @@ class SessionEndpointValidationTest {
             TRANSPORT_OPC_TCP,
             UByte.valueOf((short) 1));
 
-    UaException ex =
+    SessionEndpointMismatchException ex =
         assertThrows(
-            UaException.class,
+            SessionEndpointMismatchException.class,
             () ->
                 SessionFsmFactory.validateSessionEndpoints(
                     TRANSPORT_OPC_TCP,
@@ -406,6 +415,7 @@ class SessionEndpointValidationTest {
                     List.of(endpointWithoutServer)));
 
     assertEquals(StatusCodes.Bad_SecurityChecksFailed, ex.getStatusCode().value());
+    assertEquals(EXPECTED_MISMATCH_MESSAGE, ex.getMessage());
   }
 
   // CreateSession only asks for enhanced key material when the chosen provider will use username
@@ -547,6 +557,10 @@ class SessionEndpointValidationTest {
                     SecurityPolicy.ECC_nistP256_AesGcm));
 
     assertEquals(StatusCodes.Bad_SecurityChecksFailed, exception.getStatusCode().getValue());
+    assertEquals(
+        UaException.class,
+        exception.getClass(),
+        "certificate mismatch must throw plain UaException, not SessionEndpointMismatchException");
   }
 
   // Part 6 6.8.2 makes the receiver EphemeralKey single-use: each ActivateSession response carries

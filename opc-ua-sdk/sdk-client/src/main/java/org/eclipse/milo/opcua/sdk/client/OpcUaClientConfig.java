@@ -227,9 +227,10 @@ public interface OpcUaClientConfig {
    * the current connection attempt contain at least one endpoint for the current transport profile,
    * the client compares the discovery and session endpoint lists for that transport profile on all
    * OPC UA Part 4 §5.5.1 fields (including {@code endpointUrl}), regardless of order, and rejects
-   * the session with {@code Bad_SecurityChecksFailed} if they differ. Validation is skipped if the
-   * discovery endpoints for the current connection attempt have no endpoints matching the current
-   * transport profile.
+   * the session with {@link SessionEndpointMismatchException} (status {@code
+   * Bad_SecurityChecksFailed}) if they differ. Callers can detect this failure via {@link
+   * UaException#extract(Throwable, Class)}. Validation is skipped if the discovery endpoints for
+   * the current connection attempt have no endpoints matching the current transport profile.
    *
    * <p>The client does not filter either list by host. Because servers filter both {@code
    * GetEndpoints} and {@code CreateSession} responses by the host in the request URL, both requests

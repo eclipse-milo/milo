@@ -205,16 +205,56 @@ public class UaException extends Exception implements UaExceptionStatus {
    * If {@code ex} is a {@link UaException}, or if a {@link UaException} can be found by walking up
    * the exception cause chain, return it.
    *
-   * @param ex the {@link Throwable} to extract from.
+   * @param ex the {@link Throwable} to extract from, or {@code null}.
    * @return a {@link UaException} if one was present in the exception chain.
    */
-  public static Optional<UaException> extract(Throwable ex) {
-    if (ex instanceof UaException uaException) {
-      return Optional.of(uaException);
-    } else {
-      Throwable cause = ex.getCause();
-      return cause != null ? extract(cause) : Optional.empty();
+  public static Optional<UaException> extract(@Nullable Throwable ex) {
+    return extract(ex, UaException.class);
+  }
+
+  /**
+   * If {@code ex} is an instance of {@code type}, or if an instance of {@code type} can be found by
+   * walking up the exception cause chain, return the first match.
+   *
+   * <p>Use this to detect a specific {@link UaException} subtype uniformly whether it is thrown
+   * directly or wrapped in a plain {@link UaException}, {@link
+   * java.util.concurrent.ExecutionException}, or {@link java.util.concurrent.CompletionException}:
+   *
+   * <pre>{@code
+   * Optional<UaServiceFaultException> fault =
+   *     UaException.extract(failure, UaServiceFaultException.class);
+   * }</pre>
+   *
+   * @param <T> the {@link UaException} subtype to extract.
+   * @param ex the {@link Throwable} to extract from, or {@code null}.
+   * @param type the {@link UaException} subtype class to search for.
+   * @return the first matching exception in the cause chain, if present.
+   */
+  public static <T extends UaException> Optional<T> extract(@Nullable Throwable ex, Class<T> type) {
+
+    requireNonNull(type, "type");
+
+    Throwable current = ex;
+    Throwable slow = ex;
+    boolean advanceSlow = false;
+
+    while (current != null) {
+      if (type.isInstance(current)) {
+        return Optional.of(type.cast(current));
+      }
+
+      current = current.getCause();
+      if (current == slow) {
+        return Optional.empty();
+      }
+
+      if (advanceSlow && slow != null) {
+        slow = slow.getCause();
+      }
+      advanceSlow = !advanceSlow;
     }
+
+    return Optional.empty();
   }
 
   /**
