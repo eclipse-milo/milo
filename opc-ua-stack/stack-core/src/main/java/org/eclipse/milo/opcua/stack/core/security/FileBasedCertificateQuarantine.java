@@ -125,9 +125,7 @@ public class FileBasedCertificateQuarantine implements CertificateQuarantine {
     }
   }
 
-  private synchronized boolean deleteCertificateFiles(File dir, ByteString thumbprint) {
-    boolean deleted = false;
-
+  private synchronized void deleteCertificateFiles(File dir, ByteString thumbprint) {
     for (File file : listCertificateFiles(dir)) {
       boolean matchesThumbprint =
           decodeCertificateFile(file)
@@ -145,16 +143,12 @@ public class FileBasedCertificateQuarantine implements CertificateQuarantine {
 
       if (matchesThumbprint) {
         try {
-          if (deleteCertificateFile(file.toPath())) {
-            deleted = true;
-          }
+          deleteCertificateFile(file.toPath());
         } catch (IOException e) {
           LOGGER.warn("Failed to delete rejected certificate: {}", file, e);
         }
       }
     }
-
-    return deleted;
   }
 
   boolean deleteCertificateFile(Path path) throws IOException {

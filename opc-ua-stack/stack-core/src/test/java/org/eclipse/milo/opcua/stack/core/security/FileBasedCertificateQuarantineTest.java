@@ -31,6 +31,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -156,14 +158,20 @@ class FileBasedCertificateQuarantineTest extends CertificateQuarantineTest {
   @Test
   void failedDeleteLogsRejectedCertificateAndContinuesDeletingOtherCopies() throws Exception {
     X509Certificate target = newCertificate();
-    Path lockedCopy = Files.write(directory.resolve("00-locked.der"), target.getEncoded());
-    Path deletableCopy = Files.write(directory.resolve("zz-deletable.der"), target.getEncoded());
+    Path firstCopy = Files.write(directory.resolve("copy-a.der"), target.getEncoded());
+    Path secondCopy = Files.write(directory.resolve("copy-b.der"), target.getEncoded());
+
+    // Fail whichever matching copy File.listFiles() visits first, so the test always proves that
+    // removal continues to delete the remaining copy regardless of filesystem directory order.
+    var attempts = new AtomicInteger(0);
+    var failedCopy = new AtomicReference<Path>();
 
     var quarantine =
         new FileBasedCertificateQuarantine(directory.toFile(), getMaxRejectedCertificates()) {
           @Override
           boolean deleteCertificateFile(Path path) throws IOException {
-            if (path.equals(lockedCopy)) {
+            if (attempts.getAndIncrement() == 0) {
+              failedCopy.set(path);
               throw new AccessDeniedException(path.toString());
             }
             return super.deleteCertificateFile(path);
@@ -179,12 +187,16 @@ class FileBasedCertificateQuarantineTest extends CertificateQuarantineTest {
       System.setErr(originalErr);
     }
 
-    assertTrue(Files.exists(lockedCopy), "unremovable copy remains on disk");
-    assertFalse(Files.exists(deletableCopy), "remaining matching copy must still be deleted");
+    Path kept = failedCopy.get();
+    Path removed = kept.equals(firstCopy) ? secondCopy : firstCopy;
+
+    assertEquals(2, attempts.get(), "removal must attempt to delete every matching copy");
+    assertTrue(Files.exists(kept), "unremovable copy remains on disk");
+    assertFalse(Files.exists(removed), "remaining matching copy must still be deleted");
 
     String logs = capturedErr.toString(StandardCharsets.UTF_8);
     assertTrue(
-        logs.contains("Failed to delete rejected certificate: " + lockedCopy),
+        logs.contains("Failed to delete rejected certificate: " + kept),
         "expected rejected certificate warning in logs, got: " + logs);
     assertFalse(
         logs.contains("issuer certificate"),
