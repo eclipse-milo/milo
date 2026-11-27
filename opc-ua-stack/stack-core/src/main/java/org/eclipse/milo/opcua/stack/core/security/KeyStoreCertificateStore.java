@@ -16,20 +16,24 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.ClosedWatchServiceException;
+import java.nio.file.FileSystemLoopException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -59,6 +63,9 @@ import org.slf4j.LoggerFactory;
 public class KeyStoreCertificateStore implements CertificateStore, Closeable {
 
   private static final String DEFAULT_ALIAS_PREFIX = "server-";
+
+  /** Maximum symbolic link hops followed when resolving a KeyStore path. */
+  private static final int MAX_SYMLINK_DEPTH = 40;
 
   /**
    * Alias suffixes for the standard application certificate types, in the order they are preloaded.
@@ -98,29 +105,49 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
 
   public void initialize() throws Exception {
     if (initialized.compareAndSet(false, true)) {
-      logger.info("Loading KeyStore at {}", settings.keyStorePath);
+      try {
+        logger.info("Loading KeyStore at {}", settings.keyStorePath);
 
-      File keyStoreFile = settings.keyStorePath.toAbsolutePath().toFile();
+        Path configuredPath = settings.keyStorePath.toAbsolutePath();
+        Path resolvedPath = resolveKeyStorePath();
 
-      if (keyStoreFile.exists()) {
-        keyStore = loadKeyStore(keyStoreFile.toPath());
-
-        try {
-          keyStoreLock.lock();
-
-          loadEntries();
-        } finally {
-          keyStoreLock.unlock();
+        if (Files.isDirectory(resolvedPath)) {
+          throw new IOException("KeyStore path is a directory: " + resolvedPath);
         }
-      } else {
-        keyStore = KeyStore.getInstance("pkcs12");
-        keyStore.load(null, settings.getKeyStorePassword.get());
 
-        storeKeyStore();
-      }
+        if (Files.exists(resolvedPath)) {
+          keyStore = loadKeyStore(resolvedPath);
 
-      if (settings.watchForChanges) {
-        configureWatchService(keyStoreFile);
+          try {
+            keyStoreLock.lock();
+
+            loadEntries();
+          } finally {
+            keyStoreLock.unlock();
+          }
+        } else {
+          keyStore = KeyStore.getInstance("pkcs12");
+          keyStore.load(null, settings.getKeyStorePassword.get());
+
+          storeKeyStore(resolvedPath);
+        }
+
+        if (settings.watchForChanges) {
+          configureWatchService(configuredPath.toFile(), resolvedPath);
+        }
+      } catch (Throwable t) {
+        if (watchService != null) {
+          try {
+            watchService.close();
+          } catch (IOException ex) {
+            t.addSuppressed(ex);
+          }
+          watchService = null;
+        }
+        keyStore = null;
+        entries.clear();
+        initialized.set(false);
+        throw t;
       }
     }
   }
@@ -200,7 +227,7 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
       String alias = getAlias(certificateTypeId);
 
       if (alias != null) {
-        reloadBeforeWrite();
+        Path keyStorePath = reloadBeforeWrite();
 
         char[] password = settings.getAliasPassword.apply(alias);
 
@@ -211,7 +238,7 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
           entries.remove(alias);
 
           try {
-            storeKeyStore();
+            storeKeyStore(keyStorePath);
           } catch (Exception e) {
             restoreEntry(alias, entry, password, e);
             throw e;
@@ -246,7 +273,7 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
         return;
       }
 
-      reloadBeforeWrite();
+      Path keyStorePath = reloadBeforeWrite();
 
       char[] password = settings.getAliasPassword.apply(alias);
 
@@ -258,7 +285,7 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
       keyStore.setKeyEntry(alias, entry.privateKey, password, entry.certificateChain);
 
       try {
-        storeKeyStore();
+        storeKeyStore(keyStorePath);
       } catch (Exception e) {
         restoreEntry(alias, previousEntry, password, e);
         throw e;
@@ -329,7 +356,7 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
    * KeyStore with the fresh snapshot preserves every alias already committed by another owner,
    * including entries whose passwords are not available to this store.
    */
-  private void reloadBeforeWrite() throws Exception {
+  private Path reloadBeforeWrite() throws Exception {
     Path keyStorePath = resolveKeyStorePath();
 
     // A missing file has nothing to merge; storeKeyStore() recreates it from memory.
@@ -341,6 +368,8 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
       // this store's aliases cannot fail an unrelated write.
       entries.clear();
     }
+
+    return keyStorePath;
   }
 
   private KeyStore loadKeyStore(Path keyStorePath) throws Exception {
@@ -363,9 +392,27 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
    *
    * @throws Exception if an error occurs while writing the KeyStore.
    */
-  private void storeKeyStore() throws Exception {
-    Path keyStorePath = resolveKeyStorePath();
-    Path tempPath = Files.createTempFile(keyStorePath.getParent(), ".keystore", ".tmp");
+  private void storeKeyStore(Path keyStorePath) throws Exception {
+    Path configuredPath = settings.keyStorePath.toAbsolutePath();
+
+    if (Files.isDirectory(keyStorePath)) {
+      throw new IOException("KeyStore path is a directory: " + keyStorePath);
+    }
+
+    Path parent = keyStorePath.getParent();
+    if (parent == null || !Files.isDirectory(parent)) {
+      String message =
+          Files.isSymbolicLink(configuredPath) || !configuredPath.normalize().equals(keyStorePath)
+              ? "KeyStore target directory does not exist for "
+                  + settings.keyStorePath
+                  + " -> "
+                  + keyStorePath
+              : "KeyStore target directory does not exist for " + keyStorePath;
+      throw new NoSuchFileException(
+          parent != null ? parent.toString() : keyStorePath.toString(), null, message);
+    }
+
+    Path tempPath = Files.createTempFile(parent, ".keystore", ".tmp");
 
     try {
       copyPosixFilePermissions(keyStorePath, tempPath);
@@ -395,16 +442,97 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
   }
 
   /**
-   * Resolve the path to write the KeyStore to, following symbolic links so that an existing link is
-   * updated in place rather than replaced by a regular file.
+   * Resolve the path to read or write the KeyStore at, following symbolic links (including chains
+   * and dangling links whose final target does not exist yet) so that a symbolic link is preserved
+   * rather than replaced by a regular file.
    *
    * @return the absolute, link-resolved path of the KeyStore file.
-   * @throws IOException if an error occurs while resolving the path.
+   * @throws IOException if a symbolic link loop is detected or an intermediate path component is
+   *     unresolvable.
    */
   private Path resolveKeyStorePath() throws IOException {
-    Path keyStorePath = settings.keyStorePath.toAbsolutePath();
+    return resolvePathFollowingLinks(settings.keyStorePath);
+  }
 
-    return Files.exists(keyStorePath) ? keyStorePath.toRealPath() : keyStorePath;
+  static Path resolvePathFollowingLinks(Path initialPath) throws IOException {
+    Path current = initialPath.toAbsolutePath();
+
+    for (int depth = 0; depth <= MAX_SYMLINK_DEPTH; depth++) {
+      try {
+        // Validate every path component through the OS before toRealPath() so untraversable
+        // directories preceding '..' raise AccessDeniedException instead of being skipped.
+        Files.readAttributes(current, BasicFileAttributes.class);
+        return current.toRealPath();
+      } catch (NoSuchFileException e) {
+        Path parent = current.getParent();
+        Path fileName = current.getFileName();
+        if (parent == null || fileName == null) {
+          return current;
+        }
+
+        Path realParent;
+        try {
+          Files.readAttributes(parent, BasicFileAttributes.class);
+          realParent = parent.toRealPath();
+        } catch (NoSuchFileException parentMissing) {
+          // Target's parent directory does not exist (for example, a dangling symbolic link into
+          // an unmounted volume). Fail immediately rather than deferring to storeKeyStore() so a
+          // volume mounted later cannot have its existing KeyStore overwritten by an empty store.
+          Path missingTarget = canonicalizeMissingPath(current);
+          boolean followedSymlink =
+              depth > 0
+                  || Files.isSymbolicLink(initialPath.toAbsolutePath())
+                  || !initialPath.toAbsolutePath().normalize().equals(missingTarget);
+          if (followedSymlink) {
+            throw new NoSuchFileException(
+                initialPath.toString(),
+                missingTarget.toString(),
+                "Parent directory does not exist");
+          }
+          throw new NoSuchFileException(
+              missingTarget.toString(), null, "Parent directory does not exist");
+        }
+
+        Path candidate = realParent.resolve(fileName);
+        if (!Files.isSymbolicLink(candidate)) {
+          return candidate;
+        }
+
+        if (depth == MAX_SYMLINK_DEPTH) {
+          throw new FileSystemLoopException(initialPath.toString());
+        }
+
+        Path linkTarget = Files.readSymbolicLink(candidate);
+        current = linkTarget.isAbsolute() ? linkTarget : realParent.resolve(linkTarget);
+      }
+    }
+
+    throw new FileSystemLoopException(initialPath.toString());
+  }
+
+  private static Path canonicalizeMissingPath(Path path) throws IOException {
+    var trailing = new ArrayDeque<Path>();
+    Path probe = path;
+
+    while (probe != null) {
+      try {
+        Files.readAttributes(probe, BasicFileAttributes.class);
+        Path realBase = probe.toRealPath();
+        while (!trailing.isEmpty()) {
+          realBase = realBase.resolve(trailing.removeFirst());
+        }
+        return realBase;
+      } catch (NoSuchFileException missing) {
+        Path fileName = probe.getFileName();
+        if (fileName == null) {
+          return path;
+        }
+        trailing.addFirst(fileName);
+        probe = probe.getParent();
+      }
+    }
+
+    return path;
   }
 
   /**
@@ -453,13 +581,29 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
     }
   }
 
-  private void configureWatchService(File keyStoreFile) throws IOException {
-    Path keyStorePath = keyStoreFile.toPath().toAbsolutePath().normalize();
+  private void configureWatchService(File keyStoreFile, Path initializedTarget) throws Exception {
+    Path configuredPath = keyStoreFile.toPath().toAbsolutePath();
+    Path configuredParent = configuredPath.getParent();
+    Path configuredFileName = configuredPath.getFileName();
+    Path watchedConfiguredPath =
+        configuredParent != null && configuredFileName != null
+            ? configuredParent.toRealPath().resolve(configuredFileName)
+            : configuredPath.toRealPath();
     watchService = FileSystems.getDefault().newWatchService();
 
-    WatchedFile configured = watchFile(keyStorePath);
-    WatchedFile target = watchFile(keyStorePath.toRealPath());
-    watchThread = new Thread(() -> watchForChanges(configured, target));
+    WatchedFile configured = watchFile(watchedConfiguredPath);
+    Path currentTarget = configuredPath.toRealPath();
+    WatchedFile target = watchFile(currentTarget);
+
+    // If the configured link retargeted between initial load/creation and watch registration,
+    // reload from the current target after both watches are armed so callers immediately observe
+    // the current target's identity without waiting for another filesystem event, propagating any
+    // load failure so initialize() cleans up watches and remains retryable.
+    if (!currentTarget.equals(initializedTarget)) {
+      reloadOrThrow(configuredPath);
+    }
+
+    watchThread = new Thread(() -> watchForChanges(configuredPath, configured, target));
     watchThread.setName("milo-key-store-watcher");
     watchThread.setDaemon(true);
     watchThread.start();
@@ -478,7 +622,8 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
     return new WatchedFile(path, key);
   }
 
-  private void watchForChanges(WatchedFile configured, WatchedFile initialTarget) {
+  private void watchForChanges(
+      Path configuredPath, WatchedFile configured, WatchedFile initialTarget) {
     WatchedFile target = initialTarget;
     while (true) {
       WatchKey key;
@@ -494,7 +639,7 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
       List<WatchEvent<?>> events = key.pollEvents();
       if (configured.matches(key, events) || target.matches(key, events)) {
         try {
-          Path resolved = configured.path().toRealPath();
+          Path resolved = configuredPath.toRealPath();
           if (!resolved.equals(target.path()) || !target.key().isValid()) {
             WatchedFile replacement = watchFile(resolved);
             // Directory registrations share keys. Cancelling the old target must not cancel the
@@ -509,9 +654,9 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
         } catch (IOException e) {
           // Preserve the previous target watch while the file is missing or temporarily
           // unreadable; its recreation can then trigger another resolution and reload.
-          logger.warn("Error resolving watched KeyStore at {}", configured.path(), e);
+          logger.warn("Error resolving watched KeyStore at {}", configuredPath, e);
         }
-        reload(configured.path());
+        reload(configuredPath);
       }
 
       // Reset every delivered key, including obsolete target keys already cancelled above.
@@ -565,20 +710,24 @@ public class KeyStoreCertificateStore implements CertificateStore, Closeable {
    */
   void reload(Path keyStorePath) {
     try {
-      keyStoreLock.lock();
-      try {
-        keyStore = loadKeyStore(keyStorePath);
-
-        entries.clear();
-        loadEntries();
-      } finally {
-        keyStoreLock.unlock();
-      }
-
-      logger.debug("Reloaded KeyStore at {}", keyStorePath);
+      reloadOrThrow(keyStorePath);
     } catch (Exception e) {
       logger.warn("Error reloading KeyStore at {}", keyStorePath, e);
     }
+  }
+
+  private void reloadOrThrow(Path keyStorePath) throws Exception {
+    keyStoreLock.lock();
+    try {
+      keyStore = loadKeyStore(keyStorePath);
+
+      entries.clear();
+      loadEntries();
+    } finally {
+      keyStoreLock.unlock();
+    }
+
+    logger.debug("Reloaded KeyStore at {}", keyStorePath);
   }
 
   /**
