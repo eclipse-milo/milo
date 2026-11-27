@@ -4368,6 +4368,8 @@ class LazyClientDataTypeInterruptTest {
               },
               "monitor-holder-calling-getCodec");
 
+      threadB.setDaemon(true);
+      threadA.setDaemon(true);
       threadB.start();
       assertTrue(
           treeWriteLockHeld.await(5, TimeUnit.SECONDS),
