@@ -323,11 +323,17 @@ public class UsernameProvider implements IdentityProvider {
     }
 
     byte[] passwordBytes = passwordSupplier.get();
+    ByteBuf plainText = null;
 
     try {
       byte[] nonceBytes = serverNonce.bytesOrEmpty();
 
-      ByteBuf buffer = Unpooled.buffer();
+      // Holds the password in the clear until it is copied into the token or encrypted. It is sized
+      // for the legacy secret so it never grows: growing copies it to a new array and drops the old
+      // one uncleared.
+      plainText = Unpooled.buffer(Integer.BYTES + passwordBytes.length + nonceBytes.length);
+
+      ByteBuf buffer = plainText;
 
       if (securityPolicy == SecurityPolicy.None) {
         warnIfPasswordTravelsUnencrypted(endpoint, tokenPolicy);
@@ -424,6 +430,11 @@ public class UsernameProvider implements IdentityProvider {
 
       return new SignedIdentityToken(token, new SignatureData(null, null));
     } finally {
+      // Clear the plain text on every path, a failure included. A plain-text token has already
+      // copied the password into an array of its own.
+      if (plainText != null) {
+        plainText.setZero(0, plainText.capacity());
+      }
       Arrays.fill(passwordBytes, (byte) 0);
     }
   }
