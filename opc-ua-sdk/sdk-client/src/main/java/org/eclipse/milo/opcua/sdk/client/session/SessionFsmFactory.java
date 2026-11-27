@@ -454,10 +454,6 @@ public class SessionFsmFactory {
             ctx -> {
               Event.CreateSessionSuccess event = (Event.CreateSessionSuccess) ctx.event();
 
-              // The Session now exists on the Server; remember it so it can be closed if the
-              // remainder of the establishment sequence fails.
-              KEY_PENDING_SESSION.set(ctx, event.response);
-
               activateSession(ctx, client, event.response)
                   .whenComplete(
                       (session, ex) -> {
@@ -1243,6 +1239,18 @@ public class SessionFsmFactory {
   private static void handleFailureToOpenSession(
       OpcUaClient client, ActionContext<State, Event> ctx, Throwable failure) {
 
+    // If CreateSession already succeeded the Session exists on the Server, whether client-side
+    // verification refused it (OPC 10000-4 §5.7.2.1) or a later establishment step failed. Close
+    // it best-effort before failing callers so CloseSessionRequest is queued ahead of any
+    // immediate disconnect triggered by the failure, while preserving any Subscriptions already
+    // transferred to it so the replacement Session can recover them. Failure to close changes
+    // nothing about the outcome here.
+    CreateSessionResponse pendingSession = KEY_PENDING_SESSION.remove(ctx);
+
+    if (pendingSession != null) {
+      abandonSession(ctx, client, pendingSession);
+    }
+
     SessionFuture sessionFuture = KEY_SESSION_FUTURE.remove(ctx);
 
     if (sessionFuture != null) {
@@ -1251,17 +1259,6 @@ public class SessionFsmFactory {
           .getConfig()
           .getExecutor()
           .execute(() -> sessionFuture.future.completeExceptionally(failure));
-    }
-
-    // If CreateSession already succeeded the Session exists on the Server, and a new one is about
-    // to be created in its place. Close it best-effort so the Server isn't left holding an orphan
-    // until the Session timeout expires, but preserve any Subscriptions already transferred to it
-    // so the replacement Session can recover them. Failure to close changes nothing about the
-    // outcome here.
-    CreateSessionResponse pendingSession = KEY_PENDING_SESSION.remove(ctx);
-
-    if (pendingSession != null) {
-      abandonSession(ctx, client, pendingSession);
     }
   }
 
@@ -1433,7 +1430,17 @@ public class SessionFsmFactory {
               },
               client.getConfig().getRequestTimeout().longValue())
           .thenApply(CreateSessionResponse.class::cast)
-          .thenCompose(response -> verifyCreateSessionResponse(client, attempt.get(), response));
+          .thenCompose(
+              response -> {
+                // The Session now exists on the Server; remember it before verification runs so
+                // any refusal (UaException or unexpected runtime failure) closes it via
+                // handleFailureToOpenSession (OPC 10000-4 §5.7.2.1).
+                if (response != null) {
+                  KEY_PENDING_SESSION.set(ctx, response);
+                }
+
+                return verifyCreateSessionResponse(client, attempt.get(), response);
+              });
     } catch (Exception e) {
       return failedFuture(e);
     }
@@ -1530,7 +1537,8 @@ public class SessionFsmFactory {
 
     try {
       if (securityPolicy != SecurityPolicy.None) {
-        if (response.getServerCertificate().isNullOrEmpty()) {
+        if (response.getServerCertificate() == null
+            || response.getServerCertificate().isNullOrEmpty()) {
           throw new UaException(
               StatusCodes.Bad_SecurityChecksFailed,
               "Certificate missing from CreateSessionResponse");
@@ -1763,8 +1771,14 @@ public class SessionFsmFactory {
   private static boolean checkEndpointEquivalence(
       EndpointDescription endpoint1, EndpointDescription endpoint2) {
 
-    return Objects.equals(
-            endpoint1.getServer().getApplicationUri(), endpoint2.getServer().getApplicationUri())
+    ApplicationDescription server1 = endpoint1.getServer();
+    ApplicationDescription server2 = endpoint2.getServer();
+
+    if (server1 == null || server2 == null) {
+      return false;
+    }
+
+    return Objects.equals(server1.getApplicationUri(), server2.getApplicationUri())
         && Objects.equals(endpoint1.getEndpointUrl(), endpoint2.getEndpointUrl())
         && Objects.equals(endpoint1.getSecurityMode(), endpoint2.getSecurityMode())
         && Objects.equals(endpoint1.getSecurityPolicyUri(), endpoint2.getSecurityPolicyUri())

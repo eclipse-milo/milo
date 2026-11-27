@@ -29,6 +29,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -527,6 +528,16 @@ public class OpcUaClient {
 
   private final OpcClientTransport transport;
   private final EndpointRefresh endpointRefresh;
+  // Strict leaf lock: only guards the lifecycle counters and barrier references below; never
+  // held across transport, SessionFsm, EndpointRefresh, or identity calls.
+  private final Object lifecycleLock = new Object();
+  private long disconnectCount = 0;
+  private long connectCount = 0;
+  private CompletableFuture<Void> pendingTransportConnect = CompletableFuture.completedFuture(null);
+  private CompletableFuture<Void> pendingTransportDisconnect =
+      CompletableFuture.completedFuture(null);
+  private CompletableFuture<Void> pendingSessionOpen = CompletableFuture.completedFuture(null);
+  private CompletableFuture<Void> pendingSessionClose = CompletableFuture.completedFuture(null);
   private final Object certificateIdentityLock = new Object();
   private final Map<SecurityPolicyProfile, Optional<CertificateIdentity>>
       selectedCertificateIdentities = new HashMap<>();
@@ -789,26 +800,132 @@ public class OpcUaClient {
     }
   }
 
+  private void stopEndpointRefresh() {
+    try {
+      endpointRefresh.stop();
+    } catch (RuntimeException e) {
+      logger.debug("Ignoring failure while stopping endpoint refresh", e);
+    }
+  }
+
+  private void finishTransportDisconnect(long observedConnect, CompletableFuture<Void> barrier) {
+    // Cancel any in-flight endpoint refresh and advance its generation before releasing any
+    // waiting reconnect so a stale resolver result from the old connection cannot apply.
+    stopEndpointRefresh();
+
+    // Drop cached identities so a CertificateManager rotation applies on the next connect.
+    final boolean shouldClear;
+    synchronized (lifecycleLock) {
+      shouldClear = (connectCount == observedConnect);
+    }
+    if (shouldClear) {
+      clearCertificateIdentities();
+    }
+    barrier.complete(null);
+  }
+
   /**
    * Connect the underlying transport and open a session.
    *
    * <p>Regardless of the success or failure of the initial connect operation, the client is now in
    * a state where it will strive to remain connected and keep a session open, automatically
-   * reconnecting as necessary, and creating or transferring sessions as necessary.
+   * reconnecting as necessary, and creating or transferring sessions as necessary. If {@link
+   * #disconnectAsync()} takes effect while the transport connection is still pending (or before
+   * this call starts opening a session), the returned future fails with {@code
+   * Bad_ConnectionClosed} and no session is opened.
    *
    * @return a {@link CompletableFuture} that completes successfully with this {@link OpcUaClient},
    *     or completes exceptionally if an error occurs.
    */
   public CompletableFuture<OpcUaClient> connectAsync() {
-    endpointRefresh.start();
-    // Discard any identities cached during a prior connection so a rotated CertificateManager
-    // entry is presented on this attempt.
-    clearCertificateIdentities();
+    final long observedDisconnect;
+    final CompletableFuture<Void> priorSessionClose;
+    final CompletableFuture<Void> priorDisconnect;
 
-    return transport
-        .connect(applicationContext)
-        .handle((u, ex) -> sessionFsm.openSession())
-        .thenCompose(Function.identity())
+    synchronized (lifecycleLock) {
+      observedDisconnect = disconnectCount;
+      connectCount++;
+      priorSessionClose = pendingSessionClose;
+      priorDisconnect = pendingTransportDisconnect;
+    }
+
+    CompletableFuture<Void> priorReady;
+    if (priorSessionClose.isDone()) {
+      priorReady = priorDisconnect;
+    } else if (priorDisconnect.isDone()) {
+      priorReady = priorSessionClose;
+    } else {
+      priorReady = CompletableFuture.allOf(priorSessionClose, priorDisconnect);
+    }
+
+    return priorReady
+        .thenCompose(
+            ignored -> {
+              final CompletableFuture<Void> connectBarrier;
+
+              synchronized (lifecycleLock) {
+                if (disconnectCount != observedDisconnect) {
+                  return CompletableFuture.<OpcUaSession>failedFuture(
+                      new UaException(StatusCodes.Bad_ConnectionClosed));
+                }
+                connectBarrier = new CompletableFuture<>();
+                pendingTransportConnect =
+                    pendingTransportConnect.isDone()
+                        ? connectBarrier
+                        : CompletableFuture.allOf(pendingTransportConnect, connectBarrier);
+              }
+
+              CompletableFuture<Unit> connectFuture;
+              try {
+                boolean shouldConnect;
+                synchronized (endpointRefresh) {
+                  synchronized (lifecycleLock) {
+                    shouldConnect = (disconnectCount == observedDisconnect);
+                  }
+                  if (shouldConnect) {
+                    endpointRefresh.start();
+                  }
+                }
+
+                if (!shouldConnect) {
+                  return CompletableFuture.failedFuture(
+                      new UaException(StatusCodes.Bad_ConnectionClosed));
+                }
+
+                // Discard any identities cached during a prior connection so a rotated
+                // CertificateManager entry is presented on this attempt.
+                clearCertificateIdentities();
+
+                connectFuture = transport.connect(applicationContext);
+              } finally {
+                connectBarrier.complete(null);
+              }
+
+              return connectFuture
+                  .handle(
+                      (u, ex) -> {
+                        final CompletableFuture<Void> openBarrier;
+
+                        synchronized (lifecycleLock) {
+                          if (disconnectCount != observedDisconnect) {
+                            return CompletableFuture.<OpcUaSession>failedFuture(
+                                new UaException(StatusCodes.Bad_ConnectionClosed));
+                          }
+                          openBarrier = new CompletableFuture<>();
+                          pendingSessionOpen =
+                              pendingSessionOpen.isDone()
+                                  ? openBarrier
+                                  : CompletableFuture.allOf(pendingSessionOpen, openBarrier);
+                        }
+
+                        try {
+                          return sessionFsm.openSession();
+                        } finally {
+                          openBarrier.complete(null);
+                        }
+                      })
+                  .thenCompose(Function.identity());
+            })
         .thenApply(s -> OpcUaClient.this);
   }
 
@@ -842,39 +959,103 @@ public class OpcUaClient {
    *     disconnecting the transport are swallowed.
    */
   public CompletableFuture<OpcUaClient> disconnectAsync() {
-    endpointRefresh.stop();
-    CompletableFuture<Unit> closeSession =
-        sessionFsm.closeSession().exceptionally(ex -> Unit.VALUE);
+    final long observedConnect;
+    final CompletableFuture<Void> priorConnectStart;
+    final CompletableFuture<Void> priorOpen;
+    final CompletableFuture<Void> sessionCloseBarrier = new CompletableFuture<>();
+    final CompletableFuture<Void> transportDisconnectBarrier = new CompletableFuture<>();
+
+    synchronized (lifecycleLock) {
+      disconnectCount++;
+      observedConnect = connectCount;
+      priorConnectStart = pendingTransportConnect;
+      priorOpen = pendingSessionOpen;
+      pendingSessionClose =
+          pendingSessionClose.isDone()
+              ? sessionCloseBarrier
+              : CompletableFuture.allOf(pendingSessionClose, sessionCloseBarrier);
+      pendingTransportDisconnect =
+          pendingTransportDisconnect.isDone()
+              ? transportDisconnectBarrier
+              : CompletableFuture.allOf(pendingTransportDisconnect, transportDisconnectBarrier);
+    }
+
+    stopEndpointRefresh();
+
+    CompletableFuture<Unit> closeSession;
+    try {
+      closeSession =
+          priorOpen
+              .thenCompose(ignored -> sessionFsm.closeSession())
+              .whenComplete((u, ex) -> sessionCloseBarrier.complete(null))
+              .exceptionally(ex -> Unit.VALUE);
+    } catch (Throwable t) {
+      sessionCloseBarrier.complete(null);
+      closeSession = CompletableFuture.completedFuture(Unit.VALUE);
+    }
 
     // If the SessionFsm is in a non-terminal state with a pending CreateSession or
     // ActivateSession request (e.g. reverse-connect transport whose server has vanished
     // without notifying the client), the CloseSession event is shelved and closeSession()
     // never resolves on its own. Bound the wait so transport.disconnect() can run and
     // fail the pending channelFuture, which unblocks the FSM.
-    var disconnectTrigger = new CompletableFuture<Unit>();
-    ScheduledFuture<?> timeoutTask =
-        transport
-            .getConfig()
-            .getScheduledExecutor()
-            .schedule(
-                () -> disconnectTrigger.complete(Unit.VALUE),
-                disconnectCloseSessionTimeoutMillis,
-                TimeUnit.MILLISECONDS);
-    closeSession.whenComplete(
-        (u, ex) -> {
-          timeoutTask.cancel(false);
-          disconnectTrigger.complete(Unit.VALUE);
-        });
-
-    return disconnectTrigger
-        .thenCompose(u -> transport.disconnect().thenApply(c -> OpcUaClient.this))
-        .exceptionally(ex -> OpcUaClient.this)
-        .whenComplete(
-            (c, ex) -> {
-              // Drop cached identities so a CertificateManager rotation applies on the next
-              // connect.
-              clearCertificateIdentities();
+    CompletableFuture<Unit> disconnectTrigger;
+    if (closeSession.isDone()) {
+      disconnectTrigger = CompletableFuture.completedFuture(Unit.VALUE);
+    } else {
+      CompletableFuture<Unit> trigger = new CompletableFuture<>();
+      try {
+        ScheduledFuture<?> timeoutTask =
+            transport
+                .getConfig()
+                .getScheduledExecutor()
+                .schedule(
+                    () -> trigger.complete(Unit.VALUE),
+                    disconnectCloseSessionTimeoutMillis,
+                    TimeUnit.MILLISECONDS);
+        closeSession.whenComplete(
+            (u, ex) -> {
+              trigger.complete(Unit.VALUE);
+              timeoutTask.cancel(false);
             });
+      } catch (RuntimeException e) {
+        logger.debug(
+            "Failed to schedule disconnect closeSession timeout; disconnecting transport"
+                + " immediately",
+            e);
+        trigger.complete(Unit.VALUE);
+      }
+      disconnectTrigger = trigger;
+    }
+
+    CompletableFuture<Void> readyToDisconnect =
+        priorConnectStart.isDone()
+            ? disconnectTrigger.thenApply(u -> null)
+            : CompletableFuture.allOf(disconnectTrigger, priorConnectStart);
+
+    var teardownFinished = new AtomicBoolean(false);
+    Runnable finishTeardown =
+        () -> {
+          if (teardownFinished.compareAndSet(false, true)) {
+            finishTransportDisconnect(observedConnect, transportDisconnectBarrier);
+          }
+        };
+
+    return readyToDisconnect
+        .thenCompose(
+            ignored -> {
+              try {
+                return transport
+                    .disconnect()
+                    .whenComplete((u, ex) -> finishTeardown.run())
+                    .thenApply(u -> OpcUaClient.this);
+              } catch (Throwable t) {
+                finishTeardown.run();
+                throw t;
+              }
+            })
+        .whenComplete((client, ex) -> finishTeardown.run())
+        .exceptionally(ex -> OpcUaClient.this);
   }
 
   /**

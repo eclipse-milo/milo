@@ -276,6 +276,138 @@ class SessionEndpointValidationTest {
     assertEquals(StatusCodes.Bad_SecurityChecksFailed, ex.getStatusCode().getValue());
   }
 
+  // A caller-supplied discovery endpoint may omit its ApplicationDescription (server == null).
+  // OPC 10000-4 §5.7.2.1 comparison must treat this as a Bad_SecurityChecksFailed mismatch rather
+  // than throwing a NullPointerException.
+  @Test
+  void discoveryEndpointWithNullServerThrowsBadSecurityChecksFailed() {
+    EndpointDescription sessionEp =
+        endpoint(
+            "urn:app",
+            "opc.tcp://a:4840",
+            MessageSecurityMode.None,
+            SecurityPolicy.None.getUri(),
+            userTokens("anon"),
+            TRANSPORT_OPC_TCP,
+            (short) 1);
+
+    EndpointDescription discoveryEp =
+        new EndpointDescription(
+            sessionEp.getEndpointUrl(),
+            null,
+            sessionEp.getServerCertificate(),
+            sessionEp.getSecurityMode(),
+            sessionEp.getSecurityPolicyUri(),
+            sessionEp.getUserIdentityTokens(),
+            sessionEp.getTransportProfileUri(),
+            sessionEp.getSecurityLevel());
+
+    UaException ex =
+        assertThrows(
+            UaException.class,
+            () ->
+                SessionFsmFactory.validateSessionEndpoints(
+                    TRANSPORT_OPC_TCP, List.of(discoveryEp), List.of(sessionEp)));
+
+    assertEquals(StatusCodes.Bad_SecurityChecksFailed, ex.getStatusCode().value());
+  }
+
+  // Symmetric null-safety check when the session endpoint carries server == null.
+  @Test
+  void sessionEndpointWithNullServerThrowsBadSecurityChecksFailed() {
+    EndpointDescription discoveryEp =
+        endpoint(
+            "urn:app",
+            "opc.tcp://a:4840",
+            MessageSecurityMode.None,
+            SecurityPolicy.None.getUri(),
+            userTokens("anon"),
+            TRANSPORT_OPC_TCP,
+            (short) 1);
+
+    EndpointDescription sessionEp =
+        new EndpointDescription(
+            discoveryEp.getEndpointUrl(),
+            null,
+            discoveryEp.getServerCertificate(),
+            discoveryEp.getSecurityMode(),
+            discoveryEp.getSecurityPolicyUri(),
+            discoveryEp.getUserIdentityTokens(),
+            discoveryEp.getTransportProfileUri(),
+            discoveryEp.getSecurityLevel());
+
+    UaException ex =
+        assertThrows(
+            UaException.class,
+            () ->
+                SessionFsmFactory.validateSessionEndpoints(
+                    TRANSPORT_OPC_TCP, List.of(discoveryEp), List.of(sessionEp)));
+
+    assertEquals(StatusCodes.Bad_SecurityChecksFailed, ex.getStatusCode().value());
+  }
+
+  // OPC 10000-4 §5.7.2.2: a missing server ApplicationDescription (server == null) must never be
+  // treated as matching an ApplicationDescription whose applicationUri is null.
+  @Test
+  void nullServerDoesNotMatchApplicationDescriptionWithNullApplicationUri() {
+    EndpointDescription sessionEp =
+        endpoint(
+            null,
+            "opc.tcp://a:4840",
+            MessageSecurityMode.None,
+            SecurityPolicy.None.getUri(),
+            userTokens("anon"),
+            TRANSPORT_OPC_TCP,
+            (short) 1);
+
+    EndpointDescription discoveryEp =
+        new EndpointDescription(
+            sessionEp.getEndpointUrl(),
+            null,
+            sessionEp.getServerCertificate(),
+            sessionEp.getSecurityMode(),
+            sessionEp.getSecurityPolicyUri(),
+            sessionEp.getUserIdentityTokens(),
+            sessionEp.getTransportProfileUri(),
+            sessionEp.getSecurityLevel());
+
+    UaException ex =
+        assertThrows(
+            UaException.class,
+            () ->
+                SessionFsmFactory.validateSessionEndpoints(
+                    TRANSPORT_OPC_TCP, List.of(discoveryEp), List.of(sessionEp)));
+
+    assertEquals(StatusCodes.Bad_SecurityChecksFailed, ex.getStatusCode().value());
+  }
+
+  // OPC 10000-4 §5.7.2.2: two endpoints both missing server ApplicationDescription must still fail
+  // validation rather than matching on missing server identity.
+  @Test
+  void bothEndpointsWithNullServerThrowsBadSecurityChecksFailed() {
+    EndpointDescription endpointWithoutServer =
+        new EndpointDescription(
+            "opc.tcp://a:4840",
+            null,
+            null,
+            MessageSecurityMode.None,
+            SecurityPolicy.None.getUri(),
+            userTokens("anon"),
+            TRANSPORT_OPC_TCP,
+            UByte.valueOf((short) 1));
+
+    UaException ex =
+        assertThrows(
+            UaException.class,
+            () ->
+                SessionFsmFactory.validateSessionEndpoints(
+                    TRANSPORT_OPC_TCP,
+                    List.of(endpointWithoutServer),
+                    List.of(endpointWithoutServer)));
+
+    assertEquals(StatusCodes.Bad_SecurityChecksFailed, ex.getStatusCode().value());
+  }
+
   // CreateSession only asks for enhanced key material when the chosen provider will use username
   // auth.
   @Test

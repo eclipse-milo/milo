@@ -36,6 +36,9 @@
  * to replacement channels and new Sessions. Reactivation keeps the Session's original server
  * certificate and client nonce, but uses the replacement channel certificate and thumbprint for
  * enhanced-policy signature inputs. CreateSession captures the selected endpoint and discovery list
- * together after channel establishment so endpoint comparisons use one resolution result.
+ * together after channel establishment so endpoint comparisons use one resolution result. Once a
+ * {@code CreateSessionResponse} arrives, any subsequent client-side verification refusal or
+ * activation, transfer, or initialization failure closes that unactivated Session on the Server
+ * best-effort so refused Sessions are not left to accumulate until timeout.
  */
 package org.eclipse.milo.opcua.sdk.client.session;
