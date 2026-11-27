@@ -21,6 +21,7 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -310,6 +311,49 @@ class RefusedCreateSessionCloseTest {
     awaitAllCreatedSessionsClosed();
 
     assertEquals(0, sessionServiceSet.activated.get());
+    assertEveryCreatedSessionClosedExactlyOnce();
+  }
+
+  // Calling disconnectAsync() directly from the failed connectAsync() callback (without first
+  // waiting for server-side cleanup) must still deliver CloseSession because
+  // handleFailureToOpenSession() queues abandonSession() before failing the caller's future.
+  @Test
+  void immediateDisconnectOnRefusalCallbackClosesRefusedSessionOnServer() throws Exception {
+    List<EndpointDescription> stripped =
+        discovered.stream()
+            .filter(e -> SecurityPolicy.None.getUri().equals(e.getSecurityPolicyUri()))
+            .toList();
+
+    OpcUaClient client = createClient(noneEndpoint(), stripped, builder -> {});
+
+    CompletableFuture<Throwable> refusalFailure = new CompletableFuture<>();
+    CompletableFuture<OpcUaClient> disconnectFuture =
+        client
+            .connectAsync()
+            .handle(
+                (c, ex) -> {
+                  refusalFailure.complete(ex);
+                  return client.disconnectAsync();
+                })
+            .thenCompose(f -> f);
+
+    disconnectFuture.get(10, SECONDS);
+
+    Throwable failure = refusalFailure.get(10, SECONDS);
+    assertNotNull(failure, "refused CreateSession must fail connectAsync()");
+    Throwable root =
+        failure instanceof CompletionException && failure.getCause() != null
+            ? failure.getCause()
+            : failure;
+    UaException cause = assertInstanceOf(UaException.class, root);
+    assertEquals(StatusCodes.Bad_SecurityChecksFailed, cause.getStatusCode().value());
+
+    NodeId sessionId = createdSessions.poll(10, SECONDS);
+    assertNotNull(sessionId, "CreateSession should have reached the Server");
+
+    awaitAllCreatedSessionsClosed();
+
+    assertEquals(0, sessionServiceSet.activated.get(), "refused Session must never be activated");
     assertEveryCreatedSessionClosedExactlyOnce();
   }
 
