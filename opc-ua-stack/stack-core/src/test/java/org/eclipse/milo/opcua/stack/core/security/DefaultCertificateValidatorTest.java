@@ -19,6 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
@@ -54,6 +56,7 @@ import org.eclipse.milo.opcua.stack.core.util.validation.ValidationCheck;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -528,6 +531,34 @@ class DefaultCertificateValidatorTest {
 
     assertEquals(StatusCodes.Bad_SecurityChecksFailed, serverError.getStatusCode().value());
     assertEquals(clientStatus, clientError.getStatusCode().value());
+  }
+
+  // When a FileBasedCertificateQuarantine cannot access its directory while recording a rejected
+  // certificate, neither validator may let a quarantine I/O error replace the UaException
+  // validation result.
+  @Test
+  void defaultValidatorsPreserveValidationFailureWhenFileQuarantineFails(@TempDir Path tempDir)
+      throws Exception {
+    Path missingDir = Files.createDirectory(tempDir.resolve("missing-rejected"));
+    var quarantine = new FileBasedCertificateQuarantine(missingDir.toFile());
+    Files.delete(missingDir);
+
+    X509Certificate untrusted = createRsaCertificate();
+    var emptyTrustList = new MemoryTrustListManager();
+    var clientValidator = new DefaultClientCertificateValidator(emptyTrustList, quarantine);
+    var serverValidator = new DefaultServerCertificateValidator(emptyTrustList, quarantine);
+
+    UaException clientError =
+        assertThrows(
+            UaException.class,
+            () -> clientValidator.validateCertificateChain(List.of(untrusted), null, null));
+    UaException serverError =
+        assertThrows(
+            UaException.class,
+            () -> serverValidator.validateCertificateChain(List.of(untrusted), null, null));
+
+    assertEquals(StatusCodes.Bad_CertificateUntrusted, clientError.getStatusCode().value());
+    assertEquals(StatusCodes.Bad_SecurityChecksFailed, serverError.getStatusCode().value());
   }
 
   private static Stream<Arguments> missingCrlTrustLists() throws Exception {
