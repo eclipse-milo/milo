@@ -15,6 +15,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.channel.Channel;
 import java.security.KeyPair;
@@ -28,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.SessionActivityListener;
+import org.eclipse.milo.opcua.sdk.client.SessionEndpointMismatchException;
 import org.eclipse.milo.opcua.sdk.client.UaSession;
 import org.eclipse.milo.opcua.sdk.client.subscriptions.OpcUaSubscription;
 import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
@@ -203,6 +205,13 @@ class SessionAttemptStepTest {
       fixture.client.addSessionActivityListener(listener);
 
       UaException connectFailure = assertThrows(UaException.class, fixture.client::connect);
+
+      assertTrue(
+          UaException.extract(connectFailure, SecureChannelHandshakeException.class).isPresent(),
+          "handshake failure must be extractable from connect() failure");
+      assertTrue(
+          UaException.extract(connectFailure, SessionEndpointMismatchException.class).isEmpty(),
+          "handshake failure must not match SessionEndpointMismatchException");
 
       assertEquals(
           List.of("onSessionAttemptFailed(CREATE_SESSION, handshake, Bad_SecurityChecksFailed)"),

@@ -83,11 +83,13 @@ public interface SessionActivityListener {
    * Bad_IdentityTokenRejected} or {@code Bad_IdentityTokenInvalid} when the Server does not accept
    * the client's identity. A step also fails when the client could not send its request, or did not
    * accept the Server's response. {@link UaException#extractStatusCode(Throwable)} finds the
-   * StatusCode of any failure that has one. When no SecureChannel could be established, the step
-   * whose request was waiting for it fails, {@link AttemptStep#CREATE_SESSION} or {@link
-   * AttemptStep#REACTIVATE_SESSION}, and the failure can be just a timeout; {@link
-   * ChannelStateObservable.TransitionListener#onConnectFailure} on the client's transport reports
-   * why the SecureChannel failed.
+   * StatusCode of any failure that has one, and {@link UaException#extract(Throwable, Class)}
+   * extracts typed failures such as {@link SessionEndpointMismatchException} or {@link
+   * org.eclipse.milo.opcua.stack.transport.client.SecureChannelHandshakeException}. When no
+   * SecureChannel could be established, the step whose request was waiting for it fails, {@link
+   * AttemptStep#CREATE_SESSION} or {@link AttemptStep#REACTIVATE_SESSION}, and the failure can be
+   * just a timeout; {@link ChannelStateObservable.TransitionListener#onConnectFailure} on the
+   * client's transport reports why the SecureChannel failed.
    *
    * <p>Retrying cannot fix every failure. Rejected credentials stay rejected, and a Server that
    * locks an account after repeated failed logins may lock the client's. To stop retrying,
@@ -141,7 +143,8 @@ public interface SessionActivityListener {
      * refused fails this step, with a {@link
      * org.eclipse.milo.opcua.stack.transport.client.SecureChannelHandshakeException} in the cause
      * chain when the handshake failed. The step also fails when the client does not accept the
-     * Server's response, e.g. its certificate, signature or endpoints.
+     * Server's response, e.g. its certificate, signature, or endpoints (which fails with {@link
+     * SessionEndpointMismatchException} when session endpoint validation is enabled).
      */
     CREATE_SESSION,
 

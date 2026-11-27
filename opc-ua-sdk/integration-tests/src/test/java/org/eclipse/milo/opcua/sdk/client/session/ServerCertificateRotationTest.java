@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.client.session;
 
+import static org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig.USER_TOKEN_POLICY_USERNAME;
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -37,9 +38,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
@@ -52,7 +55,9 @@ import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.eclipse.milo.opcua.sdk.client.DiscoveryClient;
 import org.eclipse.milo.opcua.sdk.client.EndpointConfiguration;
+import org.eclipse.milo.opcua.sdk.client.EndpointRefreshListener;
 import org.eclipse.milo.opcua.sdk.client.EndpointResolver;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
@@ -79,6 +84,7 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateGroup;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
 import org.eclipse.milo.opcua.stack.core.security.DefaultClientCertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.DefaultServerCertificateValidator;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateQuarantine;
 import org.eclipse.milo.opcua.stack.core.security.MemoryCertificateStore;
 import org.eclipse.milo.opcua.stack.core.security.MemoryTrustListManager;
@@ -91,6 +97,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.TimestampsToReturn;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.eclipse.milo.opcua.stack.core.util.EndpointUtil;
@@ -106,6 +113,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class ServerCertificateRotationTest {
   private static final String SERVER_URI = "urn:milo:rotation:server";
@@ -376,6 +384,166 @@ class ServerCertificateRotationTest {
     }
   }
 
+  // Part 4 §5.7.3.1: a Session created on a None endpoint whose username token policy encrypts
+  // passwords must still reactivate after an in-place certificate renewal (with the same key or a
+  // new key), because the client continues encrypting to the CreateSession server certificate.
+  @ParameterizedTest(name = "sameKey={0}")
+  @ValueSource(booleans = {true, false})
+  void reactivatesRetainedNoneSessionWithEncryptedUsernameAfterRenewal(boolean sameKey)
+      throws Exception {
+    var serverTrust = new MemoryTrustListManager();
+    var serverQuarantine = new MemoryCertificateQuarantine();
+    var serverGroup =
+        new DefaultCertificateGroup(
+            serverTrust,
+            new MemoryCertificateStore(),
+            serverQuarantine,
+            new DefaultServerCertificateValidator(serverTrust, serverQuarantine));
+
+    KeyPair originalKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+    X509Certificate originalCertificate =
+        SelfSignedCertificateBuilder.forRsaApplicationCertificate(originalKeyPair)
+            .setCommonName("None renewal server")
+            .setApplicationUri(SERVER_URI)
+            .addDnsName("localhost")
+            .build();
+    serverGroup.updateCertificate(
+        NodeIds.RsaSha256ApplicationCertificateType,
+        originalKeyPair,
+        new X509Certificate[] {originalCertificate});
+
+    var certificateManager = new DefaultCertificateManager(serverGroup);
+    List<String> acceptedUsers = new CopyOnWriteArrayList<>();
+
+    int port = TestPortAllocator.allocatePort();
+    EndpointConfig endpoint =
+        EndpointConfig.newBuilder()
+            .setBindAddress("localhost")
+            .setHostname("localhost")
+            .setBindPort(port)
+            .setPath("/none-rotation")
+            .setEndpointCertificateConfig(
+                EndpointCertificateConfig.newBuilder()
+                    .setCertificateTypeId(NodeIds.RsaSha256ApplicationCertificateType)
+                    .build())
+            .setSecurityPolicy(SecurityPolicy.None)
+            .setSecurityMode(MessageSecurityMode.None)
+            .setTransportProfile(TransportProfile.TCP_UASC_UABINARY)
+            .addTokenPolicy(USER_TOKEN_POLICY_USERNAME)
+            .build();
+
+    OpcUaServerConfig serverConfig =
+        OpcUaServerConfig.builder()
+            .setApplicationUri(SERVER_URI)
+            .setApplicationName(LocalizedText.english("None renewal server"))
+            .setProductUri("urn:milo:rotation")
+            .setEndpoints(Set.of(endpoint))
+            .setCertificateManager(certificateManager)
+            .setIdentityValidator(
+                new UsernameIdentityValidator(
+                    challenge -> {
+                      boolean ok =
+                          "user".equals(challenge.getUsername())
+                              && "password".equals(challenge.getPassword());
+                      if (ok) {
+                        acceptedUsers.add(challenge.getUsername());
+                      }
+                      return ok;
+                    }))
+            .build();
+
+    OpcUaServer noneServer =
+        new OpcUaServer(
+            serverConfig,
+            profile -> new OpcTcpServerTransport(OpcTcpServerTransportConfig.newBuilder().build()));
+    noneServer.startup().get(10, TimeUnit.SECONDS);
+
+    OpcUaClient noneClient = null;
+    try {
+      EndpointDescription discovered =
+          DiscoveryClient.getEndpoints(endpoint.getEndpointUrl()).get(10, TimeUnit.SECONDS).get(0);
+
+      var clientTrust = new MemoryTrustListManager();
+      clientTrust.addTrustedCertificate(originalCertificate);
+      var clientValidator =
+          new DefaultClientCertificateValidator(clientTrust, new MemoryCertificateQuarantine());
+
+      noneClient =
+          OpcUaClient.create(
+              OpcUaClientConfig.builder()
+                  .setEndpoint(discovered)
+                  .setIdentityProvider(new UsernameProvider("user", "password"))
+                  .setCertificateValidator(clientValidator)
+                  .setRequestTimeout(uint(5_000))
+                  .build());
+
+      var activeSessions = new LinkedBlockingQueue<OpcUaSession>();
+      noneClient.addSessionActivityListener(
+          new SessionActivityListener() {
+            @Override
+            public void onSessionActive(UaSession session) {
+              activeSessions.add((OpcUaSession) session);
+            }
+
+            @Override
+            public void onSessionInactive(UaSession session) {}
+          });
+
+      noneClient.connectAsync().get(10, TimeUnit.SECONDS);
+      OpcUaSession originalSession = activeSessions.poll(5, TimeUnit.SECONDS);
+      assertNotNull(originalSession);
+      assertEquals(List.of("user"), acceptedUsers);
+
+      KeyPair renewedKeyPair =
+          sameKey ? originalKeyPair : SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+      X509Certificate renewedCertificate =
+          SelfSignedCertificateBuilder.forRsaApplicationCertificate(renewedKeyPair)
+              .setCommonName("None renewal server")
+              .setApplicationUri(SERVER_URI)
+              .addDnsName("localhost")
+              .build();
+      clientTrust.addTrustedCertificate(renewedCertificate);
+      serverGroup.updateCertificate(
+          NodeIds.RsaSha256ApplicationCertificateType,
+          renewedKeyPair,
+          new X509Certificate[] {renewedCertificate});
+      noneServer.resetEndpointDescriptionCache();
+
+      assertTrue(
+          certificateManager.getKeyPair(CertificateUtil.thumbprint(originalCertificate)).isEmpty(),
+          "renewal must remove the original certificate thumbprint from the manager");
+
+      activeSessions.clear();
+      ((OpcTcpClientTransport) noneClient.getTransport())
+          .getChannelFsm()
+          .getChannel()
+          .get(5, TimeUnit.SECONDS)
+          .close()
+          .sync();
+
+      OpcUaSession recovered = activeSessions.poll(15, TimeUnit.SECONDS);
+      assertNotNull(recovered, "client must recover after connection drop");
+      assertSame(
+          originalSession,
+          recovered,
+          "server must reactivate the existing None Session instead of forcing a new Session");
+      assertEquals(List.of("user", "user"), acceptedUsers);
+      assertTrue(
+          noneClient
+              .readValuesAsync(
+                  0, TimestampsToReturn.Neither, List.of(NodeIds.Server_ServerStatus_CurrentTime))
+              .get(5, TimeUnit.SECONDS)
+              .get(0)
+              .getStatusCode()
+              .isGood());
+    } finally {
+      if (noneClient != null) {
+        noneClient.disconnectAsync().get(8, TimeUnit.SECONDS);
+      }
+      noneServer.shutdown().get(10, TimeUnit.SECONDS);
+    }
+  }
+
   // Part 6 6.7.4: certificate replacement must not rebind renewal of an established channel.
   @ParameterizedTest
   @MethodSource("policies")
@@ -507,6 +675,208 @@ class ServerCertificateRotationTest {
       } finally {
         client.disconnectAsync().get(8, TimeUnit.SECONDS);
       }
+    }
+  }
+
+  // A retained Session keeps its creation endpoint after reactivation, so OpcUaClient.getEndpoint()
+  // and EndpointRefreshListener are how applications learn which endpoint the client now uses.
+  @Test
+  void clientEndpointAndListenerReflectAdoptedRefreshAcrossRetainedSession() throws Exception {
+    try (var f = new Fixture(SecurityPolicy.Basic256Sha256)) {
+      var refreshed = new CompletableFuture<EndpointConfiguration[]>();
+      var endpointInCallback = new AtomicReference<EndpointDescription>();
+      var failures = new AtomicInteger();
+      var removedCalls = new AtomicInteger();
+
+      EndpointRefreshListener removedListener =
+          new EndpointRefreshListener() {
+            @Override
+            public void onEndpointRefreshed(
+                EndpointConfiguration previous, EndpointConfiguration current) {
+              removedCalls.incrementAndGet();
+            }
+
+            @Override
+            public void onEndpointRefreshFailed(Throwable failure) {
+              removedCalls.incrementAndGet();
+            }
+          };
+
+      f.client.addEndpointRefreshListener(removedListener);
+      f.client.removeEndpointRefreshListener(removedListener);
+
+      f.client.addEndpointRefreshListener(
+          new EndpointRefreshListener() {
+            @Override
+            public void onEndpointRefreshed(
+                EndpointConfiguration previous, EndpointConfiguration current) {
+              endpointInCallback.set(f.client.getEndpoint());
+              refreshed.complete(new EndpointConfiguration[] {previous, current});
+            }
+
+            @Override
+            public void onEndpointRefreshFailed(Throwable failure) {
+              failures.incrementAndGet();
+            }
+          });
+
+      assertEquals(
+          f.client.getConfig().getEndpoint(),
+          f.client.getEndpoint(),
+          "before refresh, client.getEndpoint() must match the configured endpoint");
+
+      f.connect();
+      OpcUaSession original = f.client.getSession();
+      ByteString originalCert = f.client.getConfig().getEndpoint().getServerCertificate();
+      f.activeSessions.clear();
+
+      X509Certificate replacement = f.rotate(false, true);
+      ByteString replacementCert = ByteString.of(replacement.getEncoded());
+      f.channel().close().sync();
+
+      OpcUaSession recovered = f.activeSessions.poll(20, TimeUnit.SECONDS);
+      assertSame(original, recovered, "session must be retained across rotation");
+
+      EndpointConfiguration[] transition = refreshed.get(5, TimeUnit.SECONDS);
+      assertEquals(originalCert, transition[0].endpoint().getServerCertificate());
+      assertEquals(replacementCert, transition[1].endpoint().getServerCertificate());
+      assertEquals(
+          transition[1].endpoint(),
+          endpointInCallback.get(),
+          "client.getEndpoint() must already return the adopted endpoint inside the callback");
+      assertEquals(replacementCert, f.client.getEndpoint().getServerCertificate());
+      assertEquals(
+          originalCert,
+          f.client.getConfig().getEndpoint().getServerCertificate(),
+          "OpcUaClientConfig.getEndpoint() must remain immutable");
+      assertEquals(
+          originalCert,
+          recovered.getEndpoint().orElseThrow().getServerCertificate(),
+          "retained session still holds its creation endpoint");
+      assertEquals(0, failures.get());
+      assertEquals(0, removedCalls.get(), "removed listener must not be notified");
+      f.read();
+    }
+  }
+
+  // A permanent equivalence refusal must reach EndpointRefreshListener with Bad_ConfigurationError,
+  // and calling disconnectAsync() from inside that callback must cleanly stop retries without
+  // deadlocking.
+  @Test
+  void listenerReceivesEquivalenceRefusalAndCanDisconnectReentrant() throws Exception {
+    try (var f = new Fixture(SecurityPolicy.Basic256Sha256)) {
+      var failureFuture = new CompletableFuture<Throwable>();
+      var disconnectFuture = new CompletableFuture<OpcUaClient>();
+      var refreshes = new AtomicInteger();
+
+      f.client.addEndpointRefreshListener(
+          new EndpointRefreshListener() {
+            @Override
+            public void onEndpointRefreshed(
+                EndpointConfiguration previous, EndpointConfiguration current) {
+              refreshes.incrementAndGet();
+            }
+
+            @Override
+            public void onEndpointRefreshFailed(Throwable failure) {
+              if (failureFuture.complete(failure)) {
+                f.client
+                    .disconnectAsync()
+                    .whenComplete(
+                        (client, ex) -> {
+                          if (ex != null) disconnectFuture.completeExceptionally(ex);
+                          else disconnectFuture.complete(client);
+                        });
+              }
+            }
+          });
+
+      f.connect();
+      EndpointDescription initialEndpoint = f.client.getEndpoint();
+      f.discoveryBehavior =
+          discovered ->
+              discovered.thenApply(
+                  cfg -> {
+                    EndpointDescription ep = cfg.endpoint();
+                    EndpointDescription altered =
+                        new EndpointDescription(
+                            ep.getEndpointUrl(),
+                            ep.getServer(),
+                            ep.getServerCertificate(),
+                            ep.getSecurityMode(),
+                            ep.getSecurityPolicyUri(),
+                            new UserTokenPolicy[] {
+                              new UserTokenPolicy(
+                                  "username-none",
+                                  UserTokenType.UserName,
+                                  null,
+                                  null,
+                                  SecurityPolicy.None.getUri())
+                            },
+                            ep.getTransportProfileUri(),
+                            ep.getSecurityLevel());
+                    return new EndpointConfiguration(altered, List.of(altered));
+                  });
+
+      f.activeSessions.clear();
+      f.rotate(false, true);
+      f.channel().close().sync();
+
+      Throwable failure = failureFuture.get(15, TimeUnit.SECONDS);
+      assertEquals(
+          StatusCodes.Bad_ConfigurationError,
+          UaException.extractStatusCode(failure).orElseThrow().value());
+      assertSame(f.client, disconnectFuture.get(10, TimeUnit.SECONDS));
+      assertEquals(0, refreshes.get());
+      assertEquals(initialEndpoint, f.client.getEndpoint(), "cached endpoint must be retained");
+      assertEquals(State.Inactive, f.client.getSessionFsm().getState());
+      assertTrue(((OpcTcpClientTransport) f.client.getTransport()).getSecureChannel().isEmpty());
+    }
+  }
+
+  // A transient discovery failure must report onEndpointRefreshFailed while keeping the cached
+  // endpoint, and once discovery recovers the adopted refresh must report onEndpointRefreshed.
+  @Test
+  void listenerReceivesTransientFailureThenRefreshOnRecovery() throws Exception {
+    try (var f = new Fixture(SecurityPolicy.Basic256Sha256)) {
+      var failureFuture = new CompletableFuture<Throwable>();
+      var refreshedFuture = new CompletableFuture<EndpointConfiguration>();
+
+      f.client.addEndpointRefreshListener(
+          new EndpointRefreshListener() {
+            @Override
+            public void onEndpointRefreshed(
+                EndpointConfiguration previous, EndpointConfiguration current) {
+              refreshedFuture.complete(current);
+            }
+
+            @Override
+            public void onEndpointRefreshFailed(Throwable failure) {
+              failureFuture.complete(failure);
+            }
+          });
+
+      f.connect();
+      EndpointDescription initialEndpoint = f.client.getEndpoint();
+      f.discoveryUnavailable = true;
+      f.activeSessions.clear();
+      X509Certificate replacement = f.rotate(false, true);
+      f.channel().close().sync();
+
+      Throwable failure = failureFuture.get(15, TimeUnit.SECONDS);
+      assertNotNull(failure);
+      assertEquals(
+          initialEndpoint,
+          f.client.getEndpoint(),
+          "cached endpoint must be retained while discovery fails");
+
+      f.discoveryUnavailable = false;
+      EndpointConfiguration adopted = refreshedFuture.get(25, TimeUnit.SECONDS);
+      assertEquals(
+          ByteString.of(replacement.getEncoded()), adopted.endpoint().getServerCertificate());
+      assertEquals(adopted.endpoint(), f.client.getEndpoint());
+      assertNotNull(f.activeSessions.poll(15, TimeUnit.SECONDS));
+      f.read();
     }
   }
 

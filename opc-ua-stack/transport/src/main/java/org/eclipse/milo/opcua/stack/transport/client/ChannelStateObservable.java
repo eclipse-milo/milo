@@ -42,10 +42,13 @@ public interface ChannelStateObservable {
   /**
    * Get the state of this transport's channel.
    *
-   * <p>The client's Session handling reads this when an attempt to open or recover a Session fails.
-   * Over a transport that is {@link ChannelState#DISCONNECTED}, it abandons the Session instead of
-   * reactivating it, and it does not report the failed attempts to {@code SessionActivityListener}:
-   * nothing connects the transport again until the application does.
+   * <p>The client's Session handling reads this when disconnecting or when an attempt to open or
+   * recover a Session fails. On disconnect, {@code CloseSession} is skipped unless the channel is
+   * {@link ChannelState#CONNECTED} (and still the channel the Session was activated on), so
+   * disconnecting after a lost channel does not wait for a reconnect to send a request the Server
+   * would reject. Over a transport that is {@link ChannelState#DISCONNECTED}, failed recovery
+   * attempts abandon the Session instead of reactivating it and are not reported to {@code
+   * SessionActivityListener}: nothing connects the transport again until the application does.
    *
    * @return the state of this transport's channel.
    */

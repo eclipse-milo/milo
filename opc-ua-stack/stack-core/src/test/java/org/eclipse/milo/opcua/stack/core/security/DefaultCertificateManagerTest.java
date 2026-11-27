@@ -13,10 +13,15 @@ package org.eclipse.milo.opcua.stack.core.security;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -27,6 +32,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class DefaultCertificateManagerTest {
 
@@ -188,6 +194,39 @@ class DefaultCertificateManagerTest {
 
     assertEquals(List.of(first, shared, second), manager.getRejectedCertificates());
     assertTrue(new DefaultCertificateManager().getRejectedCertificates().isEmpty());
+  }
+
+  // If any registered group's quarantine cannot be read, GetRejectedList must fail with
+  // UncheckedIOException rather than returning a silent partial union from the other groups.
+  @Test
+  void getRejectedCertificatesPropagatesUncheckedIoExceptionFromGroupQuarantine(
+      @TempDir Path tempDir) throws Exception {
+    var certificateFactory = new TestCertificateFactory();
+    X509Certificate first = newCertificate(certificateFactory);
+    TrackingApplicationGroup readableGroup = newGroup();
+    readableGroup.getCertificateQuarantine().addRejectedCertificate(first);
+
+    Path missingDir = Files.createDirectory(tempDir.resolve("missing-rejected"));
+    var fileQuarantine = new FileBasedCertificateQuarantine(missingDir.toFile());
+    var unreadableGroup =
+        new DefaultCertificateGroup(
+            new MemoryTrustListManager(),
+            new MemoryCertificateStore(),
+            fileQuarantine,
+            new CertificateValidator.InsecureCertificateValidator(),
+            List.of(NodeIds.RsaSha256ApplicationCertificateType));
+
+    var manager = new DefaultCertificateManager();
+    manager.addCertificateGroup(GROUP_ID_A, readableGroup);
+    manager.addCertificateGroup(GROUP_ID_B, unreadableGroup);
+
+    assertEquals(List.of(first), manager.getRejectedCertificates());
+
+    Files.delete(missingDir);
+
+    UncheckedIOException thrown =
+        assertThrows(UncheckedIOException.class, manager::getRejectedCertificates);
+    assertInstanceOf(NoSuchFileException.class, thrown.getCause());
   }
 
   // OPN receiver thumbprints can identify a certificate held by any registered group; a lookup

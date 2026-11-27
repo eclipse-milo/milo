@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.stack.core.security;
 
+import java.io.UncheckedIOException;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.LinkedHashSet;
@@ -124,9 +125,12 @@ public interface CertificateManager {
    *
    * <p>This is the list Part 12 {@code ServerConfiguration.GetRejectedList} returns. Certificates
    * are listed group by group in {@link #getCertificateGroups()} order, and a certificate rejected
-   * by more than one group appears once, in the position of its first occurrence.
+   * by more than one group appears once, in the position of its first occurrence. If any group's
+   * quarantine fails to read its rejected certificates, the {@link UncheckedIOException} propagates
+   * rather than returning a partial list.
    *
    * @return the rejected certificates of every group, without duplicates.
+   * @throws UncheckedIOException if any group's quarantine fails to read its rejected certificates.
    */
   default List<X509Certificate> getRejectedCertificates() {
     var rejected = new LinkedHashSet<X509Certificate>();

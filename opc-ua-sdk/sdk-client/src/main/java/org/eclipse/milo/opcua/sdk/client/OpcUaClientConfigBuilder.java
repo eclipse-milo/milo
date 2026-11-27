@@ -166,7 +166,8 @@ public class OpcUaClientConfigBuilder {
    * <p>Validation runs only when enabled and the discovery endpoints for the current connection
    * attempt (from {@link #setDiscoveryEndpoints(List)} or a refreshed {@link EndpointResolver}
    * result) contain at least one endpoint matching the current transport profile; neither list is
-   * filtered by host.
+   * filtered by host. Mismatches fail session creation with {@link
+   * SessionEndpointMismatchException} carrying {@code Bad_SecurityChecksFailed}.
    *
    * @param sessionEndpointValidationEnabled {@code true} to validate session endpoints against
    *     discovery endpoints.

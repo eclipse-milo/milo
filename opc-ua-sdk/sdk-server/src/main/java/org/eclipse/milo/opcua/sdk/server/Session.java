@@ -35,6 +35,7 @@ import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnostics;
 import org.eclipse.milo.opcua.sdk.server.identity.Identity;
 import org.eclipse.milo.opcua.sdk.server.subscriptions.SubscriptionManager;
+import org.eclipse.milo.opcua.stack.core.security.CertificateManager;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -156,7 +157,10 @@ public class Session {
     this.secureChannelId = secureChannelId;
     this.securityConfiguration = securityConfiguration;
     this.endpoint = endpoint;
-    originalServerCertificate = SessionServerCertificate.of(endpoint, securityConfiguration);
+    CertificateManager certificateManager =
+        server.getConfig() != null ? server.getConfig().getCertificateManager() : null;
+    originalServerCertificate =
+        SessionServerCertificate.of(endpoint, securityConfiguration, certificateManager);
 
     sessionDiagnostics = new SessionDiagnostics(this);
     sessionSecurityDiagnostics = new SessionSecurityDiagnostics(this);

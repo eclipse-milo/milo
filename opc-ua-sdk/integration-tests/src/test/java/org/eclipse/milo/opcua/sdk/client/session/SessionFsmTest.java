@@ -29,6 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
@@ -51,6 +52,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
+import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
 import org.junit.jupiter.api.Test;
 
@@ -449,6 +451,85 @@ public class SessionFsmTest {
     } finally {
       client.disconnect();
       server.shutdown().get();
+    }
+  }
+
+  // Regression test for #2239: after a SecureChannel drop puts SessionFsm into ReactivatingWait,
+  // disconnectAsync() must not wait for ChannelFsm to open a new SecureChannel just to send a
+  // CloseSession that the Server rejects on the new channel (Part 4 §5.7.2.1, §7.35).
+  @Test
+  public void testDisconnectAfterChannelLossDoesNotReconnectToSendCloseSession() throws Exception {
+    OpcUaServer server = TestServer.create().getServer();
+    server.startup().get(10, TimeUnit.SECONDS);
+
+    ScheduledExecutorService observer = Executors.newSingleThreadScheduledExecutor();
+    OpcUaClient baseline = TestClient.create(server, cfg -> {});
+    OpcUaClient client = TestClient.create(server, cfg -> {});
+
+    try {
+      // Control: with the SecureChannel up, disconnect closes the Session on the Server.
+      baseline.connectAsync().get(10, TimeUnit.SECONDS);
+      assertEquals(uint(1), server.getSessionManager().getCurrentSessionCount());
+      baseline.disconnectAsync().get(10, TimeUnit.SECONDS);
+      assertEquals(
+          uint(0),
+          server.getSessionManager().getCurrentSessionCount(),
+          "baseline disconnect with an active channel should close the Session on the Server");
+
+      var transport = (OpcTcpClientTransport) client.getTransport();
+      var channelsOpened = new AtomicInteger();
+      transport.addTransitionListener(
+          connected -> {
+            if (connected) {
+              channelsOpened.incrementAndGet();
+            }
+          });
+
+      client.connectAsync().get(10, TimeUnit.SECONDS);
+      channelsOpened.set(0);
+
+      CompletableFuture<State> reachedReactivatingWait =
+          observeState(client.getSessionFsm(), State.ReactivatingWait, observer);
+
+      // Drop the underlying TCP channel as a network failure would.
+      transport.getChannelFsm().getChannel().get(10, TimeUnit.SECONDS).close().sync();
+
+      assertEquals(
+          State.ReactivatingWait,
+          reachedReactivatingWait.get(10, TimeUnit.SECONDS),
+          "channel loss should move SessionFsm into ReactivatingWait");
+      assertEquals(
+          ChannelStateObservable.ChannelState.RECONNECTING,
+          transport.getChannelState(),
+          "OpcTcpClientTransport should be RECONNECTING while waiting to reconnect");
+
+      client.disconnectAsync().get(5, TimeUnit.SECONDS);
+
+      assertEquals(
+          0,
+          channelsOpened.get(),
+          "disconnectAsync() must not wait for a reconnect SecureChannel to send CloseSession");
+      assertEquals(State.Inactive, client.getSessionFsm().getState());
+      assertEquals(
+          com.digitalpetri.netty.fsm.State.NotConnected,
+          transport.getChannelFsm().getState(),
+          "ChannelFsm should be NotConnected after disconnectAsync()");
+
+      // Verify the client can cleanly connect again afterwards.
+      client.connectAsync().get(10, TimeUnit.SECONDS);
+      assertEquals(State.Active, client.getSessionFsm().getState());
+    } finally {
+      observer.shutdownNow();
+      try {
+        baseline.disconnectAsync().get(10, TimeUnit.SECONDS);
+      } finally {
+        try {
+          client.disconnectAsync().get(10, TimeUnit.SECONDS);
+        } finally {
+          server.shutdown().get(10, TimeUnit.SECONDS);
+          assertTrue(observer.awaitTermination(5, TimeUnit.SECONDS), "state observer did not stop");
+        }
+      }
     }
   }
 }

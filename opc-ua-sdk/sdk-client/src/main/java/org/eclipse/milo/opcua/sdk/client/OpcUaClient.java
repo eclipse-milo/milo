@@ -556,7 +556,8 @@ public class OpcUaClient {
     endpointRefresh =
         new EndpointRefresh(
             new EndpointConfiguration(config.getEndpoint(), config.getDiscoveryEndpoints()),
-            config.getEndpointResolver().orElse(null));
+            config.getEndpointResolver().orElse(null),
+            transport.getConfig().getExecutor());
 
     staticEncodingContext =
         new EncodingContext() {
@@ -1177,6 +1178,27 @@ public class OpcUaClient {
 
   public OpcUaClientConfig getConfig() {
     return config;
+  }
+
+  /**
+   * Get the {@link EndpointDescription} this client currently connects with.
+   *
+   * <p>Before any endpoint refresh (or when no {@link EndpointResolver} is configured), this
+   * returns {@link OpcUaClientConfig#getEndpoint()}. After a refresh adopts a replacement endpoint
+   * (for example after the server's application certificate is rotated), this method returns the
+   * adopted endpoint while {@link OpcUaClientConfig#getEndpoint()} retains the immutable configured
+   * endpoint.
+   *
+   * <p>An active retained {@link UaSession} keeps the endpoint it was created with even after the
+   * underlying channel reconnects using a refreshed endpoint, so {@link UaSession#getEndpoint()}
+   * may still reflect the earlier endpoint until a new Session is created.
+   *
+   * @return the {@link EndpointDescription} this client currently connects with.
+   * @see OpcUaClientConfig#getEndpoint()
+   * @see #addEndpointRefreshListener(EndpointRefreshListener)
+   */
+  public EndpointDescription getEndpoint() {
+    return endpointRefresh.current().endpoint();
   }
 
   /**
@@ -3756,6 +3778,27 @@ public class OpcUaClient {
   public void removeSessionActivityListener(SessionActivityListener listener) {
     sessionFsm.removeActivityListener(listener);
     logger.debug("Removed SessionActivityListener: {}", listener);
+  }
+
+  /**
+   * Add an {@link EndpointRefreshListener} to be notified when endpoint refresh adopts a new
+   * endpoint or fails.
+   *
+   * @param listener the {@link EndpointRefreshListener} to add.
+   */
+  public void addEndpointRefreshListener(EndpointRefreshListener listener) {
+    endpointRefresh.addListener(listener);
+    logger.debug("Added EndpointRefreshListener: {}", listener);
+  }
+
+  /**
+   * Remove a previously added {@link EndpointRefreshListener}.
+   *
+   * @param listener the {@link EndpointRefreshListener} to remove.
+   */
+  public void removeEndpointRefreshListener(EndpointRefreshListener listener) {
+    endpointRefresh.removeListener(listener);
+    logger.debug("Removed EndpointRefreshListener: {}", listener);
   }
 
   public void addSessionInitializer(SessionInitializer initializer) {

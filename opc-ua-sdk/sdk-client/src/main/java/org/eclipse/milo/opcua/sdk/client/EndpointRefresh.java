@@ -10,15 +10,23 @@
 
 package org.eclipse.milo.opcua.sdk.client;
 
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.LongSupplier;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.eclipse.milo.opcua.stack.core.util.ExecutionQueue;
 import org.eclipse.milo.opcua.stack.transport.client.SecureChannelHandshakeException;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -41,26 +49,53 @@ final class EndpointRefresh {
 
   private final @Nullable EndpointResolver resolver;
   private final LongSupplier nanoTime;
+  private final ExecutionQueue notificationQueue;
+  private final List<EndpointRefreshListener> listeners = new CopyOnWriteArrayList<>();
+  private final ArrayDeque<Runnable> pendingNotifications = new ArrayDeque<>();
   private volatile EndpointConfiguration current;
   private boolean active;
+  private boolean refreshing;
+  private int pendingCancels;
   private long generation;
   private long nextRefresh;
   private long cooldownNanos;
   private @Nullable CompletableFuture<EndpointConfiguration> inFlight;
 
   EndpointRefresh(EndpointConfiguration initial, @Nullable EndpointResolver resolver) {
-    this(initial, resolver, System::nanoTime);
+    this(initial, resolver, System::nanoTime, Runnable::run);
+  }
+
+  EndpointRefresh(
+      EndpointConfiguration initial, @Nullable EndpointResolver resolver, Executor executor) {
+    this(initial, resolver, System::nanoTime, executor);
   }
 
   EndpointRefresh(
       EndpointConfiguration initial, @Nullable EndpointResolver resolver, LongSupplier nanoTime) {
-    current = Objects.requireNonNull(initial);
+    this(initial, resolver, nanoTime, Runnable::run);
+  }
+
+  EndpointRefresh(
+      EndpointConfiguration initial,
+      @Nullable EndpointResolver resolver,
+      LongSupplier nanoTime,
+      Executor executor) {
+    current = Objects.requireNonNull(initial, "initial");
     this.resolver = resolver;
-    this.nanoTime = nanoTime;
+    this.nanoTime = Objects.requireNonNull(nanoTime, "nanoTime");
+    this.notificationQueue = new ExecutionQueue(Objects.requireNonNull(executor, "executor"));
   }
 
   EndpointConfiguration current() {
     return current;
+  }
+
+  void addListener(EndpointRefreshListener listener) {
+    listeners.add(Objects.requireNonNull(listener, "listener"));
+  }
+
+  void removeListener(EndpointRefreshListener listener) {
+    listeners.remove(Objects.requireNonNull(listener, "listener"));
   }
 
   /** Enable refreshes for a new connection and allow the first one immediately. */
@@ -90,13 +125,19 @@ final class EndpointRefresh {
   }
 
   /** Disable refreshes, cancel any in flight, and discard its result if it completes late. */
-  synchronized void stop() {
-    active = false;
-    generation++;
-    if (inFlight != null) {
-      inFlight.cancel(true);
+  void stop() {
+    CompletableFuture<EndpointConfiguration> toCancel;
+    synchronized (this) {
+      active = false;
+      generation++;
+      refreshing = false;
+      toCancel = inFlight;
       inFlight = null;
+      if (toCancel != null) {
+        pendingCancels++;
+      }
     }
+    cancelOutsideLock(toCancel);
   }
 
   /**
@@ -111,49 +152,199 @@ final class EndpointRefresh {
     }
   }
 
-  private synchronized void refresh() {
-    if (!active || resolver == null || inFlight != null || nanoTime.getAsLong() - nextRefresh < 0) {
-      return;
+  private void refresh() {
+    final EndpointResolver currentResolver;
+    final long epoch;
+    synchronized (this) {
+      if (!active
+          || resolver == null
+          || refreshing
+          || pendingCancels > 0
+          || nanoTime.getAsLong() - nextRefresh < 0) {
+        return;
+      }
+      nextRefresh = nanoTime.getAsLong() + cooldownNanos;
+      cooldownNanos = 2 * resolver.getRefreshCooldown().toNanos();
+      epoch = generation;
+      refreshing = true;
+      currentResolver = resolver;
     }
-    nextRefresh = nanoTime.getAsLong() + cooldownNanos;
-    cooldownNanos = 2 * resolver.getRefreshCooldown().toNanos();
-    long epoch = generation;
+
     CompletableFuture<EndpointConfiguration> source;
+    long timeoutMillis;
     try {
-      source = resolver.resolve();
-    } catch (Exception e) {
-      LOGGER.warn("Endpoint refresh failed; retaining cached endpoint", e);
+      timeoutMillis =
+          Objects.requireNonNull(
+                  currentResolver.getTimeout(), "EndpointResolver.getTimeout() returned null")
+              .toMillis();
+      source =
+          Objects.requireNonNull(
+              currentResolver.resolve(), "EndpointResolver.resolve() returned null");
+    } catch (Throwable t) {
+      boolean shouldNotify = false;
+      synchronized (this) {
+        if (epoch == generation && active) {
+          refreshing = false;
+          if (!(t instanceof Error)) {
+            Throwable failure = normalizeFailure(t);
+            LOGGER.warn("Endpoint refresh failed; retaining cached endpoint", failure);
+            shouldNotify = enqueueNotification(() -> notifyRefreshFailed(failure));
+          }
+        }
+      }
+      if (t instanceof Error err) {
+        throw err;
+      }
+      if (shouldNotify) {
+        notificationQueue.submit(this::drainNotifications);
+      }
       return;
     }
-    inFlight = source;
+
+    boolean cancelledBeforeAttach = false;
+    synchronized (this) {
+      if (epoch == generation && active) {
+        inFlight = source;
+      } else {
+        cancelledBeforeAttach = true;
+        pendingCancels++;
+      }
+    }
+
+    if (cancelledBeforeAttach) {
+      cancelOutsideLock(source);
+      return;
+    }
+
     // The deadline applies to a copy so it never completes the resolver's own future.
     source
         .copy()
-        .orTimeout(resolver.getTimeout().toMillis(), TimeUnit.MILLISECONDS)
+        .orTimeout(timeoutMillis, TimeUnit.MILLISECONDS)
         .whenComplete((value, error) -> complete(source, epoch, value, error));
   }
 
-  private synchronized void complete(
+  private void complete(
       CompletableFuture<EndpointConfiguration> source,
       long epoch,
       @Nullable EndpointConfiguration value,
       @Nullable Throwable error) {
 
-    if (epoch != generation || !active) return;
-    inFlight = null;
-    if (!source.isDone()) source.cancel(true);
-    try {
-      if (error != null) throw new UaException(error);
-      validateEquivalent(current, value);
-      // Compare the selected endpoint only; a change elsewhere in the discovery list is not a
-      // refresh of the endpoint this client connects with.
-      if (!current.endpoint().equals(value.endpoint())) {
-        LOGGER.info("Endpoint refreshed: {}", value.endpoint().getEndpointUrl());
+    boolean cancelSource;
+    boolean shouldNotify = false;
+    synchronized (this) {
+      if (epoch != generation || !active) {
+        return;
       }
-      current = value;
-    } catch (Exception e) {
-      LOGGER.warn("Endpoint refresh failed; retaining cached endpoint", e);
+      refreshing = false;
+      inFlight = null;
+      cancelSource = !source.isDone();
+      if (cancelSource) {
+        pendingCancels++;
+      }
+
+      if (error != null) {
+        Throwable failure = normalizeFailure(error);
+        LOGGER.warn("Endpoint refresh failed; retaining cached endpoint", failure);
+        shouldNotify = enqueueNotification(() -> notifyRefreshFailed(failure));
+      } else if (value == null) {
+        Throwable failure = new NullPointerException("EndpointResolver resolved to null");
+        LOGGER.warn("Endpoint refresh failed; retaining cached endpoint", failure);
+        shouldNotify = enqueueNotification(() -> notifyRefreshFailed(failure));
+      } else {
+        EndpointConfiguration previous = current;
+        try {
+          validateEquivalent(previous, value);
+          // Compare the selected endpoint only; a change elsewhere in the discovery list is not a
+          // refresh of the endpoint this client connects with.
+          boolean endpointChanged = !previous.endpoint().equals(value.endpoint());
+          current = value;
+          if (endpointChanged) {
+            LOGGER.info("Endpoint refreshed: {}", value.endpoint().getEndpointUrl());
+            shouldNotify = enqueueNotification(() -> notifyRefreshed(previous, value));
+          }
+        } catch (Exception e) {
+          LOGGER.warn("Endpoint refresh failed; retaining cached endpoint", e);
+          shouldNotify = enqueueNotification(() -> notifyRefreshFailed(e));
+        }
+      }
     }
+
+    try {
+      if (cancelSource) {
+        cancelOutsideLock(source);
+      }
+    } finally {
+      if (shouldNotify) {
+        notificationQueue.submit(this::drainNotifications);
+      }
+    }
+  }
+
+  private void cancelOutsideLock(@Nullable CompletableFuture<EndpointConfiguration> toCancel) {
+    if (toCancel == null) {
+      return;
+    }
+    try {
+      toCancel.cancel(true);
+    } finally {
+      synchronized (this) {
+        pendingCancels--;
+      }
+    }
+  }
+
+  private boolean enqueueNotification(Runnable notification) {
+    if (listeners.isEmpty()) {
+      return false;
+    }
+    pendingNotifications.add(notification);
+    return true;
+  }
+
+  private void drainNotifications() {
+    while (true) {
+      Runnable next;
+      synchronized (this) {
+        next = pendingNotifications.poll();
+      }
+      if (next == null) {
+        return;
+      }
+      next.run();
+    }
+  }
+
+  private void notifyRefreshed(EndpointConfiguration previous, EndpointConfiguration current) {
+    for (EndpointRefreshListener listener : listeners) {
+      try {
+        listener.onEndpointRefreshed(previous, current);
+      } catch (Throwable t) {
+        LOGGER.warn("EndpointRefreshListener failed: {}", listener, t);
+      }
+    }
+  }
+
+  private void notifyRefreshFailed(Throwable failure) {
+    for (EndpointRefreshListener listener : listeners) {
+      try {
+        listener.onEndpointRefreshFailed(failure);
+      } catch (Throwable t) {
+        LOGGER.warn("EndpointRefreshListener failed: {}", listener, t);
+      }
+    }
+  }
+
+  private static Throwable normalizeFailure(Throwable failure) {
+    Throwable cause = failure;
+    while ((cause instanceof CompletionException || cause instanceof ExecutionException)
+        && cause.getCause() != null
+        && cause.getCause() != cause) {
+      cause = cause.getCause();
+    }
+    if (cause instanceof TimeoutException) {
+      return new UaException(StatusCodes.Bad_Timeout, cause);
+    }
+    return cause;
   }
 
   /** Whether the transport identifies a failed SecureChannel establishment. */

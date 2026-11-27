@@ -253,6 +253,7 @@ class SessionFsmChangeIdentityTest {
             client.changeIdentityAsync(new UsernameProvider("user1", "password")),
             StatusCodes.Bad_SessionNotActivated);
 
+        transport.reconnect();
         reactivateReq.complete(activateResponse(StatusCode.GOOD, ByteString.of(new byte[] {3, 4})));
         awaitState(client, State.Active);
       } finally {
@@ -443,6 +444,47 @@ class SessionFsmChangeIdentityTest {
       }
     }
 
+    // When disconnectAsync() arrives during ChangingIdentity after the Session's SecureChannel is
+    // no longer CONNECTED, SessionFsm must skip CloseSession (as in Active), fail the in-flight
+    // changeIdentity future with Bad_SessionClosed, fire onSessionInactive, and settle Inactive.
+    @Test
+    void closeSessionDuringChangingIdentitySkipsCloseSessionWhenChannelNotConnected()
+        throws Exception {
+      var transport = new ScriptedTransport();
+      OpcUaClient client = newClient(transport, AnonymousProvider.INSTANCE);
+      var listener = new RecordingActivityListener();
+      client.addSessionActivityListener(listener);
+
+      try {
+        connectToActive(client, transport);
+        assertTrue(listener.awaitActiveCount(1, TIMEOUT_SECONDS));
+
+        transport.parkNextActivateSession();
+        CompletableFuture<OpcUaSession> changeFuture =
+            client.changeIdentityAsync(new UsernameProvider("user1", "password"));
+        transport.awaitRequest(ActivateSessionRequest.class);
+        awaitState(client, State.ChangingIdentity);
+
+        transport.sentRequests.clear();
+        transport.setChannelState(ChannelStateObservable.ChannelState.RECONNECTING);
+
+        client.disconnectAsync().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+        assertFailedWithStatus(changeFuture, StatusCodes.Bad_SessionClosed);
+        awaitState(client, State.Inactive);
+        assertTrue(
+            listener.awaitInactiveCount(1, TIMEOUT_SECONDS),
+            "leaving ChangingIdentity for Inactive must fire onSessionInactive");
+        assertEquals(
+            0,
+            transport.sentRequests.stream().filter(CloseSessionRequest.class::isInstance).count(),
+            "CloseSession must be skipped when SecureChannel is no longer CONNECTED");
+      } finally {
+        transport.releaseAll();
+        client.disconnectAsync().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      }
+    }
+
     // ConnectionLost arriving while ChangingIdentity is in flight must fail the pending future
     // with Bad_ConnectionClosed, fire onSessionInactive, keep the previous identity for
     // reactivation, and prevent any late response from the aborted attempt from affecting a later
@@ -472,6 +514,9 @@ class SessionFsmChangeIdentityTest {
         assertTrue(
             listener.awaitInactiveCount(1, TIMEOUT_SECONDS),
             "leaving ChangingIdentity for ReactivatingWait must fire onSessionInactive");
+
+        // Simulate the transport reconnecting before reactivation completes.
+        transport.reconnect();
 
         // Reactivation succeeds automatically after backoff and must use the previous Anonymous
         // identity, NOT user1.
@@ -615,6 +660,7 @@ class SessionFsmChangeIdentityTest {
         transport.fireConnectionLost();
 
         assertFailedWithStatus(changeFuture, StatusCodes.Bad_ConnectionClosed);
+        transport.reconnect();
         assertTrue(listener.awaitActiveCount(2, TIMEOUT_SECONDS));
         awaitState(client, State.Active);
         assertEquals(recoveredNonce, session.getServerNonce());
@@ -991,6 +1037,14 @@ class SessionFsmChangeIdentityTest {
       for (TransitionListener listener : listeners) {
         listener.onStateTransition(false);
       }
+    }
+
+    void reconnect() {
+      channelState = ChannelState.CONNECTED;
+    }
+
+    void setChannelState(ChannelState channelState) {
+      this.channelState = channelState;
     }
 
     void releaseAll() {
