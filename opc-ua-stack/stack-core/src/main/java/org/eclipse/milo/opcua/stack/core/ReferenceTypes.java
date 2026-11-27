@@ -171,6 +171,12 @@ public class ReferenceTypes {
 
   /**
    * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/11.25">https://reference.opcfoundation.org/v105/Core/docs/Part5/11.25</a>
+   */
+  public static final NodeId HasKeyValueDescription = new NodeId(0, 32407);
+
+  /**
+   * @see <a
    *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/11.18">https://reference.opcfoundation.org/v105/Core/docs/Part5/11.18</a>
    */
   public static final NodeId HasArgumentDescription = new NodeId(0, 129);
@@ -186,6 +192,48 @@ public class ReferenceTypes {
    *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/11.22">https://reference.opcfoundation.org/v105/Core/docs/Part5/11.22</a>
    */
   public static final NodeId IsDeprecated = new NodeId(0, 23562);
+
+  /**
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/11.26">https://reference.opcfoundation.org/v105/Core/docs/Part5/11.26</a>
+   */
+  public static final NodeId UsesDataTypeRefinement = new NodeId(0, 19814);
+
+  /**
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/11.27">https://reference.opcfoundation.org/v105/Core/docs/Part5/11.27</a>
+   */
+  public static final NodeId HasFieldDescription = new NodeId(0, 19815);
+
+  /**
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/11.28">https://reference.opcfoundation.org/v105/Core/docs/Part5/11.28</a>
+   */
+  public static final NodeId HasFieldDescriptionSetMandatory = new NodeId(0, 19816);
+
+  /**
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/11.29">https://reference.opcfoundation.org/v105/Core/docs/Part5/11.29</a>
+   */
+  public static final NodeId IsDisabledOptionalField = new NodeId(0, 19817);
+
+  /**
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/11.30">https://reference.opcfoundation.org/v105/Core/docs/Part5/11.30</a>
+   */
+  public static final NodeId UsesSubtypeRestriction = new NodeId(0, 19818);
+
+  /**
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/11.31">https://reference.opcfoundation.org/v105/Core/docs/Part5/11.31</a>
+   */
+  public static final NodeId AllowedSubtype = new NodeId(0, 19819);
+
+  /**
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part5/11.32">https://reference.opcfoundation.org/v105/Core/docs/Part5/11.32</a>
+   */
+  public static final NodeId HasDataTypeRefinement = new NodeId(0, 19846);
 
   /**
    * @see <a
@@ -213,6 +261,18 @@ public class ReferenceTypes {
 
   /**
    * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/6.5.1">https://reference.opcfoundation.org/v105/Core/docs/Part8/6.5.1</a>
+   */
+  public static final NodeId HasEngineeringUnitDetails = new NodeId(0, 32558);
+
+  /**
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part8/6.5.2">https://reference.opcfoundation.org/v105/Core/docs/Part8/6.5.2</a>
+   */
+  public static final NodeId HasQuantity = new NodeId(0, 32559);
+
+  /**
+   * @see <a
    *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.4.2">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.4.2</a>
    */
   public static final NodeId HasTrueSubState = new NodeId(0, 9004);
@@ -234,6 +294,12 @@ public class ReferenceTypes {
    *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.4.5">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.4.5</a>
    */
   public static final NodeId AlarmGroupMember = new NodeId(0, 16362);
+
+  /**
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/5.4.6">https://reference.opcfoundation.org/v105/Core/docs/Part9/5.4.6</a>
+   */
+  public static final NodeId AlarmSuppressionGroupMember = new NodeId(0, 32059);
 
   /**
    * @see <a
@@ -264,6 +330,18 @@ public class ReferenceTypes {
    *     href="https://reference.opcfoundation.org/v105/Core/docs/Part9/7.5">https://reference.opcfoundation.org/v105/Core/docs/Part9/7.5</a>
    */
   public static final NodeId HasEffectUnsuppressed = new NodeId(0, 17985);
+
+  /**
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.3.3">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.3.3</a>
+   */
+  public static final NodeId HasCurrentData = new NodeId(0, 32633);
+
+  /**
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part11/5.3.4">https://reference.opcfoundation.org/v105/Core/docs/Part11/5.3.4</a>
+   */
+  public static final NodeId HasCurrentEvent = new NodeId(0, 32634);
 
   /**
    * @see <a
@@ -402,4 +480,16 @@ public class ReferenceTypes {
    *     href="https://reference.opcfoundation.org/v105/Core/docs/Part23/1">https://reference.opcfoundation.org/v105/Core/docs/Part23/1</a>
    */
   public static final NodeId HasAttachedComponent = new NodeId(0, 25264);
+
+  /**
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part23/5.4.1">https://reference.opcfoundation.org/v105/Core/docs/Part23/5.4.1</a>
+   */
+  public static final NodeId HasReferenceDescription = new NodeId(0, 32679);
+
+  /**
+   * @see <a
+   *     href="https://reference.opcfoundation.org/v105/Core/docs/Part25/6.5">https://reference.opcfoundation.org/v105/Core/docs/Part25/6.5</a>
+   */
+  public static final NodeId HasSerializationEntity = new NodeId(0, 19845);
 }
