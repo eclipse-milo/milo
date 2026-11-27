@@ -409,6 +409,14 @@ public class OpcUaClient {
    * list of endpoints retrieved via the GetEndpoints service from the server at {@code endpointUrl}
    * and building an {@link OpcUaClientConfig} using that endpoint.
    *
+   * <p>If discovery at {@code endpointUrl} fails with an error that a separate {@code /discovery}
+   * endpoint can resolve (invalid endpoint URL, security rejection, or a non-timeout/non-capacity
+   * SecureChannel handshake failure) and the URL path does not already end with {@code /discovery},
+   * discovery is retried once against {@code /discovery}. If that fallback also fails, the original
+   * failure is thrown with the fallback failure attached as a suppressed exception. Endpoint
+   * selection failures, transport/DNS/timeout errors, and non-security GetEndpoints service faults
+   * are never retried against {@code /discovery}.
+   *
    * @param endpointUrl the endpoint URL of the server to connect to and retrieve endpoints from.
    * @param selectEndpoint a function that selects the {@link EndpointDescription} to connect to
    *     from the list of endpoints from the server.
@@ -417,7 +425,8 @@ public class OpcUaClient {
    * @param configureClient a Consumer that receives an {@link OpcUaClientConfigBuilder} that can be
    *     used to configure the client.
    * @return a configured {@link OpcUaClient}.
-   * @throws UaException if the endpoints could not be retrieved or the client could not be created.
+   * @throws UaException if the endpoints could not be retrieved, no endpoint was selected, or the
+   *     client could not be created.
    */
   public static OpcUaClient create(
       String endpointUrl,
@@ -426,57 +435,55 @@ public class OpcUaClient {
       Consumer<OpcUaClientConfigBuilder> configureClient)
       throws UaException {
 
-    try {
-      OpcTcpClientTransportConfigBuilder transportConfigBuilder =
-          OpcTcpClientTransportConfig.newBuilder();
-      configureTransport.accept(transportConfigBuilder);
-      OpcTcpClientTransportConfig transportConfig = transportConfigBuilder.build();
+    return create(endpointUrl, selectEndpoint, configureTransport, configureClient, null);
+  }
 
-      // Discovery was previously bounded only by the transport's connect and acknowledge timeouts
-      // plus the 60 s GetEndpoints request timeout; keep that budget rather than a fixed deadline.
-      Duration discoveryTimeout =
-          Duration.ofMillis(
-              transportConfig.getConnectTimeout().longValue()
-                  + transportConfig.getAcknowledgeTimeout().longValue()
-                  + 60_000L);
-      EndpointResolver resolver =
-          EndpointResolver.create(
-              endpointUrl, selectEndpoint, configureTransport, discoveryTimeout);
-      EndpointConfiguration resolved = resolver.resolve().get();
-      List<EndpointDescription> endpoints = resolved.discoveryEndpoints();
-      EndpointDescription endpoint = resolved.endpoint();
+  static OpcUaClient create(
+      String endpointUrl,
+      Function<List<EndpointDescription>, Optional<EndpointDescription>> selectEndpoint,
+      Consumer<OpcTcpClientTransportConfigBuilder> configureTransport,
+      Consumer<OpcUaClientConfigBuilder> configureClient,
+      @Nullable Duration discoveryTimeoutOverride)
+      throws UaException {
 
-      OpcUaClientConfigBuilder clientConfigBuilder = OpcUaClientConfig.builder();
-      clientConfigBuilder.setEndpoint(endpoint);
-      clientConfigBuilder.setDiscoveryEndpoints(endpoints);
-      clientConfigBuilder.setEndpointResolver(resolver);
-      // Set up the discovery endpoints in case the user enables this, but default to false for
-      // backwards compatibility.
-      clientConfigBuilder.setSessionEndpointValidationEnabled(false);
+    OpcTcpClientTransportConfigBuilder transportConfigBuilder =
+        OpcTcpClientTransportConfig.newBuilder();
+    configureTransport.accept(transportConfigBuilder);
+    OpcTcpClientTransportConfig transportConfig = transportConfigBuilder.build();
 
-      configureClient.accept(clientConfigBuilder);
+    // Discovery was previously bounded only by the transport's connect and acknowledge timeouts
+    // plus the 60 s GetEndpoints request timeout; keep that budget rather than a fixed deadline.
+    Duration discoveryTimeout =
+        discoveryTimeoutOverride != null
+            ? discoveryTimeoutOverride
+            : Duration.ofMillis(
+                transportConfig.getConnectTimeout().longValue()
+                    + transportConfig.getAcknowledgeTimeout().longValue()
+                    + 60_000L);
 
-      OpcUaClientConfig clientConfig = clientConfigBuilder.build();
+    DiscoveryFallback.Result resolved =
+        DiscoveryFallback.resolve(
+            endpointUrl, selectEndpoint, configureTransport, discoveryTimeout);
 
-      var transport = new OpcTcpClientTransport(transportConfig);
+    EndpointResolver resolver =
+        EndpointResolver.create(
+            resolved.discoveryUrl(), selectEndpoint, configureTransport, discoveryTimeout);
 
-      return new OpcUaClient(clientConfig, transport);
-    } catch (ExecutionException e) {
-      if (!endpointUrl.endsWith("/discovery")) {
-        StringBuilder discoveryUrl = new StringBuilder(endpointUrl);
-        if (!endpointUrl.endsWith("/")) {
-          discoveryUrl.append("/");
-        }
-        discoveryUrl.append("discovery");
+    OpcUaClientConfigBuilder clientConfigBuilder = OpcUaClientConfig.builder();
+    clientConfigBuilder.setEndpoint(resolved.configuration().endpoint());
+    clientConfigBuilder.setDiscoveryEndpoints(resolved.configuration().discoveryEndpoints());
+    clientConfigBuilder.setEndpointResolver(resolver);
+    // Set up the discovery endpoints in case the user enables this, but default to false for
+    // backwards compatibility.
+    clientConfigBuilder.setSessionEndpointValidationEnabled(false);
 
-        return create(discoveryUrl.toString(), selectEndpoint, configureTransport, configureClient);
-      } else {
-        throw new UaException(e.getCause());
-      }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
-    }
+    configureClient.accept(clientConfigBuilder);
+
+    OpcUaClientConfig clientConfig = clientConfigBuilder.build();
+
+    var transport = new OpcTcpClientTransport(transportConfig);
+
+    return new OpcUaClient(clientConfig, transport);
   }
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
