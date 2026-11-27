@@ -23,6 +23,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +81,7 @@ public class SelfSignedCertificateBuilder {
   private String stateName = null;
   private String countryCode = null;
 
-  private String applicationUri = "";
+  private @Nullable String applicationUri = null;
   private final List<String> dnsNames = new ArrayList<>();
   private final List<String> ipAddresses = new ArrayList<>();
   private String signatureAlgorithm = SA_SHA256_RSA;
@@ -273,11 +274,12 @@ public class SelfSignedCertificateBuilder {
    * Set the OPC UA application URI.
    *
    * <p>The URI is written to the Subject Alternative Name extension as a uniformResourceIdentifier.
+   * When unset, {@code null}, or blank, no URI entry is written.
    *
-   * @param applicationUri the application URI value.
+   * @param applicationUri the application URI value, or {@code null} to omit it.
    * @return this builder.
    */
-  public SelfSignedCertificateBuilder setApplicationUri(String applicationUri) {
+  public SelfSignedCertificateBuilder setApplicationUri(@Nullable String applicationUri) {
     this.applicationUri = applicationUri;
     return this;
   }

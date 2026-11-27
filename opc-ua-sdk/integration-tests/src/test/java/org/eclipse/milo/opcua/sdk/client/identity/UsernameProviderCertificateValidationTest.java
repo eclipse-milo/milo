@@ -110,7 +110,7 @@ class UsernameProviderCertificateValidationTest {
       // An ActivateSession that reached the server either passed the identity validator, which
       // records the username, or was rejected, which counts a rejected session.
       assertAll(
-          () -> assertEquals(StatusCodes.Bad_SecurityChecksFailed, failure.getStatusCode().value()),
+          () -> assertEquals(StatusCodes.Bad_CertificateUntrusted, failure.getStatusCode().value()),
           () ->
               assertEquals(
                   rejectedSessionsBefore,

@@ -46,8 +46,15 @@
  * validation checks are consulted. Relaxing that would require a Milo-owned path validator, which
  * this package deliberately does not provide.
  *
- * <p>Path-building failures report {@code Bad_SecurityChecksFailed} and retain the original
- * security exception as their cause. The presented chain contains candidates, so an expired or
+ * <p>When a path cannot be anchored in the trust or issuer list, path construction checks whether
+ * the presented chain forms a complete, validly signed chain anchored by its own self-signed root
+ * (the certificate itself when self-signed, or the last CA certificate in a multi-certificate
+ * chain). If so, {@code buildTrustedCertPath} reports {@code Bad_CertificateUntrusted}; all other
+ * path-building failures (such as a missing issuer, invalid signature, or expired intermediate CA)
+ * report {@code Bad_SecurityChecksFailed} and retain the original security exception as their
+ * cause. {@link org.eclipse.milo.opcua.stack.core.security.DefaultServerCertificateValidator}
+ * continues to mask every path-building failure, including {@code Bad_CertificateUntrusted}, to
+ * {@code Bad_SecurityChecksFailed}. The presented chain contains candidates, so an expired or
  * not-yet-valid certificate in that list does not establish why path construction failed. Specific
  * validity errors are reported only when checking certificates in an established trusted path.
  *

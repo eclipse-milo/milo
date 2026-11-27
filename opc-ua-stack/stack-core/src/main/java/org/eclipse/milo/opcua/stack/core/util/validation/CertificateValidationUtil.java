@@ -11,7 +11,6 @@
 package org.eclipse.milo.opcua.stack.core.util.validation;
 
 import com.google.common.base.Preconditions;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -29,7 +28,6 @@ import java.security.cert.CertPathValidator;
 import java.security.cert.CertPathValidatorException;
 import java.security.cert.CertPathValidatorException.BasicReason;
 import java.security.cert.CertStore;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.CertificateParsingException;
@@ -54,19 +52,17 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.bouncycastle.asn1.x509.Extension;
-import org.bouncycastle.asn1.x509.GeneralName;
-import org.bouncycastle.asn1.x509.GeneralNames;
-import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicyProfile.AuthAxis;
+import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,9 +82,10 @@ public class CertificateValidationUtil {
   private static final String SERVER_AUTH_OID = "1.3.6.1.5.5.7.3.1";
   private static final String CLIENT_AUTH_OID = "1.3.6.1.5.5.7.3.2";
 
-  private static final int SUBJECT_ALT_NAME_URI = 6;
-  private static final int SUBJECT_ALT_NAME_DNS_NAME = 2;
-  private static final int SUBJECT_ALT_NAME_IP_ADDRESS = 7;
+  private static final int SUBJECT_ALT_NAME_URI = CertificateUtil.SUBJECT_ALT_NAME_URI;
+  private static final int SUBJECT_ALT_NAME_DNS_NAME = CertificateUtil.SUBJECT_ALT_NAME_DNS_NAME;
+  private static final int SUBJECT_ALT_NAME_IP_ADDRESS =
+      CertificateUtil.SUBJECT_ALT_NAME_IP_ADDRESS;
 
   /** Matches a dotted-quad IPv4 literal, rejecting any octet outside 0-255. */
   private static final Pattern IPV4_LITERAL =
@@ -112,6 +109,13 @@ public class CertificateValidationUtil {
    * <p>Each certificate has its signature and subject/issuer chaining checked. Revocation and other
    * more detailed checks are not done at this stage.
    *
+   * <p>When a path cannot be anchored in the trust or issuer list, path building is retried using
+   * the presented chain's own self-signed root (the certificate itself when self-signed, or the
+   * last CA certificate in a multi-certificate chain) after verifying its self-signature. If that
+   * secondary build succeeds, the chain is complete and validly signed but untrusted, and {@link
+   * StatusCodes#Bad_CertificateUntrusted} is thrown; otherwise {@link
+   * StatusCodes#Bad_SecurityChecksFailed} is thrown with the original cause.
+   *
    * <p>The {@link CertPath} and {@link TrustAnchor} from the result is meant to be further
    * validated by {@link #validateTrustedCertPath(CertPath, TrustAnchor, Collection, Set, boolean)},
    * which can return more detailed failure {@link StatusCodes} in its exceptions after the trusted
@@ -123,7 +127,9 @@ public class CertificateValidationUtil {
    *     not considered "trusted" when it comes to determining if the resulting path is "trusted".
    * @return a {@link PKIXCertPathBuilderResult} with a {@link TrustAnchor} and {@link CertPath},
    *     which combined make up the full trusted path.
-   * @throws UaException if a trusted path cannot be built.
+   * @throws UaException with {@link StatusCodes#Bad_CertificateUntrusted} if a complete, validly
+   *     signed chain contains no trusted certificate, or {@link
+   *     StatusCodes#Bad_SecurityChecksFailed} if no valid path can be built.
    */
   public static PKIXCertPathBuilderResult buildTrustedCertPath(
       List<X509Certificate> certificateChain,
@@ -164,8 +170,19 @@ public class CertificateValidationUtil {
       }
     }
 
-    PKIXCertPathBuilderResult certPathResult =
-        buildCertPath(certificateChain, trustedCertificates, issuerCertificates, trustAnchors);
+    PKIXCertPathBuilderResult certPathResult;
+    try {
+      certPathResult =
+          buildCertPath(certificateChain, trustedCertificates, issuerCertificates, trustAnchors);
+    } catch (UaException e) {
+      if (isCompleteUntrustedChain(certificateChain, trustedCertificates)) {
+        throw new UaException(
+            StatusCodes.Bad_CertificateUntrusted,
+            "certificate chain did not contain a trusted certificate");
+      }
+
+      throw e;
+    }
 
     CertPath certPath = certPathResult.getCertPath();
     TrustAnchor trustAnchor = certPathResult.getTrustAnchor();
@@ -189,6 +206,43 @@ public class CertificateValidationUtil {
     }
 
     return certPathResult;
+  }
+
+  private static boolean isCompleteUntrustedChain(
+      List<X509Certificate> certificateChain, Collection<X509Certificate> trustedCertificates) {
+
+    X509Certificate candidateRoot = certificateChain.get(certificateChain.size() - 1);
+
+    if (certificateChain.size() > 1) {
+      if (candidateRoot.getBasicConstraints() < 0) {
+        return false;
+      }
+
+      boolean[] keyUsage = candidateRoot.getKeyUsage();
+      if (keyUsage != null && !hasKeyUsage(keyUsage, 5)) {
+        return false;
+      }
+    }
+
+    try {
+      if (!certificateIsSelfSigned(candidateRoot)) {
+        return false;
+      }
+
+      PKIXCertPathBuilderResult secondary =
+          buildCertPath(
+              certificateChain, List.of(), List.of(), Set.of(new TrustAnchor(candidateRoot, null)));
+
+      List<X509Certificate> certificates = new ArrayList<>();
+      secondary.getCertPath().getCertificates().stream()
+          .map(X509Certificate.class::cast)
+          .forEach(certificates::add);
+      certificates.add(secondary.getTrustAnchor().getTrustedCert());
+
+      return certificates.stream().noneMatch(trustedCertificates::contains);
+    } catch (UaException ignored) {
+      return false;
+    }
   }
 
   /**
@@ -945,45 +999,34 @@ public class CertificateValidationUtil {
   }
 
   /**
-   * Validate that the application URI matches the SubjectAltName URI in the given certificate.
+   * Validate that the application URI matches the single SubjectAltName URI in the given
+   * certificate (OPC 10000-6 §6.2.2).
    *
    * @param certificate the certificate to validate against.
    * @param applicationUri the URI to validate.
-   * @throws UaException if the certificate is invalid, does not contain a uri, or contains a uri
-   *     that does not match.
+   * @throws UaException if the certificate does not contain exactly one URI, or if that URI does
+   *     not match {@code applicationUri}.
    */
   public static void checkApplicationUri(X509Certificate certificate, String applicationUri)
       throws UaException {
-    if (!checkSubjectAltNameField(certificate, SUBJECT_ALT_NAME_URI, applicationUri::equals)) {
-      // First check failed, maybe it was because Java's X509Certificate represents the
-      // SAN URI extension as a java.net.URI and therefore can't handle an invalid URI.
-      // Try again Using BouncyCastle to read and compare the URIs.
-      try {
-        X509CertificateHolder certificateHolder =
-            new X509CertificateHolder(certificate.getEncoded());
 
-        GeneralNames generalNames =
-            GeneralNames.fromExtensions(
-                certificateHolder.getExtensions(), Extension.subjectAlternativeName);
+    int uriEntryCount =
+        CertificateUtil.getSubjectAltNameEntryCount(certificate, SUBJECT_ALT_NAME_URI);
 
-        if (generalNames != null) {
-          for (GeneralName generalName : generalNames.getNames()) {
-            if (generalName.getTagNo() == GeneralName.uniformResourceIdentifier) {
-              String uri = generalName.getName().toString();
-              if (!Objects.equals(applicationUri, uri)) {
-                throw new UaException(StatusCodes.Bad_CertificateUriInvalid);
-              }
-              return;
-            }
-          }
-        }
+    if (uriEntryCount != 1) {
+      throw new UaException(
+          StatusCodes.Bad_CertificateUriInvalid,
+          uriEntryCount == 0
+              ? "no match in certificate for application URI '" + applicationUri + "'"
+              : "certificate contains multiple application URIs");
+    }
 
-        throw new UaException(
-            StatusCodes.Bad_CertificateUriInvalid,
-            "no match in certificate for application URI '" + applicationUri + "'");
-      } catch (IOException | CertificateEncodingException e) {
-        throw new UaException(StatusCodes.Bad_CertificateUriInvalid, e);
-      }
+    Optional<String> sanUri = CertificateUtil.getSanUri(certificate);
+
+    if (sanUri.isEmpty() || !Objects.equals(applicationUri, sanUri.get())) {
+      throw new UaException(
+          StatusCodes.Bad_CertificateUriInvalid,
+          "no match in certificate for application URI '" + applicationUri + "'");
     }
   }
 
@@ -1036,44 +1079,19 @@ public class CertificateValidationUtil {
   private static boolean checkSubjectAltNameField(
       X509Certificate certificate, int field, Predicate<Object> fieldPredicate) {
 
-    try {
-      Collection<List<?>> subjectAltNames = certificate.getSubjectAlternativeNames();
-      if (subjectAltNames == null) subjectAltNames = Collections.emptyList();
-
-      for (List<?> idAndValue : subjectAltNames) {
-        if (idAndValue != null && idAndValue.size() == 2) {
-          if (idAndValue.get(0).equals(field)) {
-            if (fieldPredicate.test(idAndValue.get(1))) {
-              return true;
-            }
-          }
-        }
+    for (Object value : CertificateUtil.getSubjectAltNameField(certificate, field)) {
+      if (fieldPredicate.test(value)) {
+        return true;
       }
-
-      return false;
-    } catch (CertificateParsingException e) {
-      return false;
     }
+
+    return false;
   }
 
-  public static String getSubjectAltNameUri(X509Certificate certificate) throws UaException {
-    try {
-      Collection<List<?>> subjectAltNames = certificate.getSubjectAlternativeNames();
-      if (subjectAltNames == null) subjectAltNames = Collections.emptyList();
+  public static @Nullable String getSubjectAltNameUri(X509Certificate certificate)
+      throws UaException {
 
-      for (List<?> idAndValue : subjectAltNames) {
-        if (idAndValue != null && idAndValue.size() == 2) {
-          if (idAndValue.get(0).equals(SUBJECT_ALT_NAME_URI)) {
-            Object uri = idAndValue.get(1);
-            return uri != null ? uri.toString() : null;
-          }
-        }
-      }
-
-      return null;
-    } catch (CertificateParsingException e) {
-      throw new UaException(StatusCodes.Bad_CertificateInvalid, e);
-    }
+    return CertificateUtil.getSanUri(certificate).orElse(null);
   }
 
   /**

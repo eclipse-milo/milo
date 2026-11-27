@@ -265,7 +265,7 @@ public class SelfSignedCertificateGenerator {
 
     List<GeneralName> generalNames = new ArrayList<>();
 
-    if (applicationUri != null) {
+    if (applicationUri != null && !applicationUri.isBlank()) {
       generalNames.add(new GeneralName(GeneralName.uniformResourceIdentifier, applicationUri));
     }
 
@@ -279,10 +279,12 @@ public class SelfSignedCertificateGenerator {
         .map(s -> new GeneralName(GeneralName.iPAddress, s))
         .forEach(generalNames::add);
 
-    certificateBuilder.addExtension(
-        Extension.subjectAlternativeName,
-        false,
-        new GeneralNames(generalNames.toArray(new GeneralName[] {})));
+    if (!generalNames.isEmpty()) {
+      certificateBuilder.addExtension(
+          Extension.subjectAlternativeName,
+          false,
+          new GeneralNames(generalNames.toArray(new GeneralName[] {})));
+    }
 
     // Subject Key Identifier
     certificateBuilder.addExtension(

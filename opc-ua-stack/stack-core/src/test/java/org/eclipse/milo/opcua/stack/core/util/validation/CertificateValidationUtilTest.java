@@ -288,8 +288,12 @@ public class CertificateValidationUtilTest {
   public void testBuildTrustedCertPath_LeafSelfSigned_NotTrusted() {
     List<X509Certificate> certificateChain = List.of(leafSelfSigned);
 
-    assertThrows(
-        UaException.class, () -> buildTrustedCertPath(certificateChain, emptySet(), emptySet()));
+    UaException e =
+        assertThrows(
+            UaException.class,
+            () -> buildTrustedCertPath(certificateChain, emptySet(), emptySet()));
+
+    assertEquals(StatusCodes.Bad_CertificateUntrusted, e.getStatusCode().value());
   }
 
   @Test
@@ -436,25 +440,36 @@ public class CertificateValidationUtilTest {
 
   @Test
   public void testBuildTrustedCertPath_NoTrusted_NoIssuers() {
-    assertThrows(
-        UaException.class,
-        () -> buildTrustedCertPath(List.of(leafSelfSigned), emptySet(), emptySet()));
+    UaException selfSignedError =
+        assertThrows(
+            UaException.class,
+            () -> buildTrustedCertPath(List.of(leafSelfSigned), emptySet(), emptySet()));
+    assertEquals(StatusCodes.Bad_CertificateUntrusted, selfSignedError.getStatusCode().value());
 
-    assertThrows(
-        UaException.class,
-        () -> buildTrustedCertPath(List.of(leafIntermediateSigned), emptySet(), emptySet()));
+    UaException missingIssuersError =
+        assertThrows(
+            UaException.class,
+            () -> buildTrustedCertPath(List.of(leafIntermediateSigned), emptySet(), emptySet()));
+    assertEquals(StatusCodes.Bad_SecurityChecksFailed, missingIssuersError.getStatusCode().value());
 
-    assertThrows(
-        UaException.class,
-        () ->
-            buildTrustedCertPath(
-                List.of(leafIntermediateSigned, caIntermediate), emptySet(), emptySet()));
+    UaException missingRootError =
+        assertThrows(
+            UaException.class,
+            () ->
+                buildTrustedCertPath(
+                    List.of(leafIntermediateSigned, caIntermediate), emptySet(), emptySet()));
+    assertEquals(StatusCodes.Bad_SecurityChecksFailed, missingRootError.getStatusCode().value());
 
-    assertThrows(
-        UaException.class,
-        () ->
-            buildTrustedCertPath(
-                List.of(leafIntermediateSigned, caIntermediate, caRoot), emptySet(), emptySet()));
+    UaException completeCaChainError =
+        assertThrows(
+            UaException.class,
+            () ->
+                buildTrustedCertPath(
+                    List.of(leafIntermediateSigned, caIntermediate, caRoot),
+                    emptySet(),
+                    emptySet()));
+    assertEquals(
+        StatusCodes.Bad_CertificateUntrusted, completeCaChainError.getStatusCode().value());
   }
 
   @Test
