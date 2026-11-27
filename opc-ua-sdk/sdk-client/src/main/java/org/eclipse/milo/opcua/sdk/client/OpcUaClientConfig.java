@@ -219,12 +219,30 @@ public interface OpcUaClientConfig {
   UInteger getKeepAliveTimeout();
 
   /**
-   * Whether validation of the endpoints returned in CreateSessionResponse against the discovery
-   * endpoints is enabled. The discovery endpoints must be configured and non-empty.
+   * Whether the client validates the endpoints returned in {@code CreateSessionResponse} against
+   * the discovery endpoints for the current connection attempt.
    *
-   * @return true if validation of the endpoints returned in CreateSessionResponse against the
-   *     discovery endpoints is enabled.
+   * <p>The discovery endpoints come from {@link #getDiscoveryEndpoints()} initially, or from {@link
+   * #getEndpointResolver()} after an endpoint refresh. When enabled and the discovery endpoints for
+   * the current connection attempt contain at least one endpoint for the current transport profile,
+   * the client compares the discovery and session endpoint lists for that transport profile on all
+   * OPC UA Part 4 §5.5.1 fields (including {@code endpointUrl}), regardless of order, and rejects
+   * the session with {@code Bad_SecurityChecksFailed} if they differ. Validation is skipped if the
+   * discovery endpoints for the current connection attempt have no endpoints matching the current
+   * transport profile.
+   *
+   * <p>The client does not filter either list by host. Because servers filter both {@code
+   * GetEndpoints} and {@code CreateSession} responses by the host in the request URL, both requests
+   * must resolve to the same endpoint list for the current transport profile. When connecting
+   * through NAT, a DNS alias, or another unadvertised address where the host advertised in the
+   * selected endpoint is unreachable, rewrite the selected endpoint's host (for example with {@link
+   * org.eclipse.milo.opcua.stack.core.util.EndpointUtil#updateUrl(EndpointDescription, String)}) so
+   * discovery and session creation target the same host.
+   *
+   * @return {@code true} if validation of the endpoints returned in {@code CreateSessionResponse}
+   *     against the discovery endpoints for the current connection attempt is enabled.
    * @see #getDiscoveryEndpoints()
+   * @see #getEndpointResolver()
    */
   boolean isSessionEndpointValidationEnabled();
 

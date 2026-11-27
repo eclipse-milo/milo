@@ -159,10 +159,24 @@ public class OpcUaClientConfigBuilder {
     return this;
   }
 
+  /**
+   * Enable or disable validation of the endpoints returned in {@code CreateSessionResponse} against
+   * the discovery endpoints for the current connection attempt.
+   *
+   * <p>Validation runs only when enabled and the discovery endpoints for the current connection
+   * attempt (from {@link #setDiscoveryEndpoints(List)} or a refreshed {@link EndpointResolver}
+   * result) contain at least one endpoint matching the current transport profile; neither list is
+   * filtered by host.
+   *
+   * @param sessionEndpointValidationEnabled {@code true} to validate session endpoints against
+   *     discovery endpoints.
+   * @return this builder.
+   * @see OpcUaClientConfig#isSessionEndpointValidationEnabled()
+   */
   public OpcUaClientConfigBuilder setSessionEndpointValidationEnabled(
-      boolean validateSessionEndpointsEnabled) {
+      boolean sessionEndpointValidationEnabled) {
 
-    this.sessionEndpointValidationEnabled = validateSessionEndpointsEnabled;
+    this.sessionEndpointValidationEnabled = sessionEndpointValidationEnabled;
     return this;
   }
 
