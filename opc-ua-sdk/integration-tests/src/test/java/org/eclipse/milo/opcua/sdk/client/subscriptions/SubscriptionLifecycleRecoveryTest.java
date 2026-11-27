@@ -106,10 +106,11 @@ class SubscriptionLifecycleRecoveryTest {
     assertTrue(fixture.subscription.getMonitoredItems().contains(item));
     assertTrue(item.getClientHandle().isPresent(), "mapped items must retain a requestable handle");
     fixture.create();
-    when(fixture.client.createMonitoredItems(any(), any(), anyList()))
+    when(fixture.client.createMonitoredItemsAsync(any(), any(), anyList()))
         .thenReturn(
-            new CreateMonitoredItemsResponse(
-                null, new MonitoredItemCreateResult[] {createdItem(42)}, null));
+            CompletableFuture.completedFuture(
+                new CreateMonitoredItemsResponse(
+                    null, new MonitoredItemCreateResult[] {createdItem(42)}, null)));
     assertTrue(fixture.subscription.createMonitoredItems().get(0).isGood());
   }
 
@@ -195,14 +196,15 @@ class SubscriptionLifecycleRecoveryTest {
     fixture.create();
     fixture.addItem();
     var calls = new AtomicInteger();
-    when(fixture.client.createMonitoredItems(any(), any(), anyList()))
+    when(fixture.client.createMonitoredItemsAsync(any(), any(), anyList()))
         .thenAnswer(
             invocation -> {
               calls.incrementAndGet();
               List<MonitoredItemCreateRequest> requests = invocation.getArgument(2);
               var results = new MonitoredItemCreateResult[requests.size()];
               for (int i = 0; i < results.length; i++) results[i] = createdItem(100 + i);
-              return new CreateMonitoredItemsResponse(null, results, null);
+              return CompletableFuture.completedFuture(
+                  new CreateMonitoredItemsResponse(null, results, null));
             });
     assertEquals(2, fixture.subscription.createMonitoredItems().size());
     assertEquals(2, calls.get(), "replacement must discover the current singleton server limit");
@@ -238,36 +240,51 @@ class SubscriptionLifecycleRecoveryTest {
     var entered = new CountDownLatch(1);
     var release = new CountDownLatch(1);
     var firstCall = new AtomicBoolean(true);
-    org.mockito.stubbing.Answer<Object> gate =
-        invocation -> {
-          if (firstCall.getAndSet(false)) {
-            entered.countDown();
-            assertTrue(release.await(5, TimeUnit.SECONDS));
-          }
-          return switch (operation) {
-            case CREATE ->
-                new CreateMonitoredItemsResponse(
-                    null, new MonitoredItemCreateResult[] {createdItem(41)}, null);
-            case MODIFY ->
-                new ModifyMonitoredItemsResponse(
-                    null,
-                    new MonitoredItemModifyResult[] {
-                      new MonitoredItemModifyResult(StatusCode.GOOD, 250.0, uint(1), null)
-                    },
-                    null);
-            case DELETE ->
-                new DeleteMonitoredItemsResponse(null, new StatusCode[] {StatusCode.GOOD}, null);
-            case MODE ->
-                new SetMonitoringModeResponse(null, new StatusCode[] {StatusCode.GOOD}, null);
-          };
-        };
     switch (operation) {
       case CREATE ->
-          when(fixture.client.createMonitoredItems(any(), any(), anyList())).thenAnswer(gate);
+          when(fixture.client.createMonitoredItemsAsync(any(), any(), anyList()))
+              .thenAnswer(
+                  invocation ->
+                      gatedResponse(
+                          firstCall,
+                          entered,
+                          release,
+                          new CreateMonitoredItemsResponse(
+                              null, new MonitoredItemCreateResult[] {createdItem(41)}, null)));
       case MODIFY ->
-          when(fixture.client.modifyMonitoredItems(any(), any(), anyList())).thenAnswer(gate);
-      case DELETE -> when(fixture.client.deleteMonitoredItems(any(), anyList())).thenAnswer(gate);
-      case MODE -> when(fixture.client.setMonitoringMode(any(), any(), anyList())).thenAnswer(gate);
+          when(fixture.client.modifyMonitoredItemsAsync(any(), any(), anyList()))
+              .thenAnswer(
+                  invocation ->
+                      gatedResponse(
+                          firstCall,
+                          entered,
+                          release,
+                          new ModifyMonitoredItemsResponse(
+                              null,
+                              new MonitoredItemModifyResult[] {
+                                new MonitoredItemModifyResult(StatusCode.GOOD, 250.0, uint(1), null)
+                              },
+                              null)));
+      case DELETE ->
+          when(fixture.client.deleteMonitoredItemsAsync(any(), anyList()))
+              .thenAnswer(
+                  invocation ->
+                      gatedResponse(
+                          firstCall,
+                          entered,
+                          release,
+                          new DeleteMonitoredItemsResponse(
+                              null, new StatusCode[] {StatusCode.GOOD}, null)));
+      case MODE ->
+          when(fixture.client.setMonitoringModeAsync(any(), any(), anyList()))
+              .thenAnswer(
+                  invocation ->
+                      gatedResponse(
+                          firstCall,
+                          entered,
+                          release,
+                          new SetMonitoringModeResponse(
+                              null, new StatusCode[] {StatusCode.GOOD}, null)));
     }
     var oldId = fixture.subscription.getSubscriptionId().orElseThrow();
     var pending =
@@ -305,6 +322,34 @@ class SubscriptionLifecycleRecoveryTest {
       assertEquals(1000.0, item.getRevisedSamplingInterval().orElseThrow());
       assertEquals(MonitoringMode.Reporting, item.getMonitoringMode());
     }
+  }
+
+  private <T> CompletableFuture<T> gatedResponse(
+      AtomicBoolean firstCall, CountDownLatch entered, CountDownLatch release, T response) {
+
+    if (!firstCall.getAndSet(false)) {
+      return CompletableFuture.completedFuture(response);
+    }
+
+    var future = new CompletableFuture<T>();
+    workers.execute(
+        () -> {
+          entered.countDown();
+          try {
+            if (!release.await(5, TimeUnit.SECONDS)) {
+              future.completeExceptionally(
+                  new AssertionError("timed out waiting for gated response release"));
+              return;
+            }
+            future.complete(response);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            future.completeExceptionally(e);
+          } catch (Throwable t) {
+            future.completeExceptionally(t);
+          }
+        });
+    return future;
   }
 
   private enum Operation {

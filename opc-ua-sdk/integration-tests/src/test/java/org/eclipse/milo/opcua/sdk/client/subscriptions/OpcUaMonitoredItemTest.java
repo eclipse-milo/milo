@@ -27,7 +27,6 @@ import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
-import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MonitoringMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadValueId;
 import org.junit.jupiter.api.AfterEach;
@@ -337,13 +336,23 @@ public class OpcUaMonitoredItemTest extends AbstractClientServerTest {
     }
 
     @Override
-    public Optional<UInteger> getMonitoredItemId() {
+    Optional<PreparedDeleteRequest> tryBeginDelete() {
       if (resetOnNextMonitoredItemIdRead) {
         resetOnNextMonitoredItemIdRead = false;
         reset();
       }
 
-      return super.getMonitoredItemId();
+      return super.tryBeginDelete();
+    }
+
+    @Override
+    Optional<PreparedSetMonitoringModeRequest> tryBeginSetMonitoringMode() {
+      if (resetOnNextMonitoredItemIdRead) {
+        resetOnNextMonitoredItemIdRead = false;
+        reset();
+      }
+
+      return super.tryBeginSetMonitoringMode();
     }
   }
 }

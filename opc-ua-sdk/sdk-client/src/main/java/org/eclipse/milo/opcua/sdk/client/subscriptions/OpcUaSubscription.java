@@ -21,12 +21,14 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -822,34 +824,36 @@ public class OpcUaSubscription {
    * Add a MonitoredItem to this Subscription.
    *
    * <p>This item will not be created on the server until {@link #synchronizeMonitoredItems()} is
-   * called.
+   * called. Adding a detached or previously deleted item clears any operation results left over
+   * from its previous server-side lifecycle; re-adding an item that is only queued for deletion
+   * restores it without clearing results from the still-live server-side MonitoredItem.
    *
    * @param item the MonitoredItem to add.
    * @throws UaRuntimeException if the Subscription has not been created yet.
    */
   public void addMonitoredItem(OpcUaMonitoredItem item) {
     synchronized (monitoredItemsLock) {
-      Optional<UInteger> existingHandle = item.getClientHandle();
+      UInteger existingHandle = item.internalClientHandle();
 
-      if (existingHandle.isPresent()) {
-        UInteger handle = existingHandle.get();
-
-        // O(1) check: if this item is already in the map, nothing to do
-        if (monitoredItems.get(handle) == item) {
+      if (existingHandle != null) {
+        // O(1) check: if this item is already mapped in this Subscription, nothing to do.
+        if (item.isOwnedBy(this) && monitoredItems.get(existingHandle) == item) {
           return;
         }
 
-        // Item has a handle but isn't in map - check if pending deletion
-        if (itemsToDelete.remove(item)) {
-          monitoredItems.put(handle, item);
+        // Item has a handle from this Subscription and is pending deletion: restore it.
+        if (item.isOwnedBy(this) && itemsToDelete.remove(item)) {
+          monitoredItems.put(existingHandle, item);
         }
-        // else: item has a handle from a different context, ignore
+        // else: item belongs to a different Subscription or context, ignore.
       } else {
-        // Brand-new item with no handle
+        // Brand-new or previously detached item: claim ownership and clear any prior operation
+        // results atomically under item.stateLock so concurrent addMonitoredItem() calls on two
+        // Subscriptions can never both map it.
         UInteger clientHandle = clientHandleSequence.nextClientHandle();
-        item.setClientHandle(clientHandle);
-
-        monitoredItems.put(clientHandle, item);
+        if (item.tryClaim(this, clientHandle)) {
+          monitoredItems.put(clientHandle, item);
+        }
       }
     }
   }
@@ -877,7 +881,10 @@ public class OpcUaSubscription {
    */
   public void removeMonitoredItem(OpcUaMonitoredItem item) {
     synchronized (monitoredItemsLock) {
-      item.getClientHandle().map(monitoredItems::remove).ifPresent(itemsToDelete::add);
+      UInteger handle = item.internalClientHandleIfOwnedBy(this);
+      if (handle != null && monitoredItems.remove(handle, item)) {
+        itemsToDelete.add(item);
+      }
     }
   }
 
@@ -933,7 +940,7 @@ public class OpcUaSubscription {
   public List<MonitoredItemServiceOperationResult> createMonitoredItems() {
     List<OpcUaMonitoredItem> itemsToCreate =
         monitoredItems.values().stream()
-            .filter(item -> item.getSyncState() == OpcUaMonitoredItem.SyncState.INITIAL)
+            .filter(item -> item.internalSyncState() == OpcUaMonitoredItem.SyncState.INITIAL)
             .collect(Collectors.toList());
 
     return createMonitoredItems(itemsToCreate);
@@ -961,7 +968,7 @@ public class OpcUaSubscription {
 
     List<OpcUaMonitoredItem> itemsToCreate =
         monitoredItems.values().stream()
-            .filter(item -> item.getSyncState() == OpcUaMonitoredItem.SyncState.INITIAL)
+            .filter(item -> item.internalSyncState() == OpcUaMonitoredItem.SyncState.INITIAL)
             .filter(filter)
             .collect(Collectors.toList());
 
@@ -994,73 +1001,187 @@ public class OpcUaSubscription {
         itemsToCreate, context, partition -> createMonitoredItems(context, partition));
   }
 
+  /** Must be called while holding {@link #monitoredItemsLock}. */
+  private boolean isMonitoredItemMapped(OpcUaMonitoredItem item) {
+    UInteger handle = item.internalClientHandleIfOwnedBy(this);
+    return handle != null && monitoredItems.get(handle) == item;
+  }
+
   private MonitoredItemPartitionAttempt createMonitoredItems(
       MonitoredItemOperationContext context, List<OpcUaMonitoredItem> partition) {
 
-    List<MonitoredItemCreateRequest> itemsToCreate;
-    synchronized (lifecycleLock) {
-      if (incarnation != context.incarnation()) {
-        return invalidStateAttempt(partition, partition.size());
-      }
-
-      itemsToCreate =
-          partition.stream().map(OpcUaMonitoredItem::newCreateRequest).collect(Collectors.toList());
-    }
+    List<OpcUaMonitoredItem> items = List.copyOf(partition);
+    var itemsToCreate = new ArrayList<MonitoredItemCreateRequest>(items.size());
+    var itemRequests =
+        new ArrayList<Optional<OpcUaMonitoredItem.PreparedCreateRequest>>(items.size());
+    boolean releaseTransferred = false;
 
     try {
+      synchronized (lifecycleLock) {
+        if (incarnation != context.incarnation()) {
+          return invalidStateAttempt(items, 0);
+        }
+
+        synchronized (monitoredItemsLock) {
+          for (OpcUaMonitoredItem item : items) {
+            Optional<OpcUaMonitoredItem.PreparedCreateRequest> prepared =
+                isMonitoredItemMapped(item) ? item.tryBeginCreate() : Optional.empty();
+
+            itemRequests.add(prepared);
+          }
+        }
+      }
+
+      // Encode filters outside all subscription and item locks; any Throwable thrown while
+      // building a request leaves releaseTransferred=false so finally releases every reservation.
+      for (Optional<OpcUaMonitoredItem.PreparedCreateRequest> prepared : itemRequests) {
+        prepared.ifPresent(p -> itemsToCreate.add(p.toRequest()));
+      }
+
+      if (itemsToCreate.isEmpty()) {
+        var serviceOperationResults =
+            new ArrayList<MonitoredItemServiceOperationResult>(items.size());
+
+        for (OpcUaMonitoredItem item : items) {
+          serviceOperationResults.add(
+              new MonitoredItemServiceOperationResult(
+                  item, new StatusCode(StatusCodes.Bad_InvalidState), null));
+        }
+
+        return new MonitoredItemPartitionAttempt(serviceOperationResults, null, 0);
+      }
+
       LOGGER.debug(
           "id={}, createMonitoredItems partition.size(): {}",
           context.serverState().getSubscriptionId(),
-          partition.size());
+          items.size());
 
-      CreateMonitoredItemsResponse response =
-          client.createMonitoredItems(
-              context.serverState().getSubscriptionId(), TimestampsToReturn.Both, itemsToCreate);
+      CompletableFuture<CreateMonitoredItemsResponse> responseFuture =
+          requireNonNull(
+              client.createMonitoredItemsAsync(
+                  context.serverState().getSubscriptionId(),
+                  TimestampsToReturn.Both,
+                  itemsToCreate));
 
-      MonitoredItemCreateResult[] results = response.getResults();
-      if (results == null || results.length != partition.size()) {
-        throw unexpectedResultCount(
-            "CreateMonitoredItems", results == null ? null : results.length, partition.size());
+      // Tie result application and reservation release to completion of the async request so
+      // interrupting the caller thread cannot release createInFlight while the request is active.
+      CompletableFuture<MonitoredItemPartitionAttempt> attemptFuture =
+          responseFuture.handle(
+              (response, ex) -> {
+                try {
+                  return applyCreateMonitoredItemsOutcome(
+                      context, items, itemRequests, itemsToCreate.size(), response, ex);
+                } finally {
+                  releaseCreateRequests(items, itemRequests);
+                }
+              });
+
+      releaseTransferred = true;
+
+      return awaitMonitoredItemPartitionAttempt(
+          attemptFuture, context, items, itemRequests, itemsToCreate.size());
+    } finally {
+      if (!releaseTransferred) {
+        releaseCreateRequests(items, itemRequests);
+      }
+    }
+  }
+
+  private MonitoredItemPartitionAttempt applyCreateMonitoredItemsOutcome(
+      MonitoredItemOperationContext context,
+      List<OpcUaMonitoredItem> items,
+      List<Optional<OpcUaMonitoredItem.PreparedCreateRequest>> itemRequests,
+      int operationCount,
+      @Nullable CreateMonitoredItemsResponse response,
+      @Nullable Throwable ex) {
+
+    StatusCode serviceError = null;
+    MonitoredItemCreateResult[] results = null;
+
+    if (ex != null) {
+      serviceError = extractServiceStatusCode(ex);
+    } else if (response == null
+        || response.getResults() == null
+        || response.getResults().length != operationCount) {
+      serviceError =
+          unexpectedResultCount(
+                  "CreateMonitoredItems",
+                  response == null || response.getResults() == null
+                      ? null
+                      : response.getResults().length,
+                  operationCount)
+              .getStatusCode();
+    } else {
+      results = response.getResults();
+    }
+
+    if (serviceError != null) {
+      synchronized (lifecycleLock) {
+        if (incarnation != context.incarnation()) {
+          return invalidStateAttempt(items, operationCount);
+        }
       }
 
       var serviceOperationResults =
-          new ArrayList<MonitoredItemServiceOperationResult>(results.length);
+          new ArrayList<MonitoredItemServiceOperationResult>(items.size());
 
-      synchronized (lifecycleLock) {
-        if (incarnation != context.incarnation()) {
-          return invalidStateAttempt(partition, partition.size());
+      for (int i = 0; i < items.size(); i++) {
+        OpcUaMonitoredItem item = items.get(i);
+
+        if (itemRequests.get(i).isPresent()) {
+          serviceOperationResults.add(
+              new MonitoredItemServiceOperationResult(item, serviceError, null));
+        } else {
+          serviceOperationResults.add(
+              new MonitoredItemServiceOperationResult(
+                  item, new StatusCode(StatusCodes.Bad_InvalidState), null));
         }
+      }
 
-        for (int i = 0; i < results.length; i++) {
-          MonitoredItemCreateResult result = results[i];
-          OpcUaMonitoredItem monitoredItem = partition.get(i);
+      return new MonitoredItemPartitionAttempt(
+          serviceOperationResults, serviceError, operationCount);
+    }
 
-          monitoredItem.applyCreateResult(result);
+    var serviceOperationResults = new ArrayList<MonitoredItemServiceOperationResult>(items.size());
+
+    synchronized (lifecycleLock) {
+      if (incarnation != context.incarnation()) {
+        return invalidStateAttempt(items, operationCount);
+      }
+
+      int resultIndex = 0;
+      for (int i = 0; i < items.size(); i++) {
+        OpcUaMonitoredItem monitoredItem = items.get(i);
+        Optional<OpcUaMonitoredItem.PreparedCreateRequest> prepared = itemRequests.get(i);
+
+        if (prepared.isPresent()) {
+          MonitoredItemCreateResult result = results[resultIndex++];
+
+          monitoredItem.applyCreateResult(result, prepared.get());
 
           serviceOperationResults.add(
               new MonitoredItemServiceOperationResult(
                   monitoredItem, StatusCode.GOOD, result.getStatusCode()));
+        } else {
+          serviceOperationResults.add(
+              new MonitoredItemServiceOperationResult(
+                  monitoredItem, new StatusCode(StatusCodes.Bad_InvalidState), null));
         }
       }
+    }
 
-      return new MonitoredItemPartitionAttempt(serviceOperationResults, null, partition.size());
-    } catch (UaException e) {
-      synchronized (lifecycleLock) {
-        if (incarnation != context.incarnation()) {
-          return invalidStateAttempt(partition, partition.size());
-        }
+    return new MonitoredItemPartitionAttempt(serviceOperationResults, null, operationCount);
+  }
+
+  private static void releaseCreateRequests(
+      List<OpcUaMonitoredItem> items,
+      List<Optional<OpcUaMonitoredItem.PreparedCreateRequest>> itemRequests) {
+
+    for (int i = 0; i < itemRequests.size(); i++) {
+      Optional<OpcUaMonitoredItem.PreparedCreateRequest> prepared = itemRequests.get(i);
+      if (prepared.isPresent()) {
+        items.get(i).releaseCreate(prepared.get());
       }
-
-      var serviceOperationResults =
-          new ArrayList<MonitoredItemServiceOperationResult>(partition.size());
-
-      for (OpcUaMonitoredItem item : partition) {
-        serviceOperationResults.add(
-            new MonitoredItemServiceOperationResult(item, e.getStatusCode(), null));
-      }
-
-      return new MonitoredItemPartitionAttempt(
-          serviceOperationResults, e.getStatusCode(), partition.size());
     }
   }
 
@@ -1072,7 +1193,7 @@ public class OpcUaSubscription {
   public List<MonitoredItemServiceOperationResult> modifyMonitoredItems() {
     List<OpcUaMonitoredItem> itemsToModify =
         monitoredItems.values().stream()
-            .filter(item -> item.getSyncState() == OpcUaMonitoredItem.SyncState.UNSYNCHRONIZED)
+            .filter(item -> item.internalSyncState() == OpcUaMonitoredItem.SyncState.UNSYNCHRONIZED)
             .collect(Collectors.toList());
 
     if (!itemsToModify.isEmpty()) {
@@ -1105,70 +1226,178 @@ public class OpcUaSubscription {
   private MonitoredItemPartitionAttempt modifyMonitoredItems(
       MonitoredItemOperationContext context, List<OpcUaMonitoredItem> partition) {
 
-    List<MonitoredItemModifyRequest> itemsToModify;
-    synchronized (lifecycleLock) {
-      if (incarnation != context.incarnation()) {
-        return invalidStateAttempt(partition, partition.size());
-      }
-
-      itemsToModify =
-          partition.stream().map(OpcUaMonitoredItem::newModifyRequest).collect(Collectors.toList());
-    }
+    List<OpcUaMonitoredItem> items = List.copyOf(partition);
+    var itemsToModify = new ArrayList<MonitoredItemModifyRequest>(items.size());
+    var itemRequests =
+        new ArrayList<Optional<OpcUaMonitoredItem.PreparedModifyRequest>>(items.size());
+    boolean releaseTransferred = false;
 
     try {
+      synchronized (lifecycleLock) {
+        if (incarnation != context.incarnation()) {
+          return invalidStateAttempt(items, 0);
+        }
+
+        synchronized (monitoredItemsLock) {
+          for (OpcUaMonitoredItem item : items) {
+            Optional<OpcUaMonitoredItem.PreparedModifyRequest> prepared =
+                isMonitoredItemMapped(item) ? item.tryBeginModify() : Optional.empty();
+
+            itemRequests.add(prepared);
+          }
+        }
+      }
+
+      // Encode filters outside all subscription and item locks; any Throwable thrown while
+      // building a request leaves releaseTransferred=false so finally releases every reservation.
+      for (Optional<OpcUaMonitoredItem.PreparedModifyRequest> prepared : itemRequests) {
+        prepared.ifPresent(p -> itemsToModify.add(p.toRequest()));
+      }
+
+      if (itemsToModify.isEmpty()) {
+        var serviceOperationResults =
+            new ArrayList<MonitoredItemServiceOperationResult>(items.size());
+
+        for (OpcUaMonitoredItem item : items) {
+          serviceOperationResults.add(
+              new MonitoredItemServiceOperationResult(
+                  item, new StatusCode(StatusCodes.Bad_InvalidState), null));
+        }
+
+        return new MonitoredItemPartitionAttempt(serviceOperationResults, null, 0);
+      }
+
       LOGGER.debug(
           "id={}, modifyMonitoredItems partition.size(): {}",
           context.serverState().subscriptionId,
-          partition.size());
+          items.size());
 
-      ModifyMonitoredItemsResponse response =
-          client.modifyMonitoredItems(
-              context.serverState().getSubscriptionId(), TimestampsToReturn.Both, itemsToModify);
+      CompletableFuture<ModifyMonitoredItemsResponse> responseFuture =
+          requireNonNull(
+              client.modifyMonitoredItemsAsync(
+                  context.serverState().getSubscriptionId(),
+                  TimestampsToReturn.Both,
+                  itemsToModify));
 
-      MonitoredItemModifyResult[] results = response.getResults();
-      if (results == null || results.length != partition.size()) {
-        throw unexpectedResultCount(
-            "ModifyMonitoredItems", results == null ? null : results.length, partition.size());
+      // Tie result application and activeModifies release to completion of the async request so
+      // interrupting the caller thread cannot release activeModifies while the request is active.
+      CompletableFuture<MonitoredItemPartitionAttempt> attemptFuture =
+          responseFuture.handle(
+              (response, ex) -> {
+                try {
+                  return applyModifyMonitoredItemsOutcome(
+                      context, items, itemRequests, itemsToModify.size(), response, ex);
+                } finally {
+                  releaseModifyRequests(items, itemRequests);
+                }
+              });
+
+      releaseTransferred = true;
+
+      return awaitMonitoredItemPartitionAttempt(
+          attemptFuture, context, items, itemRequests, itemsToModify.size());
+    } finally {
+      if (!releaseTransferred) {
+        releaseModifyRequests(items, itemRequests);
+      }
+    }
+  }
+
+  private MonitoredItemPartitionAttempt applyModifyMonitoredItemsOutcome(
+      MonitoredItemOperationContext context,
+      List<OpcUaMonitoredItem> items,
+      List<Optional<OpcUaMonitoredItem.PreparedModifyRequest>> itemRequests,
+      int operationCount,
+      @Nullable ModifyMonitoredItemsResponse response,
+      @Nullable Throwable ex) {
+
+    StatusCode serviceError = null;
+    MonitoredItemModifyResult[] results = null;
+
+    if (ex != null) {
+      serviceError = extractServiceStatusCode(ex);
+    } else if (response == null
+        || response.getResults() == null
+        || response.getResults().length != operationCount) {
+      serviceError =
+          unexpectedResultCount(
+                  "ModifyMonitoredItems",
+                  response == null || response.getResults() == null
+                      ? null
+                      : response.getResults().length,
+                  operationCount)
+              .getStatusCode();
+    } else {
+      results = response.getResults();
+    }
+
+    if (serviceError != null) {
+      synchronized (lifecycleLock) {
+        if (incarnation != context.incarnation()) {
+          return invalidStateAttempt(items, operationCount);
+        }
       }
 
       var serviceOperationResults =
-          new ArrayList<MonitoredItemServiceOperationResult>(results.length);
+          new ArrayList<MonitoredItemServiceOperationResult>(items.size());
 
-      synchronized (lifecycleLock) {
-        if (incarnation != context.incarnation()) {
-          return invalidStateAttempt(partition, partition.size());
+      for (int i = 0; i < items.size(); i++) {
+        OpcUaMonitoredItem item = items.get(i);
+
+        if (itemRequests.get(i).isPresent()) {
+          serviceOperationResults.add(
+              new MonitoredItemServiceOperationResult(item, serviceError, null));
+        } else {
+          serviceOperationResults.add(
+              new MonitoredItemServiceOperationResult(
+                  item, new StatusCode(StatusCodes.Bad_InvalidState), null));
         }
+      }
 
-        for (int i = 0; i < results.length; i++) {
-          MonitoredItemModifyResult result = results[i];
-          OpcUaMonitoredItem monitoredItem = partition.get(i);
+      return new MonitoredItemPartitionAttempt(
+          serviceOperationResults, serviceError, operationCount);
+    }
 
-          monitoredItem.applyModifyResult(result);
+    var serviceOperationResults = new ArrayList<MonitoredItemServiceOperationResult>(items.size());
+
+    synchronized (lifecycleLock) {
+      if (incarnation != context.incarnation()) {
+        return invalidStateAttempt(items, operationCount);
+      }
+
+      int resultIndex = 0;
+      for (int i = 0; i < items.size(); i++) {
+        OpcUaMonitoredItem monitoredItem = items.get(i);
+        Optional<OpcUaMonitoredItem.PreparedModifyRequest> prepared = itemRequests.get(i);
+
+        if (prepared.isPresent()) {
+          MonitoredItemModifyResult result = results[resultIndex++];
+
+          monitoredItem.applyModifyResult(result, prepared.get());
 
           serviceOperationResults.add(
               new MonitoredItemServiceOperationResult(
                   monitoredItem, StatusCode.GOOD, result.getStatusCode()));
+        } else {
+          serviceOperationResults.add(
+              new MonitoredItemServiceOperationResult(
+                  monitoredItem, new StatusCode(StatusCodes.Bad_InvalidState), null));
         }
       }
+    }
 
-      return new MonitoredItemPartitionAttempt(serviceOperationResults, null, partition.size());
-    } catch (UaException e) {
-      synchronized (lifecycleLock) {
-        if (incarnation != context.incarnation()) {
-          return invalidStateAttempt(partition, partition.size());
-        }
+    return new MonitoredItemPartitionAttempt(serviceOperationResults, null, operationCount);
+  }
+
+  private static void releaseModifyRequests(
+      List<OpcUaMonitoredItem> items,
+      List<Optional<OpcUaMonitoredItem.PreparedModifyRequest>> itemRequests) {
+
+    for (int i = 0; i < itemRequests.size(); i++) {
+      Optional<OpcUaMonitoredItem.PreparedModifyRequest> prepared = itemRequests.get(i);
+      if (prepared.isPresent()) {
+        items.get(i).releaseModify(prepared.get());
       }
-
-      var serviceOperationResults =
-          new ArrayList<MonitoredItemServiceOperationResult>(partition.size());
-
-      for (OpcUaMonitoredItem item : partition) {
-        serviceOperationResults.add(
-            new MonitoredItemServiceOperationResult(item, e.getStatusCode(), null));
-      }
-
-      return new MonitoredItemPartitionAttempt(
-          serviceOperationResults, e.getStatusCode(), partition.size());
     }
   }
 
@@ -1185,16 +1414,8 @@ public class OpcUaSubscription {
     List<OpcUaMonitoredItem> itemsToDelete;
 
     synchronized (monitoredItemsLock) {
-      // Items that were never created on the Server don't need to be deleted from it.
-      this.itemsToDelete.removeIf(
-          item -> {
-            if (item.getSyncState() == OpcUaMonitoredItem.SyncState.INITIAL) {
-              item.setClientHandle(null);
-              return true;
-            }
-
-            return false;
-          });
+      // Items that do not exist on the Server don't need to be deleted from it.
+      this.itemsToDelete.removeIf(OpcUaMonitoredItem::detachIfNotCreated);
 
       itemsToDelete = List.copyOf(this.itemsToDelete);
     }
@@ -1229,32 +1450,45 @@ public class OpcUaSubscription {
   private MonitoredItemPartitionAttempt deleteMonitoredItems(
       MonitoredItemOperationContext context, List<OpcUaMonitoredItem> partition) {
 
-    // Server state may be cleared concurrently, so read each item id only once.
-    var monitoredItemIds = new ArrayList<UInteger>(partition.size());
-    var itemIds = new ArrayList<Optional<UInteger>>(partition.size());
-    var clientHandles = new ArrayList<Optional<UInteger>>(partition.size());
+    List<OpcUaMonitoredItem> items = List.copyOf(partition);
+    // Server state may be cleared concurrently, so snapshot each delete target once.
+    var monitoredItemIds = new ArrayList<UInteger>(items.size());
+    var itemRequests =
+        new ArrayList<Optional<OpcUaMonitoredItem.PreparedDeleteRequest>>(items.size());
+    var clientHandles = new ArrayList<Optional<UInteger>>(items.size());
 
     synchronized (lifecycleLock) {
       if (incarnation != context.incarnation()) {
-        return invalidStateAttempt(partition, 0);
+        return invalidStateAttempt(items, 0);
       }
 
       synchronized (monitoredItemsLock) {
-        for (OpcUaMonitoredItem item : partition) {
-          Optional<UInteger> itemId = item.getMonitoredItemId();
+        for (OpcUaMonitoredItem item : items) {
+          Optional<OpcUaMonitoredItem.PreparedDeleteRequest> deleteRequest = Optional.empty();
+          Optional<UInteger> clientHandle = Optional.empty();
 
-          itemIds.add(itemId);
-          clientHandles.add(item.getClientHandle());
-          itemId.ifPresent(monitoredItemIds::add);
+          if (this.itemsToDelete.contains(item)) {
+            UInteger ownedHandle = item.internalClientHandleIfOwnedBy(this);
+            if (ownedHandle != null) {
+              deleteRequest = item.tryBeginDelete();
+              if (deleteRequest.isPresent()) {
+                clientHandle = Optional.of(ownedHandle);
+                monitoredItemIds.add(deleteRequest.get().monitoredItemId());
+              }
+            }
+          }
+
+          itemRequests.add(deleteRequest);
+          clientHandles.add(clientHandle);
         }
       }
     }
 
     if (monitoredItemIds.isEmpty()) {
       var serviceOperationResults =
-          new ArrayList<MonitoredItemServiceOperationResult>(partition.size());
+          new ArrayList<MonitoredItemServiceOperationResult>(items.size());
 
-      for (OpcUaMonitoredItem item : partition) {
+      for (OpcUaMonitoredItem item : items) {
         serviceOperationResults.add(
             new MonitoredItemServiceOperationResult(
                 item, new StatusCode(StatusCodes.Bad_InvalidState), null));
@@ -1263,68 +1497,77 @@ public class OpcUaSubscription {
       return new MonitoredItemPartitionAttempt(serviceOperationResults, null, 0);
     }
 
-    try {
-      LOGGER.debug(
-          "id={}, deleteMonitoredItems partition.size(): {}",
-          context.serverState().subscriptionId,
-          partition.size());
+    LOGGER.debug(
+        "id={}, deleteMonitoredItems partition.size(): {}",
+        context.serverState().subscriptionId,
+        items.size());
 
-      DeleteMonitoredItemsResponse response =
-          client.deleteMonitoredItems(context.serverState().getSubscriptionId(), monitoredItemIds);
+    CompletableFuture<DeleteMonitoredItemsResponse> responseFuture =
+        requireNonNull(
+            client.deleteMonitoredItemsAsync(
+                context.serverState().getSubscriptionId(), monitoredItemIds));
 
-      StatusCode[] results = response.getResults();
-      if (results == null || results.length != monitoredItemIds.size()) {
-        throw unexpectedResultCount(
-            "DeleteMonitoredItems",
-            results == null ? null : results.length,
-            monitoredItemIds.size());
+    CompletableFuture<MonitoredItemPartitionAttempt> attemptFuture =
+        responseFuture.handle(
+            (response, ex) ->
+                applyDeleteMonitoredItemsOutcome(
+                    context,
+                    items,
+                    itemRequests,
+                    clientHandles,
+                    monitoredItemIds.size(),
+                    response,
+                    ex));
+
+    return awaitMonitoredItemPartitionAttempt(
+        attemptFuture, context, items, itemRequests, monitoredItemIds.size());
+  }
+
+  private MonitoredItemPartitionAttempt applyDeleteMonitoredItemsOutcome(
+      MonitoredItemOperationContext context,
+      List<OpcUaMonitoredItem> items,
+      List<Optional<OpcUaMonitoredItem.PreparedDeleteRequest>> itemRequests,
+      List<Optional<UInteger>> clientHandles,
+      int operationCount,
+      @Nullable DeleteMonitoredItemsResponse response,
+      @Nullable Throwable ex) {
+
+    StatusCode serviceError = null;
+    StatusCode[] results = null;
+
+    if (ex != null) {
+      serviceError = extractServiceStatusCode(ex);
+    } else if (response == null
+        || response.getResults() == null
+        || response.getResults().length != operationCount) {
+      serviceError =
+          unexpectedResultCount(
+                  "DeleteMonitoredItems",
+                  response == null || response.getResults() == null
+                      ? null
+                      : response.getResults().length,
+                  operationCount)
+              .getStatusCode();
+    } else {
+      results = response.getResults();
+    }
+
+    if (serviceError != null) {
+      synchronized (lifecycleLock) {
+        if (incarnation != context.incarnation()) {
+          return invalidStateAttempt(items, operationCount);
+        }
       }
 
       var serviceOperationResults =
-          new ArrayList<MonitoredItemServiceOperationResult>(partition.size());
+          new ArrayList<MonitoredItemServiceOperationResult>(items.size());
 
-      synchronized (lifecycleLock) {
-        if (incarnation != context.incarnation()) {
-          return invalidStateAttempt(partition, monitoredItemIds.size());
-        }
+      for (int i = 0; i < items.size(); i++) {
+        OpcUaMonitoredItem item = items.get(i);
 
-        int resultIndex = 0;
-        for (int i = 0; i < partition.size(); i++) {
-          OpcUaMonitoredItem item = partition.get(i);
-
-          if (itemIds.get(i).isPresent()) {
-            StatusCode result = results[resultIndex++];
-
-            applyMonitoredItemDeleteResult(item, clientHandles.get(i), result);
-
-            serviceOperationResults.add(
-                new MonitoredItemServiceOperationResult(item, StatusCode.GOOD, result));
-          } else {
-            serviceOperationResults.add(
-                new MonitoredItemServiceOperationResult(
-                    item, new StatusCode(StatusCodes.Bad_InvalidState), null));
-          }
-        }
-      }
-
-      return new MonitoredItemPartitionAttempt(
-          serviceOperationResults, null, monitoredItemIds.size());
-    } catch (UaException e) {
-      synchronized (lifecycleLock) {
-        if (incarnation != context.incarnation()) {
-          return invalidStateAttempt(partition, monitoredItemIds.size());
-        }
-      }
-
-      var serviceOperationResults =
-          new ArrayList<MonitoredItemServiceOperationResult>(partition.size());
-
-      for (int i = 0; i < partition.size(); i++) {
-        OpcUaMonitoredItem item = partition.get(i);
-
-        if (itemIds.get(i).isPresent()) {
+        if (itemRequests.get(i).isPresent()) {
           serviceOperationResults.add(
-              new MonitoredItemServiceOperationResult(item, e.getStatusCode(), null));
+              new MonitoredItemServiceOperationResult(item, serviceError, null));
         } else {
           serviceOperationResults.add(
               new MonitoredItemServiceOperationResult(
@@ -1333,40 +1576,126 @@ public class OpcUaSubscription {
       }
 
       return new MonitoredItemPartitionAttempt(
-          serviceOperationResults, e.getStatusCode(), monitoredItemIds.size());
+          serviceOperationResults, serviceError, operationCount);
     }
+
+    var serviceOperationResults = new ArrayList<MonitoredItemServiceOperationResult>(items.size());
+
+    synchronized (lifecycleLock) {
+      if (incarnation != context.incarnation()) {
+        return invalidStateAttempt(items, operationCount);
+      }
+
+      int resultIndex = 0;
+      for (int i = 0; i < items.size(); i++) {
+        OpcUaMonitoredItem item = items.get(i);
+        Optional<OpcUaMonitoredItem.PreparedDeleteRequest> prepared = itemRequests.get(i);
+
+        if (prepared.isPresent()) {
+          StatusCode result = results[resultIndex++];
+
+          applyMonitoredItemDeleteResult(item, clientHandles.get(i), prepared.get(), result);
+
+          serviceOperationResults.add(
+              new MonitoredItemServiceOperationResult(item, StatusCode.GOOD, result));
+        } else {
+          serviceOperationResults.add(
+              new MonitoredItemServiceOperationResult(
+                  item, new StatusCode(StatusCodes.Bad_InvalidState), null));
+        }
+      }
+    }
+
+    return new MonitoredItemPartitionAttempt(serviceOperationResults, null, operationCount);
   }
 
   /**
    * Apply an operation-level DeleteMonitoredItems result without corrupting an item that was added
-   * back while the service call was in flight.
+   * back while the service call was in flight or reused in a newer incarnation.
    *
-   * <p>The Server has acted on the deletion, so the item's server state must be cleared either way.
-   * If the application added the item back, it remains in {@link #monitoredItems}; restore the
-   * ClientHandle captured for the request after {@link OpcUaMonitoredItem#applyDeleteResult} clears
-   * it, so a later {@link #createMonitoredItems()} can recreate the desired item. If it was not
-   * added back, it stays detached as before.
+   * <p>If the item is still on the incarnation captured when the request was prepared, the Server
+   * acted on that deletion so the item's server state is cleared. If the application added the item
+   * back to this Subscription while the delete was in flight, retain the ClientHandle captured for
+   * the request and clear its prior operation results so a later {@link #createMonitoredItems()} or
+   * {@link #createMonitoredItems(Predicate)} starts its new server-side lifecycle clean; otherwise
+   * detach it with its operation results readable until it is added to a Subscription again, and
+   * remove the pending deletion. If the item has already moved to a newer incarnation, ignore the
+   * stale response and leave both the item and any newer pending deletion untouched.
    */
   private void applyMonitoredItemDeleteResult(
-      OpcUaMonitoredItem item, Optional<UInteger> clientHandle, StatusCode result) {
+      OpcUaMonitoredItem item,
+      Optional<UInteger> clientHandle,
+      OpcUaMonitoredItem.PreparedDeleteRequest prepared,
+      StatusCode result) {
 
     synchronized (monitoredItemsLock) {
+      UInteger handle = clientHandle.orElse(null);
       boolean readded =
-          clientHandle.map(handle -> monitoredItems.get(handle) == item).orElse(false);
+          handle != null && item.isOwnedBy(this) && monitoredItems.get(handle) == item;
 
-      item.applyDeleteResult(result);
+      if (item.applyDeleteResult(result, readded ? handle : null, prepared)) {
+        // An operation-level result means the Server acted on the deletion, either by deleting the
+        // item or by reporting that it was already gone. Remove the original pending deletion in
+        // the same critical section as applying the result, so a later remove is a distinct
+        // operation that this response cannot consume.
+        itemsToDelete.remove(item);
+      }
+    }
+  }
 
-      if (readded) {
-        UInteger handle = clientHandle.orElseThrow();
-        item.setClientHandle(handle);
+  private <T> MonitoredItemPartitionAttempt awaitMonitoredItemPartitionAttempt(
+      CompletableFuture<MonitoredItemPartitionAttempt> attemptFuture,
+      MonitoredItemOperationContext context,
+      List<OpcUaMonitoredItem> items,
+      List<Optional<T>> itemRequests,
+      int operationCount) {
+
+    try {
+      return attemptFuture.get();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+
+      synchronized (lifecycleLock) {
+        if (incarnation != context.incarnation()) {
+          return invalidStateAttempt(items, operationCount);
+        }
       }
 
-      // An operation-level result means the Server acted on the deletion, either by deleting the
-      // item or by reporting that it was already gone. Remove the original pending deletion in the
-      // same critical section as applying the result, so a later remove is a distinct operation
-      // that this response cannot consume.
-      itemsToDelete.remove(item);
+      StatusCode statusCode = new StatusCode(StatusCodes.Bad_UnexpectedError);
+      var serviceOperationResults =
+          new ArrayList<MonitoredItemServiceOperationResult>(items.size());
+
+      for (int i = 0; i < items.size(); i++) {
+        OpcUaMonitoredItem item = items.get(i);
+        if (itemRequests.get(i).isPresent()) {
+          serviceOperationResults.add(
+              new MonitoredItemServiceOperationResult(item, statusCode, null));
+        } else {
+          serviceOperationResults.add(
+              new MonitoredItemServiceOperationResult(
+                  item, new StatusCode(StatusCodes.Bad_InvalidState), null));
+        }
+      }
+
+      return new MonitoredItemPartitionAttempt(serviceOperationResults, statusCode, operationCount);
+    } catch (ExecutionException e) {
+      Throwable cause = e.getCause();
+      if (cause instanceof Error error) {
+        throw error;
+      }
+      if (cause instanceof RuntimeException runtimeException) {
+        throw runtimeException;
+      }
+      throw new RuntimeException(cause);
     }
+  }
+
+  private static StatusCode extractServiceStatusCode(Throwable ex) {
+    Throwable cause =
+        ex instanceof CompletionException && ex.getCause() != null ? ex.getCause() : ex;
+    return UaException.extract(cause)
+        .map(UaException::getStatusCode)
+        .orElseGet(() -> new UaException(cause).getStatusCode());
   }
 
   private List<MonitoredItemServiceOperationResult> executeMonitoredItemPartitions(
@@ -1374,7 +1703,9 @@ public class OpcUaSubscription {
       MonitoredItemOperationContext context,
       Function<List<OpcUaMonitoredItem>, MonitoredItemPartitionAttempt> operation) {
 
-    var serviceOperationResults = new ArrayList<MonitoredItemServiceOperationResult>(items.size());
+    List<OpcUaMonitoredItem> snapshot = List.copyOf(items);
+    var serviceOperationResults =
+        new ArrayList<MonitoredItemServiceOperationResult>(snapshot.size());
 
     long partitionGeneration = monitoredItemPartitionGeneration;
     int partitionSize = getMonitoredItemPartitionSize().intValue();
@@ -1384,18 +1715,25 @@ public class OpcUaSubscription {
 
     int partitionStart = 0;
 
-    while (partitionStart < items.size()) {
+    while (partitionStart < snapshot.size()) {
+      if (Thread.currentThread().isInterrupted()) {
+        serviceOperationResults.addAll(
+            unexpectedErrorAttempt(snapshot.subList(partitionStart, snapshot.size())).results());
+        break;
+      }
+
       synchronized (lifecycleLock) {
         if (incarnation != context.incarnation()) {
           serviceOperationResults.addAll(
-              invalidStateAttempt(items.subList(partitionStart, items.size()), 0).results());
+              invalidStateAttempt(snapshot.subList(partitionStart, snapshot.size()), 0).results());
           break;
         }
       }
 
-      int remaining = items.size() - partitionStart;
+      int remaining = snapshot.size() - partitionStart;
       int partitionEnd = partitionStart + Math.min(partitionSize, remaining);
-      List<OpcUaMonitoredItem> partition = items.subList(partitionStart, partitionEnd);
+      List<OpcUaMonitoredItem> partition =
+          List.copyOf(snapshot.subList(partitionStart, partitionEnd));
 
       MonitoredItemPartitionAttempt attempt = operation.apply(partition);
 
@@ -1406,7 +1744,8 @@ public class OpcUaSubscription {
         synchronized (lifecycleLock) {
           if (incarnation != context.incarnation()) {
             serviceOperationResults.addAll(
-                invalidStateAttempt(items.subList(partitionStart, items.size()), 0).results());
+                invalidStateAttempt(snapshot.subList(partitionStart, snapshot.size()), 0)
+                    .results());
             break;
           }
 
@@ -1447,6 +1786,19 @@ public class OpcUaSubscription {
     }
 
     return new MonitoredItemPartitionAttempt(results, statusCode, operationCount);
+  }
+
+  private static MonitoredItemPartitionAttempt unexpectedErrorAttempt(
+      List<OpcUaMonitoredItem> items) {
+
+    var results = new ArrayList<MonitoredItemServiceOperationResult>(items.size());
+    StatusCode statusCode = new StatusCode(StatusCodes.Bad_UnexpectedError);
+
+    for (OpcUaMonitoredItem item : items) {
+      results.add(new MonitoredItemServiceOperationResult(item, statusCode, null));
+    }
+
+    return new MonitoredItemPartitionAttempt(results, statusCode, 0);
   }
 
   private static UaException unexpectedResultCount(
@@ -1506,15 +1858,16 @@ public class OpcUaSubscription {
   public List<MonitoredItemServiceOperationResult> setMonitoringMode(
       MonitoringMode monitoringMode, List<OpcUaMonitoredItem> monitoredItems) {
 
-    if (monitoredItems.isEmpty()) {
+    List<OpcUaMonitoredItem> items = List.copyOf(monitoredItems);
+    if (items.isEmpty()) {
       return Collections.emptyList();
     }
 
     MonitoredItemOperationContext context = getMonitoredItemOperationContext();
     if (context == null) {
       var serviceOperationResults =
-          new ArrayList<MonitoredItemServiceOperationResult>(monitoredItems.size());
-      for (OpcUaMonitoredItem item : monitoredItems) {
+          new ArrayList<MonitoredItemServiceOperationResult>(items.size());
+      for (OpcUaMonitoredItem item : items) {
         serviceOperationResults.add(
             new MonitoredItemServiceOperationResult(
                 item, new StatusCode(StatusCodes.Bad_InvalidState), null));
@@ -1522,10 +1875,40 @@ public class OpcUaSubscription {
       return serviceOperationResults;
     }
 
-    return executeMonitoredItemPartitions(
-        monitoredItems,
-        context,
-        partition -> setMonitoringMode(context, monitoringMode, partition));
+    // Deduplicate by object identity before partitioning so duplicate entries in the caller's list
+    // produce identical results and side effects regardless of partition size or transient faults.
+    var distinctItems = new ArrayList<OpcUaMonitoredItem>(items.size());
+    var distinctIndices = new int[items.size()];
+    var seenIndex = new IdentityHashMap<OpcUaMonitoredItem, Integer>();
+
+    for (int i = 0; i < items.size(); i++) {
+      OpcUaMonitoredItem item = items.get(i);
+      Integer existing = seenIndex.get(item);
+      if (existing != null) {
+        distinctIndices[i] = existing;
+      } else {
+        int distinctIndex = distinctItems.size();
+        seenIndex.put(item, distinctIndex);
+        distinctItems.add(item);
+        distinctIndices[i] = distinctIndex;
+      }
+    }
+
+    List<MonitoredItemServiceOperationResult> distinctResults =
+        executeMonitoredItemPartitions(
+            distinctItems,
+            context,
+            partition -> setMonitoringMode(context, monitoringMode, partition));
+
+    if (distinctItems.size() == items.size()) {
+      return distinctResults;
+    }
+
+    var expandedResults = new ArrayList<MonitoredItemServiceOperationResult>(items.size());
+    for (int i = 0; i < items.size(); i++) {
+      expandedResults.add(distinctResults.get(distinctIndices[i]));
+    }
+    return expandedResults;
   }
 
   private MonitoredItemPartitionAttempt setMonitoringMode(
@@ -1533,73 +1916,134 @@ public class OpcUaSubscription {
       MonitoringMode monitoringMode,
       List<OpcUaMonitoredItem> partition) {
 
-    // Server state may be cleared concurrently, so read each item id only once.
-    var monitoredItemIds = new ArrayList<UInteger>(partition.size());
-    var itemIds = new ArrayList<Optional<UInteger>>(partition.size());
-
-    synchronized (lifecycleLock) {
-      if (incarnation != context.incarnation()) {
-        return invalidStateAttempt(partition, 0);
-      }
-
-      for (OpcUaMonitoredItem item : partition) {
-        Optional<UInteger> itemId = item.getMonitoredItemId();
-
-        itemIds.add(itemId);
-        itemId.ifPresent(monitoredItemIds::add);
-      }
-    }
-
-    if (monitoredItemIds.isEmpty()) {
-      var serviceOperationResults =
-          new ArrayList<MonitoredItemServiceOperationResult>(partition.size());
-
-      for (OpcUaMonitoredItem item : partition) {
-        serviceOperationResults.add(
-            new MonitoredItemServiceOperationResult(
-                item, new StatusCode(StatusCodes.Bad_InvalidState), null));
-      }
-
-      return new MonitoredItemPartitionAttempt(serviceOperationResults, null, 0);
-    }
+    List<OpcUaMonitoredItem> items = List.copyOf(partition);
+    // Server state may be cleared or the item moved concurrently, so verify membership in this
+    // Subscription and claim an exclusive SetMonitoringMode reservation atomically.
+    var monitoredItemIds = new ArrayList<UInteger>(items.size());
+    var itemRequests =
+        new ArrayList<Optional<OpcUaMonitoredItem.PreparedSetMonitoringModeRequest>>(items.size());
+    boolean releaseTransferred = false;
 
     try {
+      synchronized (lifecycleLock) {
+        if (incarnation != context.incarnation()) {
+          return invalidStateAttempt(items, 0);
+        }
+
+        synchronized (monitoredItemsLock) {
+          for (OpcUaMonitoredItem item : items) {
+            Optional<OpcUaMonitoredItem.PreparedSetMonitoringModeRequest> prepared =
+                isMonitoredItemMapped(item) ? item.tryBeginSetMonitoringMode() : Optional.empty();
+
+            itemRequests.add(prepared);
+            prepared.ifPresent(p -> monitoredItemIds.add(p.monitoredItemId()));
+          }
+        }
+      }
+
+      if (monitoredItemIds.isEmpty()) {
+        var serviceOperationResults =
+            new ArrayList<MonitoredItemServiceOperationResult>(items.size());
+
+        for (OpcUaMonitoredItem item : items) {
+          serviceOperationResults.add(
+              new MonitoredItemServiceOperationResult(
+                  item, new StatusCode(StatusCodes.Bad_InvalidState), null));
+        }
+
+        return new MonitoredItemPartitionAttempt(serviceOperationResults, null, 0);
+      }
+
       LOGGER.debug(
           "id={}, setMonitoringMode partition.size(): {}",
           context.serverState().subscriptionId,
-          partition.size());
+          items.size());
 
-      SetMonitoringModeResponse response =
-          client.setMonitoringMode(
-              context.serverState().getSubscriptionId(), monitoringMode, monitoredItemIds);
+      CompletableFuture<SetMonitoringModeResponse> responseFuture =
+          requireNonNull(
+              client.setMonitoringModeAsync(
+                  context.serverState().getSubscriptionId(), monitoringMode, monitoredItemIds));
 
-      StatusCode[] results = response.getResults();
-      if (results == null || results.length != monitoredItemIds.size()) {
-        throw unexpectedResultCount(
-            "SetMonitoringMode", results == null ? null : results.length, monitoredItemIds.size());
+      // Tie result application and reservation release to completion of the async request so
+      // interrupting the caller thread cannot release setMonitoringModeInFlight early.
+      CompletableFuture<MonitoredItemPartitionAttempt> attemptFuture =
+          responseFuture.handle(
+              (response, ex) -> {
+                try {
+                  return applySetMonitoringModeOutcome(
+                      context,
+                      monitoringMode,
+                      items,
+                      itemRequests,
+                      monitoredItemIds.size(),
+                      response,
+                      ex);
+                } finally {
+                  releaseSetMonitoringModeRequests(items, itemRequests);
+                }
+              });
+
+      releaseTransferred = true;
+
+      return awaitMonitoredItemPartitionAttempt(
+          attemptFuture, context, items, itemRequests, monitoredItemIds.size());
+    } finally {
+      if (!releaseTransferred) {
+        releaseSetMonitoringModeRequests(items, itemRequests);
       }
+    }
+  }
 
+  private MonitoredItemPartitionAttempt applySetMonitoringModeOutcome(
+      MonitoredItemOperationContext context,
+      MonitoringMode monitoringMode,
+      List<OpcUaMonitoredItem> items,
+      List<Optional<OpcUaMonitoredItem.PreparedSetMonitoringModeRequest>> itemRequests,
+      int operationCount,
+      @Nullable SetMonitoringModeResponse response,
+      @Nullable Throwable ex) {
+
+    StatusCode serviceError = null;
+    StatusCode[] results = null;
+
+    if (ex != null) {
+      serviceError = extractServiceStatusCode(ex);
+    } else if (response == null
+        || response.getResults() == null
+        || response.getResults().length != operationCount) {
+      serviceError =
+          unexpectedResultCount(
+                  "SetMonitoringMode",
+                  response == null || response.getResults() == null
+                      ? null
+                      : response.getResults().length,
+                  operationCount)
+              .getStatusCode();
+    } else {
+      results = response.getResults();
+    }
+
+    if (serviceError != null) {
       var serviceOperationResults =
-          new ArrayList<MonitoredItemServiceOperationResult>(partition.size());
+          new ArrayList<MonitoredItemServiceOperationResult>(items.size());
 
       synchronized (lifecycleLock) {
         if (incarnation != context.incarnation()) {
-          return invalidStateAttempt(partition, monitoredItemIds.size());
+          return invalidStateAttempt(items, operationCount);
         }
 
-        int resultIndex = 0;
-        for (int i = 0; i < partition.size(); i++) {
-          OpcUaMonitoredItem item = partition.get(i);
+        for (int i = 0; i < items.size(); i++) {
+          OpcUaMonitoredItem item = items.get(i);
+          Optional<OpcUaMonitoredItem.PreparedSetMonitoringModeRequest> prepared =
+              itemRequests.get(i);
 
-          if (itemIds.get(i).isPresent()) {
-            StatusCode result = results[resultIndex++];
-
-            item.applySetMonitoringModeResult(result);
-            if (result.isGood()) {
-              item.setMonitoringMode(monitoringMode);
+          if (prepared.isPresent()) {
+            if (operationCount == 1 || serviceError.value() != StatusCodes.Bad_TooManyOperations) {
+              item.applySetMonitoringModeResult(serviceError, prepared.get());
             }
+
             serviceOperationResults.add(
-                new MonitoredItemServiceOperationResult(item, StatusCode.GOOD, result));
+                new MonitoredItemServiceOperationResult(item, serviceError, null));
           } else {
             serviceOperationResults.add(
                 new MonitoredItemServiceOperationResult(
@@ -1609,37 +2053,49 @@ public class OpcUaSubscription {
       }
 
       return new MonitoredItemPartitionAttempt(
-          serviceOperationResults, null, monitoredItemIds.size());
-    } catch (UaException e) {
-      var serviceOperationResults =
-          new ArrayList<MonitoredItemServiceOperationResult>(partition.size());
+          serviceOperationResults, serviceError, operationCount);
+    }
 
-      synchronized (lifecycleLock) {
-        if (incarnation != context.incarnation()) {
-          return invalidStateAttempt(partition, monitoredItemIds.size());
-        }
+    var serviceOperationResults = new ArrayList<MonitoredItemServiceOperationResult>(items.size());
 
-        for (int i = 0; i < partition.size(); i++) {
-          OpcUaMonitoredItem item = partition.get(i);
-
-          if (itemIds.get(i).isPresent()) {
-            if (monitoredItemIds.size() == 1
-                || e.getStatusCode().value() != StatusCodes.Bad_TooManyOperations) {
-              item.applySetMonitoringModeResult(e.getStatusCode());
-            }
-
-            serviceOperationResults.add(
-                new MonitoredItemServiceOperationResult(item, e.getStatusCode(), null));
-          } else {
-            serviceOperationResults.add(
-                new MonitoredItemServiceOperationResult(
-                    item, new StatusCode(StatusCodes.Bad_InvalidState), null));
-          }
-        }
+    synchronized (lifecycleLock) {
+      if (incarnation != context.incarnation()) {
+        return invalidStateAttempt(items, operationCount);
       }
 
-      return new MonitoredItemPartitionAttempt(
-          serviceOperationResults, e.getStatusCode(), monitoredItemIds.size());
+      int resultIndex = 0;
+      for (int i = 0; i < items.size(); i++) {
+        OpcUaMonitoredItem item = items.get(i);
+        Optional<OpcUaMonitoredItem.PreparedSetMonitoringModeRequest> prepared =
+            itemRequests.get(i);
+
+        if (prepared.isPresent()) {
+          StatusCode result = results[resultIndex++];
+
+          item.applySetMonitoringModeResult(result, monitoringMode, prepared.get());
+
+          serviceOperationResults.add(
+              new MonitoredItemServiceOperationResult(item, StatusCode.GOOD, result));
+        } else {
+          serviceOperationResults.add(
+              new MonitoredItemServiceOperationResult(
+                  item, new StatusCode(StatusCodes.Bad_InvalidState), null));
+        }
+      }
+    }
+
+    return new MonitoredItemPartitionAttempt(serviceOperationResults, null, operationCount);
+  }
+
+  private static void releaseSetMonitoringModeRequests(
+      List<OpcUaMonitoredItem> items,
+      List<Optional<OpcUaMonitoredItem.PreparedSetMonitoringModeRequest>> itemRequests) {
+
+    for (int i = 0; i < itemRequests.size(); i++) {
+      Optional<OpcUaMonitoredItem.PreparedSetMonitoringModeRequest> prepared = itemRequests.get(i);
+      if (prepared.isPresent()) {
+        items.get(i).releaseSetMonitoringMode(prepared.get());
+      }
     }
   }
 
@@ -1788,10 +2244,12 @@ public class OpcUaSubscription {
    * @return {@code true} if all MonitoredItems are synchronized.
    */
   public boolean isMonitoredItemsSynchronized() {
-    return itemsToDelete.stream()
-            .noneMatch(item -> item.getSyncState() != OpcUaMonitoredItem.SyncState.INITIAL)
-        && monitoredItems.values().stream()
-            .allMatch(item -> item.getSyncState() == OpcUaMonitoredItem.SyncState.SYNCHRONIZED);
+    synchronized (monitoredItemsLock) {
+      return itemsToDelete.stream().noneMatch(OpcUaMonitoredItem::needsServerDeletion)
+          && monitoredItems.values().stream()
+              .allMatch(
+                  item -> item.internalSyncState() == OpcUaMonitoredItem.SyncState.SYNCHRONIZED);
+    }
   }
 
   /**
