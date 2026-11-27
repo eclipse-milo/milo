@@ -1724,12 +1724,14 @@ public class SessionFsmFactory {
    *     be used as the reference for validation.
    * @param sessionEndpoints the list of endpoints from the session that need to be validated
    *     against the discovery endpoints.
+   * @throws SessionEndpointMismatchException if the session endpoints do not match the discovery
+   *     endpoints for {@code transportProfileUri}.
    */
   static void validateSessionEndpoints(
       String transportProfileUri,
       List<EndpointDescription> discoveryEndpoints,
       List<EndpointDescription> sessionEndpoints)
-      throws UaException {
+      throws SessionEndpointMismatchException {
 
     List<EndpointDescription> filteredDiscoveryEndpoints =
         discoveryEndpoints.stream()
@@ -1746,9 +1748,7 @@ public class SessionFsmFactory {
     }
 
     if (filteredDiscoveryEndpoints.size() != filteredSessionEndpoints.size()) {
-      throw new UaException(
-          StatusCodes.Bad_SecurityChecksFailed,
-          "endpoints returned during discovery do not match session endpoints");
+      throw new SessionEndpointMismatchException();
     }
 
     for (EndpointDescription discoveryEndpoint : filteredDiscoveryEndpoints) {
@@ -1761,9 +1761,7 @@ public class SessionFsmFactory {
         }
       }
       if (!matched) {
-        throw new UaException(
-            StatusCodes.Bad_SecurityChecksFailed,
-            "endpoints returned during discovery do not match session endpoints");
+        throw new SessionEndpointMismatchException();
       }
     }
   }
