@@ -319,6 +319,8 @@ class FileBasedTrustListCloseTest {
       closeThread.join(5000);
     }
 
+    assertFalse(reloadThread.isAlive(), "reload thread did not finish");
+    assertFalse(closeThread.isAlive(), "close thread did not finish");
     assertEquals(null, reloadFailure.get());
     assertEquals(null, closeFailure.get());
     assertEquals(
@@ -338,27 +340,40 @@ class FileBasedTrustListCloseTest {
     var holding = new CountDownLatch(1);
     var release = new CountDownLatch(1);
     var reloadBodyInvoked = new AtomicBoolean(false);
+    var holderFailure = new AtomicReference<Throwable>();
+    var reloadFailure = new AtomicReference<Throwable>();
+    var closeFailure = new AtomicReference<Throwable>();
 
     var holder =
         new Thread(
-            () ->
+            () -> {
+              try {
                 manager.update(
                     current -> {
                       holding.countDown();
                       awaitUninterruptibly(release);
                       return current;
-                    }),
+                    });
+              } catch (Throwable t) {
+                holderFailure.set(t);
+              }
+            },
             "queued-reload-holder");
 
     var reloadThread =
         new Thread(
-            () ->
+            () -> {
+              try {
                 manager.synchronize(
                     "trusted certificates",
                     current -> {
                       reloadBodyInvoked.set(true);
                       return current.withTrustedCertificates(List.of(OTHER));
-                    }),
+                    });
+              } catch (Throwable t) {
+                reloadFailure.set(t);
+              }
+            },
             "queued-reload-worker");
 
     var closeThread =
@@ -366,8 +381,8 @@ class FileBasedTrustListCloseTest {
             () -> {
               try {
                 manager.close();
-              } catch (IOException e) {
-                throw new RuntimeException(e);
+              } catch (Throwable t) {
+                closeFailure.set(t);
               }
             },
             "queued-reload-close");
@@ -393,6 +408,12 @@ class FileBasedTrustListCloseTest {
       closeThread.join(5000);
     }
 
+    assertFalse(holder.isAlive(), "holder thread did not finish");
+    assertFalse(reloadThread.isAlive(), "reload thread did not finish");
+    assertFalse(closeThread.isAlive(), "close thread did not finish");
+    assertEquals(null, holderFailure.get());
+    assertEquals(null, reloadFailure.get());
+    assertEquals(null, closeFailure.get());
     assertFalse(reloadBodyInvoked.get(), "closed manager should skip queued directory reload");
     assertEquals(List.of(), manager.getTrustedCertificates());
   }
