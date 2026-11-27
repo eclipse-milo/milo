@@ -13,6 +13,8 @@ package org.eclipse.milo.opcua.sdk.client.identity;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -29,6 +31,10 @@ import org.slf4j.LoggerFactory;
  * token creation. A provider that cannot use the selected endpoint should throw, allowing the
  * composite to try the next provider. A provider that can use the endpoint but does not need
  * additional-header negotiation should return {@code null} or an empty optional.
+ *
+ * <p>When no provider can use the endpoint, the composite rethrows the last provider's failure. A
+ * composite with no providers throws a {@link UaException} with {@code Bad_IdentityTokenRejected}
+ * when asked for an identity token.
  */
 public class CompositeProvider implements IdentityProvider {
 
@@ -131,7 +137,8 @@ public class CompositeProvider implements IdentityProvider {
       }
     }
 
-    throw new Exception("no sufficient UserTokenPolicy found");
+    throw new UaException(
+        StatusCodes.Bad_IdentityTokenRejected, "no sufficient UserTokenPolicy found");
   }
 
   @Override
@@ -154,7 +161,8 @@ public class CompositeProvider implements IdentityProvider {
       }
     }
 
-    throw new Exception("no sufficient UserTokenPolicy found");
+    throw new UaException(
+        StatusCodes.Bad_IdentityTokenRejected, "no sufficient UserTokenPolicy found");
   }
 
   @Override

@@ -476,7 +476,7 @@ public class UsernameProvider implements IdentityProvider {
     }
   }
 
-  private UserTokenPolicy selectTokenPolicy(EndpointDescription endpoint) throws Exception {
+  private UserTokenPolicy selectTokenPolicy(EndpointDescription endpoint) throws UaException {
     UserTokenPolicy[] userIdentityTokens =
         requireNonNullElse(endpoint.getUserIdentityTokens(), new UserTokenPolicy[0]);
 
@@ -486,7 +486,9 @@ public class UsernameProvider implements IdentityProvider {
             .collect(Collectors.toList());
 
     if (tokenPolicies.isEmpty()) {
-      throw new Exception("no UserTokenPolicy with UserTokenType.UserName found");
+      throw new UaException(
+          StatusCodes.Bad_IdentityTokenRejected,
+          "no UserTokenPolicy with UserTokenType.UserName found");
     }
 
     // Prefer username policies the SecureChannel can actually use (Part 4 (7.41)) and skip the

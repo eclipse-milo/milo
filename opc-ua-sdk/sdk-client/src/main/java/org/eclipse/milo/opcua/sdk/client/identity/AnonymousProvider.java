@@ -14,6 +14,8 @@ import static java.util.Objects.requireNonNullElse;
 
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.UserTokenType;
@@ -41,7 +43,7 @@ public class AnonymousProvider implements IdentityProvider {
     if (Stream.of(userIdentityTokens).anyMatch(t -> t.getTokenType() == UserTokenType.Anonymous)) {
       return Optional.empty();
     } else {
-      throw new Exception("no anonymous token policy found");
+      throw noAnonymousTokenPolicy();
     }
   }
 
@@ -70,11 +72,16 @@ public class AnonymousProvider implements IdentityProvider {
 
               return new SignedIdentityToken(token, new SignatureData(null, null));
             })
-        .orElseThrow(() -> new Exception("no anonymous token policy found"));
+        .orElseThrow(AnonymousProvider::noAnonymousTokenPolicy);
   }
 
   @Override
   public String toString() {
     return "AnonymousProvider{}";
+  }
+
+  private static UaException noAnonymousTokenPolicy() {
+    return new UaException(
+        StatusCodes.Bad_IdentityTokenRejected, "no anonymous token policy found");
   }
 }
