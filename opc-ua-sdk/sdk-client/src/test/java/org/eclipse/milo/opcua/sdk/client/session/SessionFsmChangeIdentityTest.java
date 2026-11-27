@@ -690,6 +690,84 @@ class SessionFsmChangeIdentityTest {
         client.disconnectAsync().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
       }
     }
+
+    // Post-commit response faults (such as Bad_ResponseTooLarge) can be sent after the Server
+    // already replaced the Session's identity; the client must recover a fresh Session under the
+    // retained provider rather than returning straight to Active on the same Session.
+    @Test
+    void responseEncodingFaultDuringChangingIdentityRecoversFreshSession() throws Exception {
+      var transport = new ScriptedTransport();
+      OpcUaClient client = newClient(transport, AnonymousProvider.INSTANCE);
+      var listener = new RecordingActivityListener();
+      client.addSessionActivityListener(listener);
+
+      try {
+        OpcUaSession original = connectToActive(client, transport);
+        assertTrue(listener.awaitActiveCount(1, TIMEOUT_SECONDS));
+
+        transport.parkNextActivateSession();
+        CompletableFuture<OpcUaSession> changeFuture =
+            client.changeIdentityAsync(new UsernameProvider("user1", "password"));
+        PendingRequest changeReq = transport.awaitRequest(ActivateSessionRequest.class);
+        awaitState(client, State.ChangingIdentity);
+
+        var fault =
+            new ServiceFault(
+                new ResponseHeader(
+                    DateTime.now(),
+                    uint(0),
+                    new StatusCode(StatusCodes.Bad_ResponseTooLarge),
+                    DiagnosticInfo.NULL_VALUE,
+                    new String[0],
+                    null));
+        changeReq.fail(new UaServiceFaultException(fault));
+
+        assertFailedWithStatus(changeFuture, StatusCodes.Bad_ResponseTooLarge);
+        assertTrue(listener.awaitInactiveCount(1, TIMEOUT_SECONDS));
+        assertTrue(listener.awaitActiveCount(2, TIMEOUT_SECONDS));
+        awaitState(client, State.Active);
+
+        OpcUaSession recovered = client.getSessionAsync().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertNotEquals(original.getSessionId(), recovered.getSessionId());
+      } finally {
+        transport.releaseAll();
+        client.disconnectAsync().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      }
+    }
+
+    // A synchronous RuntimeException thrown by transport.sendRequestMessage() must not strand the
+    // FSM in ChangingIdentity; it must fail the pending future and trigger recovery.
+    @Test
+    void synchronousTransportSendExceptionDoesNotStrandChangingIdentity() throws Exception {
+      var transport = new ScriptedTransport();
+      OpcUaClient client = newClient(transport, AnonymousProvider.INSTANCE);
+      var listener = new RecordingActivityListener();
+      client.addSessionActivityListener(listener);
+
+      try {
+        OpcUaSession original = connectToActive(client, transport);
+        assertTrue(listener.awaitActiveCount(1, TIMEOUT_SECONDS));
+
+        transport.throwSyncOnNextActivate.set(true);
+        CompletableFuture<OpcUaSession> changeFuture =
+            client.changeIdentityAsync(new UsernameProvider("user1", "password"));
+
+        ExecutionException ex =
+            assertThrows(
+                ExecutionException.class,
+                () -> changeFuture.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+        assertInstanceOf(IllegalStateException.class, ex.getCause());
+        assertTrue(listener.awaitInactiveCount(1, TIMEOUT_SECONDS));
+        assertTrue(listener.awaitActiveCount(2, TIMEOUT_SECONDS));
+        awaitState(client, State.Active);
+
+        OpcUaSession recovered = client.getSessionAsync().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertNotEquals(original.getSessionId(), recovered.getSessionId());
+      } finally {
+        transport.releaseAll();
+        client.disconnectAsync().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      }
+    }
   }
 
   private static IdentityProvider stubEnhancedProvider(SecurityPolicy policy, String policyId) {
@@ -871,6 +949,7 @@ class SessionFsmChangeIdentityTest {
     private final AtomicBoolean parkNextCreate = new AtomicBoolean();
     private final AtomicBoolean parkNextActivate = new AtomicBoolean();
     private final AtomicBoolean parkNextClose = new AtomicBoolean();
+    final AtomicBoolean throwSyncOnNextActivate = new AtomicBoolean();
     private final BlockingQueue<PendingRequest> parkedRequests = new LinkedBlockingQueue<>();
     private final Queue<PendingRequest> allParked = new LinkedBlockingQueue<>();
 
@@ -964,6 +1043,9 @@ class SessionFsmChangeIdentityTest {
 
       if (requestMessage instanceof ActivateSessionRequest asr) {
         recordedActivateRequests.add(asr);
+        if (throwSyncOnNextActivate.compareAndSet(true, false)) {
+          throw new IllegalStateException("simulated synchronous transport send failure");
+        }
         if (parkNextActivate.compareAndSet(true, false)) {
           return park(requestMessage);
         }

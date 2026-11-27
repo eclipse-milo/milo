@@ -1105,11 +1105,15 @@ public class OpcUaClient {
    * OpcUaSession#getLastActivateSessionServiceResult()} (for example, {@code
    * Good_PasswordChangeRequired}).
    *
-   * <p>On failure, the previous identity provider remains in effect. If the Server refused the
-   * identity change, the Session stays active under its previous identity. Calls made while the
-   * Session is not active fail immediately with {@code Bad_SessionClosed} (disconnected or
-   * closing), {@code Bad_SessionNotActivated} (connecting or reconnecting), or {@code
-   * Bad_InvalidState} (another identity change is already in progress).
+   * <p>On failure, the previous identity provider remains in effect. When the Server definitively
+   * refuses the identity change and the Session remains usable under the previous provider, the
+   * Session stays active without reconnecting; when the outcome is ambiguous (for example, a
+   * transport timeout or post-commit response fault) or the retained enhanced provider's single-use
+   * ephemeral key was consumed, the client abandons the Session and establishes a replacement
+   * Session under the retained provider. Calls made while the Session is not active fail
+   * immediately with {@code Bad_SessionClosed} (disconnected or closing), {@code
+   * Bad_SessionNotActivated} (connecting or reconnecting), or {@code Bad_InvalidState} (another
+   * identity change is already in progress).
    *
    * @param identityProvider the new {@link IdentityProvider} to authenticate with.
    * @return the active {@link OpcUaSession} after the identity change succeeds.
@@ -1141,11 +1145,15 @@ public class OpcUaClient {
    * OpcUaSession#getLastActivateSessionServiceResult()} (for example, {@code
    * Good_PasswordChangeRequired}).
    *
-   * <p>On failure, the previous identity provider remains in effect. If the Server refused the
-   * identity change, the Session stays active under its previous identity. Calls made while the
-   * Session is not active fail immediately with {@code Bad_SessionClosed} (disconnected or
-   * closing), {@code Bad_SessionNotActivated} (connecting or reconnecting), or {@code
-   * Bad_InvalidState} (another identity change is already in progress).
+   * <p>On failure, the previous identity provider remains in effect. When the Server definitively
+   * refuses the identity change and the Session remains usable under the previous provider, the
+   * Session stays active without reconnecting; when the outcome is ambiguous (for example, a
+   * transport timeout or post-commit response fault) or the retained enhanced provider's single-use
+   * ephemeral key was consumed, the client abandons the Session and establishes a replacement
+   * Session under the retained provider. Calls made while the Session is not active fail
+   * immediately with {@code Bad_SessionClosed} (disconnected or closing), {@code
+   * Bad_SessionNotActivated} (connecting or reconnecting), or {@code Bad_InvalidState} (another
+   * identity change is already in progress).
    *
    * @param identityProvider the new {@link IdentityProvider} to authenticate with.
    * @return a {@link CompletableFuture} that completes with the active {@link OpcUaSession} on

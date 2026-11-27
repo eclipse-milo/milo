@@ -1008,6 +1008,7 @@ public class SessionFsmFactory {
               KEY_CHANGE_IDENTITY_ATTEMPT.remove(ctx);
               KEY_WAIT_TIME.remove(ctx);
               KEY_SESSION.remove(ctx);
+              KEY_SESSION_FUTURE.remove(ctx);
 
               client
                   .getTransport()
@@ -2709,9 +2710,15 @@ public class SessionFsmFactory {
 
     final boolean burnedCurrentEnhancedKey = currentEnhancedPolicy.isPresent();
 
-    client
-        .getTransport()
-        .sendRequestMessage(request)
+    CompletableFuture<UaResponseMessageType> responseFuture;
+    try {
+      responseFuture = client.getTransport().sendRequestMessage(request);
+    } catch (Exception ex) {
+      fireChangeIdentityFailure(ctx, session, attempt, ex, true);
+      return;
+    }
+
+    responseFuture
         .thenApply(ActivateSessionResponse.class::cast)
         .whenComplete(
             (asr, ex) -> {
@@ -2722,7 +2729,7 @@ public class SessionFsmFactory {
               if (ex != null) {
                 Throwable cause = unwrapCompletionException(ex);
                 boolean recoverSession =
-                    !isDefinitiveNonSessionServiceFault(cause) || burnedCurrentEnhancedKey;
+                    !isDefinitiveIdentityChangeRefusal(cause) || burnedCurrentEnhancedKey;
                 fireChangeIdentityFailure(ctx, session, attempt, cause, recoverSession);
                 return;
               }
@@ -2768,7 +2775,7 @@ public class SessionFsmFactory {
       Optional<SecurityPolicy> newEnhancedPolicy,
       Optional<ByteString> receiverEphemeralPublicKey) {
 
-    Optional<SecurityPolicy> currentEnhancedPolicy;
+    Optional<SecurityPolicy> currentEnhancedPolicy = Optional.empty();
     ActivateSessionRequest request;
     try {
       IdentityProvider newProvider = attempt.event.identityProvider;
@@ -2811,7 +2818,13 @@ public class SessionFsmFactory {
         session.clearUserTokenReceiverEphemeralPublicKey();
       }
     } catch (Exception ex) {
-      fireChangeIdentityFailure(ctx, session, attempt, ex, false);
+      // If step-1 pre-negotiation already replaced the retained enhanced provider's key before
+      // step-2 token construction failed, recover a fresh Session so the retained provider is not
+      // left without its single-use key.
+      boolean recoverSession =
+          currentEnhancedPolicy.isPresent()
+              && resolveReceiverEphemeralPublicKey(session, currentEnhancedPolicy).isEmpty();
+      fireChangeIdentityFailure(ctx, session, attempt, ex, recoverSession);
       return;
     }
 
@@ -2821,9 +2834,17 @@ public class SessionFsmFactory {
       LOGGER.debug("Sending identity-change ActivateSessionRequest...");
     }
 
-    client
-        .getTransport()
-        .sendRequestMessage(request)
+    final Optional<SecurityPolicy> retainedEnhancedPolicy = currentEnhancedPolicy;
+
+    CompletableFuture<UaResponseMessageType> responseFuture;
+    try {
+      responseFuture = client.getTransport().sendRequestMessage(request);
+    } catch (Exception ex) {
+      fireChangeIdentityFailure(ctx, session, attempt, ex, true);
+      return;
+    }
+
+    responseFuture
         .thenApply(ActivateSessionResponse.class::cast)
         .whenComplete(
             (asr, ex) -> {
@@ -2834,19 +2855,19 @@ public class SessionFsmFactory {
               if (ex != null) {
                 Throwable cause = unwrapCompletionException(ex);
                 boolean recoverSession;
-                if (!isDefinitiveNonSessionServiceFault(cause)) {
-                  // Ambiguous outcome (for example, a transport timeout after the Server may have
-                  // already switched identities) or a session-level fault: recover the Session
-                  // under the retained provider before exposing it as Active again.
+                if (!isDefinitiveIdentityChangeRefusal(cause)) {
+                  // Ambiguous outcome (for example, a transport timeout or post-commit response
+                  // encoding fault like Bad_ResponseTooLarge) or a session-level fault: recover
+                  // the Session under the retained provider before exposing it as Active again.
                   recoverSession = true;
                 } else {
-                  // Definitive refusal: the Server retained currentProvider. Recover to a fresh
-                  // Session only if currentProvider itself requires an enhanced EphemeralKey that
-                  // was just consumed, since this Session can no longer reactivate or
-                  // pre-negotiate under currentProvider.
+                  // Definitive pre-commit refusal: the Server retained currentProvider. Recover to
+                  // a fresh Session only if currentProvider itself requires an enhanced
+                  // EphemeralKey that was just consumed, since this Session can no longer
+                  // reactivate or pre-negotiate under currentProvider.
                   recoverSession =
-                      currentEnhancedPolicy.isPresent()
-                          && resolveReceiverEphemeralPublicKey(session, currentEnhancedPolicy)
+                      retainedEnhancedPolicy.isPresent()
+                          && resolveReceiverEphemeralPublicKey(session, retainedEnhancedPolicy)
                               .isEmpty();
                 }
 
@@ -2891,9 +2912,28 @@ public class SessionFsmFactory {
             });
   }
 
-  private static boolean isDefinitiveNonSessionServiceFault(Throwable failure) {
+  /**
+   * Return {@code true} only when {@code failure} is a {@link UaServiceFaultException} carrying an
+   * OPC 10000-4 §5.7.3.3 rejection status code that proves the Server rejected {@code
+   * ActivateSession} before replacing the Session's identity. Post-commit response faults (such as
+   * {@link StatusCodes#Bad_ResponseTooLarge}), session faults, and unknown status codes return
+   * {@code false} so the client recovers the Session under its retained provider.
+   */
+  private static boolean isDefinitiveIdentityChangeRefusal(Throwable failure) {
     return UaException.extract(failure)
-        .map(ex -> ex instanceof UaServiceFaultException && !SESSION_ERROR.test(ex.getStatusCode()))
+        .filter(UaServiceFaultException.class::isInstance)
+        .map(
+            ex -> {
+              long code = ex.getStatusCode().value();
+              return code == StatusCodes.Bad_IdentityTokenInvalid
+                  || code == StatusCodes.Bad_IdentityTokenRejected
+                  || code == StatusCodes.Bad_UserAccessDenied
+                  || code == StatusCodes.Bad_UserSignatureInvalid
+                  || code == StatusCodes.Bad_IdentityChangeNotSupported
+                  || code == StatusCodes.Bad_ApplicationSignatureInvalid
+                  || code == StatusCodes.Bad_SecurityPolicyRejected
+                  || code == StatusCodes.Bad_InvalidArgument;
+            })
         .orElse(false);
   }
 
