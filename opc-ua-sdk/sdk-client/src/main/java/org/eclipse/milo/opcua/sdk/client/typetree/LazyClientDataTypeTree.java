@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
@@ -27,6 +28,7 @@ import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
@@ -72,7 +74,9 @@ import org.slf4j.LoggerFactory;
  * <p>Resolution errors (e.g., network failures, non-existent types) do not cause exceptions to be
  * thrown from query methods like {@link #getDataType(NodeId)}. Instead, {@code null} is returned.
  * Once a resolution attempt has failed, it will not be retried unless {@link
- * #clearFailedResolutions()} is called.
+ * #clearFailedResolutions()} is called. If the calling thread is interrupted before or during
+ * resolution, the interrupt status is preserved and the failed attempt is not cached, allowing
+ * subsequent lookups to retry.
  *
  * <h2>Namespace Table</h2>
  *
@@ -96,7 +100,90 @@ public class LazyClientDataTypeTree extends DataTypeTree {
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
   // All access is guarded by `lock`: reads under the read lock, mutations under the write lock.
+  // Contains only ids whose resolution attempt completed without resolving the type.
   private final Set<NodeId> attemptedResolution = new HashSet<>();
+
+  // Incremented under the write lock on clearFailedResolutions() so an in-flight failure cannot
+  // re-insert a NodeId into attemptedResolution after a reentrant clearFailedResolutions().
+  private final AtomicLong failedResolutionEpoch = new AtomicLong();
+
+  // Guarded by `lock`: tracks ids currently being resolved on the write-lock holder thread so a
+  // reentrant lookup during resolution does not recurse or publish duplicate tree nodes.
+  private final Set<NodeId> inProgressResolution = new HashSet<>();
+
+  // Scoped to virtual lookupDataType() / openRetryScope() calls on the current thread so subclass
+  // overrides, DataTypeDefinition decoders, and dependent lookups (including through
+  // LazyClientDataTypeManager) propagate retryable misses and aborts cleanly to callers.
+  private static final ThreadLocal<@Nullable LookupCapture> ACTIVE_LOOKUP = new ThreadLocal<>();
+
+  // Tracks nested LazyClientDataTypeTree read- and write-lock holds on the current thread so
+  // LazyClientDataTypeManager avoids blocking on its own write lock while holding any tree lock,
+  // preventing lock-inversion deadlocks with concurrent manager -> tree lookups.
+  private static final ThreadLocal<@Nullable Integer> ACTIVE_LOCK_DEPTH = new ThreadLocal<>();
+
+  private static final class LookupCapture {
+    boolean retryable;
+    boolean aborted;
+  }
+
+  private enum ResolutionOutcome {
+    COMPLETED,
+    REENTRANT,
+    ABORTED
+  }
+
+  private static final class RetryableResolutionException extends UaException {
+    final boolean aborted;
+
+    RetryableResolutionException(String message, boolean aborted) {
+      super(StatusCodes.Bad_UnexpectedError, message);
+      this.aborted = aborted;
+    }
+
+    RetryableResolutionException(String message, Throwable cause, boolean aborted) {
+      super(StatusCodes.Bad_UnexpectedError, message, cause);
+      this.aborted = aborted;
+    }
+  }
+
+  static final class RetryScope implements AutoCloseable {
+    private final @Nullable LookupCapture previous;
+    private final LookupCapture current;
+
+    private RetryScope(@Nullable LookupCapture previous, LookupCapture current) {
+      this.previous = previous;
+      this.current = current;
+    }
+
+    boolean isRetryable() {
+      return current.retryable;
+    }
+
+    boolean isAborted() {
+      return current.aborted;
+    }
+
+    void close(boolean propagate) {
+      if (previous != null) {
+        if (propagate) {
+          if (current.retryable) {
+            previous.retryable = true;
+          }
+          if (current.aborted) {
+            previous.aborted = true;
+          }
+        }
+        ACTIVE_LOOKUP.set(previous);
+      } else {
+        ACTIVE_LOOKUP.remove();
+      }
+    }
+
+    @Override
+    public void close() {
+      close(true);
+    }
+  }
 
   private volatile NamespaceTable namespaceTable;
 
@@ -187,11 +274,11 @@ public class LazyClientDataTypeTree extends DataTypeTree {
    * @return {@code true} if the type is already loaded in the tree.
    */
   public boolean isResolved(NodeId typeId) {
-    lock.readLock().lock();
+    lockRead();
     try {
       return types.containsKey(typeId);
     } finally {
-      lock.readLock().unlock();
+      unlockRead();
     }
   }
 
@@ -206,25 +293,149 @@ public class LazyClientDataTypeTree extends DataTypeTree {
    * system may have changed.
    */
   public void clearFailedResolutions() {
-    lock.writeLock().lock();
+    lockWrite();
     try {
-      attemptedResolution.retainAll(types.keySet());
+      attemptedResolution.clear();
+      failedResolutionEpoch.incrementAndGet();
     } finally {
-      lock.writeLock().unlock();
+      unlockWrite();
     }
   }
 
   // ===== Core Resolution Logic =====
 
-  private void ensureResolved(NodeId dataTypeId) {
-    // Fast path under read lock
+  record LookupResult(@Nullable DataType dataType, boolean retryable, boolean aborted) {}
+
+  /**
+   * Open a thread-scoped capture that records whether any tree or paired manager lookup skipped or
+   * aborted resolution with a retryable outcome while the scope is active.
+   */
+  static RetryScope openRetryScope() {
+    LookupCapture previous = ACTIVE_LOOKUP.get();
+    var current = new LookupCapture();
+    ACTIVE_LOOKUP.set(current);
+    return new RetryScope(previous, current);
+  }
+
+  static void markCurrentRetryScopeRetryable() {
+    LookupCapture capture = ACTIVE_LOOKUP.get();
+    if (capture != null) {
+      capture.retryable = true;
+    }
+  }
+
+  static void markCurrentRetryScopeAborted() {
+    LookupCapture capture = ACTIVE_LOOKUP.get();
+    if (capture != null) {
+      capture.retryable = true;
+      capture.aborted = true;
+    }
+  }
+
+  static boolean isCurrentThreadHoldingLock() {
+    Integer depth = ACTIVE_LOCK_DEPTH.get();
+    return depth != null && depth > 0;
+  }
+
+  private void lockRead() {
     lock.readLock().lock();
+    enterLock();
+  }
+
+  private void unlockRead() {
+    exitLock();
+    lock.readLock().unlock();
+  }
+
+  private void lockWrite() {
+    lock.writeLock().lock();
+    enterLock();
+  }
+
+  private void unlockWrite() {
+    exitLock();
+    lock.writeLock().unlock();
+  }
+
+  private static void enterLock() {
+    Integer depth = ACTIVE_LOCK_DEPTH.get();
+    ACTIVE_LOCK_DEPTH.set(depth == null ? 1 : depth + 1);
+  }
+
+  private static void exitLock() {
+    Integer depth = ACTIVE_LOCK_DEPTH.get();
+    if (depth == null || depth <= 1) {
+      ACTIVE_LOCK_DEPTH.remove();
+    } else {
+      ACTIVE_LOCK_DEPTH.set(depth - 1);
+    }
+  }
+
+  /**
+   * Look up {@code dataTypeId} via virtual {@link #getDataType(NodeId)} and report whether a {@code
+   * null} outcome (or an aborted lookup) was skipped or aborted by a retryable interruption rather
+   * than recorded as a negative cache entry.
+   */
+  LookupResult lookupDataType(NodeId dataTypeId) {
+    RetryScope scope = openRetryScope();
+    boolean propagate = true;
+    try {
+      DataType dataType = getDataType(dataTypeId);
+      boolean aborted = Thread.currentThread().isInterrupted() || scope.isAborted();
+      if (dataType != null) {
+        if (!aborted) {
+          propagate = false;
+          return new LookupResult(dataType, false, false);
+        }
+        return new LookupResult(null, true, true);
+      }
+      return new LookupResult(null, aborted || scope.isRetryable(), aborted);
+    } catch (RuntimeException e) {
+      boolean aborted =
+          Thread.currentThread().isInterrupted()
+              || scope.isAborted()
+              || ClientBrowseUtils.hasInterruptedCause(e);
+      if (aborted || scope.isRetryable()) {
+        LOGGER.debug(
+            "DataType lookup for {} threw after retryable miss: {}", dataTypeId, e.getMessage());
+        return new LookupResult(null, true, aborted);
+      }
+      throw e;
+    } finally {
+      scope.close(propagate);
+    }
+  }
+
+  private void ensureResolved(NodeId dataTypeId) {
+    ResolutionOutcome outcome = resolveIfNeeded(dataTypeId);
+    if (outcome == ResolutionOutcome.ABORTED) {
+      markCurrentRetryScopeAborted();
+    } else if (outcome == ResolutionOutcome.REENTRANT) {
+      markCurrentRetryScopeRetryable();
+    }
+  }
+
+  /**
+   * Ensure {@code dataTypeId} has been resolved if possible.
+   *
+   * @return the outcome of the resolution attempt: {@link ResolutionOutcome#COMPLETED} when the
+   *     attempt finished normally (resolved or negatively cached), {@link
+   *     ResolutionOutcome#REENTRANT} when skipped because {@code dataTypeId} is already in progress
+   *     on this thread, or {@link ResolutionOutcome#ABORTED} when skipped or aborted due to
+   *     interruption, an interrupt-caused failure, or an active read lock.
+   */
+  private ResolutionOutcome resolveIfNeeded(NodeId dataTypeId) {
+    // Fast path under read lock
+    lockRead();
     try {
       if (types.containsKey(dataTypeId) || attemptedResolution.contains(dataTypeId)) {
-        return;
+        return ResolutionOutcome.COMPLETED;
+      }
+      if (inProgressResolution.contains(dataTypeId)) {
+        return ResolutionOutcome.REENTRANT;
       }
     } finally {
-      lock.readLock().unlock();
+      unlockRead();
     }
 
     if (lock.getReadHoldCount() > 0) {
@@ -232,30 +443,75 @@ public class LazyClientDataTypeTree extends DataTypeTree {
       // deadlocking permanently.
       LOGGER.warn(
           "Skipping lazy resolution of DataType {} while read lock is already held", dataTypeId);
-      return;
+      return ResolutionOutcome.ABORTED;
+    }
+
+    if (Thread.currentThread().isInterrupted()) {
+      LOGGER.debug(
+          "Skipping lazy resolution of DataType {} because current thread is interrupted",
+          dataTypeId);
+      return ResolutionOutcome.ABORTED;
     }
 
     // Slow path under write lock
-    lock.writeLock().lock();
+    lockWrite();
     try {
       // Re-check under write lock
       if (types.containsKey(dataTypeId) || attemptedResolution.contains(dataTypeId)) {
-        return;
+        return ResolutionOutcome.COMPLETED;
+      }
+      if (inProgressResolution.contains(dataTypeId)) {
+        return ResolutionOutcome.REENTRANT;
       }
 
-      attemptedResolution.add(dataTypeId);
+      if (Thread.currentThread().isInterrupted()) {
+        LOGGER.debug(
+            "Skipping lazy resolution of DataType {} because current thread is interrupted",
+            dataTypeId);
+        return ResolutionOutcome.ABORTED;
+      }
 
+      long startEpoch = failedResolutionEpoch.get();
+      ResolutionOutcome outcome = ResolutionOutcome.COMPLETED;
+      inProgressResolution.add(dataTypeId);
       try {
-        resolvePath(dataTypeId);
-      } catch (UaException e) {
-        LOGGER.debug("Failed to resolve DataType {}: {}", dataTypeId, e.getMessage());
-      } catch (RuntimeException e) {
-        // Query methods are documented not to throw on resolution failure; an unexpected
-        // RuntimeException here usually indicates a non-compliant server response.
-        LOGGER.warn("Unexpected error resolving DataType {}", dataTypeId, e);
+        try {
+          resolvePath(dataTypeId);
+        } catch (RetryableResolutionException e) {
+          outcome = e.aborted ? ResolutionOutcome.ABORTED : ResolutionOutcome.REENTRANT;
+          LOGGER.debug("Aborted resolution of DataType {}: {}", dataTypeId, e.getMessage());
+        } catch (UaException e) {
+          if (ClientBrowseUtils.hasInterruptedCause(e)) {
+            outcome = ResolutionOutcome.ABORTED;
+          }
+          LOGGER.debug("Failed to resolve DataType {}: {}", dataTypeId, e.getMessage());
+        } catch (RuntimeException e) {
+          // Query methods are documented not to throw on resolution failure; an unexpected
+          // RuntimeException here usually indicates a non-compliant server response.
+          if (ClientBrowseUtils.hasInterruptedCause(e)) {
+            outcome = ResolutionOutcome.ABORTED;
+          }
+          LOGGER.warn("Unexpected error resolving DataType {}", dataTypeId, e);
+        }
+      } finally {
+        inProgressResolution.remove(dataTypeId);
       }
+
+      if (Thread.currentThread().isInterrupted()) {
+        outcome = ResolutionOutcome.ABORTED;
+      }
+
+      if (!types.containsKey(dataTypeId) && outcome == ResolutionOutcome.COMPLETED) {
+        if (failedResolutionEpoch.get() == startEpoch) {
+          attemptedResolution.add(dataTypeId);
+        } else {
+          outcome = ResolutionOutcome.REENTRANT;
+        }
+      }
+
+      return outcome;
     } finally {
-      lock.writeLock().unlock();
+      unlockWrite();
     }
   }
 
@@ -269,6 +525,10 @@ public class LazyClientDataTypeTree extends DataTypeTree {
 
     List<NodeId> pathToResolve = browseInverseUntilKnown(dataTypeId, types.keySet(), nsTable);
 
+    if (Thread.currentThread().isInterrupted()) {
+      return;
+    }
+
     if (pathToResolve.size() < 2) {
       LOGGER.debug("Could not resolve path to known ancestor for DataType {}", dataTypeId);
       return;
@@ -280,7 +540,15 @@ public class LazyClientDataTypeTree extends DataTypeTree {
 
     List<ClientDataType> dataTypes = fetchDataTypeInfoBatch(nodesToAdd, nsTable, limits);
 
+    if (Thread.currentThread().isInterrupted() || dataTypes.size() != nodesToAdd.size()) {
+      return;
+    }
+
     ClientBrowseUtils.checkSessionUnchanged(client, sessionId);
+
+    if (Thread.currentThread().isInterrupted()) {
+      return;
+    }
 
     // Add from ancestor toward target (reverse order)
     Tree<DataType> parentTree = types.get(knownAncestorId);
@@ -295,8 +563,15 @@ public class LazyClientDataTypeTree extends DataTypeTree {
         break;
       }
 
+      Tree<DataType> existing = types.get(dataType.getNodeId());
+      if (existing != null) {
+        parentTree = existing;
+        continue;
+      }
+
       Tree<DataType> childTree = parentTree.addChild(dataType);
       types.put(dataType.getNodeId(), childTree);
+      attemptedResolution.remove(dataType.getNodeId());
       parentTree = childTree;
 
       LOGGER.debug("Resolved DataType: {}", dataType.getBrowseName().toParseableString());
@@ -321,9 +596,17 @@ public class LazyClientDataTypeTree extends DataTypeTree {
     List<DataValue> values =
         ClientBrowseUtils.readWithOperationLimits(client, readValueIds, limits);
 
+    if (Thread.currentThread().isInterrupted()) {
+      return List.of();
+    }
+
     // Browse encodings
     List<List<ReferenceDescription>> encodingRefs =
         ClientBrowseUtils.browseEncodings(client, nodeIds, limits);
+
+    if (Thread.currentThread().isInterrupted()) {
+      return List.of();
+    }
 
     var result = new ArrayList<@Nullable ClientDataType>();
 
@@ -334,6 +617,10 @@ public class LazyClientDataTypeTree extends DataTypeTree {
       QualifiedName browseName = extractBrowseName(values.get(valueOffset));
       Boolean isAbstract = extractIsAbstract(values.get(valueOffset + 1));
       DataTypeDefinition definition = extractDataTypeDefinition(values.get(valueOffset + 2));
+
+      if (Thread.currentThread().isInterrupted()) {
+        return List.of();
+      }
 
       if (browseName == null) {
         // BrowseName is a mandatory attribute; a bad read means the node is unavailable and the
@@ -369,13 +656,16 @@ public class LazyClientDataTypeTree extends DataTypeTree {
    * @return path from startId to known ancestor (inclusive), or empty list if unreachable.
    */
   private List<NodeId> browseInverseUntilKnown(
-      NodeId startId, Set<NodeId> knownTypeIds, NamespaceTable namespaceTable) {
+      NodeId startId, Set<NodeId> knownTypeIds, NamespaceTable namespaceTable) throws UaException {
 
     var visited = new HashSet<NodeId>();
     List<NodeId> path = new ArrayList<>();
     NodeId current = startId;
 
     while (current != null && !knownTypeIds.contains(current)) {
+      if (Thread.currentThread().isInterrupted()) {
+        return List.of();
+      }
       if (!visited.add(current) || visited.size() > MAX_RESOLUTION_DEPTH) {
         LOGGER.warn(
             "Inverse HasSubtype references from {} are cyclic or exceed depth {}",
@@ -402,7 +692,8 @@ public class LazyClientDataTypeTree extends DataTypeTree {
    * @param namespaceTable the namespace table for converting ExpandedNodeIds.
    * @return the parent NodeId, or null if not found.
    */
-  private @Nullable NodeId browseInverseParent(NodeId nodeId, NamespaceTable namespaceTable) {
+  private @Nullable NodeId browseInverseParent(NodeId nodeId, NamespaceTable namespaceTable)
+      throws UaException {
     try {
       BrowseDescription bd =
           new BrowseDescription(
@@ -422,6 +713,9 @@ public class LazyClientDataTypeTree extends DataTypeTree {
         return result.getReferences()[0].getNodeId().toNodeId(namespaceTable).orElse(null);
       }
     } catch (UaException e) {
+      if (ClientBrowseUtils.hasInterruptedCause(e)) {
+        throw e;
+      }
       LOGGER.debug("Failed to browse inverse parent for {}: {}", nodeId, e.getMessage());
     }
 
@@ -442,17 +736,42 @@ public class LazyClientDataTypeTree extends DataTypeTree {
     return false;
   }
 
-  private @Nullable DataTypeDefinition extractDataTypeDefinition(DataValue value) {
+  private @Nullable DataTypeDefinition extractDataTypeDefinition(DataValue value)
+      throws UaException {
     if (value.statusCode().isGood()) {
       Object o = value.value().value();
       if (o instanceof ExtensionObject xo) {
+        RetryScope decodeScope = openRetryScope();
+        boolean propagate = true;
         try {
           Object decoded = xo.decode(client.getStaticEncodingContext());
           if (decoded instanceof DataTypeDefinition dtd) {
+            if (Thread.currentThread().isInterrupted() || decodeScope.isAborted()) {
+              throw new RetryableResolutionException(
+                  "Interrupted while decoding DataTypeDefinition", true);
+            }
+            propagate = false;
             return dtd;
           }
+          boolean aborted = Thread.currentThread().isInterrupted() || decodeScope.isAborted();
+          if (aborted || decodeScope.isRetryable()) {
+            throw new RetryableResolutionException(
+                "Retryable miss while decoding DataTypeDefinition", aborted);
+          }
+        } catch (RetryableResolutionException e) {
+          throw e;
         } catch (Exception e) {
+          boolean aborted =
+              Thread.currentThread().isInterrupted()
+                  || decodeScope.isAborted()
+                  || ClientBrowseUtils.hasInterruptedCause(e);
+          if (aborted || decodeScope.isRetryable()) {
+            throw new RetryableResolutionException(
+                "Retryable failure while decoding DataTypeDefinition", e, aborted);
+          }
           LOGGER.debug("Error decoding DataTypeDefinition: {}", e.getMessage());
+        } finally {
+          decodeScope.close(propagate);
         }
       } else if (o instanceof DataTypeDefinition dtd) {
         return dtd;
@@ -472,11 +791,11 @@ public class LazyClientDataTypeTree extends DataTypeTree {
    */
   private <T> T resolvedQuery(NodeId dataTypeId, Supplier<T> query) {
     ensureResolved(dataTypeId);
-    lock.readLock().lock();
+    lockRead();
     try {
       return query.get();
     } finally {
-      lock.readLock().unlock();
+      unlockRead();
     }
   }
 
@@ -497,11 +816,11 @@ public class LazyClientDataTypeTree extends DataTypeTree {
    */
   @Override
   public Tree<DataType> getRoot() {
-    lock.readLock().lock();
+    lockRead();
     try {
       return tree.map(dataType -> dataType);
     } finally {
-      lock.readLock().unlock();
+      unlockRead();
     }
   }
 
@@ -520,25 +839,26 @@ public class LazyClientDataTypeTree extends DataTypeTree {
   @Override
   public @Nullable Tree<DataType> getTreeNode(NodeId dataTypeId) {
     ensureResolved(dataTypeId);
-    lock.readLock().lock();
+    Tree<DataType> snapshot;
+    lockRead();
     try {
       if (super.getTreeNode(dataTypeId) == null) {
         return null;
       }
 
-      Tree<DataType> snapshot = tree.map(dataType -> dataType);
-
-      var treeNode = new AtomicReference<Tree<DataType>>();
-      snapshot.traverseNodes(
-          node -> {
-            if (node.getValue().getNodeId().equals(dataTypeId)) {
-              treeNode.set(node);
-            }
-          });
-      return treeNode.get();
+      snapshot = tree.map(dataType -> dataType);
     } finally {
-      lock.readLock().unlock();
+      unlockRead();
     }
+
+    var treeNode = new AtomicReference<Tree<DataType>>();
+    snapshot.traverseNodes(
+        node -> {
+          if (node.getValue().getNodeId().equals(dataTypeId)) {
+            treeNode.set(node);
+          }
+        });
+    return treeNode.get();
   }
 
   @Override
@@ -657,7 +977,7 @@ public class LazyClientDataTypeTree extends DataTypeTree {
   @Override
   public boolean isSubtypeOf(NodeId typeId, NodeId superTypeId) {
     ensureResolved(typeId);
-    lock.readLock().lock();
+    lockRead();
     try {
       // Walk the parent chain directly rather than delegating to the superclass, which would
       // dispatch back through the overridden (snapshotting) getTreeNode.
@@ -676,7 +996,7 @@ public class LazyClientDataTypeTree extends DataTypeTree {
 
       return false;
     } finally {
-      lock.readLock().unlock();
+      unlockRead();
     }
   }
 
