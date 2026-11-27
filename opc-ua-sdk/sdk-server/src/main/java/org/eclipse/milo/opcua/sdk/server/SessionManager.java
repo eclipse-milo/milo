@@ -578,8 +578,9 @@ public class SessionManager {
 
     /*
      * The client verifies the EphemeralKeyType signature with the certificate advertised by the
-     * selected endpoint. SecureChannel key material is used only when it is the same endpoint
-     * identity; otherwise the key is resolved from the certificate manager by endpoint thumbprint.
+     * selected endpoint. Captured Session key material is used only when it matches the
+     * CreateSession certificate; otherwise the key is resolved from the certificate manager by
+     * endpoint thumbprint.
      */
     KeyPair keyPair = original.keyPair();
     if (keyPair != null
@@ -1170,13 +1171,13 @@ public class SessionManager {
       SecurityPolicy securityPolicy = securityConfiguration.getSecurityPolicy();
       // The client signs over the server certificate from CreateSession, so verification uses the
       // certificate the Session was created with even after the server certificate rotates. A
-      // Session created on an unsecured channel has none; use the carrying channel's.
+      // Session created without a server certificate uses the carrying channel's.
       SessionServerCertificate original = session.getOriginalServerCertificate();
-      boolean createdUnsecured = original.certificate() == null;
+      boolean noOriginalCertificate = original.certificate() == null;
       ByteString serverCertificateBs =
           securityPolicy.getProfile().secureChannelEnhancements()
               ? original.createSessionCertificate()
-              : createdUnsecured
+              : noOriginalCertificate
                   ? securityConfiguration.getServerCertificateBytes()
                   : original.certificateBytes();
       ByteString lastNonceBs = session.getLastNonce();
@@ -1209,7 +1210,7 @@ public class SessionManager {
         }
 
         ByteString serverCertificateChainBs =
-            createdUnsecured
+            noOriginalCertificate
                 ? securityConfiguration.getServerCertificateChainBytes()
                 : original.certificateChainBytes();
 
