@@ -114,7 +114,6 @@ import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
 import org.eclipse.milo.opcua.stack.transport.client.CurrentChannelProvider;
 import org.eclipse.milo.opcua.stack.transport.client.OpcClientTransport;
 import org.eclipse.milo.opcua.stack.transport.client.tcp.OpcTcpClientTransport;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -897,8 +896,29 @@ public class SessionFsmFactory {
         .transitionTo(State.Active);
 
     fb.when(State.ChangingIdentity)
-        .on(e -> e instanceof Event.ChangeIdentityFailure f && f.attempt.isActive())
+        .on(
+            e ->
+                e instanceof Event.ChangeIdentityFailure f
+                    && f.attempt.isActive()
+                    && !f.recoverSession)
         .transitionTo(State.Active);
+
+    fb.when(State.ChangingIdentity)
+        .on(
+            e ->
+                e instanceof Event.ChangeIdentityFailure f
+                    && f.attempt.isActive()
+                    && f.recoverSession
+                    && isTransportDisconnectedForGood(client))
+        .transitionTo(State.Inactive);
+
+    fb.when(State.ChangingIdentity)
+        .on(
+            e ->
+                e instanceof Event.ChangeIdentityFailure f
+                    && f.attempt.isActive()
+                    && f.recoverSession)
+        .transitionTo(State.CreatingWait);
 
     fb.when(State.ChangingIdentity).on(Event.CloseSession.class).transitionTo(State.Closing);
 
@@ -926,40 +946,7 @@ public class SessionFsmFactory {
 
               IdentityProvider currentProvider = getIdentityProvider(ctx, client);
 
-              changeSessionIdentity(ctx, client, session, currentProvider, attempt)
-                  .whenComplete(
-                      (result, ex) -> {
-                        if (!attempt.isActive()) {
-                          return;
-                        }
-
-                        if (result != null) {
-                          try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
-                              MDCCloseable ignoredSessionId = putSessionId(session)) {
-
-                            LOGGER.debug("Session identity changed: {}", session);
-                          }
-
-                          ctx.fireEvent(
-                              new Event.ChangeIdentitySuccess(
-                                  attempt,
-                                  session,
-                                  result.serviceResult(),
-                                  result.serverNonce(),
-                                  result.receiverEphemeralPublicKey(),
-                                  result.receiverEphemeralPublicKeyPolicy()));
-                        } else {
-                          Throwable cause = unwrapCompletionException(ex);
-
-                          try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
-                              MDCCloseable ignoredSessionId = putSessionId(session)) {
-
-                            LOGGER.debug("ChangeIdentity failed: {}", cause.getMessage(), cause);
-                          }
-
-                          ctx.fireEvent(new Event.ChangeIdentityFailure(attempt, cause));
-                        }
-                      });
+              startChangeIdentity(ctx, client, session, currentProvider, attempt);
             });
 
     fb.onTransitionFrom(State.ChangingIdentity)
@@ -1012,6 +999,49 @@ public class SessionFsmFactory {
             });
 
     fb.onTransitionFrom(State.ChangingIdentity)
+        .to(State.Inactive)
+        .via(Event.ChangeIdentityFailure.class)
+        .execute(
+            ctx -> {
+              Event.ChangeIdentityFailure event = (Event.ChangeIdentityFailure) ctx.event();
+              event.attempt.deactivate();
+              KEY_CHANGE_IDENTITY_ATTEMPT.remove(ctx);
+              KEY_WAIT_TIME.remove(ctx);
+              KEY_SESSION.remove(ctx);
+
+              client
+                  .getTransport()
+                  .getConfig()
+                  .getExecutor()
+                  .execute(() -> event.attempt.event.future.completeExceptionally(event.failure));
+            });
+
+    fb.onTransitionFrom(State.ChangingIdentity)
+        .to(State.CreatingWait)
+        .via(Event.ChangeIdentityFailure.class)
+        .execute(
+            ctx -> {
+              Event.ChangeIdentityFailure event = (Event.ChangeIdentityFailure) ctx.event();
+              event.attempt.deactivate();
+              KEY_CHANGE_IDENTITY_ATTEMPT.remove(ctx);
+              KEY_WAIT_TIME.remove(ctx);
+
+              // Registered after onSessionInactive(), so listeners already received the departing
+              // Session. Abandon it best-effort without deleting Subscriptions so the replacement
+              // Session created under the retained provider can transfer them.
+              OpcUaSession session = KEY_SESSION.remove(ctx);
+              if (session != null) {
+                abandonSession(ctx, client, session);
+              }
+
+              client
+                  .getTransport()
+                  .getConfig()
+                  .getExecutor()
+                  .execute(() -> event.attempt.event.future.completeExceptionally(event.failure));
+            });
+
+    fb.onTransitionFrom(State.ChangingIdentity)
         .to(State.Closing)
         .via(Event.CloseSession.class)
         .execute(
@@ -1048,6 +1078,32 @@ public class SessionFsmFactory {
             });
 
     /* Internal Transition Actions */
+
+    fb.onInternalTransition(State.ChangingIdentity)
+        .via(e -> e instanceof Event.ChangeIdentityPreNegotiationSuccess s && s.attempt.isActive())
+        .execute(
+            ctx -> {
+              Event.ChangeIdentityPreNegotiationSuccess event =
+                  (Event.ChangeIdentityPreNegotiationSuccess) ctx.event();
+
+              // Commit step 1's rotated serverNonce and negotiated EphemeralKey on the FSM actor
+              // while this attempt still owns the Session, so a delayed completion after an abort
+              // cannot overwrite a recovered Session's state.
+              event.session.setServerNonce(event.serverNonce);
+              event.session.setUserTokenReceiverEphemeralPublicKey(
+                  event.receiverEphemeralPublicKey, event.targetEnhancedPolicy);
+
+              sendChangeIdentityActivateSession(
+                  ctx,
+                  client,
+                  event.session,
+                  event.endpoint,
+                  event.currentProvider,
+                  event.attempt,
+                  event.serverNonce,
+                  Optional.of(event.targetEnhancedPolicy),
+                  Optional.of(event.receiverEphemeralPublicKey));
+            });
 
     fb.onInternalTransition(State.ChangingIdentity)
         .via(Event.ChangeIdentity.class)
@@ -1152,6 +1208,7 @@ public class SessionFsmFactory {
             e ->
                 e.getClass() != Event.CloseSession.class
                     && e.getClass() != Event.ChangeIdentity.class
+                    && e.getClass() != Event.ChangeIdentityPreNegotiationSuccess.class
                     && e.getClass() != Event.ChangeIdentitySuccess.class
                     && e.getClass() != Event.ChangeIdentityFailure.class)
         .execute(ctx -> ctx.shelveEvent(ctx.event()));
@@ -2361,20 +2418,19 @@ public class SessionFsmFactory {
                   session.setClientNonce(clientNonce);
                   session.setServerNonce(asrNonce);
 
-                  // Prefer the single-use key the server rotated in this response; fall back to the
-                  // CreateSession key when the server did not return a fresh one.
+                  // OPC 10000-6 §6.8.2: EphemeralKeys are single-use. Store only a freshly rotated
+                  // key returned by the Server; never re-cache the CreateSession key that this
+                  // ActivateSession just consumed.
                   Optional<ByteString> refreshedKey =
                       verifyActivateSessionEnhancedUserTokenKey(
                           client.getStaticEncodingContext(),
                           endpoint,
                           asr,
                           userTokenSecurityPolicy.orElse(null));
-                  refreshedKey
-                      .or(() -> receiverEphemeralPublicKey)
-                      .ifPresent(
-                          key ->
-                              session.setUserTokenReceiverEphemeralPublicKey(
-                                  key, userTokenSecurityPolicy.orElse(null)));
+                  if (userTokenSecurityPolicy.isPresent() && refreshedKey.isPresent()) {
+                    session.setUserTokenReceiverEphemeralPublicKey(
+                        refreshedKey.get(), userTokenSecurityPolicy.get());
+                  }
 
                   return completedFuture(session);
                 } catch (Exception ex) {
@@ -2421,6 +2477,17 @@ public class SessionFsmFactory {
               throw new UaException(
                   StatusCodes.Bad_SessionIdInvalid, "client application certificate changed");
             }
+            Optional<ByteString> receiverKey =
+                resolveReceiverEphemeralPublicKey(session, userTokenSecurityPolicy);
+            if (userTokenSecurityPolicy.isPresent() && receiverKey.isEmpty()) {
+              // OPC 10000-6 §6.8.2: no single-use EphemeralKey remains for the enhanced policy
+              // (for example, it was consumed by a failed ActivateSession or omitted by the
+              // server). Escalate to CreatingWait so CreateSession negotiates a fresh key.
+              throw new UaException(
+                  StatusCodes.Bad_SessionIdInvalid,
+                  "missing receiver ephemeral public key for enhanced user-token reactivation");
+            }
+
             SignedIdentityToken signedIdentityToken =
                 identityProvider.getIdentityToken(
                     buildIdentityProviderContext(
@@ -2428,27 +2495,35 @@ public class SessionFsmFactory {
                         endpoint,
                         serverNonce,
                         userTokenSecurityPolicy.orElse(null),
-                        resolveReceiverEphemeralPublicKey(session, userTokenSecurityPolicy)
-                            .orElse(null),
+                        receiverKey.orElse(null),
                         session.getServerCertificate(),
                         session.getClientNonce()));
 
-            return new ActivateSessionRequest(
-                withAdditionalHeader(
-                    client.newRequestHeader(session.getAuthenticationToken()),
-                    buildActivateSessionAdditionalHeader(
-                        client.getStaticEncodingContext(), userTokenSecurityPolicy)),
-                buildClientSignature(
-                    client,
-                    endpoint,
-                    session.getServerCertificate(),
-                    serverNonce,
-                    session.getClientNonce()),
-                new SignedSoftwareCertificate[0],
-                client.getConfig().getSessionLocaleIds(),
-                ExtensionObject.encode(
-                    client.getStaticEncodingContext(), signedIdentityToken.getToken()),
-                signedIdentityToken.getSignature());
+            ActivateSessionRequest request =
+                new ActivateSessionRequest(
+                    withAdditionalHeader(
+                        client.newRequestHeader(session.getAuthenticationToken()),
+                        buildActivateSessionAdditionalHeader(
+                            client.getStaticEncodingContext(), userTokenSecurityPolicy)),
+                    buildClientSignature(
+                        client,
+                        endpoint,
+                        session.getServerCertificate(),
+                        serverNonce,
+                        session.getClientNonce()),
+                    new SignedSoftwareCertificate[0],
+                    client.getConfig().getSessionLocaleIds(),
+                    ExtensionObject.encode(
+                        client.getStaticEncodingContext(), signedIdentityToken.getToken()),
+                    signedIdentityToken.getSignature());
+
+            // Discard the consumed single-use key before sending so a failure cannot leave a
+            // burned key cached on the Session.
+            if (userTokenSecurityPolicy.isPresent()) {
+              session.clearUserTokenReceiverEphemeralPublicKey();
+            }
+
+            return request;
           };
 
       try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
@@ -2469,17 +2544,20 @@ public class SessionFsmFactory {
                       asr.getResponseHeader().getServiceResult());
                   session.setServerNonce(asr.getServerNonce());
 
-                  // Adopt the single-use key the server rotated for the next reactivation; keep the
-                  // existing key when the server returned no fresh one.
-                  verifyActivateSessionEnhancedUserTokenKey(
+                  // OPC 10000-6 §6.8.2: store only a freshly rotated key returned by the Server;
+                  // never retain a consumed single-use key when the Server omits a replacement.
+                  Optional<ByteString> refreshedKey =
+                      verifyActivateSessionEnhancedUserTokenKey(
                           client.getStaticEncodingContext(),
                           endpoint,
                           asr,
-                          userTokenSecurityPolicy.orElse(null))
-                      .ifPresent(
-                          key ->
-                              session.setUserTokenReceiverEphemeralPublicKey(
-                                  key, userTokenSecurityPolicy.orElse(null)));
+                          userTokenSecurityPolicy.orElse(null));
+                  if (userTokenSecurityPolicy.isPresent() && refreshedKey.isPresent()) {
+                    session.setUserTokenReceiverEphemeralPublicKey(
+                        refreshedKey.get(), userTokenSecurityPolicy.get());
+                  } else {
+                    session.clearUserTokenReceiverEphemeralPublicKey();
+                  }
 
                   return completedFuture(session);
                 } catch (Exception ex) {
@@ -2490,14 +2568,6 @@ public class SessionFsmFactory {
       return failedFuture(ex);
     }
   }
-
-  private record PreNegotiatedKey(ByteString serverNonce, ByteString receiverEphemeralPublicKey) {}
-
-  private record ChangeIdentityResult(
-      StatusCode serviceResult,
-      ByteString serverNonce,
-      @Nullable ByteString receiverEphemeralPublicKey,
-      @Nullable SecurityPolicy receiverEphemeralPublicKeyPolicy) {}
 
   private static Optional<ByteString> resolveReceiverEphemeralPublicKey(
       OpcUaSession session, Optional<SecurityPolicy> userTokenSecurityPolicy) {
@@ -2516,7 +2586,7 @@ public class SessionFsmFactory {
                     : Optional.empty());
   }
 
-  private static CompletableFuture<ChangeIdentityResult> changeSessionIdentity(
+  private static void startChangeIdentity(
       FsmContext<State, Event> ctx,
       OpcUaClient client,
       OpcUaSession session,
@@ -2535,59 +2605,60 @@ public class SessionFsmFactory {
         // OPC 10000-6 §6.8.2: obtain a receiver EphemeralKey for the target enhanced policy via a
         // pre-negotiation ActivateSession under the current identity before encrypting the new
         // user identity token.
-        return preNegotiateEnhancedUserTokenKey(
-                ctx, client, session, endpoint, currentProvider, newEnhancedPolicy.get())
-            .thenCompose(
-                preNegotiated -> {
-                  if (!attempt.isActive()) {
-                    return failedFuture(
-                        new UaException(
-                            StatusCodes.Bad_InvalidState, "identity change was aborted"));
-                  }
-
-                  return sendChangeIdentityActivateSession(
-                      ctx,
-                      client,
-                      session,
-                      endpoint,
-                      newProvider,
-                      preNegotiated.serverNonce(),
-                      newEnhancedPolicy,
-                      Optional.of(preNegotiated.receiverEphemeralPublicKey()));
-                });
+        preNegotiateEnhancedUserTokenKey(
+            ctx, client, session, endpoint, currentProvider, attempt, newEnhancedPolicy.get());
+        return;
       }
 
       Optional<ByteString> existingKey =
           newEnhancedPolicy.flatMap(session::getUserTokenReceiverEphemeralPublicKey);
 
-      return sendChangeIdentityActivateSession(
+      sendChangeIdentityActivateSession(
           ctx,
           client,
           session,
           endpoint,
-          newProvider,
+          currentProvider,
+          attempt,
           session.getServerNonce(),
           newEnhancedPolicy,
           existingKey);
     } catch (Exception ex) {
-      return failedFuture(ex);
+      fireChangeIdentityFailure(ctx, session, attempt, ex, false);
     }
   }
 
-  private static CompletableFuture<PreNegotiatedKey> preNegotiateEnhancedUserTokenKey(
+  private static void preNegotiateEnhancedUserTokenKey(
       FsmContext<State, Event> ctx,
       OpcUaClient client,
       OpcUaSession session,
       EndpointDescription endpoint,
       IdentityProvider currentProvider,
+      SessionFsm.ChangeIdentityAttempt attempt,
       SecurityPolicy targetEnhancedPolicy) {
 
+    Optional<SecurityPolicy> currentEnhancedPolicy;
+    ActivateSessionRequest request;
     try {
       ByteString serverNonce = session.getServerNonce();
-      Optional<SecurityPolicy> currentEnhancedPolicy =
-          currentProvider.getEnhancedUserTokenSecurityPolicy(endpoint);
+      currentEnhancedPolicy = currentProvider.getEnhancedUserTokenSecurityPolicy(endpoint);
       Optional<ByteString> currentKey =
           resolveReceiverEphemeralPublicKey(session, currentEnhancedPolicy);
+
+      if (currentEnhancedPolicy.isPresent() && currentKey.isEmpty()) {
+        // The retained enhanced identity has no remaining single-use EphemeralKey on this Session,
+        // so neither pre-negotiation nor reactivation can succeed without establishing a fresh
+        // Session.
+        fireChangeIdentityFailure(
+            ctx,
+            session,
+            attempt,
+            new UaException(
+                StatusCodes.Bad_SecurityChecksFailed,
+                "missing receiver ephemeral public key for current enhanced user-token policy"),
+            true);
+        return;
+      }
 
       SignedIdentityToken signedIdentityToken =
           currentProvider.getIdentityToken(
@@ -2600,7 +2671,7 @@ public class SessionFsmFactory {
                   session.getServerCertificate(),
                   session.getClientNonce()));
 
-      ActivateSessionRequest request =
+      request =
           new ActivateSessionRequest(
               withAdditionalHeader(
                   client.newRequestHeader(session.getAuthenticationToken()),
@@ -2619,68 +2690,90 @@ public class SessionFsmFactory {
               signedIdentityToken.getSignature());
 
       // Discard the consumed single-use key before sending so a failure cannot leave a burned key
-      // cached on the session.
+      // cached on the Session.
       if (currentEnhancedPolicy.isPresent()) {
         session.clearUserTokenReceiverEphemeralPublicKey();
       }
-
-      try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
-          MDCCloseable ignoredSessionId = putSessionId(session)) {
-
-        LOGGER.debug(
-            "Sending pre-negotiation ActivateSessionRequest for enhanced user-token policy {}...",
-            targetEnhancedPolicy.getUri());
-      }
-
-      return client
-          .getTransport()
-          .sendRequestMessage(request)
-          .thenApply(ActivateSessionResponse.class::cast)
-          .thenCompose(
-              asr -> {
-                try {
-                  // The Server already consumed the prior nonce and issued a new one; update the
-                  // session immediately so subsequent requests and reactivations stay in sync even
-                  // if step 2 later fails or is aborted.
-                  ByteString nextServerNonce = asr.getServerNonce();
-                  session.setServerNonce(nextServerNonce);
-
-                  ByteString negotiatedKey =
-                      verifyActivateSessionEnhancedUserTokenKey(
-                              client.getStaticEncodingContext(),
-                              endpoint,
-                              asr,
-                              targetEnhancedPolicy)
-                          .orElseThrow(
-                              () ->
-                                  new UaException(
-                                      StatusCodes.Bad_SecurityChecksFailed,
-                                      "server did not return enhanced user-token key material"));
-
-                  session.setUserTokenReceiverEphemeralPublicKey(
-                      negotiatedKey, targetEnhancedPolicy);
-
-                  return completedFuture(new PreNegotiatedKey(nextServerNonce, negotiatedKey));
-                } catch (Exception ex) {
-                  return SessionFsmFactory.<PreNegotiatedKey>failedActivation(ex);
-                }
-              });
     } catch (Exception ex) {
-      return failedFuture(ex);
+      fireChangeIdentityFailure(ctx, session, attempt, ex, false);
+      return;
     }
+
+    try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+        MDCCloseable ignoredSessionId = putSessionId(session)) {
+
+      LOGGER.debug(
+          "Sending pre-negotiation ActivateSessionRequest for enhanced user-token policy {}...",
+          targetEnhancedPolicy.getUri());
+    }
+
+    final boolean burnedCurrentEnhancedKey = currentEnhancedPolicy.isPresent();
+
+    client
+        .getTransport()
+        .sendRequestMessage(request)
+        .thenApply(ActivateSessionResponse.class::cast)
+        .whenComplete(
+            (asr, ex) -> {
+              if (!attempt.isActive()) {
+                return;
+              }
+
+              if (ex != null) {
+                Throwable cause = unwrapCompletionException(ex);
+                boolean recoverSession =
+                    !isDefinitiveNonSessionServiceFault(cause) || burnedCurrentEnhancedKey;
+                fireChangeIdentityFailure(ctx, session, attempt, cause, recoverSession);
+                return;
+              }
+
+              try {
+                ByteString nextServerNonce = asr.getServerNonce();
+                ByteString negotiatedKey =
+                    verifyActivateSessionEnhancedUserTokenKey(
+                            client.getStaticEncodingContext(), endpoint, asr, targetEnhancedPolicy)
+                        .orElseThrow(
+                            () ->
+                                new UaException(
+                                    StatusCodes.Bad_SecurityChecksFailed,
+                                    "server did not return enhanced user-token key material"));
+
+                // Do not mutate session.serverNonce or receiverEphemeralPublicKey on the transport
+                // callback thread; commit them via the FSM actor while this attempt is active.
+                ctx.fireEvent(
+                    new Event.ChangeIdentityPreNegotiationSuccess(
+                        attempt,
+                        session,
+                        endpoint,
+                        currentProvider,
+                        nextServerNonce,
+                        targetEnhancedPolicy,
+                        negotiatedKey));
+              } catch (Exception verifyEx) {
+                // The Server already accepted step 1 and rotated serverNonce, so recover the
+                // Session rather than leaving it Active with a stale nonce or invalid key.
+                fireChangeIdentityFailure(ctx, session, attempt, verifyEx, true);
+              }
+            });
   }
 
-  private static CompletableFuture<ChangeIdentityResult> sendChangeIdentityActivateSession(
+  private static void sendChangeIdentityActivateSession(
       FsmContext<State, Event> ctx,
       OpcUaClient client,
       OpcUaSession session,
       EndpointDescription endpoint,
-      IdentityProvider newProvider,
+      IdentityProvider currentProvider,
+      SessionFsm.ChangeIdentityAttempt attempt,
       ByteString serverNonce,
       Optional<SecurityPolicy> newEnhancedPolicy,
       Optional<ByteString> receiverEphemeralPublicKey) {
 
+    Optional<SecurityPolicy> currentEnhancedPolicy;
+    ActivateSessionRequest request;
     try {
+      IdentityProvider newProvider = attempt.event.identityProvider;
+      currentEnhancedPolicy = currentProvider.getEnhancedUserTokenSecurityPolicy(endpoint);
+
       SignedIdentityToken signedIdentityToken =
           newProvider.getIdentityToken(
               buildIdentityProviderContext(
@@ -2692,7 +2785,7 @@ public class SessionFsmFactory {
                   session.getServerCertificate(),
                   session.getClientNonce()));
 
-      ActivateSessionRequest request =
+      request =
           new ActivateSessionRequest(
               withAdditionalHeader(
                   client.newRequestHeader(session.getAuthenticationToken()),
@@ -2712,52 +2805,120 @@ public class SessionFsmFactory {
 
       // Part 6 §6.8.2: once sent, the single-use EphemeralKey may be consumed by the Server even if
       // authentication fails. Clear it before sending so a refused change never reuses a burned
-      // key; on success the rotated key (or fallback) is committed atomically in the FSM
+      // key; on success only a freshly rotated key from the Server is committed in the FSM
       // transition.
       if (newEnhancedPolicy.isPresent()) {
         session.clearUserTokenReceiverEphemeralPublicKey();
       }
-
-      try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
-          MDCCloseable ignoredSessionId = putSessionId(session)) {
-
-        LOGGER.debug("Sending identity-change ActivateSessionRequest...");
-      }
-
-      return client
-          .getTransport()
-          .sendRequestMessage(request)
-          .thenApply(ActivateSessionResponse.class::cast)
-          .thenCompose(
-              asr -> {
-                try {
-                  Optional<ByteString> refreshedKey =
-                      verifyActivateSessionEnhancedUserTokenKey(
-                          client.getStaticEncodingContext(),
-                          endpoint,
-                          asr,
-                          newEnhancedPolicy.orElse(null));
-
-                  ByteString nextKey =
-                      newEnhancedPolicy.isPresent()
-                          ? refreshedKey.or(() -> receiverEphemeralPublicKey).orElse(null)
-                          : null;
-                  SecurityPolicy nextPolicy =
-                      nextKey != null ? newEnhancedPolicy.orElse(null) : null;
-
-                  return completedFuture(
-                      new ChangeIdentityResult(
-                          asr.getResponseHeader().getServiceResult(),
-                          asr.getServerNonce(),
-                          nextKey,
-                          nextPolicy));
-                } catch (Exception ex) {
-                  return SessionFsmFactory.<ChangeIdentityResult>failedActivation(ex);
-                }
-              });
     } catch (Exception ex) {
-      return failedFuture(ex);
+      fireChangeIdentityFailure(ctx, session, attempt, ex, false);
+      return;
     }
+
+    try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+        MDCCloseable ignoredSessionId = putSessionId(session)) {
+
+      LOGGER.debug("Sending identity-change ActivateSessionRequest...");
+    }
+
+    client
+        .getTransport()
+        .sendRequestMessage(request)
+        .thenApply(ActivateSessionResponse.class::cast)
+        .whenComplete(
+            (asr, ex) -> {
+              if (!attempt.isActive()) {
+                return;
+              }
+
+              if (ex != null) {
+                Throwable cause = unwrapCompletionException(ex);
+                boolean recoverSession;
+                if (!isDefinitiveNonSessionServiceFault(cause)) {
+                  // Ambiguous outcome (for example, a transport timeout after the Server may have
+                  // already switched identities) or a session-level fault: recover the Session
+                  // under the retained provider before exposing it as Active again.
+                  recoverSession = true;
+                } else {
+                  // Definitive refusal: the Server retained currentProvider. Recover to a fresh
+                  // Session only if currentProvider itself requires an enhanced EphemeralKey that
+                  // was just consumed, since this Session can no longer reactivate or
+                  // pre-negotiate under currentProvider.
+                  recoverSession =
+                      currentEnhancedPolicy.isPresent()
+                          && resolveReceiverEphemeralPublicKey(session, currentEnhancedPolicy)
+                              .isEmpty();
+                }
+
+                fireChangeIdentityFailure(ctx, session, attempt, cause, recoverSession);
+                return;
+              }
+
+              try {
+                Optional<ByteString> refreshedKey =
+                    verifyActivateSessionEnhancedUserTokenKey(
+                        client.getStaticEncodingContext(),
+                        endpoint,
+                        asr,
+                        newEnhancedPolicy.orElse(null));
+
+                // OPC 10000-6 §6.8.2: never restore the consumed single-use key when the Server
+                // omits a replacement.
+                ByteString nextKey =
+                    newEnhancedPolicy.isPresent() ? refreshedKey.orElse(null) : null;
+                SecurityPolicy nextPolicy = nextKey != null ? newEnhancedPolicy.orElse(null) : null;
+
+                try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                    MDCCloseable ignoredSessionId = putSessionId(session)) {
+
+                  LOGGER.debug("Session identity changed: {}", session);
+                }
+
+                ctx.fireEvent(
+                    new Event.ChangeIdentitySuccess(
+                        attempt,
+                        session,
+                        asr.getResponseHeader().getServiceResult(),
+                        asr.getServerNonce(),
+                        nextKey,
+                        nextPolicy));
+              } catch (Exception verifyEx) {
+                // The Server already accepted the identity change and rotated serverNonce, but
+                // local response verification failed. Recover under the retained previous provider
+                // so subsequent calls cannot run under the new identity.
+                fireChangeIdentityFailure(ctx, session, attempt, verifyEx, true);
+              }
+            });
+  }
+
+  private static boolean isDefinitiveNonSessionServiceFault(Throwable failure) {
+    return UaException.extract(failure)
+        .map(ex -> ex instanceof UaServiceFaultException && !SESSION_ERROR.test(ex.getStatusCode()))
+        .orElse(false);
+  }
+
+  private static void fireChangeIdentityFailure(
+      FsmContext<State, Event> ctx,
+      OpcUaSession session,
+      SessionFsm.ChangeIdentityAttempt attempt,
+      Throwable failure,
+      boolean recoverSession) {
+
+    if (!attempt.isActive()) {
+      return;
+    }
+
+    try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+        MDCCloseable ignoredSessionId = putSessionId(session)) {
+
+      LOGGER.debug(
+          "ChangeIdentity failed (recoverSession={}): {}",
+          recoverSession,
+          failure.getMessage(),
+          failure);
+    }
+
+    ctx.fireEvent(new Event.ChangeIdentityFailure(attempt, failure, recoverSession));
   }
 
   /**

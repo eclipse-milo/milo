@@ -17,6 +17,7 @@ import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionResponse;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
 import org.jspecify.annotations.Nullable;
 
@@ -256,6 +257,38 @@ interface Event {
     }
   }
 
+  class ChangeIdentityPreNegotiationSuccess implements Event {
+    final SessionFsm.ChangeIdentityAttempt attempt;
+    final OpcUaSession session;
+    final EndpointDescription endpoint;
+    final IdentityProvider currentProvider;
+    final ByteString serverNonce;
+    final SecurityPolicy targetEnhancedPolicy;
+    final ByteString receiverEphemeralPublicKey;
+
+    ChangeIdentityPreNegotiationSuccess(
+        SessionFsm.ChangeIdentityAttempt attempt,
+        OpcUaSession session,
+        EndpointDescription endpoint,
+        IdentityProvider currentProvider,
+        ByteString serverNonce,
+        SecurityPolicy targetEnhancedPolicy,
+        ByteString receiverEphemeralPublicKey) {
+      this.attempt = attempt;
+      this.session = session;
+      this.endpoint = endpoint;
+      this.currentProvider = currentProvider;
+      this.serverNonce = serverNonce;
+      this.targetEnhancedPolicy = targetEnhancedPolicy;
+      this.receiverEphemeralPublicKey = receiverEphemeralPublicKey;
+    }
+
+    @Override
+    public String toString() {
+      return getClass().getSimpleName();
+    }
+  }
+
   class ChangeIdentitySuccess implements Event {
     final SessionFsm.ChangeIdentityAttempt attempt;
     final OpcUaSession session;
@@ -288,10 +321,13 @@ interface Event {
   class ChangeIdentityFailure implements Event {
     final SessionFsm.ChangeIdentityAttempt attempt;
     final Throwable failure;
+    final boolean recoverSession;
 
-    ChangeIdentityFailure(SessionFsm.ChangeIdentityAttempt attempt, Throwable failure) {
+    ChangeIdentityFailure(
+        SessionFsm.ChangeIdentityAttempt attempt, Throwable failure, boolean recoverSession) {
       this.attempt = attempt;
       this.failure = failure;
+      this.recoverSession = recoverSession;
     }
 
     @Override

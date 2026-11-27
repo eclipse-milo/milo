@@ -14,11 +14,13 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
@@ -37,11 +39,14 @@ import org.eclipse.milo.opcua.sdk.client.SessionActivityListener;
 import org.eclipse.milo.opcua.sdk.client.UaSession;
 import org.eclipse.milo.opcua.sdk.client.identity.AnonymousProvider;
 import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
+import org.eclipse.milo.opcua.sdk.client.identity.IdentityProviderContext;
+import org.eclipse.milo.opcua.sdk.client.identity.SignedIdentityToken;
 import org.eclipse.milo.opcua.sdk.client.identity.UsernameProvider;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaServiceFaultException;
+import org.eclipse.milo.opcua.stack.core.security.EnhancedUserTokenAdditionalHeader;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.UaRequestMessageType;
 import org.eclipse.milo.opcua.stack.core.types.UaResponseMessageType;
@@ -49,6 +54,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DiagnosticInfo;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
@@ -65,6 +71,7 @@ import org.eclipse.milo.opcua.stack.core.types.structured.CloseSessionResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.EphemeralKeyType;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadRequest;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReadResponse;
 import org.eclipse.milo.opcua.stack.core.types.structured.ResponseHeader;
@@ -517,6 +524,197 @@ class SessionFsmChangeIdentityTest {
         client.disconnectAsync().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
       }
     }
+
+    // If an identity-change ActivateSession fails ambiguously (e.g. Bad_Timeout without a
+    // ServiceFault), the Server may have already switched the Session to the new user. The FSM
+    // must NOT return straight to Active with the old provider; it must fire onSessionInactive,
+    // abandon the ambiguous Session, and create a fresh Session under the retained previous
+    // identity.
+    @Test
+    void ambiguousTimeoutDuringChangingIdentityRecoversFreshSessionUnderRetainedProvider()
+        throws Exception {
+      var transport = new ScriptedTransport();
+      OpcUaClient client = newClient(transport, AnonymousProvider.INSTANCE);
+      var listener = new RecordingActivityListener();
+      client.addSessionActivityListener(listener);
+
+      try {
+        OpcUaSession original = connectToActive(client, transport);
+        assertTrue(listener.awaitActiveCount(1, TIMEOUT_SECONDS));
+
+        transport.parkNextActivateSession();
+        CompletableFuture<OpcUaSession> changeFuture =
+            client.changeIdentityAsync(new UsernameProvider("user1", "password"));
+        PendingRequest changeReq = transport.awaitRequest(ActivateSessionRequest.class);
+        awaitState(client, State.ChangingIdentity);
+
+        transport.recordedActivateRequests.clear();
+        changeReq.fail(new UaException(StatusCodes.Bad_Timeout, "request timed out"));
+
+        assertFailedWithStatus(changeFuture, StatusCodes.Bad_Timeout);
+        assertTrue(
+            listener.awaitInactiveCount(1, TIMEOUT_SECONDS),
+            "ambiguous failure must leave Active/ChangingIdentity and fire onSessionInactive");
+        assertTrue(
+            listener.awaitActiveCount(2, TIMEOUT_SECONDS),
+            "FSM must recover to a fresh Active Session under the retained provider");
+        awaitState(client, State.Active);
+
+        OpcUaSession recovered = client.getSessionAsync().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertNotEquals(
+            original.getSessionId(),
+            recovered.getSessionId(),
+            "ambiguous Session must be abandoned in favor of a fresh Session");
+        assertEquals(1, transport.recordedActivateRequests.size());
+        UserIdentityToken recoveredToken =
+            (UserIdentityToken)
+                transport
+                    .recordedActivateRequests
+                    .get(0)
+                    .getUserIdentityToken()
+                    .decode(client.getStaticEncodingContext());
+        assertEquals(
+            "anonymous",
+            recoveredToken.getPolicyId(),
+            "recovered Session must authenticate with the retained previous provider");
+        assertEquals(0, listener.identityChangedCount.get());
+      } finally {
+        transport.releaseAll();
+        client.disconnectAsync().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      }
+    }
+
+    // Step 1 pre-negotiation must commit its rotated serverNonce and negotiated EphemeralKey on
+    // the FSM actor while the attempt is still active; a delayed step-1 response arriving after an
+    // abort and reactivation must not overwrite the recovered Session's nonce or key.
+    @Test
+    void lateStep1PreNegotiationResponseAfterAbortDoesNotOverwriteRecoveredSessionState()
+        throws Exception {
+      var transport = new ScriptedTransport();
+      OpcUaClient client = newClient(transport, AnonymousProvider.INSTANCE);
+      var listener = new RecordingActivityListener();
+      client.addSessionActivityListener(listener);
+
+      try {
+        OpcUaSession session = connectToActive(client, transport);
+        assertTrue(listener.awaitActiveCount(1, TIMEOUT_SECONDS));
+
+        IdentityProvider stubEnhanced =
+            stubEnhancedProvider(SecurityPolicy.ECC_nistP256_AesGcm, "username");
+
+        // Park step-1 pre-negotiation ActivateSession.
+        transport.parkNextActivateSession();
+        CompletableFuture<OpcUaSession> changeFuture = client.changeIdentityAsync(stubEnhanced);
+        PendingRequest step1Req = transport.awaitRequest(ActivateSessionRequest.class);
+        awaitState(client, State.ChangingIdentity);
+
+        // Abort ChangingIdentity via ConnectionLost and let Reactivating complete on the same
+        // OpcUaSession with a fresh nonce.
+        ByteString recoveredNonce = ByteString.of(new byte[] {7, 7, 7, 7});
+        transport.nextActivateNonce = recoveredNonce;
+        transport.fireConnectionLost();
+
+        assertFailedWithStatus(changeFuture, StatusCodes.Bad_ConnectionClosed);
+        assertTrue(listener.awaitActiveCount(2, TIMEOUT_SECONDS));
+        awaitState(client, State.Active);
+        assertEquals(recoveredNonce, session.getServerNonce());
+        assertTrue(session.getUserTokenReceiverEphemeralPublicKey().isEmpty());
+
+        // Now deliver step 1's delayed response carrying a stale nonce and an EphemeralKey.
+        ByteString staleStep1Nonce = ByteString.of(new byte[] {9, 9, 9, 9});
+        ExtensionObject additionalHeader =
+            EnhancedUserTokenAdditionalHeader.createResponse(
+                client.getStaticEncodingContext(),
+                SecurityPolicy.ECC_nistP256_AesGcm,
+                new EphemeralKeyType(
+                    ByteString.of(new byte[] {1, 2, 3, 4}), ByteString.NULL_VALUE));
+        step1Req.complete(
+            new ActivateSessionResponse(
+                new ResponseHeader(
+                    DateTime.now(),
+                    uint(0),
+                    StatusCode.GOOD,
+                    DiagnosticInfo.NULL_VALUE,
+                    new String[0],
+                    additionalHeader),
+                staleStep1Nonce,
+                new StatusCode[0],
+                new DiagnosticInfo[0]));
+
+        // Drive a synchronous FSM event (getSession) to ensure any queued events have drained.
+        assertSame(session, client.getSessionAsync().get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+        assertEquals(
+            recoveredNonce,
+            session.getServerNonce(),
+            "late step-1 response must not overwrite the recovered Session's serverNonce");
+        assertTrue(
+            session.getUserTokenReceiverEphemeralPublicKey().isEmpty(),
+            "late step-1 response must not overwrite the recovered Session's EphemeralKey");
+      } finally {
+        transport.releaseAll();
+        client.disconnectAsync().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      }
+    }
+
+    // OPC 10000-6 §6.8.2: EphemeralKeys are single-use. If a Server omits a replacement key in
+    // ActivateSessionResponse after an enhanced identity change, the client must leave the cache
+    // empty rather than re-caching the consumed key.
+    @Test
+    void successfulEnhancedChangeWithoutReplacementKeyDoesNotRecacheConsumedKey() throws Exception {
+      var transport = new ScriptedTransport();
+      OpcUaClient client = newClient(transport, AnonymousProvider.INSTANCE);
+      var listener = new RecordingActivityListener();
+      client.addSessionActivityListener(listener);
+
+      try {
+        OpcUaSession session = connectToActive(client, transport);
+        assertTrue(listener.awaitActiveCount(1, TIMEOUT_SECONDS));
+
+        SecurityPolicy enhancedPolicy = SecurityPolicy.ECC_nistP256_AesGcm;
+        ByteString consumedKey = ByteString.of(new byte[] {4, 5, 6, 7});
+        session.setUserTokenReceiverEphemeralPublicKey(consumedKey, enhancedPolicy);
+
+        // ScriptedTransport returns ActivateSessionResponse with null AdditionalHeader (no
+        // replacement key).
+        IdentityProvider stubEnhanced = stubEnhancedProvider(enhancedPolicy, "username");
+        OpcUaSession updated =
+            client.changeIdentityAsync(stubEnhanced).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+        assertSame(session, updated);
+        assertTrue(
+            updated.getUserTokenReceiverEphemeralPublicKey().isEmpty(),
+            "consumed single-use EphemeralKey must not be re-cached when response omits a"
+                + " replacement");
+      } finally {
+        transport.releaseAll();
+        client.disconnectAsync().get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      }
+    }
+  }
+
+  private static IdentityProvider stubEnhancedProvider(SecurityPolicy policy, String policyId) {
+    return new IdentityProvider() {
+      @Override
+      public Optional<SecurityPolicy> getEnhancedUserTokenSecurityPolicy(
+          EndpointDescription endpoint) {
+        return Optional.of(policy);
+      }
+
+      @Override
+      public SignedIdentityToken getIdentityToken(
+          EndpointDescription endpoint, ByteString serverNonce) {
+        return new SignedIdentityToken(
+            new UserNameIdentityToken(policyId, "user", ByteString.NULL_VALUE, null),
+            new SignatureData(null, null));
+      }
+
+      @Override
+      public SignedIdentityToken getIdentityToken(IdentityProviderContext context) {
+        return new SignedIdentityToken(
+            new UserNameIdentityToken(policyId, "user", ByteString.NULL_VALUE, null),
+            new SignatureData(null, null));
+      }
+    };
   }
 
   // region Helpers
@@ -679,6 +877,8 @@ class SessionFsmChangeIdentityTest {
     final List<UaRequestMessageType> sentRequests = new CopyOnWriteArrayList<>();
     final List<ActivateSessionRequest> recordedActivateRequests = new CopyOnWriteArrayList<>();
     final AtomicInteger removeTransitionListenerCalls = new AtomicInteger();
+    private final AtomicInteger createdSessions = new AtomicInteger();
+    volatile ByteString nextActivateNonce = ByteString.of(new byte[32]);
     private volatile ChannelState channelState = ChannelState.DISCONNECTED;
 
     void parkNextCreateSession() {
@@ -751,7 +951,7 @@ class SessionFsmChangeIdentityTest {
         return CompletableFuture.completedFuture(
             new CreateSessionResponse(
                 goodHeader(),
-                new NodeId(1, "session-1"),
+                new NodeId(1, "session-" + createdSessions.incrementAndGet()),
                 new NodeId(0, ByteString.of(new byte[] {1, 2, 3, 4})),
                 60_000.0,
                 ByteString.of(new byte[32]),
@@ -768,7 +968,7 @@ class SessionFsmChangeIdentityTest {
           return park(requestMessage);
         }
         return CompletableFuture.completedFuture(
-            activateResponse(StatusCode.GOOD, ByteString.of(new byte[32])));
+            activateResponse(StatusCode.GOOD, nextActivateNonce));
       }
 
       if (requestMessage instanceof CloseSessionRequest) {

@@ -627,6 +627,7 @@ class ChangeIdentityIntegrationTest {
             createEnhancedClient(running, policy, AnonymousProvider.INSTANCE, clientGroup);
 
         var activeLatch = new CountDownLatch(2);
+        var identityChangedLatch = new CountDownLatch(1);
         var identityChangedCount = new AtomicInteger();
         client.addSessionActivityListener(
             new SessionActivityListener() {
@@ -638,6 +639,7 @@ class ChangeIdentityIntegrationTest {
               @Override
               public void onSessionIdentityChanged(UaSession session) {
                 identityChangedCount.incrementAndGet();
+                identityChangedLatch.countDown();
               }
             });
 
@@ -654,6 +656,9 @@ class ChangeIdentityIntegrationTest {
               3,
               capturedActivations.size(),
               "expected 1 initial + 2 (pre-negotiate + change) ActivateSession requests");
+          assertTrue(
+              identityChangedLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS),
+              "two-step E1 change must fire onSessionIdentityChanged");
           assertEquals(
               1,
               identityChangedCount.get(),
@@ -717,6 +722,87 @@ class ChangeIdentityIntegrationTest {
           // serverNonce and succeed on the same Session.
           OpcUaSession updated = client.changeIdentity(new UsernameProvider("user1", "password"));
           assertEquals(sessionId, updated.getSessionId());
+        } finally {
+          disconnectQuietly(client);
+        }
+      }
+    }
+
+    // Starting from an enhanced username and submitting wrong credentials on the same policy burns
+    // the single-use EphemeralKey on the server. Because the retained enhanced username cannot
+    // pre-negotiate or reactivate without a key, the client must recover to a fresh Session under
+    // the retained user so both a subsequent retry and later channel drops succeed.
+    @Test
+    void failedEnhancedChangeFromEnhancedUsernameRecoversSessionForRetryAndReconnect()
+        throws Exception {
+      SecurityPolicy policy = SecurityPolicy.ECC_nistP256_AesGcm;
+      NodeId certificateTypeId = NodeIds.EccNistP256ApplicationCertificateType;
+
+      try (RunningEnhancedServer running =
+          startEnhancedServer(
+              policy,
+              certificateTypeId,
+              List.of(usernamePolicy("username-ecc", policy)),
+              server -> {})) {
+
+        CertificateGroup clientGroup =
+            certificateGroup(certificate(certificateTypeId, "client", CLIENT_URI));
+        OpcUaClient client =
+            createEnhancedClient(
+                running, policy, new UsernameProvider("user1", "password"), clientGroup);
+
+        var recoveredActiveLatch = new CountDownLatch(2);
+        var reconnectedActiveLatch = new CountDownLatch(3);
+        client.addSessionActivityListener(
+            new SessionActivityListener() {
+              @Override
+              public void onSessionActive(UaSession session) {
+                recoveredActiveLatch.countDown();
+                reconnectedActiveLatch.countDown();
+              }
+            });
+
+        try {
+          client.connect();
+          NodeId originalSessionId = client.getSession().getSessionId();
+
+          // Wrong password burns the EphemeralKey for the enhanced username Session.
+          UaException failed =
+              assertThrows(
+                  UaException.class,
+                  () -> client.changeIdentity(new UsernameProvider("user2", "wrong-password")));
+          assertEquals(StatusCodes.Bad_IdentityTokenInvalid, failed.getStatusCode().value());
+
+          // The FSM recovers to a fresh Session under retained user1 with a fresh EphemeralKey.
+          assertTrue(
+              recoveredActiveLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS),
+              "client should recover to a fresh Session under retained enhanced user1");
+          OpcUaSession recovered = client.getSession();
+          assertNotEquals(
+              originalSessionId,
+              recovered.getSessionId(),
+              "keyless enhanced Session should be replaced with a fresh Session");
+
+          Session serverRecovered =
+              running.server().getSessionManager().getAllSessions().stream()
+                  .filter(s -> s.getSessionId().equals(recovered.getSessionId()))
+                  .findFirst()
+                  .orElseThrow();
+          assertEquals("user1", serverRecovered.getClientUserId());
+
+          // Channel drop on the recovered Session must reactivate cleanly (not loop on missing
+          // key).
+          closeActiveTcpChannel(client);
+          assertTrue(
+              reconnectedActiveLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS),
+              "recovered enhanced Session must reactivate cleanly after channel drop");
+          assertEquals(recovered.getSessionId(), client.getSession().getSessionId());
+
+          // Retrying the identity change with valid credentials must now succeed on the recovered
+          // Session.
+          OpcUaSession changed = client.changeIdentity(new UsernameProvider("user2", "password"));
+          assertEquals(recovered.getSessionId(), changed.getSessionId());
+          assertEquals("user2", serverRecovered.getClientUserId());
         } finally {
           disconnectQuietly(client);
         }
