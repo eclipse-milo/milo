@@ -23,6 +23,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.IdType;
 import org.eclipse.milo.opcua.stack.core.util.Namespaces;
+import org.eclipse.milo.opcua.stack.core.util.UriUtil;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -439,7 +440,8 @@ public record ExpandedNodeId(
   }
 
   /**
-   * Convert this {@link ExpandedNodeId} to its parseable String representation.
+   * Convert this {@link ExpandedNodeId} to its parseable String representation per OPC 10000-6
+   * §5.1.12, percent-encoding {@code svu=} and {@code nsu=} URIs.
    *
    * @return the parseable String representation of this {@link ExpandedNodeId}.
    */
@@ -451,7 +453,7 @@ public record ExpandedNodeId(
         sb.append("svr=").append(index.serverIndex).append(";");
       }
     } else if (server instanceof ServerReference.ServerUri uri) {
-      sb.append("svu=").append(uri.serverUri).append(";");
+      sb.append("svu=").append(UriUtil.escape(uri.serverUri)).append(";");
     }
 
     if (namespace instanceof NamespaceIndex index) {
@@ -460,7 +462,7 @@ public record ExpandedNodeId(
       }
     } else if (namespace instanceof NamespaceReference.NamespaceUri uri) {
       if (!uri.namespaceUri.equals(Namespaces.OPC_UA)) {
-        sb.append("nsu=").append(uri.namespaceUri).append(";");
+        sb.append("nsu=").append(UriUtil.escape(uri.namespaceUri)).append(";");
       }
     }
 
@@ -488,11 +490,13 @@ public record ExpandedNodeId(
   }
 
   /**
-   * Parse a String representation of an {@link ExpandedNodeId} into an {@link ExpandedNodeId}.
+   * Parse a String representation of an {@link ExpandedNodeId} into an {@link ExpandedNodeId} per
+   * OPC 10000-6 §5.1.12, percent-decoding {@code svu=} and {@code nsu=} URIs.
    *
    * @param s the String representation of an {@link ExpandedNodeId}.
    * @return the parsed {@link ExpandedNodeId}.
-   * @throws UaRuntimeException if the String representation is invalid.
+   * @throws UaRuntimeException if the String representation is invalid or contains a malformed
+   *     percent-escape in a URI component.
    */
   public static ExpandedNodeId parse(String s) throws UaRuntimeException {
     try {
@@ -506,7 +510,7 @@ public record ExpandedNodeId(
         s = s.substring(endIndex + 1);
       } else if (s.startsWith("svu=")) {
         int endIndex = s.indexOf(";");
-        String serverUri = s.substring(4, endIndex);
+        String serverUri = UriUtil.unescape(s.substring(4, endIndex));
         server = ServerReference.of(serverUri);
 
         s = s.substring(endIndex + 1);
@@ -522,7 +526,7 @@ public record ExpandedNodeId(
         s = s.substring(endIndex + 1);
       } else if (s.startsWith("nsu=")) {
         int endIndex = s.indexOf(";");
-        String namespaceUri = s.substring(4, endIndex);
+        String namespaceUri = UriUtil.unescape(s.substring(4, endIndex));
         namespace = NamespaceReference.of(namespaceUri);
 
         s = s.substring(endIndex + 1);

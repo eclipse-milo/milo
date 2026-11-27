@@ -508,12 +508,21 @@ public class OpcUaXmlEncoder implements UaEncoder, AutoCloseable {
   public void encodeExpandedNodeId(String field, ExpandedNodeId value)
       throws UaSerializationException {
 
+    String identifier = null;
+    if (value != null) {
+      try {
+        identifier = value.toParseableString();
+      } catch (IllegalArgumentException e) {
+        throw new UaSerializationException(StatusCodes.Bad_EncodingError, e);
+      }
+    }
+
     //noinspection DuplicatedCode
     if (beginField(field, value == null, true)) {
       namespaceStack.push(Namespaces.OPC_UA_XSD);
       try {
-        if (value != null) {
-          encodeString("Identifier", value.toParseableString());
+        if (identifier != null) {
+          encodeString("Identifier", identifier);
         }
       } finally {
         namespaceStack.pop();

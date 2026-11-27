@@ -11,19 +11,28 @@
 package org.eclipse.milo.opcua.stack.core.encoding.xml;
 
 import static org.eclipse.milo.opcua.stack.core.encoding.xml.OpcUaXmlEncoderTest.maybePrintXml;
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.UUID;
+import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DefaultEncodingContext;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
 import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.*;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.NamespaceReference;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId.ServerReference;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
 import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.xmlunit.builder.DiffBuilder;
@@ -378,6 +387,34 @@ public class OpcUaXmlEncoderScalarTest {
       maybePrintXml(diff, expected, actual);
 
       assertFalse(diff.hasDifferences(), diff.toString());
+    }
+  }
+
+  @Test
+  void encodeExpandedNodeIdRejectsUnpairedSurrogateInNamespaceUri() throws Exception {
+    ExpandedNodeId nodeId = ExpandedNodeId.of("urn:\uD800", uint(1));
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      UaSerializationException e =
+          assertThrows(
+              UaSerializationException.class, () -> encoder.encodeExpandedNodeId("Test", nodeId));
+
+      assertEquals(StatusCodes.Bad_EncodingError, e.getStatusCode().value());
+      assertInstanceOf(IllegalArgumentException.class, e.getCause());
+    }
+  }
+
+  @Test
+  void encodeExpandedNodeIdRejectsUnpairedSurrogateInServerUri() throws Exception {
+    var nodeId =
+        new ExpandedNodeId(
+            ServerReference.of("urn:\uDC00"), NamespaceReference.of("urn:ns"), uint(1));
+    try (var encoder = new OpcUaXmlEncoder(context)) {
+      UaSerializationException e =
+          assertThrows(
+              UaSerializationException.class, () -> encoder.encodeExpandedNodeId("Test", nodeId));
+
+      assertEquals(StatusCodes.Bad_EncodingError, e.getStatusCode().value());
+      assertInstanceOf(IllegalArgumentException.class, e.getCause());
     }
   }
 

@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import org.eclipse.milo.opcua.stack.core.OpcUaDataType;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
 import org.eclipse.milo.opcua.stack.core.UaSerializationException;
 import org.eclipse.milo.opcua.stack.core.encoding.DataTypeCodec;
 import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
@@ -58,6 +59,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.ULong;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UShort;
+import org.eclipse.milo.opcua.stack.core.util.UriUtil;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -644,7 +646,12 @@ public class OpcUaJsonDecoder implements UaDecoder {
       }
 
       return ExpandedNodeId.parse(jsonReader.nextString());
-    } catch (IOException | IllegalStateException | IllegalArgumentException e) {
+    } catch (UaSerializationException e) {
+      throw e;
+    } catch (IOException
+        | IllegalStateException
+        | IllegalArgumentException
+        | UaRuntimeException e) {
       throw new UaSerializationException(StatusCodes.Bad_DecodingError, e);
     }
   }
@@ -730,7 +737,7 @@ public class OpcUaJsonDecoder implements UaDecoder {
               StatusCodes.Bad_DecodingError,
               "readQualifiedName: malformed 'nsu=' value (missing ';'): " + s);
         }
-        String uri = s.substring(4, sep);
+        String uri = UriUtil.unescape(s.substring(4, sep));
         String name = s.substring(sep + 1);
         UShort index = context.getNamespaceTable().getIndex(uri);
 
