@@ -14,10 +14,11 @@ package org.eclipse.milo.opcua.sdk.server.diagnostics;
 public enum SessionSecurityDiagnosticsAccessMode {
 
   /**
-   * Derive access from the standard diagnostics nodes' RolePermissions. Session security
-   * diagnostics are readable only by SecurityAdmin or an explicitly configured equivalent role,
-   * while diagnostics may be enabled or disabled only by ConfigureAdmin, SecurityAdmin, or an
-   * explicitly configured equivalent role.
+   * Restrict access using the default diagnostics role policies, or explicit {@code
+   * RolePermissions} configured on the diagnostics nodes. By default, Session security diagnostics
+   * are readable only by SecurityAdmin, and diagnostics may be enabled or disabled only by
+   * ConfigureAdmin or SecurityAdmin. Applications may override these policies by setting {@code
+   * RolePermissions} on the standard diagnostics nodes.
    */
   RESTRICTED,
 

@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,13 +26,22 @@ import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.WriteMask;
 import org.eclipse.milo.opcua.sdk.server.AddressSpace;
+import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilter;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
+import org.eclipse.milo.opcua.stack.core.UaSerializationException;
+import org.eclipse.milo.opcua.stack.core.encoding.EncodingContext;
+import org.eclipse.milo.opcua.stack.core.types.UaStructuredType;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
@@ -66,6 +75,7 @@ public class DefaultAccessController implements AccessController {
       List.of(
           AttributeId.NodeClass,
           AttributeId.AccessRestrictions,
+          AttributeId.WriteMask,
           AttributeId.UserWriteMask,
           AttributeId.AccessLevel,
           AttributeId.UserAccessLevel,
@@ -130,17 +140,16 @@ public class DefaultAccessController implements AccessController {
 
   static Map<ReadValueId, AccessResult> checkReadAccess(
       AccessControlContext context, List<ReadValueId> readValueIds) {
+
     // Every Read and every sampling cycle on the default policy runs this check, so it uses loops
     // rather than building a Stream pipeline per step.
     var pending = new ArrayList<PendingResult<ReadValueId>>(readValueIds.size());
-    var nodeIds = new ArrayList<NodeId>(readValueIds.size());
     for (ReadValueId readValueId : readValueIds) {
       pending.add(new PendingResult<>(readValueId));
-      nodeIds.add(readValueId.getNodeId());
     }
 
     Map<NodeId, AccessControlAttributes> attributes =
-        context.readAccessControlAttributes(nodeIds, readAccessAttributes(readValueIds));
+        context.readAccessControlAttributes(readAccessAttributesByNode(readValueIds));
 
     for (PendingResult<ReadValueId> p : pending) {
       if (!AttributeId.isValid(p.value.getAttributeId())) {
@@ -161,27 +170,65 @@ public class DefaultAccessController implements AccessController {
       UInteger attributeId = p.value.getAttributeId();
 
       if (AttributeId.Value.uid().equals(attributeId)) {
-        UByte accessLevel = attributes.get(nodeId).accessLevel();
-        UByte userAccessLevel = attributes.get(nodeId).userAccessLevel();
+        AccessControlAttributes nodeAttributes = attributes.get(nodeId);
+        UByte accessLevel = nodeAttributes.accessLevel();
+        UByte userAccessLevel = nodeAttributes.userAccessLevel();
 
-        if (accessLevel != null
+        if (hasFailedVariableAccessLevelLookup(
+            nodeAttributes, nodeAttributes.accessLevelStatus())) {
+          p.result = failedLookupAccessResult(nodeAttributes.accessLevelStatus());
+        } else if (accessLevel != null
             && !AccessLevel.fromValue(accessLevel).contains(AccessLevel.CurrentRead)) {
           p.result = AccessResult.DENIED_NOT_READABLE;
+        } else if (hasFailedVariableAccessLevelLookup(
+            nodeAttributes, nodeAttributes.userAccessLevelStatus())) {
+          p.result = failedLookupAccessResult(nodeAttributes.userAccessLevelStatus());
         } else if (userAccessLevel != null
             && !AccessLevel.fromValue(userAccessLevel).contains(AccessLevel.CurrentRead)) {
           p.result = AccessResult.DENIED_USER_ACCESS;
         }
       } else if (AttributeId.RolePermissions.uid().equals(attributeId)) {
-        List<NodeId> roleIds = context.getRoleIds().orElse(null);
+        AccessControlAttributes nodeAttributes = attributes.get(nodeId);
 
-        RolePermissionType[] userRolePermissions = attributes.get(nodeId).userRolePermissions();
+        if (hasFailedUserRolePermissionsLookup(nodeAttributes)) {
+          p.result = failedUserRolePermissionsAccessResult(nodeAttributes);
+        } else {
+          List<NodeId> roleIds = context.getRoleIds().orElse(null);
 
-        if (roleIds != null && userRolePermissions != null) {
-          boolean hasAccess =
-              hasPermission(roleIds, userRolePermissions, PermissionType::getReadRolePermissions);
+          // Enforce ReadRolePermissions against publicly exposed UserRolePermissions. When a node
+          // omits RolePermissions and UserRolePermissions (Bad_AttributeIdInvalid), Read normally
+          // reaches AttributeReader to answer Bad_AttributeIdInvalid, unless
+          // WriteMask.RolePermissions is set (OPC 10000-3 §5.2.9 exposes an empty array, so any
+          // fallback policy must still gate ReadRolePermissions). When no RoleMapper is configured,
+          // nodes governed by a FallbackUserRolePermissionsFilter still enforce ReadRolePermissions
+          // against the implicit Anonymous role (OPC 10000-3 §4.9.1, §5.2.9).
+          RolePermissionType[] effectivePermissions = nodeAttributes.userRolePermissions();
+          boolean hasFallbackPolicy = false;
 
-          if (!hasAccess) {
-            p.result = AccessResult.DENIED_USER_ACCESS;
+          if (effectivePermissions == null) {
+            if (hasFailedWriteMaskLookup(nodeAttributes)) {
+              p.result = failedLookupAccessResult(nodeAttributes.writeMaskStatus());
+              continue;
+            } else if (isRolePermissionsWritable(nodeAttributes)) {
+              effectivePermissions = context.getFallbackUserRolePermissions(nodeId);
+              hasFallbackPolicy = effectivePermissions != null;
+            }
+          }
+
+          if (effectivePermissions != null
+              && (roleIds != null
+                  || hasFallbackPolicy
+                  || context.hasFallbackUserRolePermissionsFilter(nodeId)
+                  || context.getFallbackUserRolePermissions(nodeId) != null)) {
+            boolean hasAccess =
+                hasPermission(
+                    roleIds != null ? roleIds : List.of(),
+                    effectivePermissions,
+                    PermissionType::getReadRolePermissions);
+
+            if (!hasAccess) {
+              p.result = AccessResult.DENIED_USER_ACCESS;
+            }
           }
         }
       }
@@ -198,26 +245,34 @@ public class DefaultAccessController implements AccessController {
   }
 
   /**
-   * The attributes a read check of {@code readValueIds} decides from: AccessRestrictions always,
-   * AccessLevel and UserAccessLevel for a Value read, and UserRolePermissions for a RolePermissions
-   * read. A read check runs for every sampling cycle on the default policy, so it reads nothing
-   * more.
+   * The attributes a read check decides from for each distinct Node in {@code readValueIds}:
+   * AccessRestrictions always, AccessLevel and UserAccessLevel only for Nodes whose Value is being
+   * read, and WriteMask and UserRolePermissions only for Nodes whose RolePermissions is being read.
+   * Requesting per-Node attributes avoids reading UserRolePermissions on unrelated Nodes in mixed
+   * batches.
    */
-  private static Set<AttributeId> readAccessAttributes(List<ReadValueId> readValueIds) {
-    Set<AttributeId> attributeIds = EnumSet.of(AttributeId.AccessRestrictions);
+  private static Map<NodeId, Set<AttributeId>> readAccessAttributesByNode(
+      List<ReadValueId> readValueIds) {
+
+    var attributesByNode = new LinkedHashMap<NodeId, Set<AttributeId>>(readValueIds.size());
 
     for (ReadValueId readValueId : readValueIds) {
+      Set<AttributeId> attributeIds =
+          attributesByNode.computeIfAbsent(
+              readValueId.getNodeId(), id -> EnumSet.of(AttributeId.AccessRestrictions));
+
       UInteger attributeId = readValueId.getAttributeId();
 
       if (AttributeId.Value.uid().equals(attributeId)) {
         attributeIds.add(AttributeId.AccessLevel);
         attributeIds.add(AttributeId.UserAccessLevel);
       } else if (AttributeId.RolePermissions.uid().equals(attributeId)) {
+        attributeIds.add(AttributeId.WriteMask);
         attributeIds.add(AttributeId.UserRolePermissions);
       }
     }
 
-    return attributeIds;
+    return attributesByNode;
   }
 
   // endregion
@@ -275,14 +330,21 @@ public class DefaultAccessController implements AccessController {
 
       p.result = checkHistoryReadBits(nodeAttributes);
 
-      RolePermissionType[] userRolePermissions = nodeAttributes.userRolePermissions();
+      if (p.result.isAllowed()) {
+        if (hasFailedUserRolePermissionsLookup(nodeAttributes)) {
+          p.result = failedUserRolePermissionsAccessResult(nodeAttributes);
+        } else if (roleIds != null) {
+          RolePermissionType[] userRolePermissions =
+              effectiveUserRolePermissions(context, nodeAttributes, p.value.getNodeId());
 
-      if (p.result.isAllowed() && roleIds != null && userRolePermissions != null) {
-        boolean hasAccess =
-            hasPermission(roleIds, userRolePermissions, PermissionType::getReadHistory);
+          if (userRolePermissions != null) {
+            boolean hasAccess =
+                hasPermission(roleIds, userRolePermissions, PermissionType::getReadHistory);
 
-        if (!hasAccess) {
-          p.result = AccessResult.DENIED_USER_ACCESS;
+            if (!hasAccess) {
+              p.result = AccessResult.DENIED_USER_ACCESS;
+            }
+          }
         }
       }
     }
@@ -307,9 +369,14 @@ public class DefaultAccessController implements AccessController {
       UByte accessLevel = attributes.accessLevel();
       UByte userAccessLevel = attributes.userAccessLevel();
 
-      if (accessLevel != null
+      if (hasFailedVariableAccessLevelLookup(attributes, attributes.accessLevelStatus())) {
+        return failedLookupAccessResult(attributes.accessLevelStatus());
+      } else if (accessLevel != null
           && !AccessLevel.fromValue(accessLevel).contains(AccessLevel.HistoryRead)) {
         return AccessResult.DENIED_HISTORY_NOT_READABLE;
+      } else if (hasFailedVariableAccessLevelLookup(
+          attributes, attributes.userAccessLevelStatus())) {
+        return failedLookupAccessResult(attributes.userAccessLevelStatus());
       } else if (userAccessLevel != null
           && !AccessLevel.fromValue(userAccessLevel).contains(AccessLevel.HistoryRead)) {
         return AccessResult.DENIED_USER_ACCESS;
@@ -375,34 +442,46 @@ public class DefaultAccessController implements AccessController {
       UInteger attributeId = p.value.getAttributeId();
 
       if (AttributeId.Value.uid().equals(attributeId)) {
-        UByte accessLevel = attributes.get(nodeId).accessLevel();
-        UByte userAccessLevel = attributes.get(nodeId).userAccessLevel();
+        AccessControlAttributes nodeAttributes = attributes.get(nodeId);
+        UByte accessLevel = nodeAttributes.accessLevel();
+        UByte userAccessLevel = nodeAttributes.userAccessLevel();
 
-        if (accessLevel != null
+        if (hasFailedVariableAccessLevelLookup(
+            nodeAttributes, nodeAttributes.accessLevelStatus())) {
+          p.result = failedLookupAccessResult(nodeAttributes.accessLevelStatus());
+        } else if (accessLevel != null
             && !AccessLevel.fromValue(accessLevel).contains(AccessLevel.CurrentWrite)) {
           p.result = AccessResult.DENIED_NOT_WRITABLE;
+        } else if (hasFailedVariableAccessLevelLookup(
+            nodeAttributes, nodeAttributes.userAccessLevelStatus())) {
+          p.result = failedLookupAccessResult(nodeAttributes.userAccessLevelStatus());
         } else if (userAccessLevel != null
             && !AccessLevel.fromValue(userAccessLevel).contains(AccessLevel.CurrentWrite)) {
           p.result = AccessResult.DENIED_USER_ACCESS;
         }
       } else {
-        UInteger userWriteMask = attributes.get(nodeId).userWriteMask();
-        if (userWriteMask != null) {
-          Set<WriteMask> userWriteMasks = WriteMask.fromMask(userWriteMask);
+        AccessControlAttributes nodeAttributes = attributes.get(nodeId);
+        if (hasFailedOptionalLookup(nodeAttributes, nodeAttributes.userWriteMaskStatus())) {
+          p.result = failedLookupAccessResult(nodeAttributes.userWriteMaskStatus());
+        } else {
+          UInteger userWriteMask = nodeAttributes.userWriteMask();
+          if (userWriteMask != null) {
+            Set<WriteMask> userWriteMasks = WriteMask.fromMask(userWriteMask);
 
-          // The value of the UserWriteMask attribute implicitly accounts for whether Roles and
-          // Permission are configured and if the current Session is assigned a role that includes
-          // the WriteAttribute PermissionType bit.
-          boolean hasAccess =
-              AttributeId.from(attributeId)
-                  .map(
-                      id ->
-                          id != AttributeId.UserRolePermissions
-                              && userWriteMasks.contains(WriteMask.forAttribute(id)))
-                  .orElse(false);
+            // The value of the UserWriteMask attribute implicitly accounts for whether Roles and
+            // Permission are configured and if the current Session is assigned a role that includes
+            // the WriteAttribute PermissionType bit.
+            boolean hasAccess =
+                AttributeId.from(attributeId)
+                    .map(
+                        id ->
+                            id != AttributeId.UserRolePermissions
+                                && userWriteMasks.contains(WriteMask.forAttribute(id)))
+                    .orElse(false);
 
-          if (!hasAccess) {
-            p.result = AccessResult.DENIED_USER_ACCESS;
+            if (!hasAccess) {
+              p.result = AccessResult.DENIED_USER_ACCESS;
+            }
           }
         }
 
@@ -411,32 +490,11 @@ public class DefaultAccessController implements AccessController {
         }
 
         if (AttributeId.RolePermissions.uid().equals(attributeId)) {
-          List<NodeId> roleIds = context.getRoleIds().orElse(null);
-
-          RolePermissionType[] userRolePermissions = attributes.get(nodeId).userRolePermissions();
-
-          if (roleIds != null && userRolePermissions != null) {
-            boolean hasAccess =
-                hasPermission(
-                    roleIds, userRolePermissions, PermissionType::getWriteRolePermissions);
-
-            if (!hasAccess) {
-              p.result = AccessResult.DENIED_USER_ACCESS;
-            }
-          }
+          checkAttributeWriteRolePermission(
+              context, p, attributes.get(nodeId), nodeId, PermissionType::getWriteRolePermissions);
         } else if (AttributeId.Historizing.uid().equals(attributeId)) {
-          List<NodeId> roleIds = context.getRoleIds().orElse(null);
-
-          RolePermissionType[] userRolePermissions = attributes.get(nodeId).userRolePermissions();
-
-          if (roleIds != null && userRolePermissions != null) {
-            boolean hasAccess =
-                hasPermission(roleIds, userRolePermissions, PermissionType::getWriteHistorizing);
-
-            if (!hasAccess) {
-              p.result = AccessResult.DENIED_USER_ACCESS;
-            }
-          }
+          checkAttributeWriteRolePermission(
+              context, p, attributes.get(nodeId), nodeId, PermissionType::getWriteHistorizing);
         }
       }
     }
@@ -448,6 +506,52 @@ public class DefaultAccessController implements AccessController {
       results.put(p.value, p.result);
     }
     return results;
+  }
+
+  private static void checkAttributeWriteRolePermission(
+      AccessControlContext context,
+      PendingResult<WriteValue> pendingResult,
+      AccessControlAttributes nodeAttributes,
+      NodeId nodeId,
+      Predicate<PermissionType> permission) {
+
+    if (hasFailedUserRolePermissionsLookup(nodeAttributes)) {
+      pendingResult.result = failedUserRolePermissionsAccessResult(nodeAttributes);
+      return;
+    }
+
+    List<NodeId> roleIds = context.getRoleIds().orElse(null);
+
+    if (roleIds != null) {
+      RolePermissionType[] userRolePermissions =
+          effectiveUserRolePermissions(context, nodeAttributes, nodeId);
+
+      if (userRolePermissions != null && !hasPermission(roleIds, userRolePermissions, permission)) {
+        pendingResult.result = AccessResult.DENIED_USER_ACCESS;
+      }
+    } else {
+      // Without a RoleMapper, ordinary nodes without a FallbackUserRolePermissionsFilter keep
+      // their existing behavior, while nodes governed by a FallbackUserRolePermissionsFilter
+      // (including namespace-0 nodes carrying
+      // RolePermissionsSupport.derivedUserRolePermissionsFilter)
+      // enforce WriteRolePermissions and WriteHistorizing against explicit UserRolePermissions
+      // (including an explicit empty array) or any fallback policy using the implicit Anonymous
+      // role (OPC 10000-3 §4.9.1).
+      RolePermissionType[] effectivePermissions = null;
+      if (nodeAttributes.userRolePermissions() != null) {
+        if (context.hasFallbackUserRolePermissionsFilter(nodeId)
+            || context.getFallbackUserRolePermissions(nodeId) != null) {
+          effectivePermissions = nodeAttributes.userRolePermissions();
+        }
+      } else {
+        effectivePermissions = context.getFallbackUserRolePermissions(nodeId);
+      }
+
+      if (effectivePermissions != null
+          && !hasPermission(List.of(), effectivePermissions, permission)) {
+        pendingResult.result = AccessResult.DENIED_USER_ACCESS;
+      }
+    }
   }
 
   // endregion
@@ -540,19 +644,28 @@ public class DefaultAccessController implements AccessController {
         continue;
       }
 
-      AccessControlAttributes nodeAttributes = attributes.get(historyUpdateNodeId(p.value));
+      NodeId nodeId = historyUpdateNodeId(p.value);
+      AccessControlAttributes nodeAttributes = attributes.get(nodeId);
 
       p.result = checkHistoryWriteBits(nodeAttributes);
 
-      RolePermissionType[] userRolePermissions = nodeAttributes.userRolePermissions();
+      if (p.result.isAllowed()) {
+        if (hasFailedUserRolePermissionsLookup(nodeAttributes)) {
+          p.result = failedUserRolePermissionsAccessResult(nodeAttributes);
+        } else if (roleIds != null) {
+          RolePermissionType[] userRolePermissions =
+              effectiveUserRolePermissions(context, nodeAttributes, nodeId);
 
-      if (p.result.isAllowed() && roleIds != null && userRolePermissions != null) {
-        boolean hasAccess =
-            historyUpdatePermissions(p.value).stream()
-                .allMatch(permission -> hasPermission(roleIds, userRolePermissions, permission));
+          if (userRolePermissions != null) {
+            boolean hasAccess =
+                historyUpdatePermissions(p.value).stream()
+                    .allMatch(
+                        permission -> hasPermission(roleIds, userRolePermissions, permission));
 
-        if (!hasAccess) {
-          p.result = AccessResult.DENIED_USER_ACCESS;
+            if (!hasAccess) {
+              p.result = AccessResult.DENIED_USER_ACCESS;
+            }
+          }
         }
       }
     }
@@ -577,9 +690,14 @@ public class DefaultAccessController implements AccessController {
       UByte accessLevel = attributes.accessLevel();
       UByte userAccessLevel = attributes.userAccessLevel();
 
-      if (accessLevel != null
+      if (hasFailedVariableAccessLevelLookup(attributes, attributes.accessLevelStatus())) {
+        return failedLookupAccessResult(attributes.accessLevelStatus());
+      } else if (accessLevel != null
           && !AccessLevel.fromValue(accessLevel).contains(AccessLevel.HistoryWrite)) {
         return AccessResult.DENIED_NOT_WRITABLE;
+      } else if (hasFailedVariableAccessLevelLookup(
+          attributes, attributes.userAccessLevelStatus())) {
+        return failedLookupAccessResult(attributes.userAccessLevelStatus());
       } else if (userAccessLevel != null
           && !AccessLevel.fromValue(userAccessLevel).contains(AccessLevel.HistoryWrite)) {
         return AccessResult.DENIED_USER_ACCESS;
@@ -677,14 +795,26 @@ public class DefaultAccessController implements AccessController {
       }
 
       NodeId nodeId = p.value;
+      AccessControlAttributes nodeAttributes = attributes.get(nodeId);
+
+      if (hasFailedUserRolePermissionsLookup(nodeAttributes)) {
+        p.result = failedUserRolePermissionsAccessResult(nodeAttributes);
+        continue;
+      }
+
       List<NodeId> roleIds = context.getRoleIds().orElse(null);
-      RolePermissionType[] userRolePermissions = attributes.get(nodeId).userRolePermissions();
 
-      if (roleIds != null && userRolePermissions != null) {
-        boolean hasAccess = hasPermission(roleIds, userRolePermissions, PermissionType::getBrowse);
+      if (roleIds != null) {
+        RolePermissionType[] userRolePermissions =
+            effectiveUserRolePermissions(context, nodeAttributes, nodeId);
 
-        if (!hasAccess) {
-          p.result = AccessResult.DENIED_USER_ACCESS;
+        if (userRolePermissions != null) {
+          boolean hasAccess =
+              hasPermission(roleIds, userRolePermissions, PermissionType::getBrowse);
+
+          if (!hasAccess) {
+            p.result = AccessResult.DENIED_USER_ACCESS;
+          }
         }
       }
     }
@@ -737,17 +867,29 @@ public class DefaultAccessController implements AccessController {
       AccessControlAttributes objectAttributes = attributes.get(p0.value);
       AccessControlAttributes methodAttributes = attributes.get(p1.value);
 
-      RolePermissionType[] objectPermissions = objectAttributes.userRolePermissions();
-      RolePermissionType[] methodPermissions = methodAttributes.userRolePermissions();
+      if (hasFailedUserRolePermissionsLookup(objectAttributes)) {
+        p0.result = failedUserRolePermissionsAccessResult(objectAttributes);
+        continue;
+      } else if (hasFailedUserRolePermissionsLookup(methodAttributes)) {
+        p1.result = failedUserRolePermissionsAccessResult(methodAttributes);
+        continue;
+      }
 
       List<NodeId> roleIds = context.getRoleIds().orElse(null);
 
-      if (roleIds != null && objectPermissions != null && methodPermissions != null) {
+      if (roleIds != null) {
+        RolePermissionType[] objectPermissions =
+            effectiveUserRolePermissions(context, objectAttributes, p0.value);
+        RolePermissionType[] methodPermissions =
+            effectiveUserRolePermissions(context, methodAttributes, p1.value);
+
         boolean objectPermission =
-            hasPermission(roleIds, objectPermissions, PermissionType::getCall);
+            objectPermissions == null
+                || hasPermission(roleIds, objectPermissions, PermissionType::getCall);
 
         boolean methodPermission =
-            hasPermission(roleIds, methodPermissions, PermissionType::getCall);
+            methodPermissions == null
+                || hasPermission(roleIds, methodPermissions, PermissionType::getCall);
 
         if (!objectPermission || !methodPermission) {
           p0.result = AccessResult.DENIED_USER_ACCESS;
@@ -848,17 +990,26 @@ public class DefaultAccessController implements AccessController {
 
     for (PendingResult<ParentedItem> p : pending) {
       if (!p.result.isDenied()) {
-        List<NodeId> roleIds = context.getRoleIds().orElse(null);
+        NodeId parentNodeId = p.value.parentNodeId();
+        AccessControlAttributes parentAttributes = attributes.get(parentNodeId);
 
-        RolePermissionType[] userRolePermissions =
-            attributes.get(p.value.parentNodeId()).userRolePermissions();
+        if (hasFailedUserRolePermissionsLookup(parentAttributes)) {
+          p.result = failedUserRolePermissionsAccessResult(parentAttributes);
+        } else {
+          List<NodeId> roleIds = context.getRoleIds().orElse(null);
 
-        if (roleIds != null && userRolePermissions != null) {
-          boolean hasAccess =
-              hasPermission(roleIds, userRolePermissions, PermissionType::getAddReference);
+          if (roleIds != null) {
+            RolePermissionType[] userRolePermissions =
+                effectiveUserRolePermissions(context, parentAttributes, parentNodeId);
 
-          if (!hasAccess) {
-            p.result = AccessResult.DENIED_USER_ACCESS;
+            if (userRolePermissions != null) {
+              boolean hasAccess =
+                  hasPermission(roleIds, userRolePermissions, PermissionType::getAddReference);
+
+              if (!hasAccess) {
+                p.result = AccessResult.DENIED_USER_ACCESS;
+              }
+            }
           }
         }
       }
@@ -904,15 +1055,26 @@ public class DefaultAccessController implements AccessController {
       }
 
       NodeId nodeId = p.value.getSourceNodeId();
+      AccessControlAttributes nodeAttributes = attributes.get(nodeId);
+
+      if (hasFailedUserRolePermissionsLookup(nodeAttributes)) {
+        p.result = failedUserRolePermissionsAccessResult(nodeAttributes);
+        continue;
+      }
+
       List<NodeId> roleIds = context.getRoleIds().orElse(null);
-      RolePermissionType[] userRolePermissions = attributes.get(nodeId).userRolePermissions();
 
-      if (roleIds != null && userRolePermissions != null) {
-        boolean hasAccess =
-            hasPermission(roleIds, userRolePermissions, PermissionType::getAddReference);
+      if (roleIds != null) {
+        RolePermissionType[] userRolePermissions =
+            effectiveUserRolePermissions(context, nodeAttributes, nodeId);
 
-        if (!hasAccess) {
-          p.result = AccessResult.DENIED_USER_ACCESS;
+        if (userRolePermissions != null) {
+          boolean hasAccess =
+              hasPermission(roleIds, userRolePermissions, PermissionType::getAddReference);
+
+          if (!hasAccess) {
+            p.result = AccessResult.DENIED_USER_ACCESS;
+          }
         }
       }
     }
@@ -950,15 +1112,26 @@ public class DefaultAccessController implements AccessController {
       }
 
       NodeId nodeId = p.value.getNodeId();
+      AccessControlAttributes nodeAttributes = attributes.get(nodeId);
+
+      if (hasFailedUserRolePermissionsLookup(nodeAttributes)) {
+        p.result = failedUserRolePermissionsAccessResult(nodeAttributes);
+        continue;
+      }
+
       List<NodeId> roleIds = context.getRoleIds().orElse(null);
-      RolePermissionType[] userRolePermissions = attributes.get(nodeId).userRolePermissions();
 
-      if (roleIds != null && userRolePermissions != null) {
-        boolean hasAccess =
-            hasPermission(roleIds, userRolePermissions, PermissionType::getDeleteNode);
+      if (roleIds != null) {
+        RolePermissionType[] userRolePermissions =
+            effectiveUserRolePermissions(context, nodeAttributes, nodeId);
 
-        if (!hasAccess) {
-          p.result = AccessResult.DENIED_USER_ACCESS;
+        if (userRolePermissions != null) {
+          boolean hasAccess =
+              hasPermission(roleIds, userRolePermissions, PermissionType::getDeleteNode);
+
+          if (!hasAccess) {
+            p.result = AccessResult.DENIED_USER_ACCESS;
+          }
         }
       }
     }
@@ -999,15 +1172,26 @@ public class DefaultAccessController implements AccessController {
       }
 
       NodeId nodeId = p.value.getSourceNodeId();
+      AccessControlAttributes nodeAttributes = attributes.get(nodeId);
+
+      if (hasFailedUserRolePermissionsLookup(nodeAttributes)) {
+        p.result = failedUserRolePermissionsAccessResult(nodeAttributes);
+        continue;
+      }
+
       List<NodeId> roleIds = context.getRoleIds().orElse(null);
-      RolePermissionType[] userRolePermissions = attributes.get(nodeId).userRolePermissions();
 
-      if (roleIds != null && userRolePermissions != null) {
-        boolean hasAccess =
-            hasPermission(roleIds, userRolePermissions, PermissionType::getRemoveReference);
+      if (roleIds != null) {
+        RolePermissionType[] userRolePermissions =
+            effectiveUserRolePermissions(context, nodeAttributes, nodeId);
 
-        if (!hasAccess) {
-          p.result = AccessResult.DENIED_USER_ACCESS;
+        if (userRolePermissions != null) {
+          boolean hasAccess =
+              hasPermission(roleIds, userRolePermissions, PermissionType::getRemoveReference);
+
+          if (!hasAccess) {
+            p.result = AccessResult.DENIED_USER_ACCESS;
+          }
         }
       }
     }
@@ -1017,13 +1201,97 @@ public class DefaultAccessController implements AccessController {
 
   // endregion
 
+  private static RolePermissionType @Nullable [] effectiveUserRolePermissions(
+      AccessControlContext context, AccessControlAttributes nodeAttributes, NodeId nodeId) {
+
+    if (hasFailedUserRolePermissionsLookup(nodeAttributes)) {
+      // A failed UserRolePermissions lookup must fail closed rather than falling back or treating
+      // the attribute as omitted.
+      return new RolePermissionType[0];
+    }
+
+    RolePermissionType[] userRolePermissions = nodeAttributes.userRolePermissions();
+    if (userRolePermissions != null) {
+      return userRolePermissions;
+    }
+
+    return context.getFallbackUserRolePermissions(nodeId);
+  }
+
+  private static boolean isRolePermissionsWritable(AccessControlAttributes attributes) {
+    UInteger writeMask = attributes.writeMask();
+    return writeMask != null && WriteMask.fromMask(writeMask).contains(WriteMask.RolePermissions);
+  }
+
+  private static boolean hasFailedOptionalLookup(
+      AccessControlAttributes attributes, @Nullable StatusCode status) {
+
+    if (attributes.nodeUnknown()) {
+      return false;
+    }
+
+    return status != null
+        && !status.isGood()
+        && status.getValue() != StatusCodes.Bad_AttributeIdInvalid;
+  }
+
+  private static boolean hasFailedVariableAccessLevelLookup(
+      AccessControlAttributes attributes, @Nullable StatusCode status) {
+
+    if (attributes.nodeUnknown() || status == null || status.isGood()) {
+      return false;
+    }
+
+    // OPC 10000-3 §5.6.2: AccessLevel and UserAccessLevel are mandatory on Variable nodes, so
+    // Bad_AttributeIdInvalid on a Variable is a failed lookup rather than an omitted optional
+    // attribute (whereas VariableType and non-Variable nodes legitimately omit them).
+    return attributes.nodeClass() == NodeClass.Variable
+        || status.getValue() != StatusCodes.Bad_AttributeIdInvalid;
+  }
+
+  private static boolean hasFailedWriteMaskLookup(AccessControlAttributes attributes) {
+    return hasFailedOptionalLookup(attributes, attributes.writeMaskStatus());
+  }
+
+  private static boolean hasFailedUserRolePermissionsLookup(AccessControlAttributes attributes) {
+    return hasFailedOptionalLookup(attributes, attributes.userRolePermissionsStatus());
+  }
+
+  private static AccessResult failedUserRolePermissionsAccessResult(
+      AccessControlAttributes attributes) {
+
+    return failedLookupAccessResult(attributes.userRolePermissionsStatus());
+  }
+
+  private static AccessResult failedLookupAccessResult(@Nullable StatusCode status) {
+    if (status != null && status.getValue() == StatusCodes.Bad_UserAccessDenied) {
+      return AccessResult.DENIED_USER_ACCESS;
+    } else if (status != null && status.getValue() == StatusCodes.Bad_SecurityModeInsufficient) {
+      return AccessResult.DENIED_SECURITY_MODE;
+    } else if (status != null && status.isBad()) {
+      return new AccessResult.Denied(status);
+    } else {
+      return AccessResult.DENIED_USER_ACCESS;
+    }
+  }
+
   private static boolean hasPermission(
       List<NodeId> roleIds,
       RolePermissionType[] userRolePermissions,
       Predicate<PermissionType> permission) {
 
+    // OPC 10000-3 §4.9.1 assigns WellKnownRole_Anonymous to every Session, even when a RoleMapper
+    // returns only explicit non-anonymous roles.
     return Stream.of(userRolePermissions)
-        .anyMatch(rp -> roleIds.contains(rp.getRoleId()) && permission.test(rp.getPermissions()));
+        .anyMatch(
+            rp ->
+                rp != null
+                    && rp.getRoleId() != null
+                    && rp.getPermissions() != null
+                    && rp.getPermissions().getValue() != null
+                    && (NodeIds.WellKnownRole_Anonymous.equals(rp.getRoleId())
+                        || roleIds.contains(rp.getRoleId()))
+                    && permission.test(rp.getPermissions()));
   }
 
   private static <T> void checkAccessRestrictions(
@@ -1104,24 +1372,191 @@ public class DefaultAccessController implements AccessController {
      */
     Map<NodeId, AccessControlAttributes> readAccessControlAttributes(
         List<NodeId> nodeIds, Set<AttributeId> attributeIds);
+
+    /**
+     * Read each Node's requested attributes. NodeClass is always read, since it is how a Node the
+     * AddressSpace does not know is told apart; an attribute not read for a Node is null.
+     */
+    default Map<NodeId, AccessControlAttributes> readAccessControlAttributes(
+        Map<NodeId, Set<AttributeId>> attributesByNode) {
+
+      var nodeIds = new ArrayList<NodeId>(attributesByNode.keySet());
+      Set<AttributeId> union = EnumSet.noneOf(AttributeId.class);
+      for (Set<AttributeId> attributeIds : attributesByNode.values()) {
+        union.addAll(attributeIds);
+      }
+      return readAccessControlAttributes(nodeIds, union);
+    }
+
+    /**
+     * Resolve internal fallback {@code UserRolePermissions} for {@code nodeId} when the node omits
+     * public {@code RolePermissions} / {@code UserRolePermissions} attributes, or {@code null} when
+     * no fallback policy applies.
+     */
+    default RolePermissionType @Nullable [] getFallbackUserRolePermissions(NodeId nodeId) {
+      return null;
+    }
+
+    /**
+     * Returns {@code true} when {@code nodeId} is governed by a {@link
+     * FallbackUserRolePermissionsFilter} (including standard namespace-0 nodes carrying {@link
+     * RolePermissionsSupport#derivedUserRolePermissionsFilter()}).
+     */
+    default boolean hasFallbackUserRolePermissionsFilter(NodeId nodeId) {
+      return getFallbackUserRolePermissions(nodeId) != null;
+    }
   }
 
   /**
    * The attributes an access decision is made from, as the AddressSpace answered them.
    *
+   * @param userRolePermissionsStatus the {@link StatusCode} returned when reading {@code
+   *     UserRolePermissions}, or {@code null} when {@code UserRolePermissions} was not read.
    * @param nodeUnknown {@code true} if the AddressSpace answered {@code Bad_NodeIdUnknown} for the
    *     Node, so that none of the other attributes could be read.
    */
   record AccessControlAttributes(
       @Nullable NodeClass nodeClass,
       @Nullable AccessRestrictionType accessRestrictions,
+      @Nullable UInteger writeMask,
+      @Nullable StatusCode writeMaskStatus,
       @Nullable UInteger userWriteMask,
+      @Nullable StatusCode userWriteMaskStatus,
       @Nullable UByte accessLevel,
+      @Nullable StatusCode accessLevelStatus,
       @Nullable UByte userAccessLevel,
+      @Nullable StatusCode userAccessLevelStatus,
       @Nullable UByte eventNotifier,
       @Nullable Boolean userExecutable,
       RolePermissionType @Nullable [] userRolePermissions,
+      @Nullable StatusCode userRolePermissionsStatus,
       boolean nodeUnknown) {
+
+    /** Attributes of a Node without recorded UserWriteMask/AccessLevel/UserAccessLevel statuses. */
+    AccessControlAttributes(
+        @Nullable NodeClass nodeClass,
+        @Nullable AccessRestrictionType accessRestrictions,
+        @Nullable UInteger writeMask,
+        @Nullable StatusCode writeMaskStatus,
+        @Nullable UInteger userWriteMask,
+        @Nullable UByte accessLevel,
+        @Nullable UByte userAccessLevel,
+        @Nullable UByte eventNotifier,
+        @Nullable Boolean userExecutable,
+        RolePermissionType @Nullable [] userRolePermissions,
+        @Nullable StatusCode userRolePermissionsStatus,
+        boolean nodeUnknown) {
+
+      this(
+          nodeClass,
+          accessRestrictions,
+          writeMask,
+          writeMaskStatus,
+          userWriteMask,
+          null,
+          accessLevel,
+          null,
+          userAccessLevel,
+          null,
+          eventNotifier,
+          userExecutable,
+          userRolePermissions,
+          userRolePermissionsStatus,
+          nodeUnknown);
+    }
+
+    /** Attributes of a Node without a recorded WriteMask lookup status. */
+    AccessControlAttributes(
+        @Nullable NodeClass nodeClass,
+        @Nullable AccessRestrictionType accessRestrictions,
+        @Nullable UInteger writeMask,
+        @Nullable UInteger userWriteMask,
+        @Nullable UByte accessLevel,
+        @Nullable UByte userAccessLevel,
+        @Nullable UByte eventNotifier,
+        @Nullable Boolean userExecutable,
+        RolePermissionType @Nullable [] userRolePermissions,
+        @Nullable StatusCode userRolePermissionsStatus,
+        boolean nodeUnknown) {
+
+      this(
+          nodeClass,
+          accessRestrictions,
+          writeMask,
+          null,
+          userWriteMask,
+          null,
+          accessLevel,
+          null,
+          userAccessLevel,
+          null,
+          eventNotifier,
+          userExecutable,
+          userRolePermissions,
+          userRolePermissionsStatus,
+          nodeUnknown);
+    }
+
+    /** Attributes of a Node without a recorded WriteMask. */
+    AccessControlAttributes(
+        @Nullable NodeClass nodeClass,
+        @Nullable AccessRestrictionType accessRestrictions,
+        @Nullable UInteger userWriteMask,
+        @Nullable UByte accessLevel,
+        @Nullable UByte userAccessLevel,
+        @Nullable UByte eventNotifier,
+        @Nullable Boolean userExecutable,
+        RolePermissionType @Nullable [] userRolePermissions,
+        @Nullable StatusCode userRolePermissionsStatus,
+        boolean nodeUnknown) {
+
+      this(
+          nodeClass,
+          accessRestrictions,
+          null,
+          null,
+          userWriteMask,
+          null,
+          accessLevel,
+          null,
+          userAccessLevel,
+          null,
+          eventNotifier,
+          userExecutable,
+          userRolePermissions,
+          userRolePermissionsStatus,
+          nodeUnknown);
+    }
+
+    /** Attributes of a Node without a recorded WriteMask or UserRolePermissions lookup status. */
+    AccessControlAttributes(
+        @Nullable NodeClass nodeClass,
+        @Nullable AccessRestrictionType accessRestrictions,
+        @Nullable UInteger userWriteMask,
+        @Nullable UByte accessLevel,
+        @Nullable UByte userAccessLevel,
+        @Nullable UByte eventNotifier,
+        @Nullable Boolean userExecutable,
+        RolePermissionType @Nullable [] userRolePermissions,
+        boolean nodeUnknown) {
+
+      this(
+          nodeClass,
+          accessRestrictions,
+          null,
+          null,
+          userWriteMask,
+          null,
+          accessLevel,
+          null,
+          userAccessLevel,
+          null,
+          eventNotifier,
+          userExecutable,
+          userRolePermissions,
+          null,
+          nodeUnknown);
+    }
 
     /** Attributes of a Node the AddressSpace knows, without an EventNotifier. */
     AccessControlAttributes(
@@ -1136,12 +1571,18 @@ public class DefaultAccessController implements AccessController {
       this(
           nodeClass,
           accessRestrictions,
+          null,
+          null,
           userWriteMask,
+          null,
           accessLevel,
+          null,
           userAccessLevel,
+          null,
           null,
           userExecutable,
           userRolePermissions,
+          null,
           false);
     }
   }
@@ -1150,6 +1591,7 @@ public class DefaultAccessController implements AccessController {
 
     private final OpcUaServer server;
     private final Session session;
+    private @Nullable Optional<List<NodeId>> cachedRoleIds;
 
     public DefaultAccessControlContext(OpcUaServer server, Session session) {
       this.server = server;
@@ -1158,7 +1600,12 @@ public class DefaultAccessController implements AccessController {
 
     @Override
     public Optional<List<NodeId>> getRoleIds() {
-      return session.getRoleIds();
+      Optional<List<NodeId>> roleIds = cachedRoleIds;
+      if (roleIds == null) {
+        roleIds = RolePermissionsReadScope.getRoleIds(session);
+        cachedRoleIds = roleIds;
+      }
+      return roleIds;
     }
 
     @Override
@@ -1175,20 +1622,40 @@ public class DefaultAccessController implements AccessController {
     public Map<NodeId, AccessControlAttributes> readAccessControlAttributes(
         List<NodeId> nodeIds, Set<AttributeId> attributeIds) {
 
-      var toRead = new ArrayList<AttributeId>(ACCESS_ATTRIBUTE_ORDER.size());
-      for (AttributeId id : ACCESS_ATTRIBUTE_ORDER) {
-        if (id == AttributeId.NodeClass || attributeIds.contains(id)) {
-          toRead.add(id);
-        }
+      var attributesByNode = new LinkedHashMap<NodeId, Set<AttributeId>>(nodeIds.size());
+      for (NodeId id : nodeIds) {
+        attributesByNode.putIfAbsent(id, attributeIds);
       }
 
-      var distinctNodeIds = new ArrayList<>(new LinkedHashSet<>(nodeIds));
+      return readAccessControlAttributes(attributesByNode);
+    }
 
-      var readValueIds = new ArrayList<ReadValueId>(distinctNodeIds.size() * toRead.size());
-      for (NodeId id : distinctNodeIds) {
-        for (AttributeId attributeId : toRead) {
-          readValueIds.add(new ReadValueId(id, attributeId.uid(), null, null));
+    @Override
+    public Map<NodeId, AccessControlAttributes> readAccessControlAttributes(
+        Map<NodeId, Set<AttributeId>> attributesByNode) {
+
+      if (attributesByNode.isEmpty()) {
+        return Map.of();
+      }
+
+      var distinctNodeIds = new ArrayList<NodeId>(attributesByNode.size());
+      var attrsPerNode = new ArrayList<List<AttributeId>>(attributesByNode.size());
+      var readValueIds = new ArrayList<ReadValueId>(attributesByNode.size() * 3);
+
+      for (Map.Entry<NodeId, Set<AttributeId>> entry : attributesByNode.entrySet()) {
+        NodeId id = entry.getKey();
+        Set<AttributeId> requested = entry.getValue();
+
+        var toRead = new ArrayList<AttributeId>(ACCESS_ATTRIBUTE_ORDER.size());
+        for (AttributeId attrId : ACCESS_ATTRIBUTE_ORDER) {
+          if (attrId == AttributeId.NodeClass || requested.contains(attrId)) {
+            toRead.add(attrId);
+            readValueIds.add(new ReadValueId(id, attrId.uid(), null, null));
+          }
         }
+
+        distinctNodeIds.add(id);
+        attrsPerNode.add(toRead);
       }
 
       List<DataValue> values =
@@ -1200,13 +1667,62 @@ public class DefaultAccessController implements AccessController {
                   TimestampsToReturn.Neither,
                   readValueIds);
 
-      var attributesMap = new HashMap<NodeId, AccessControlAttributes>();
+      var attributesMap = new HashMap<NodeId, AccessControlAttributes>(distinctNodeIds.size());
 
+      int offset = 0;
       for (int i = 0; i < distinctNodeIds.size(); i++) {
-        attributesMap.put(distinctNodeIds.get(i), attributes(toRead, values, i * toRead.size()));
+        List<AttributeId> toRead = attrsPerNode.get(i);
+        attributesMap.put(distinctNodeIds.get(i), attributes(server, toRead, values, offset));
+        offset += toRead.size();
       }
 
       return attributesMap;
+    }
+
+    @Override
+    public RolePermissionType @Nullable [] getFallbackUserRolePermissions(NodeId nodeId) {
+      AddressSpaceManager addressSpaceManager = server.getAddressSpaceManager();
+      if (addressSpaceManager == null) {
+        return null;
+      }
+
+      UaNode node = addressSpaceManager.getManagedNode(nodeId).orElse(null);
+      if (node == null) {
+        return null;
+      }
+
+      for (AttributeFilter filter : node.getFilterChain().getFilters()) {
+        if (filter instanceof FallbackUserRolePermissionsFilter fallbackFilter) {
+          RolePermissionType[] permissions =
+              fallbackFilter.getFallbackUserRolePermissions(session, node);
+          if (permissions != null) {
+            return permissions;
+          }
+        }
+      }
+
+      return null;
+    }
+
+    @Override
+    public boolean hasFallbackUserRolePermissionsFilter(NodeId nodeId) {
+      AddressSpaceManager addressSpaceManager = server.getAddressSpaceManager();
+      if (addressSpaceManager == null) {
+        return false;
+      }
+
+      UaNode node = addressSpaceManager.getManagedNode(nodeId).orElse(null);
+      if (node == null) {
+        return false;
+      }
+
+      for (AttributeFilter filter : node.getFilterChain().getFilters()) {
+        if (filter instanceof FallbackUserRolePermissionsFilter) {
+          return true;
+        }
+      }
+
+      return false;
     }
 
     /**
@@ -1214,16 +1730,22 @@ public class DefaultAccessController implements AccessController {
      * order.
      */
     private static AccessControlAttributes attributes(
-        List<AttributeId> attributeIds, List<DataValue> values, int offset) {
+        OpcUaServer server, List<AttributeId> attributeIds, List<DataValue> values, int offset) {
 
       NodeClass nodeClass = null;
       AccessRestrictionType accessRestrictions = null;
+      UInteger writeMask = null;
+      StatusCode writeMaskStatus = null;
       UInteger userWriteMask = null;
+      StatusCode userWriteMaskStatus = null;
       UByte accessLevel = null;
+      StatusCode accessLevelStatus = null;
       UByte userAccessLevel = null;
+      StatusCode userAccessLevelStatus = null;
       UByte eventNotifier = null;
       Boolean userExecutable = null;
       RolePermissionType[] userRolePermissions = null;
+      StatusCode userRolePermissionsStatus = null;
       boolean nodeUnknown = false;
 
       for (int j = 0; j < attributeIds.size(); j++) {
@@ -1232,8 +1754,12 @@ public class DefaultAccessController implements AccessController {
 
         switch (attributeIds.get(j)) {
           case NodeClass -> {
-            if (v instanceof NodeClass nc) {
-              nodeClass = nc;
+            if (value.statusCode().isGood()) {
+              if (v instanceof NodeClass nc) {
+                nodeClass = nc;
+              } else if (v instanceof Integer i) {
+                nodeClass = NodeClass.from(i);
+              }
             }
             // NodeClass is mandatory on every Node, so Bad_NodeIdUnknown here means the
             // AddressSpace does not know the Node at all.
@@ -1244,19 +1770,46 @@ public class DefaultAccessController implements AccessController {
               accessRestrictions = art;
             }
           }
+          case WriteMask -> {
+            writeMaskStatus = value.statusCode();
+            if (value.statusCode().isGood()) {
+              if (v instanceof UInteger wm) {
+                writeMask = wm;
+              } else {
+                // WriteMask is a non-nullable UInt32 when Good; null or wrong-type payloads must
+                // fail closed rather than looking like an absent optional attribute.
+                writeMaskStatus = new StatusCode(StatusCodes.Bad_TypeMismatch);
+              }
+            }
+          }
           case UserWriteMask -> {
-            if (v instanceof UInteger um) {
-              userWriteMask = um;
+            userWriteMaskStatus = value.statusCode();
+            if (value.statusCode().isGood()) {
+              if (v instanceof UInteger um) {
+                userWriteMask = um;
+              } else {
+                userWriteMaskStatus = new StatusCode(StatusCodes.Bad_TypeMismatch);
+              }
             }
           }
           case AccessLevel -> {
-            if (v instanceof UByte al) {
-              accessLevel = al;
+            accessLevelStatus = value.statusCode();
+            if (value.statusCode().isGood()) {
+              if (v instanceof UByte al) {
+                accessLevel = al;
+              } else {
+                accessLevelStatus = new StatusCode(StatusCodes.Bad_TypeMismatch);
+              }
             }
           }
           case UserAccessLevel -> {
-            if (v instanceof UByte ual) {
-              userAccessLevel = ual;
+            userAccessLevelStatus = value.statusCode();
+            if (value.statusCode().isGood()) {
+              if (v instanceof UByte ual) {
+                userAccessLevel = ual;
+              } else {
+                userAccessLevelStatus = new StatusCode(StatusCodes.Bad_TypeMismatch);
+              }
             }
           }
           case EventNotifier -> {
@@ -1270,8 +1823,22 @@ public class DefaultAccessController implements AccessController {
             }
           }
           case UserRolePermissions -> {
-            if (v instanceof RolePermissionType[] rpt) {
-              userRolePermissions = rpt;
+            userRolePermissionsStatus = value.statusCode();
+            if (value.statusCode().isGood()) {
+              if (v instanceof RolePermissionType[] rpt) {
+                userRolePermissions = rpt;
+              } else if (v instanceof ExtensionObject[] extensionObjects) {
+                RolePermissionType[] decoded = decodeRolePermissions(server, extensionObjects);
+                if (decoded != null) {
+                  userRolePermissions = decoded;
+                } else {
+                  userRolePermissionsStatus = new StatusCode(StatusCodes.Bad_TypeMismatch);
+                }
+              } else if (v != null) {
+                // Malformed non-RolePermissionType[] metadata must fail closed uniformly for both
+                // mapped and unmapped sessions rather than keeping a Good lookup status.
+                userRolePermissionsStatus = new StatusCode(StatusCodes.Bad_TypeMismatch);
+              }
             }
           }
           default -> {}
@@ -1281,13 +1848,52 @@ public class DefaultAccessController implements AccessController {
       return new AccessControlAttributes(
           nodeClass,
           accessRestrictions,
+          writeMask,
+          writeMaskStatus,
           userWriteMask,
+          userWriteMaskStatus,
           accessLevel,
+          accessLevelStatus,
           userAccessLevel,
+          userAccessLevelStatus,
           eventNotifier,
           userExecutable,
           userRolePermissions,
+          userRolePermissionsStatus,
           nodeUnknown);
+    }
+
+    private static RolePermissionType @Nullable [] decodeRolePermissions(
+        OpcUaServer server, ExtensionObject[] extensionObjects) {
+
+      if (extensionObjects.length == 0) {
+        return new RolePermissionType[0];
+      }
+
+      EncodingContext encodingContext = server.getStaticEncodingContext();
+      if (encodingContext == null) {
+        return null;
+      }
+
+      var rolePermissions = new RolePermissionType[extensionObjects.length];
+      for (int i = 0; i < extensionObjects.length; i++) {
+        ExtensionObject xo = extensionObjects[i];
+        if (xo == null || xo.isNull()) {
+          return null;
+        }
+        try {
+          UaStructuredType decoded = xo.decode(encodingContext);
+          if (decoded instanceof RolePermissionType rp) {
+            rolePermissions[i] = rp;
+          } else {
+            return null;
+          }
+        } catch (UaSerializationException e) {
+          return null;
+        }
+      }
+
+      return rolePermissions;
     }
   }
 }

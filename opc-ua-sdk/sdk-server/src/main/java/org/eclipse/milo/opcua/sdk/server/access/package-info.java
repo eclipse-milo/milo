@@ -25,7 +25,19 @@
  * <p>{@link org.eclipse.milo.opcua.sdk.server.access.DefaultAccessController} decides from the
  * Node's access attributes as read for the requesting Session, so an application shapes its answers
  * through attribute filters that supply {@code UserAccessLevel}, {@code UserWriteMask}, {@code
- * UserExecutable}, and {@code UserRolePermissions}, and through the server's {@code RoleMapper}. An
+ * UserExecutable}, and {@code UserRolePermissions}, and through the server's {@code RoleMapper}.
+ * Role permission checks always include the implicit {@code Anonymous} Role alongside the Session's
+ * mapped Roles (OPC 10000-3 §4.9.1), and non-{@code Read(RolePermissions)} checks consult {@link
+ * org.eclipse.milo.opcua.sdk.server.access.FallbackUserRolePermissionsFilter} when a Node omits
+ * public {@code RolePermissions} and {@code UserRolePermissions} attributes. When a Node carries a
+ * {@link org.eclipse.milo.opcua.sdk.server.access.FallbackUserRolePermissionsFilter}, {@code
+ * Write(RolePermissions)} and {@code Write(Historizing)} enforce the fallback policy against the
+ * implicit {@code Anonymous} Role even when no {@code RoleMapper} is configured, and {@code
+ * Read(RolePermissions)} enforces {@code ReadRolePermissions} when explicit public {@code
+ * UserRolePermissions} are exposed. On the default Read service path, {@link
+ * org.eclipse.milo.opcua.sdk.server.access.RolePermissionsReadScope} memoizes resolved role IDs and
+ * {@code RolePermissions} filter-chain evaluations for the duration of a single synchronous Read so
+ * access control and attribute reads do not invoke filters or {@code RoleMapper} twice. An
  * application whose rules go beyond attributes supplies its own controller through {@link
  * org.eclipse.milo.opcua.sdk.server.OpcUaServerConfigBuilder#setAccessControllerFactory}.
  *

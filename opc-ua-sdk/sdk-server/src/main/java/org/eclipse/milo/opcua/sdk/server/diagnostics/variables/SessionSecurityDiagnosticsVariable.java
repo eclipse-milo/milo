@@ -10,7 +10,9 @@
 
 package org.eclipse.milo.opcua.sdk.server.diagnostics.variables;
 
+import static org.eclipse.milo.opcua.sdk.server.diagnostics.variables.Util.DEFAULT_SESSION_SECURITY_DIAGNOSTICS_ROLE_PERMISSIONS;
 import static org.eclipse.milo.opcua.sdk.server.diagnostics.variables.Util.diagnosticValueFilter;
+import static org.eclipse.milo.opcua.sdk.server.diagnostics.variables.Util.hasRoleBasedUserRolePermissionsFilter;
 import static org.eclipse.milo.opcua.sdk.server.diagnostics.variables.Util.roleBasedUserAccessLevelFilter;
 import static org.eclipse.milo.opcua.sdk.server.diagnostics.variables.Util.roleBasedUserRolePermissionsFilter;
 
@@ -22,8 +24,12 @@ import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnosticsAccessMode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerDiagnosticsTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.objects.SessionsDiagnosticsSummaryTypeNode;
+import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnosticsArrayTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.variables.SessionSecurityDiagnosticsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.AttributeObserver;
+import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterChain;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
@@ -32,14 +38,17 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Publishes the security diagnostics for one Session through a dynamically created diagnostics
  * Variable.
  *
  * <p>The Variable and each of its fields follow the server-wide diagnostics enabled flag. In
- * restricted access mode, Session-specific access attributes are derived from the role metadata
- * copied onto the nodes when they are instantiated.
+ * restricted access mode, Session-specific access attributes follow explicit local {@code
+ * RolePermissions} if set on the node, otherwise dynamically inherit the live {@code
+ * RolePermissions} of the security diagnostics array, or fall back to the standard default security
+ * diagnostics role policy when neither defines one.
  */
 public class SessionSecurityDiagnosticsVariable extends AbstractLifecycle {
 
@@ -68,6 +77,35 @@ public class SessionSecurityDiagnosticsVariable extends AbstractLifecycle {
     return session;
   }
 
+  /**
+   * Install the restricted-mode role-based access filters on {@code securityNode} if they are not
+   * already present.
+   *
+   * <p>Installing these filters during staged node instantiation ensures dynamic security
+   * diagnostics nodes and their fields enforce {@code securityArray}'s live policy (or the default
+   * security diagnostics fallback policy) before the nodes become visible in the AddressSpace.
+   *
+   * @param securityNode the dynamic security diagnostics Variable or field node to protect.
+   * @param securityArray optional standard {@code SessionSecurityDiagnosticsArray} node whose live
+   *     {@code RolePermissions} policy is inherited when {@code securityNode} has no local explicit
+   *     {@code RolePermissions}.
+   */
+  public static void installRestrictedAccessFilters(
+      UaVariableNode securityNode,
+      @Nullable SessionSecurityDiagnosticsArrayTypeNode securityArray) {
+
+    AttributeFilterChain filterChain = securityNode.getFilterChain();
+    if (filterChain == null || hasRoleBasedUserRolePermissionsFilter(filterChain)) {
+      return;
+    }
+
+    filterChain.addLast(
+        roleBasedUserAccessLevelFilter(
+            securityArray, DEFAULT_SESSION_SECURITY_DIAGNOSTICS_ROLE_PERMISSIONS),
+        roleBasedUserRolePermissionsFilter(
+            securityArray, DEFAULT_SESSION_SECURITY_DIAGNOSTICS_ROLE_PERMISSIONS));
+  }
+
   @Override
   protected void onStartup() {
     ServerDiagnosticsTypeNode diagnosticsNode =
@@ -84,8 +122,13 @@ public class SessionSecurityDiagnosticsVariable extends AbstractLifecycle {
     if (server.getConfig().getSessionSecurityDiagnosticsAccessMode()
         == SessionSecurityDiagnosticsAccessMode.RESTRICTED) {
 
-      // Value access is reflected in UserAccessLevel; UserRolePermissions supplies the same
-      // session-specific policy to authorization checks for other node operations such as Browse.
+      SessionsDiagnosticsSummaryTypeNode summaryNode =
+          diagnosticsNode.getSessionsDiagnosticsSummaryNode();
+      SessionSecurityDiagnosticsArrayTypeNode securityArray =
+          summaryNode != null ? summaryNode.getSessionSecurityDiagnosticsArrayNode() : null;
+
+      // Ensure restricted filters are present even if SessionSecurityDiagnosticsVariable is
+      // started outside SessionsDiagnosticsSummaryObject's staged instantiation hook.
       List.of(
               node,
               node.getSessionIdNode(),
@@ -97,12 +140,7 @@ public class SessionSecurityDiagnosticsVariable extends AbstractLifecycle {
               node.getSecurityModeNode(),
               node.getSecurityPolicyUriNode(),
               node.getClientCertificateNode())
-          .forEach(
-              securityNode ->
-                  securityNode
-                      .getFilterChain()
-                      .addLast(
-                          roleBasedUserAccessLevelFilter(), roleBasedUserRolePermissionsFilter()));
+          .forEach(securityNode -> installRestrictedAccessFilters(securityNode, securityArray));
     }
 
     attributeObserver =

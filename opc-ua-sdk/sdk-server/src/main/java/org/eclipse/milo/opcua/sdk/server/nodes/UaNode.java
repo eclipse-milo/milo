@@ -14,15 +14,19 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.core.QualifiedProperty;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.ValueRanks;
+import org.eclipse.milo.opcua.sdk.core.WriteMask;
 import org.eclipse.milo.opcua.sdk.core.nodes.Node;
 import org.eclipse.milo.opcua.sdk.core.nodes.ObjectNode;
 import org.eclipse.milo.opcua.sdk.core.nodes.VariableNode;
@@ -30,7 +34,11 @@ import org.eclipse.milo.opcua.sdk.core.typetree.ReferenceTypeTree;
 import org.eclipse.milo.opcua.sdk.server.AccessContext;
 import org.eclipse.milo.opcua.sdk.server.AddressSpaceManager;
 import org.eclipse.milo.opcua.sdk.server.NodeManager;
+import org.eclipse.milo.opcua.sdk.server.Session;
+import org.eclipse.milo.opcua.sdk.server.access.FallbackUserRolePermissionsFilter;
+import org.eclipse.milo.opcua.sdk.server.access.RolePermissionsReadScope;
 import org.eclipse.milo.opcua.sdk.server.model.variables.PropertyTypeNode;
+import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilter;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterChain;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.NodeIds;
@@ -745,7 +753,248 @@ public abstract class UaNode implements UaServerNode {
   @Override
   public @Nullable Object readAttribute(AccessContext context, AttributeId attributeId)
       throws UaException {
-    return getFilterChain().readAttribute(context.getSession().orElse(null), this, attributeId);
+    Session session = context.getSession().orElse(null);
+
+    if (session != null && attributeId == AttributeId.RolePermissions) {
+      RolePermissionsReadScope localScope =
+          RolePermissionsReadScope.isActive(session)
+              ? null
+              : RolePermissionsReadScope.open(session);
+      try {
+        Object value = readRolePermissionsAttribute(session);
+
+        if (value != null) {
+          if (value instanceof RolePermissionType[] rolePermissions) {
+            RolePermissionType[] sanitized = sanitizeRolePermissions(rolePermissions);
+            if (hasFallbackUserRolePermissionsFilter()
+                && !hasEffectiveReadRolePermissions(context, session, sanitized)) {
+              throw new UaException(StatusCodes.Bad_UserAccessDenied);
+            }
+            return sanitized;
+          } else if (hasFallbackUserRolePermissionsFilter()) {
+            throw new UaException(StatusCodes.Bad_UserAccessDenied);
+          }
+        } else if (isRolePermissionsWritable(context)) {
+          // OPC 10000-3 §5.2.9: a Node supporting RolePermissions overrides exposes an empty array
+          // when no override is configured, while fallback-governed nodes still enforce
+          // ReadRolePermissions against their effective explicit or fallback policy.
+          if (hasFallbackUserRolePermissionsFilter()
+              && !hasEffectiveReadRolePermissions(context, session, null)) {
+            throw new UaException(StatusCodes.Bad_UserAccessDenied);
+          }
+          return new RolePermissionType[0];
+        }
+
+        return value;
+      } finally {
+        if (localScope != null) {
+          localScope.close();
+        }
+      }
+    }
+
+    Object value = getFilterChain().readAttribute(session, this, attributeId);
+
+    if (session != null
+        && attributeId == AttributeId.UserRolePermissions
+        && value instanceof RolePermissionType[] rolePermissions) {
+      return sanitizeRolePermissions(rolePermissions);
+    }
+
+    return value;
+  }
+
+  private @Nullable Object readRolePermissionsAttribute(Session session) throws UaException {
+    RolePermissionsReadScope.RolePermissionsResult cached =
+        RolePermissionsReadScope.getRolePermissions(session, this);
+    if (cached != null) {
+      if (cached instanceof RolePermissionsReadScope.RolePermissionsResult.Value v) {
+        return v.value();
+      } else {
+        throw ((RolePermissionsReadScope.RolePermissionsResult.Failure) cached).exception();
+      }
+    }
+
+    try {
+      Object value = getFilterChain().readAttribute(session, this, AttributeId.RolePermissions);
+      RolePermissionsReadScope.putRolePermissionsValue(session, this, value);
+      return value;
+    } catch (UaException e) {
+      RolePermissionsReadScope.putRolePermissionsFailure(session, this, e);
+      throw e;
+    }
+  }
+
+  private static final ThreadLocal<@Nullable Set<NodeSessionKey>> RESOLVING_WRITE_MASK =
+      new ThreadLocal<>();
+
+  private static final ThreadLocal<@Nullable Set<NodeSessionKey>> RESOLVING_READ_ROLE_PERMISSIONS =
+      new ThreadLocal<>();
+
+  private static final class NodeSessionKey {
+    private final UaNode node;
+    private final @Nullable Session session;
+
+    private NodeSessionKey(UaNode node, @Nullable Session session) {
+      this.node = node;
+      this.session = session;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof NodeSessionKey other)) {
+        return false;
+      }
+      return node == other.node && session == other.session;
+    }
+
+    @Override
+    public int hashCode() {
+      return 31 * System.identityHashCode(node) + System.identityHashCode(session);
+    }
+  }
+
+  private boolean isRolePermissionsWritable(AccessContext context) throws UaException {
+    var key = new NodeSessionKey(this, context.getSession().orElse(null));
+    Set<NodeSessionKey> active = RESOLVING_WRITE_MASK.get();
+    if (active != null && active.contains(key)) {
+      throw new UaException(
+          StatusCodes.Bad_InternalError,
+          "Cyclic WriteMask/RolePermissions attribute resolution detected");
+    }
+
+    boolean created = false;
+    if (active == null) {
+      active = new HashSet<>(2);
+      RESOLVING_WRITE_MASK.set(active);
+      created = true;
+    }
+
+    active.add(key);
+    Object maskValue;
+    try {
+      maskValue = readAttribute(context, AttributeId.WriteMask);
+    } catch (UaException e) {
+      if (e.getStatusCode().getValue() == StatusCodes.Bad_AttributeIdInvalid) {
+        return false;
+      }
+      throw e;
+    } finally {
+      active.remove(key);
+      if (created) {
+        RESOLVING_WRITE_MASK.remove();
+      }
+    }
+
+    if (maskValue == null) {
+      return false;
+    } else if (maskValue instanceof UInteger mask) {
+      return WriteMask.fromMask(mask).contains(WriteMask.RolePermissions);
+    } else {
+      throw new UaException(StatusCodes.Bad_TypeMismatch);
+    }
+  }
+
+  private boolean hasEffectiveReadRolePermissions(
+      AccessContext context,
+      Session session,
+      RolePermissionType @Nullable [] fallbackRolePermissions) {
+
+    var key = new NodeSessionKey(this, session);
+    Set<NodeSessionKey> active = RESOLVING_READ_ROLE_PERMISSIONS.get();
+    if (active != null && active.contains(key)) {
+      // Fail closed on a RolePermissions <-> UserRolePermissions cycle.
+      return false;
+    }
+
+    boolean created = false;
+    if (active == null) {
+      active = new HashSet<>(2);
+      RESOLVING_READ_ROLE_PERMISSIONS.set(active);
+      created = true;
+    }
+
+    active.add(key);
+    try {
+      try {
+        Object userRolePermissions = readAttribute(context, AttributeId.UserRolePermissions);
+        if (userRolePermissions != null) {
+          if (userRolePermissions instanceof RolePermissionType[] permissions) {
+            return hasReadRolePermissions(session, permissions);
+          } else {
+            return false;
+          }
+        }
+      } catch (UaException e) {
+        if (e.getStatusCode().getValue() != StatusCodes.Bad_AttributeIdInvalid) {
+          return false;
+        }
+      }
+
+      if (fallbackRolePermissions != null) {
+        return hasReadRolePermissions(session, fallbackRolePermissions);
+      }
+
+      for (AttributeFilter filter : getFilterChain().getFilters()) {
+        if (filter instanceof FallbackUserRolePermissionsFilter fallbackFilter) {
+          RolePermissionType[] permissions =
+              fallbackFilter.getFallbackUserRolePermissions(session, this);
+          if (permissions != null) {
+            return hasReadRolePermissions(session, permissions);
+          }
+        }
+      }
+      return true;
+    } finally {
+      active.remove(key);
+      if (created) {
+        RESOLVING_READ_ROLE_PERMISSIONS.remove();
+      }
+    }
+  }
+
+  private boolean hasFallbackUserRolePermissionsFilter() {
+    for (AttributeFilter filter : getFilterChain().getFilters()) {
+      if (filter instanceof FallbackUserRolePermissionsFilter) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static boolean hasReadRolePermissions(
+      Session session, RolePermissionType[] rolePermissions) {
+
+    List<NodeId> mappedRoles = RolePermissionsReadScope.getRoleIds(session).orElse(List.of());
+
+    for (RolePermissionType rp : rolePermissions) {
+      if (isValidRolePermission(rp)
+          && (NodeIds.WellKnownRole_Anonymous.equals(rp.getRoleId())
+              || mappedRoles.contains(rp.getRoleId()))
+          && rp.getPermissions().getReadRolePermissions()) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private static RolePermissionType[] sanitizeRolePermissions(
+      RolePermissionType[] rolePermissions) {
+
+    return Stream.of(rolePermissions)
+        .filter(UaNode::isValidRolePermission)
+        .toArray(RolePermissionType[]::new);
+  }
+
+  private static boolean isValidRolePermission(@Nullable RolePermissionType rolePermission) {
+    return rolePermission != null
+        && rolePermission.getRoleId() != null
+        && rolePermission.getPermissions() != null
+        && rolePermission.getPermissions().getValue() != null;
   }
 
   @Override

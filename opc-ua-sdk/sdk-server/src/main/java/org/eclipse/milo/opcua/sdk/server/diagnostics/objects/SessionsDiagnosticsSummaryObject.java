@@ -20,7 +20,9 @@ import org.eclipse.milo.opcua.sdk.server.NodeManager;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
 import org.eclipse.milo.opcua.sdk.server.Session;
 import org.eclipse.milo.opcua.sdk.server.SessionListener;
+import org.eclipse.milo.opcua.sdk.server.diagnostics.SessionSecurityDiagnosticsAccessMode;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.variables.SessionDiagnosticsVariableArray;
+import org.eclipse.milo.opcua.sdk.server.diagnostics.variables.SessionSecurityDiagnosticsVariable;
 import org.eclipse.milo.opcua.sdk.server.diagnostics.variables.SessionSecurityDiagnosticsVariableArray;
 import org.eclipse.milo.opcua.sdk.server.model.objects.ServerDiagnosticsTypeNode;
 import org.eclipse.milo.opcua.sdk.server.model.objects.SessionDiagnosticsObjectTypeNode;
@@ -272,23 +274,59 @@ public class SessionsDiagnosticsSummaryObject extends AbstractLifecycle {
    * security diagnostics subtree of a dynamically instantiated Session diagnostics Object, while
    * the nodes are still staged — before anything is published.
    *
+   * <p>In {@link SessionSecurityDiagnosticsAccessMode#RESTRICTED} mode, local {@code
+   * RolePermissions} and {@code UserRolePermissions} are left {@code null} on the dynamic nodes so
+   * {@link
+   * org.eclipse.milo.opcua.sdk.server.diagnostics.variables.SessionSecurityDiagnosticsVariable}
+   * dynamically inherits the security array's live policy (including subsequent revocations or
+   * filter overrides) while allowing explicit per-node overrides to take precedence. In {@link
+   * SessionSecurityDiagnosticsAccessMode#LEGACY} mode, any stored array permissions are copied
+   * directly.
+   *
    * @param summaryNode the standard summary node containing the security diagnostics array.
    * @return a hook that applies security attributes to security diagnostics Variables.
    */
   static InstantiationRequest.OnNode securityDiagnosticsAccessControl(
       SessionsDiagnosticsSummaryTypeNode summaryNode) {
 
+    SessionSecurityDiagnosticsAccessMode accessMode =
+        summaryNode.getNodeContext() != null
+            ? summaryNode
+                .getNodeContext()
+                .getServer()
+                .getConfig()
+                .getSessionSecurityDiagnosticsAccessMode()
+            : SessionSecurityDiagnosticsAccessMode.RESTRICTED;
+
+    return securityDiagnosticsAccessControl(summaryNode, accessMode);
+  }
+
+  static InstantiationRequest.OnNode securityDiagnosticsAccessControl(
+      SessionsDiagnosticsSummaryTypeNode summaryNode,
+      SessionSecurityDiagnosticsAccessMode accessMode) {
+
     return (declaration, node, parent, graph) -> {
       if (node instanceof UaVariableNode instance
           && (instance instanceof SessionSecurityDiagnosticsTypeNode
               || parent instanceof SessionSecurityDiagnosticsTypeNode)) {
 
-        // Ordinary SessionDiagnostics intentionally retain their separate standard permissions.
+        // Propagate the security array's AccessRestrictions only to the security diagnostics
+        // subtree; ordinary SessionDiagnostics keep their own attributes.
         SessionSecurityDiagnosticsArrayTypeNode securityArray =
             summaryNode.getSessionSecurityDiagnosticsArrayNode();
 
-        instance.setRolePermissions(securityArray.getRolePermissions());
-        instance.setUserRolePermissions(securityArray.getUserRolePermissions());
+        if (accessMode == SessionSecurityDiagnosticsAccessMode.RESTRICTED) {
+          // Leave RolePermissions null and install live inheritance filters before publication so
+          // dynamic elements and child fields enforce securityArray's live policy immediately upon
+          // instantiation without retaining stale snapshot grants after revocation.
+          instance.setRolePermissions(null);
+          instance.setUserRolePermissions(null);
+          SessionSecurityDiagnosticsVariable.installRestrictedAccessFilters(
+              instance, securityArray);
+        } else {
+          instance.setRolePermissions(securityArray.getRolePermissions());
+          instance.setUserRolePermissions(securityArray.getUserRolePermissions());
+        }
         instance.setAccessRestrictions(securityArray.getAccessRestrictions());
       }
     };

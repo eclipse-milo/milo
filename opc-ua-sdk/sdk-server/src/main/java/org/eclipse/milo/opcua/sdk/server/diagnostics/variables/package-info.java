@@ -26,7 +26,11 @@
  * arrays.
  *
  * <p>Each Session's security diagnostics Variables carry the standard security array's access
- * metadata. In restricted access mode, their attribute filters derive caller-visible access from
- * the current Session's roles.
+ * restrictions and any explicitly configured role permissions. In restricted access mode, their
+ * attribute filters derive {@code UserAccessLevel} from explicit {@code RolePermissions} when set
+ * or from the standard default role policies otherwise, supply those default policies internally to
+ * {@link org.eclipse.milo.opcua.sdk.server.access.DefaultAccessController} for checks such as
+ * Browse, and expose public {@code UserRolePermissions} only when explicit {@code RolePermissions}
+ * are configured on the node.
  */
 package org.eclipse.milo.opcua.sdk.server.diagnostics.variables;

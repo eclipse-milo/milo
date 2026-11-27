@@ -10,6 +10,8 @@
 
 package org.eclipse.milo.opcua.sdk.server.diagnostics.variables;
 
+import static org.eclipse.milo.opcua.sdk.server.diagnostics.variables.Util.DEFAULT_ENABLED_FLAG_ROLE_PERMISSIONS;
+import static org.eclipse.milo.opcua.sdk.server.diagnostics.variables.Util.DEFAULT_SESSION_SECURITY_DIAGNOSTICS_ROLE_PERMISSIONS;
 import static org.eclipse.milo.opcua.sdk.server.diagnostics.variables.Util.diagnosticValueFilter;
 import static org.eclipse.milo.opcua.sdk.server.diagnostics.variables.Util.roleBasedUserAccessLevelFilter;
 import static org.eclipse.milo.opcua.sdk.server.diagnostics.variables.Util.roleBasedUserRolePermissionsFilter;
@@ -37,9 +39,10 @@ import org.eclipse.milo.opcua.stack.core.types.structured.SessionSecurityDiagnos
  * <p>The Value follows the server-wide diagnostics enabled flag. The array's element Variables are
  * the SessionSecurityDiagnostics Variables of the per-Session diagnostics Objects; {@link
  * org.eclipse.milo.opcua.sdk.server.diagnostics.objects.SessionsDiagnosticsSummaryObject} adds and
- * removes them with those Objects and gives them this array's access metadata. Access to the array
- * and to the diagnostics enabled flag is derived from the standard nodes' role metadata unless
- * legacy access is explicitly configured.
+ * removes them with those Objects and gives them this array's access metadata. In restricted access
+ * mode, access to the array and to the diagnostics enabled flag follows explicit {@code
+ * RolePermissions} configured on those nodes, or the standard default role policies when none are
+ * set.
  */
 public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
 
@@ -47,6 +50,7 @@ public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
 
   private AttributeObserver attributeObserver;
   private AttributeFilter enabledFlagAccessFilter;
+  private AttributeFilter enabledFlagRolePermissionsFilter;
 
   private final OpcUaServer server;
 
@@ -75,13 +79,24 @@ public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
         == SessionSecurityDiagnosticsAccessMode.RESTRICTED) {
 
       // EnabledFlag grants read access broadly but reserves writes for ConfigureAdmin and
-      // SecurityAdmin. Derive UserAccessLevel from those standard RolePermissions.
-      enabledFlagAccessFilter = roleBasedUserAccessLevelFilter();
-      diagnosticsNode.getEnabledFlagNode().getFilterChain().addLast(enabledFlagAccessFilter);
+      // SecurityAdmin by default, while honoring explicit RolePermissions if configured.
+      enabledFlagAccessFilter =
+          roleBasedUserAccessLevelFilter(DEFAULT_ENABLED_FLAG_ROLE_PERMISSIONS);
+      enabledFlagRolePermissionsFilter =
+          roleBasedUserRolePermissionsFilter(DEFAULT_ENABLED_FLAG_ROLE_PERMISSIONS);
+      diagnosticsNode
+          .getEnabledFlagNode()
+          .getFilterChain()
+          .addLast(enabledFlagAccessFilter, enabledFlagRolePermissionsFilter);
 
-      // Apply the array's restricted role policy to Value access and to other node operations.
+      // Apply the restricted security diagnostics policy to Value access and internal Browse
+      // checks, while exposing UserRolePermissions only when explicit RolePermissions are
+      // configured on the node.
       node.getFilterChain()
-          .addLast(roleBasedUserAccessLevelFilter(), roleBasedUserRolePermissionsFilter());
+          .addLast(
+              roleBasedUserAccessLevelFilter(DEFAULT_SESSION_SECURITY_DIAGNOSTICS_ROLE_PERMISSIONS),
+              roleBasedUserRolePermissionsFilter(
+                  DEFAULT_SESSION_SECURITY_DIAGNOSTICS_ROLE_PERMISSIONS));
     }
 
     attributeObserver =
@@ -117,9 +132,10 @@ public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
   @Override
   protected void onShutdown() {
     AttributeFilter accessFilter = enabledFlagAccessFilter;
+    AttributeFilter rolePermissionsFilter = enabledFlagRolePermissionsFilter;
     AttributeObserver observer = attributeObserver;
 
-    if (accessFilter != null || observer != null) {
+    if (accessFilter != null || rolePermissionsFilter != null || observer != null) {
       ServerDiagnosticsTypeNode diagnosticsNode =
           (ServerDiagnosticsTypeNode)
               server
@@ -133,6 +149,11 @@ public class SessionSecurityDiagnosticsVariableArray extends AbstractLifecycle {
       if (accessFilter != null) {
         diagnosticsNode.getEnabledFlagNode().getFilterChain().remove(accessFilter);
         enabledFlagAccessFilter = null;
+      }
+
+      if (rolePermissionsFilter != null) {
+        diagnosticsNode.getEnabledFlagNode().getFilterChain().remove(rolePermissionsFilter);
+        enabledFlagRolePermissionsFilter = null;
       }
 
       if (observer != null) {
