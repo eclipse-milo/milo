@@ -622,29 +622,38 @@ class FileBasedTrustListPersistenceFailureTest {
       blockTargetWithNonEmptyDirectory(
           dirs.trustedCerts().resolve(thumbprintHex(SECOND.certificate().getEncoded()) + ".der"));
 
-      var failNextTrustedRead = new AtomicBoolean(false);
+      Thread callerThread = Thread.currentThread();
+      var failTrustedRead = new AtomicBoolean(false);
 
       try (var manager =
           new FaultInjectingTrustListManager(
               dirs,
               p -> false,
               p -> false,
-              dir -> dir.equals(dirs.trustedCerts()) && failNextTrustedRead.getAndSet(false))) {
+              dir ->
+                  dir.equals(dirs.trustedCerts())
+                      && Thread.currentThread() == callerThread
+                      && failTrustedRead.get())) {
         manager.initialize();
         DateTime before = manager.getLastUpdateTime();
         awaitClockTickAfter(before);
 
-        failNextTrustedRead.set(true);
-        UncheckedIOException thrown =
-            assertThrows(
-                UncheckedIOException.class,
-                () ->
-                    manager.update(
-                        current ->
-                            current
-                                .withIssuerCertificates(List.of(THIRD.certificate()))
-                                .withTrustedCertificates(
-                                    List.of(RETAINED.certificate(), SECOND.certificate()))));
+        UncheckedIOException thrown;
+        failTrustedRead.set(true);
+        try {
+          thrown =
+              assertThrows(
+                  UncheckedIOException.class,
+                  () ->
+                      manager.update(
+                          current ->
+                              current
+                                  .withIssuerCertificates(List.of(THIRD.certificate()))
+                                  .withTrustedCertificates(
+                                      List.of(RETAINED.certificate(), SECOND.certificate()))));
+        } finally {
+          failTrustedRead.set(false);
+        }
 
         assertEquals(1, thrown.getCause().getSuppressed().length);
         assertInstanceOf(IOException.class, thrown.getCause().getSuppressed()[0]);
