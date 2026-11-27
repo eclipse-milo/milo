@@ -32,12 +32,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A {@link CertificateQuarantine} that stores rejected certificates as files in a directory.
+ * A {@link CertificateQuarantine} that stores rejected certificates as files in a directory, named
+ * by the lowercase hex SHA-1 thumbprint of each certificate's DER encoding ({@code
+ * <thumbprint>.der}).
  *
  * <p>Every regular file in the directory is read as a certificate; files that fail to decode are
- * logged and skipped. Hidden files, whose names start with {@code .}, and subdirectories are not
- * read, so files such as the {@code .DS_Store} that macOS Finder creates are not listed, do not
- * count toward the rejected-certificate limit, and are never pruned.
+ * logged and skipped. Duplicate certificates present under multiple filenames are deduplicated when
+ * listed and all matching files are removed on {@link #removeRejectedCertificate(X509Certificate)}.
+ * Hidden files, whose names start with {@code .}, and subdirectories are not read, so files such as
+ * the {@code .DS_Store} that macOS Finder creates are not listed, do not count toward the
+ * rejected-certificate limit, and are never pruned.
  */
 public class FileBasedCertificateQuarantine implements CertificateQuarantine {
 
@@ -68,6 +72,7 @@ public class FileBasedCertificateQuarantine implements CertificateQuarantine {
   public List<X509Certificate> getRejectedCertificates() {
     return listCertificateFiles(rejectedDir).stream()
         .flatMap(file -> decodeCertificateFile(file).stream())
+        .distinct()
         .toList();
   }
 
@@ -83,7 +88,7 @@ public class FileBasedCertificateQuarantine implements CertificateQuarantine {
     try {
       ByteString thumbprint = CertificateUtil.thumbprint(certificate);
 
-      deleteCertificateFile(rejectedDir, thumbprint);
+      deleteCertificateFiles(rejectedDir, thumbprint);
     } catch (Exception ignored) {
     }
   }
@@ -104,12 +109,13 @@ public class FileBasedCertificateQuarantine implements CertificateQuarantine {
 
   private static void writeCertificateFile(File dir, X509Certificate certificate) {
     try {
-      String thumbprint = ByteBufUtil.hexDump(sha1(certificate.getSignature()));
+      byte[] encoded = certificate.getEncoded();
+      String thumbprint = ByteBufUtil.hexDump(sha1(encoded));
       String filename = String.format("%s.der", thumbprint);
       File file = dir.toPath().resolve(filename).toFile();
 
       try (FileOutputStream fos = new FileOutputStream(file)) {
-        fos.write(certificate.getEncoded());
+        fos.write(encoded);
         fos.flush();
       }
 
@@ -119,7 +125,7 @@ public class FileBasedCertificateQuarantine implements CertificateQuarantine {
     }
   }
 
-  private synchronized boolean deleteCertificateFile(File dir, ByteString thumbprint) {
+  private synchronized void deleteCertificateFiles(File dir, ByteString thumbprint) {
     for (File file : listCertificateFiles(dir)) {
       boolean matchesThumbprint =
           decodeCertificateFile(file)
@@ -136,14 +142,17 @@ public class FileBasedCertificateQuarantine implements CertificateQuarantine {
               .orElse(false);
 
       if (matchesThumbprint) {
-        if (!file.delete()) {
-          LOGGER.warn("Failed to delete issuer certificate: {}", file);
+        try {
+          deleteCertificateFile(file.toPath());
+        } catch (IOException e) {
+          LOGGER.warn("Failed to delete rejected certificate: {}", file, e);
         }
-        return true;
       }
     }
+  }
 
-    return false;
+  boolean deleteCertificateFile(Path path) throws IOException {
+    return Files.deleteIfExists(path);
   }
 
   /**
