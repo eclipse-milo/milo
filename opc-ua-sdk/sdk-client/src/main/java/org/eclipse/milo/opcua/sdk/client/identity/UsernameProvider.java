@@ -61,16 +61,20 @@ import org.slf4j.LoggerFactory;
  * UserTokenType#UserName}.
  *
  * <p>The provider protects the password according to the selected user-token security policy. For
- * legacy RSA policies it encrypts the password and server nonce with the endpoint certificate. For
- * supported enhanced ECC or RSA-DH username-token policies it uses the CreateSession
- * additional-header key material carried in {@link IdentityProviderContext} and produces an {@link
- * EccEncryptedSecret}. The supplied password bytes are cleared after token construction.
+ * legacy RSA policies it encrypts the password and server nonce to the server certificate returned
+ * in the CreateSession response, as OPC UA Part 4 (5.7.3.1) asks, or to the endpoint's certificate
+ * when the {@link IdentityProviderContext} carries none. For supported enhanced ECC or RSA-DH
+ * username-token policies it uses the CreateSession additional-header key material carried in
+ * {@link IdentityProviderContext} and produces an {@link EccEncryptedSecret}. The supplied password
+ * bytes are cleared after token construction.
  *
  * <p>OPC UA Part 4 (7.41) lets a client encrypt the password only to a server certificate it
- * trusts. On an endpoint whose SecurityPolicy is not {@code None}, the client's validator has
- * already checked the endpoint's certificate at CreateSession and, on a transport that runs a UASC
- * SecureChannel ({@code opc.tcp} or WebSocket), also when the SecureChannel opened. On an endpoint
- * whose SecurityPolicy is {@code None}, nothing has checked it.
+ * trusts. On an endpoint whose SecurityPolicy is not {@code None}, the client has already checked
+ * at CreateSession that the certificate returned matches the endpoint's and that its validator
+ * trusts it and, on a transport that runs a UASC SecureChannel ({@code opc.tcp} or WebSocket), also
+ * when the SecureChannel opened. On an endpoint whose SecurityPolicy is {@code None}, nothing has
+ * checked it, and it differs from the endpoint's once the server renews its certificate after the
+ * client cached the endpoint.
  *
  * <p>The provider validates the certificate before encrypting the password to it on a {@code None}
  * endpoint and on every transport other than {@code opc.tcp}. It uses the validator passed to its
@@ -353,13 +357,12 @@ public class UsernameProvider implements IdentityProvider {
         buffer.writeBytes(passwordBytes);
         buffer.writeBytes(nonceBytes);
 
-        ByteString bs = endpoint.getServerCertificate();
+        ByteString bs = resolveServerCertificate(context);
 
         if (bs == null || bs.isNull()) {
           throw new UaException(
               StatusCodes.Bad_ConfigurationError,
-              "UserTokenPolicy requires encryption but "
-                  + "server did not provide a certificate in endpoint");
+              "UserTokenPolicy requires encryption but server did not provide a certificate");
         }
 
         List<X509Certificate> certificateChain = CertificateUtil.decodeCertificates(bs.bytes());
@@ -423,6 +426,26 @@ public class UsernameProvider implements IdentityProvider {
     } finally {
       Arrays.fill(passwordBytes, (byte) 0);
     }
+  }
+
+  /**
+   * Return the server certificate to encrypt the password to: the one returned in the CreateSession
+   * response (Part 4 (5.7.3.1)) or, when the context carries none, the endpoint's.
+   *
+   * <p>On a secured endpoint the two are the same certificate, because the client checks that they
+   * match at CreateSession. On a {@code None} endpoint nothing checks that, and they differ once
+   * the server renews its certificate after the client cached the endpoint.
+   *
+   * @param context the identity-provider context for the session activation.
+   * @return the server certificate, possibly with its issuer chain, or the endpoint's certificate
+   *     when CreateSession's is unavailable.
+   */
+  private static @Nullable ByteString resolveServerCertificate(IdentityProviderContext context) {
+    return context
+        .getChannelSignatureInputs()
+        .map(ChannelSignatureInputs::serverCertificate)
+        .filter(certificate -> !certificate.isNullOrEmpty())
+        .orElseGet(() -> context.getEndpoint().getServerCertificate());
   }
 
   /**

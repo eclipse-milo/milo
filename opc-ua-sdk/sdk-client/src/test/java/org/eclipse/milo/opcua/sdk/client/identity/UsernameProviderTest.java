@@ -11,18 +11,23 @@
 package org.eclipse.milo.opcua.sdk.client.identity;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.ubyte;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Stream;
+import javax.crypto.Cipher;
 import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
@@ -40,6 +45,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserNameIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
+import org.eclipse.milo.opcua.stack.core.util.CipherFactory;
+import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
 import org.junit.jupiter.api.Test;
@@ -454,6 +461,60 @@ class UsernameProviderTest {
     assertTrue(ex.getMessage().contains("untrusted server certificate"));
   }
 
+  // Part 4 (5.7.3.1): the password is encrypted to the server certificate returned in the
+  // CreateSession response. On a None endpoint it can differ from the cached endpoint's, as after
+  // the server renews its certificate with a new key, and then only the new key can decrypt it.
+  @Test
+  void rsaUsernameTokenOnNoneChannelEncryptsToCreateSessionCertificate() throws Exception {
+    ApplicationIdentity cachedIdentity = rsaApplicationIdentity();
+    ApplicationIdentity createSessionIdentity = rsaApplicationIdentity();
+    EndpointDescription endpoint = noneEndpointWithRsaUsernamePolicy(cachedIdentity.certificate());
+
+    IdentityProviderContext context =
+        contextWithCreateSessionCertificate(
+            endpoint, ByteString.of(createSessionIdentity.certificate().getEncoded()));
+
+    UserNameIdentityToken token =
+        (UserNameIdentityToken) insecureUsernameProvider().getIdentityToken(context).getToken();
+
+    assertArrayEquals(
+        legacySecret("password", SERVER_NONCE),
+        decryptLegacySecret(createSessionIdentity.keyPair(), token));
+  }
+
+  // Without a CreateSession certificate, as on the legacy getIdentityToken(EndpointDescription,
+  // ByteString) path or from a server that returned none, the password is still encrypted to the
+  // endpoint's certificate.
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("contextsWithoutCreateSessionCertificate")
+  void rsaUsernameTokenWithoutCreateSessionCertificateEncryptsToEndpointCertificate(
+      String description, Function<EndpointDescription, IdentityProviderContext> contextFactory)
+      throws Exception {
+
+    ApplicationIdentity endpointIdentity = rsaApplicationIdentity();
+    EndpointDescription endpoint =
+        noneEndpointWithRsaUsernamePolicy(endpointIdentity.certificate());
+
+    UserNameIdentityToken token =
+        (UserNameIdentityToken)
+            insecureUsernameProvider().getIdentityToken(contextFactory.apply(endpoint)).getToken();
+
+    assertArrayEquals(
+        legacySecret("password", SERVER_NONCE),
+        decryptLegacySecret(endpointIdentity.keyPair(), token));
+  }
+
+  private static Stream<Arguments> contextsWithoutCreateSessionCertificate() {
+    Function<EndpointDescription, IdentityProviderContext> withoutChannelInputs =
+        endpoint -> new IdentityProviderContext(endpoint, SERVER_NONCE);
+    Function<EndpointDescription, IdentityProviderContext> withEmptyCertificate =
+        endpoint -> contextWithCreateSessionCertificate(endpoint, ByteString.NULL_VALUE);
+
+    return Stream.of(
+        Arguments.of("no channel inputs", withoutChannelInputs),
+        Arguments.of("CreateSession returned no certificate", withEmptyCertificate));
+  }
+
   // Part 4 (7.41)'s same-public-key-algorithm rule does not constrain an explicit SecurityPolicy
   // None user-token policy: it carries no public-key algorithm, so Guard 2 must skip it (NONE is
   // not a cross-family mismatch) and the plaintext-password case stays legal even on a secured
@@ -518,6 +579,72 @@ class UsernameProviderTest {
 
     assertEquals(1, presented.size());
     assertEquals("rsa", presented.get(0).getPolicyId());
+  }
+
+  private static UsernameProvider insecureUsernameProvider() {
+    return new UsernameProvider(
+        "user", "password", new CertificateValidator.InsecureCertificateValidator());
+  }
+
+  /** A None endpoint whose username token policy encrypts the password with Basic256Sha256. */
+  private static EndpointDescription noneEndpointWithRsaUsernamePolicy(
+      X509Certificate serverCertificate) throws Exception {
+
+    return endpoint(
+        SecurityPolicy.None,
+        MessageSecurityMode.None,
+        serverCertificate,
+        new UserTokenPolicy[] {
+          new UserTokenPolicy(
+              "username",
+              UserTokenType.UserName,
+              null,
+              null,
+              SecurityPolicy.Basic256Sha256.getUri())
+        });
+  }
+
+  /** A context as the SDK builds it on a None SecureChannel, with no client certificate. */
+  private static IdentityProviderContext contextWithCreateSessionCertificate(
+      EndpointDescription endpoint, ByteString createSessionCertificate) {
+
+    var channelSignatureInputs =
+        new ChannelSignatureInputs(
+            ByteString.NULL_VALUE,
+            NonceUtil.generateNonce(32),
+            createSessionCertificate,
+            ByteString.NULL_VALUE,
+            ByteString.NULL_VALUE);
+
+    return new IdentityProviderContext(
+        endpoint, SERVER_NONCE, null, null, null, null, channelSignatureInputs, null);
+  }
+
+  /**
+   * The legacy encrypted secret's plaintext, from the layout in Part 4 (7.40.2.2) rather than from
+   * the provider: a little-endian length of the password and nonce, the password, then the nonce.
+   */
+  private static byte[] legacySecret(String password, ByteString serverNonce) {
+    byte[] passwordBytes = password.getBytes(StandardCharsets.UTF_8);
+    byte[] nonceBytes = serverNonce.bytesOrEmpty();
+
+    return ByteBuffer.allocate(Integer.BYTES + passwordBytes.length + nonceBytes.length)
+        .order(ByteOrder.LITTLE_ENDIAN)
+        .putInt(passwordBytes.length + nonceBytes.length)
+        .put(passwordBytes)
+        .put(nonceBytes)
+        .array();
+  }
+
+  /** Decrypt a Basic256Sha256 username token's single RSA-OAEP block with {@code keyPair}. */
+  private static byte[] decryptLegacySecret(KeyPair keyPair, UserNameIdentityToken token)
+      throws Exception {
+
+    Cipher cipher =
+        CipherFactory.createForDecryption(
+            SecurityPolicy.Basic256Sha256.getAsymmetricEncryptionAlgorithm(), keyPair.getPrivate());
+
+    return cipher.doFinal(token.getPassword().bytesOrEmpty());
   }
 
   private static EndpointDescription endpoint(

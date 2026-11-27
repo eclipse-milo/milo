@@ -169,8 +169,10 @@ public class X509IdentityProvider implements IdentityProvider {
   /**
    * Build the bytes the user certificate signs for the ActivateSession user-token signature.
    *
-   * <p>Legacy policies sign {@code leaf(ServerCertificate) | ServerNonce}. Enhanced policies sign
-   * the channel-bound layout (Part 4 §6.1.8 Table 101) and require the SDK-resolved {@code inputs}.
+   * <p>Legacy policies sign {@code leaf(ServerCertificate) | ServerNonce}, where {@code
+   * ServerCertificate} is the one returned in the CreateSession response (Part 4 §5.7.3.1), or the
+   * endpoint's when {@code inputs} carry none. Enhanced policies sign the channel-bound layout
+   * (Part 4 §6.1.8 Table 101) and require the SDK-resolved {@code inputs}.
    */
   private static byte[] userTokenSignatureData(
       EndpointDescription endpoint,
@@ -182,8 +184,15 @@ public class X509IdentityProvider implements IdentityProvider {
     SecurityPolicyProfile profile = securityPolicy.getProfile();
 
     if (!profile.secureChannelEnhancements()) {
+      // On a None endpoint the CreateSession certificate differs from the cached endpoint's once
+      // the server renews its certificate, and the server verifies the signature over its own.
+      ByteString serverCertificateChain =
+          inputs != null && !inputs.serverCertificate().isNullOrEmpty()
+              ? inputs.serverCertificate()
+              : endpoint.getServerCertificate();
+
       List<X509Certificate> serverCertificates =
-          CertificateUtil.decodeCertificates(endpoint.getServerCertificate().bytesOrEmpty());
+          CertificateUtil.decodeCertificates(serverCertificateChain.bytesOrEmpty());
       ByteString serverCertificate = ByteString.of(serverCertificates.get(0).getEncoded());
 
       return ChannelBoundSignatureData.legacyUserTokenSignatureData(serverCertificate, serverNonce);
