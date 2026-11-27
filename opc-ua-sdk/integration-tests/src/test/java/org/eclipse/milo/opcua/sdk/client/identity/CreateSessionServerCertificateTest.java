@@ -186,7 +186,7 @@ class CreateSessionServerCertificateTest {
       UaException failure = assertThrows(UaException.class, client::connect);
 
       assertAll(
-          () -> assertEquals(StatusCodes.Bad_SecurityChecksFailed, failure.getStatusCode().value()),
+          () -> assertEquals(StatusCodes.Bad_CertificateUntrusted, failure.getStatusCode().value()),
           () ->
               assertEquals(
                   rejectedSessionsBefore,

@@ -115,7 +115,7 @@ class OpcUaClientDisconnectReconnectTest {
       client.addSessionActivityListener(
           new SessionActivityListener() {
             @Override
-            public void onSessionAttemptFailed(Throwable failure) {
+            public void onSessionAttemptFailed(AttemptStep step, Throwable failure) {
               sessionAttemptFailures.incrementAndGet();
             }
           });
@@ -213,7 +213,7 @@ class OpcUaClientDisconnectReconnectTest {
     client.addSessionActivityListener(
         new SessionActivityListener() {
           @Override
-          public void onSessionAttemptFailed(Throwable failure) {
+          public void onSessionAttemptFailed(AttemptStep step, Throwable failure) {
             sessionAttemptFailures.incrementAndGet();
           }
         });
