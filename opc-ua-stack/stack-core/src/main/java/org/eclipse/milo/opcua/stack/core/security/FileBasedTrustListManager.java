@@ -81,6 +81,11 @@ import org.slf4j.LoggerFactory;
  * files that fail to decode. Hidden files, whose names start with {@code .}, and subdirectories are
  * not read, so files such as the {@code .DS_Store} that macOS Finder creates neither appear in the
  * trust list nor produce warnings.
+ *
+ * <p>A removal looks for the removed entries in every regular file of the directory, whatever its
+ * name. A file that cannot be read is logged and skipped, and does not fail the removal: the
+ * removed entries leave memory and every file that can be read. Whatever the unreadable file holds
+ * stays on disk, where a later reload finds it once the file can be read.
  */
 public class FileBasedTrustListManager implements TrustListManager, Closeable {
 
@@ -781,12 +786,15 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
     IOException failure = null;
 
     for (Path entry : listEntries(directory)) {
+      if (decodeForRemoval(entry, this::decodeCertificateFile)
+          .filter(certificates::contains)
+          .isEmpty()) {
+        continue;
+      }
+
       try {
-        if (isRegularFile(entry)
-            && decodeCertificateFile(entry).filter(certificates::contains).isPresent()) {
-          deleteFile(entry);
-          LOGGER.debug("Deleted certificate: {}", entry);
-        }
+        deleteFile(entry);
+        LOGGER.debug("Deleted certificate: {}", entry);
       } catch (IOException e) {
         LOGGER.error("Error deleting certificate: {}", entry, e);
         failure = combineFailures(failure, e);
@@ -795,6 +803,25 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
 
     if (failure != null) {
       throw failure;
+    }
+  }
+
+  @FunctionalInterface
+  private interface FileDecoder<T> {
+    Optional<T> decode(Path file) throws IOException;
+  }
+
+  /**
+   * Decode a directory entry while looking for the files of removed entries. A file that cannot be
+   * read is logged and skipped, so it cannot fail the removal of the files that can be read.
+   */
+  private <T> Optional<T> decodeForRemoval(Path entry, FileDecoder<T> decoder) {
+    try {
+      return isRegularFile(entry) ? decoder.decode(entry) : Optional.empty();
+    } catch (IOException e) {
+      LOGGER.warn(
+          "Skipped unreadable file {} during removal; what it holds stays on disk", entry, e);
+      return Optional.empty();
     }
   }
 
@@ -818,17 +845,13 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
     IOException failure = null;
 
     for (Path entry : listEntries(directory)) {
+      List<X509CRL> contents = decodeForRemoval(entry, this::decodeCrlFile).orElse(List.of());
+      List<X509CRL> retained = contents.stream().filter(crl -> !removed.contains(crl)).toList();
+      if (retained.size() == contents.size()) {
+        continue;
+      }
+
       try {
-        if (!isRegularFile(entry)) {
-          continue;
-        }
-
-        List<X509CRL> contents = decodeCrlFile(entry).orElse(List.of());
-        List<X509CRL> retained = contents.stream().filter(crl -> !removed.contains(crl)).toList();
-        if (retained.size() == contents.size()) {
-          continue;
-        }
-
         if (retained.isEmpty()) {
           deleteFile(entry);
           LOGGER.debug("Deleted CRL file: {}", entry);
