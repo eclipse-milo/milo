@@ -29,6 +29,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.SignatureData;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserNameIdentityToken;
 import org.eclipse.milo.opcua.stack.core.types.structured.UserTokenPolicy;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Base validator for username/password user identity tokens.
@@ -39,6 +41,9 @@ import org.jspecify.annotations.Nullable;
  * only decide whether the resulting username and password identify a valid user.
  */
 public abstract class AbstractUsernameIdentityValidator extends AbstractIdentityValidator {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(AbstractUsernameIdentityValidator.class);
 
   @Override
   public Set<UserTokenType> getSupportedTokenTypes() {
@@ -91,7 +96,8 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
 
       try {
         plainTextBytes = decryptTokenData(session, algorithm, tokenBytes);
-      } catch (UaException ignored) {
+      } catch (UaException e) {
+        logTokenFailure("Failed to decrypt legacy username token", session, e);
         throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
       }
 
@@ -129,16 +135,33 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
       System.arraycopy(plainTextBytes, 4, passwordBytes, 0, passwordBytes.length);
       System.arraycopy(plainTextBytes, 4 + passwordBytes.length, nonceBytes, 0, lastNonceLength);
 
-      if (MessageDigest.isEqual(lastNonce.bytes(), nonceBytes)) {
+      boolean nonceValid = MessageDigest.isEqual(lastNonce.bytes(), nonceBytes);
+
+      int paddingDiff = 0;
+      for (int i = Integer.BYTES + (int) length; i < plainTextBytes.length; i++) {
+        paddingDiff |= plainTextBytes[i] & 0xFF;
+      }
+      boolean paddingValid = paddingDiff == 0;
+
+      if (nonceValid && paddingValid) {
         String password = new String(passwordBytes, StandardCharsets.UTF_8);
         UsernameIdentity identity = authenticateUsernamePassword(session, username, password);
 
         if (identity != null) {
           return identity;
         } else {
+          LOGGER.debug(
+              "Legacy encrypted username token authentication failed for session {}",
+              session.getSessionId());
           throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
         }
       } else {
+        LOGGER.debug(
+            "Legacy encrypted username token validation failed for session {} (nonceValid={},"
+                + " paddingValid={})",
+            session.getSessionId(),
+            nonceValid,
+            paddingValid);
         throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
       }
     } else {
@@ -200,24 +223,33 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
                   .getLimits()
                   .getMaxEccEncryptedSecretSigningTimeSkew());
     } catch (UaException e) {
-      if (e.getStatusCode().getValue() == StatusCodes.Bad_NonceInvalid) {
-        throw new UaException(StatusCodes.Bad_UserAccessDenied, e);
-      } else {
-        throw e;
-      }
+      logTokenFailure("Failed to validate enhanced username token", session, e);
+      throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
     } finally {
       session.clearUserTokenEphemeralKeyPair();
     }
 
-    if (passwordBytes.length()
-        > session.getServer().getConfig().getLimits().getMaxPasswordLength().longValue()) {
-      throw new UaException(
-          StatusCodes.Bad_EncodingLimitsExceeded, "password length exceeds limits");
+    long maxPasswordLength =
+        session.getServer().getConfig().getLimits().getMaxPasswordLength().longValue();
+    if (passwordBytes.length() > maxPasswordLength) {
+      LOGGER.debug(
+          "Enhanced username token password length {} exceeds limit {} for session {}",
+          passwordBytes.length(),
+          maxPasswordLength,
+          session.getSessionId());
+      throw new UaException(StatusCodes.Bad_IdentityTokenInvalid, "password length exceeds limits");
     }
 
     String password = new String(passwordBytes.bytesOrEmpty(), StandardCharsets.UTF_8);
+    UsernameIdentity identity = authenticateUsernamePassword(session, username, password);
 
-    return authenticateUsernameOrThrow(session, username, password);
+    if (identity != null) {
+      return identity;
+    } else {
+      LOGGER.debug(
+          "Enhanced username token authentication failed for session {}", session.getSessionId());
+      throw new UaException(StatusCodes.Bad_IdentityTokenInvalid);
+    }
   }
 
   private SecurityPolicy getTokenSecurityPolicy(Session session, UserTokenPolicy policy)
@@ -254,6 +286,47 @@ public abstract class AbstractUsernameIdentityValidator extends AbstractIdentity
     } else {
       throw new UaException(StatusCodes.Bad_UserAccessDenied);
     }
+  }
+
+  private static void logTokenFailure(String context, Session session, UaException e) {
+    if (!LOGGER.isDebugEnabled()) {
+      return;
+    }
+
+    Throwable cause = e.getCause();
+    String detail =
+        e.getStatusCode().getValue() == StatusCodes.Bad_SecurityPolicyRejected
+            ? "unexpected security policy URI"
+            : sanitizeForLog(e.getMessage());
+    String causeSummary =
+        cause == null
+            ? "none"
+            : cause.getClass().getSimpleName() + ": " + sanitizeForLog(cause.getMessage());
+
+    LOGGER.debug(
+        "{} for session {}: statusCode={}, detail={}, cause={}",
+        context,
+        session.getSessionId(),
+        e.getStatusCode(),
+        detail,
+        causeSummary);
+  }
+
+  private static String sanitizeForLog(@Nullable String value) {
+    if (value == null) {
+      return "";
+    }
+
+    var sanitized = new StringBuilder(value.length());
+    for (int i = 0; i < value.length(); i++) {
+      char c = value.charAt(i);
+      if (c == '\r' || c == '\n' || Character.isISOControl(c)) {
+        sanitized.append(' ');
+      } else {
+        sanitized.append(c);
+      }
+    }
+    return sanitized.toString();
   }
 
   /**
