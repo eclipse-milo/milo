@@ -211,42 +211,6 @@ class SessionAttemptStepTest {
     }
   }
 
-  // A listener written before the step was reported overrides only the method without it. It must
-  // still hear about every failed attempt, with the same failure.
-  @Test
-  void listenerThatOverridesOnlyTheFailureFormHearsEveryFailedAttempt() throws Exception {
-    try (var fixture = new Fixture()) {
-      var failures = new LinkedBlockingQueue<String>();
-      fixture.client.addSessionActivityListener(
-          new SessionActivityListener() {
-            @Override
-            public void onSessionAttemptFailed(Throwable failure) {
-              failures.add(RecordingListener.describe(failure));
-            }
-          });
-      var listener = new RecordingListener();
-      fixture.client.addSessionActivityListener(listener);
-
-      fixture.activateSession.refuseNext(StatusCodes.Bad_UserAccessDenied);
-
-      assertThrows(UaException.class, fixture.client::connect);
-
-      assertEquals(
-          List.of(
-              "onSessionAttemptFailed(ACTIVATE_SESSION, UaServiceFaultException,"
-                  + " Bad_UserAccessDenied)",
-              "onSessionActive"),
-          listener.next(2));
-
-      // Each notification reaches the listeners in the order they were added, so by the time the
-      // second one heard of the Session, the first has heard of every failure before it.
-      assertEquals(
-          List.of("UaServiceFaultException, Bad_UserAccessDenied"),
-          new ArrayList<>(failures),
-          "a listener overriding only onSessionAttemptFailed(Throwable) must hear the attempt");
-    }
-  }
-
   // region helpers
 
   /** Records each callback it receives, in the order they arrive. */

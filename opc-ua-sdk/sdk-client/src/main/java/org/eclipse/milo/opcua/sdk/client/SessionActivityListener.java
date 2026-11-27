@@ -99,26 +99,10 @@ public interface SessionActivityListener {
    * });
    * }</pre>
    *
-   * <p>The default implementation calls {@link #onSessionAttemptFailed(Throwable)}, so a listener
-   * that overrides only that method still hears about every failed attempt.
-   *
    * @param step the step of the attempt that failed.
    * @param failure the cause of the failed attempt.
    */
-  default void onSessionAttemptFailed(AttemptStep step, Throwable failure) {
-    onSessionAttemptFailed(failure);
-  }
-
-  /**
-   * An attempt to establish or recover a Session failed, and the client will try again.
-   *
-   * <p>Called by the default {@link #onSessionAttemptFailed(AttemptStep, Throwable)} with the same
-   * failure. That method says when attempts are reported and what {@code failure} carries; override
-   * it instead of this one to learn which step failed.
-   *
-   * @param failure the cause of the failed attempt.
-   */
-  default void onSessionAttemptFailed(Throwable failure) {}
+  default void onSessionAttemptFailed(AttemptStep step, Throwable failure) {}
 
   /**
    * A step of an attempt to establish or recover a Session, as reported by {@link

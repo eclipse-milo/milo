@@ -57,7 +57,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Failed attempts to establish or recover a Session are reported to {@link
- * SessionActivityListener#onSessionAttemptFailed(Throwable)}.
+ * SessionActivityListener#onSessionAttemptFailed(SessionActivityListener.AttemptStep, Throwable)}.
  *
  * <p>The client retries a failed attempt for as long as it stays connected. When the Server stops
  * accepting the client's identity every retry is another rejected login, which can lock the
@@ -149,7 +149,7 @@ class SessionAttemptFailedTest {
       var throwingListener =
           new SessionActivityListener() {
             @Override
-            public void onSessionAttemptFailed(Throwable failure) {
+            public void onSessionAttemptFailed(AttemptStep step, Throwable failure) {
               throw new IllegalStateException("thrown by the test's listener");
             }
           };
@@ -344,7 +344,7 @@ class SessionAttemptFailedTest {
     }
 
     @Override
-    public void onSessionAttemptFailed(Throwable failure) {
+    public void onSessionAttemptFailed(AttemptStep step, Throwable failure) {
       String status =
           UaException.extractStatusCode(failure)
               .flatMap(statusCode -> StatusCodes.lookup(statusCode.value()))
