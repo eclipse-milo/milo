@@ -169,8 +169,11 @@ class FileBasedTrustListPersistenceFailureTest {
       }
 
       try (var manager = createManager(dirs)) {
-        manager.initialize();
+        // Exercise the package-private atomic-replacement helper before initialize() starts the
+        // directory watcher; in production writeFileAtomically runs under mutationLock, and calling
+        // it unlocked while the watcher is active can race with NTFS file reads on Windows.
         manager.writeFileAtomically(existing, ".cert-", SECOND.certificate().getEncoded());
+        manager.initialize();
         manager.addTrustedCertificate(THIRD.certificate());
         manager.setTrustedCrls(List.of(THIRD.crl()));
 
