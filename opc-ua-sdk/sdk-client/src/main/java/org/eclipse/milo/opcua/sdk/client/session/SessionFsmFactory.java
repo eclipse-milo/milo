@@ -58,6 +58,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.sdk.client.*;
+import org.eclipse.milo.opcua.sdk.client.SessionActivityListener.AttemptStep;
 import org.eclipse.milo.opcua.sdk.client.identity.ChannelSignatureInputs;
 import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
 import org.eclipse.milo.opcua.sdk.client.identity.IdentityProviderContext;
@@ -344,7 +345,7 @@ public class SessionFsmFactory {
             ctx -> {
               Event.CreateSessionFailure e = (Event.CreateSessionFailure) ctx.event();
 
-              notifySessionAttemptFailed(client, ctx, e.failure);
+              notifySessionAttemptFailed(client, ctx, AttemptStep.CREATE_SESSION, e.failure);
               handleFailureToOpenSession(client, ctx, e.failure);
             });
 
@@ -440,7 +441,7 @@ public class SessionFsmFactory {
             ctx -> {
               Event.ActivateSessionFailure e = (Event.ActivateSessionFailure) ctx.event();
 
-              notifySessionAttemptFailed(client, ctx, e.failure);
+              notifySessionAttemptFailed(client, ctx, AttemptStep.ACTIVATE_SESSION, e.failure);
               handleFailureToOpenSession(client, ctx, e.failure);
             });
 
@@ -511,7 +512,8 @@ public class SessionFsmFactory {
               Event.TransferSubscriptionsFailure e =
                   (Event.TransferSubscriptionsFailure) ctx.event();
 
-              notifySessionAttemptFailed(client, ctx, e.failure);
+              notifySessionAttemptFailed(
+                  client, ctx, AttemptStep.TRANSFER_SUBSCRIPTIONS, e.failure);
               handleFailureToOpenSession(client, ctx, e.failure);
             });
 
@@ -574,7 +576,7 @@ public class SessionFsmFactory {
             ctx -> {
               Event.InitializeFailure e = (Event.InitializeFailure) ctx.event();
 
-              notifySessionAttemptFailed(client, ctx, e.failure);
+              notifySessionAttemptFailed(client, ctx, AttemptStep.INITIALIZE, e.failure);
               handleFailureToOpenSession(client, ctx, e.failure);
             });
 
@@ -1118,7 +1120,7 @@ public class SessionFsmFactory {
 
               Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
 
-              notifySessionAttemptFailed(client, ctx, e.failure);
+              notifySessionAttemptFailed(client, ctx, AttemptStep.REACTIVATE_SESSION, e.failure);
               handleFailureToOpenSession(client, ctx, e.failure);
 
               // Reactivation is being abandoned in favor of creating a new Session. The old one may
@@ -1142,7 +1144,7 @@ public class SessionFsmFactory {
             ctx -> {
               Event.ReactivateSessionFailure e = (Event.ReactivateSessionFailure) ctx.event();
 
-              notifySessionAttemptFailed(client, ctx, e.failure);
+              notifySessionAttemptFailed(client, ctx, AttemptStep.REACTIVATE_SESSION, e.failure);
               handleFailureToOpenSession(client, ctx, e.failure);
             });
 
@@ -1274,7 +1276,8 @@ public class SessionFsmFactory {
   }
 
   /**
-   * Tell the {@link SessionActivityListener}s that an attempt failed and another will follow.
+   * Tell the {@link SessionActivityListener}s that an attempt failed at {@code step} and another
+   * will follow.
    *
    * <p>Call this on the edges a failed attempt takes into {@link State#CreatingWait} or {@link
    * State#ReactivatingWait}, and not on a {@link Event.CloseSession}: the application ending the
@@ -1286,7 +1289,7 @@ public class SessionFsmFactory {
    * out of its disconnected state first, and an attempt made while it was disconnected is reported.
    */
   private static void notifySessionAttemptFailed(
-      OpcUaClient client, FsmContext<State, Event> ctx, Throwable failure) {
+      OpcUaClient client, FsmContext<State, Event> ctx, AttemptStep step, Throwable failure) {
 
     // Once the application has started to disconnect, a failed attempt is its own doing, and no
     // retry follows that could succeed: a shelved CloseSession is processed as soon as the FSM
@@ -1298,7 +1301,7 @@ public class SessionFsmFactory {
 
     Throwable cause = unwrapCompletionException(failure);
 
-    notifySessionActivityListeners(ctx, listener -> listener.onSessionAttemptFailed(cause));
+    notifySessionActivityListeners(ctx, listener -> listener.onSessionAttemptFailed(step, cause));
   }
 
   /**

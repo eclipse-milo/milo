@@ -139,7 +139,9 @@ public class SessionFsm {
    *
    * <p>Set when a CloseSession is shelved and removed on entry to {@link State#Inactive}, which
    * every route a CloseSession takes ends in. While it is set no attempt is retried, so a failed
-   * attempt is not reported to {@link SessionActivityListener#onSessionAttemptFailed(Throwable)}.
+   * attempt is not reported to {@link
+   * SessionActivityListener#onSessionAttemptFailed(SessionActivityListener.AttemptStep,
+   * Throwable)}.
    */
   static final FsmContext.Key<Event.CloseSession> KEY_SHELVED_CLOSE_SESSION =
       new FsmContext.Key<>("shelvedCloseSession", Event.CloseSession.class);
