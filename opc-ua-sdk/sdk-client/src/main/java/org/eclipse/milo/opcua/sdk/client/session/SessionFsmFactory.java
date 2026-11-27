@@ -128,6 +128,10 @@ public class SessionFsmFactory {
       new FsmContext.Key<>("createSessionEndpoint", EndpointDescription.class);
   private static final FsmContext.Key<ByteString> KEY_CREATE_SESSION_CLIENT_CERTIFICATE =
       new FsmContext.Key<>("createSessionClientCertificate", ByteString.class);
+  private static final FsmContext.Key<Channel> KEY_SESSION_CHANNEL =
+      new FsmContext.Key<>("sessionChannel", Channel.class);
+  private static final FsmContext.Key<Boolean> KEY_SESSION_CHANNEL_LOST =
+      new FsmContext.Key<>("sessionChannelLost", Boolean.class);
 
   /**
    * Lower bound, in milliseconds, on the keep-alive interval derived from a revised session
@@ -219,7 +223,12 @@ public class SessionFsmFactory {
     fb.onTransitionTo(State.Inactive)
         .from(s -> s != State.Inactive)
         .viaAny()
-        .execute(ctx -> KEY_SHELVED_CLOSE_SESSION.remove(ctx));
+        .execute(
+            ctx -> {
+              KEY_SHELVED_CLOSE_SESSION.remove(ctx);
+              KEY_SESSION_CHANNEL.remove(ctx);
+              KEY_SESSION_CHANNEL_LOST.remove(ctx);
+            });
 
     /* Internal Transition Actions */
 
@@ -274,6 +283,9 @@ public class SessionFsmFactory {
         .viaAny()
         .execute(
             ctx -> {
+              KEY_SESSION_CHANNEL.remove(ctx);
+              KEY_SESSION_CHANNEL_LOST.remove(ctx);
+
               SessionFuture sessionFuture = new SessionFuture();
               KEY_SESSION_FUTURE.set(ctx, sessionFuture);
 
@@ -661,7 +673,12 @@ public class SessionFsmFactory {
   private static void configureActiveState(FsmBuilder<State, Event> fb, OpcUaClient client) {
     /* Transitions */
 
-    fb.when(State.Active).on(Event.CloseSession.class).transitionTo(State.Closing);
+    fb.when(State.Active)
+        .on(Event.CloseSession.class)
+        .transitionTo(State.Closing)
+        .guardedBy(ctx -> canCloseSession(ctx, client));
+
+    fb.when(State.Active).on(Event.CloseSession.class).transitionTo(State.Inactive);
 
     fb.when(State.Active)
         .on(
@@ -733,6 +750,8 @@ public class SessionFsmFactory {
 
               SessionFuture sessionFuture = KEY_SESSION_FUTURE.get(ctx);
 
+              KEY_SESSION_CHANNEL_LOST.remove(ctx);
+
               OpcClientTransport transport = client.getTransport();
 
               if (transport instanceof ChannelStateObservable observable) {
@@ -750,18 +769,32 @@ public class SessionFsmFactory {
 
                 observable.addTransitionListener(listener);
                 KEY_CHANNEL_STATE_TRANSITION_LISTENER.set(ctx, listener);
+              }
 
-                // The listener is registered only on the transition into Active. If the channel
-                // went inactive between the SecureChannel handshake and reaching Active, the
-                // transport already emitted connected=false before the listener was attached and
-                // recovery would otherwise wait for the next request to fail. Fire the lost-event
-                // synthetically so the FSM begins recovery immediately.
-                if (transport instanceof CurrentChannelProvider channelProvider) {
-                  Channel currentChannel = channelProvider.getCurrentChannel();
-                  if (currentChannel == null || !currentChannel.isActive()) {
-                    ctx.fireEvent(new Event.ConnectionLost());
-                  }
+              // Capture the active channel and check for channel loss only after registering the
+              // TransitionListener above, so a drop cannot slip between the liveness check and
+              // listener registration.
+              if (transport instanceof CurrentChannelProvider channelProvider) {
+                Channel currentChannel = channelProvider.getCurrentChannel();
+                if (currentChannel != null && currentChannel.isActive()) {
+                  KEY_SESSION_CHANNEL.set(ctx, currentChannel);
+                } else {
+                  KEY_SESSION_CHANNEL.remove(ctx);
+                  KEY_SESSION_CHANNEL_LOST.set(ctx, Boolean.TRUE);
                 }
+              } else if (transport instanceof ChannelStateObservable observable
+                  && observable.getChannelState()
+                      != ChannelStateObservable.ChannelState.CONNECTED) {
+                KEY_SESSION_CHANNEL_LOST.set(ctx, Boolean.TRUE);
+              }
+
+              if (transport instanceof ChannelStateObservable
+                  && Boolean.TRUE.equals(KEY_SESSION_CHANNEL_LOST.get(ctx))) {
+                // If the channel went inactive between the SecureChannel handshake and registering
+                // the listener above, the transport already emitted connected=false before the
+                // listener was attached. Fire ConnectionLost synthetically so recovery starts
+                // immediately instead of waiting for the next request or keep-alive to fail.
+                ctx.fireEvent(new Event.ConnectionLost());
               }
 
               client
@@ -816,6 +849,40 @@ public class SessionFsmFactory {
               OpcUaSession session = KEY_SESSION.get(ctx);
 
               notifySessionActivityListeners(ctx, listener -> listener.onSessionInactive(session));
+            });
+
+    fb.onTransitionFrom(State.Active)
+        .to(State.ReactivatingWait)
+        .via(Event.ConnectionLost.class)
+        .execute(
+            ctx -> {
+              KEY_SESSION_CHANNEL.remove(ctx);
+              KEY_SESSION_CHANNEL_LOST.set(ctx, Boolean.TRUE);
+            });
+
+    // Registered after onSessionInactive() so listeners still receive the departing Session.
+    fb.onTransitionFrom(State.Active)
+        .to(State.Inactive)
+        .via(Event.CloseSession.class)
+        .execute(
+            ctx -> {
+              OpcUaSession session = KEY_SESSION.remove(ctx);
+
+              try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                  MDCCloseable ignoredSessionId = session != null ? putSessionId(session) : null) {
+
+                LOGGER.debug(
+                    "Skipping CloseSession for {}: Session's SecureChannel is no longer available",
+                    session != null ? session.getSessionId() : null);
+              }
+
+              Event.CloseSession event = (Event.CloseSession) ctx.event();
+
+              client
+                  .getTransport()
+                  .getConfig()
+                  .getExecutor()
+                  .execute(() -> event.future.complete(Unit.VALUE));
             });
 
     /* Internal Transition Actions */
@@ -953,6 +1020,8 @@ public class SessionFsmFactory {
         .via(Event.CloseSessionSuccess.class)
         .execute(
             ctx -> {
+              KEY_SESSION.remove(ctx);
+
               SessionFsm.CloseFuture closeFuture = KEY_CLOSE_FUTURE.get(ctx);
 
               if (closeFuture != null) {
@@ -991,7 +1060,12 @@ public class SessionFsmFactory {
         .on(Event.ReactivatingWaitExpired.class)
         .transitionTo(State.Reactivating);
 
-    fb.when(State.ReactivatingWait).on(Event.CloseSession.class).transitionTo(State.Closing);
+    fb.when(State.ReactivatingWait)
+        .on(Event.CloseSession.class)
+        .transitionTo(State.Closing)
+        .guardedBy(ctx -> canCloseSession(ctx, client));
+
+    fb.when(State.ReactivatingWait).on(Event.CloseSession.class).transitionTo(State.Inactive);
 
     fb.onTransitionTo(State.ReactivatingWait)
         .from(s -> s != State.ReactivatingWait)
@@ -1027,7 +1101,7 @@ public class SessionFsmFactory {
             });
 
     fb.onTransitionFrom(State.ReactivatingWait)
-        .to(State.Closing)
+        .to(s -> s == State.Closing || s == State.Inactive)
         .via(Event.CloseSession.class)
         .execute(
             ctx -> {
@@ -1040,6 +1114,30 @@ public class SessionFsmFactory {
 
               handleFailureToOpenSession(
                   client, ctx, new UaException(StatusCodes.Bad_SessionClosed));
+            });
+
+    fb.onTransitionFrom(State.ReactivatingWait)
+        .to(State.Inactive)
+        .via(Event.CloseSession.class)
+        .execute(
+            ctx -> {
+              OpcUaSession session = KEY_SESSION.remove(ctx);
+
+              try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+                  MDCCloseable ignoredSessionId = session != null ? putSessionId(session) : null) {
+
+                LOGGER.debug(
+                    "Skipping CloseSession for {}: Session's SecureChannel is no longer available",
+                    session != null ? session.getSessionId() : null);
+              }
+
+              Event.CloseSession event = (Event.CloseSession) ctx.event();
+
+              client
+                  .getTransport()
+                  .getConfig()
+                  .getExecutor()
+                  .execute(() -> event.future.complete(Unit.VALUE));
             });
 
     /* Internal Transition Actions */
@@ -1210,6 +1308,55 @@ public class SessionFsmFactory {
         && observable.getChannelState() == ChannelStateObservable.ChannelState.DISCONNECTED;
   }
 
+  /**
+   * Check whether the transport currently reports a connected channel.
+   *
+   * <p>Transports that do not implement {@link ChannelStateObservable} cannot report channel state
+   * and are treated as connected so existing best-effort CloseSession behavior is preserved.
+   *
+   * @param client the {@link OpcUaClient} the Session belongs to.
+   * @return {@code true} if the transport reports {@link
+   *     ChannelStateObservable.ChannelState#CONNECTED} or does not report channel state.
+   */
+  private static boolean isChannelConnected(OpcUaClient client) {
+    return !(client.getTransport() instanceof ChannelStateObservable observable)
+        || observable.getChannelState() == ChannelStateObservable.ChannelState.CONNECTED;
+  }
+
+  /**
+   * Check whether a CloseSession request for the Session in {@code ctx} can be sent over the
+   * SecureChannel the Session is bound to.
+   *
+   * <p>A Session is bound to the SecureChannel it was activated on (Part 4 §5.7.2.1, §7.35). Once
+   * that channel is lost, sending CloseSession would either wait for the transport to open a new
+   * SecureChannel or transmit over a replacement channel that the Server will reject with {@code
+   * Bad_SessionIdInvalid}.
+   *
+   * @param ctx the current FSM context.
+   * @param client the {@link OpcUaClient} the Session belongs to.
+   * @return {@code true} if CloseSession should be attempted on the current channel.
+   */
+  private static boolean canCloseSession(FsmContext<State, Event> ctx, OpcUaClient client) {
+    if (Boolean.TRUE.equals(KEY_SESSION_CHANNEL_LOST.get(ctx))) {
+      return false;
+    }
+
+    if (!isChannelConnected(client)) {
+      return false;
+    }
+
+    if (client.getTransport() instanceof CurrentChannelProvider channelProvider) {
+      Channel sessionChannel = KEY_SESSION_CHANNEL.get(ctx);
+      Channel currentChannel = channelProvider.getCurrentChannel();
+
+      return currentChannel != null
+          && currentChannel.isActive()
+          && (sessionChannel == null || sessionChannel == currentChannel);
+    }
+
+    return true;
+  }
+
   private static void handleGetSessionEvent(ActionContext<State, Event> ctx) {
     CompletableFuture<OpcUaSession> sessionFuture = KEY_SESSION_FUTURE.get(ctx).future;
 
@@ -1347,25 +1494,42 @@ public class SessionFsmFactory {
       FsmContext<State, Event> ctx, OpcUaClient client, OpcUaSession session) {
 
     return closeSession(
-        ctx, client, session.getSessionId(), session.getAuthenticationToken(), true);
+        ctx.getUserContext().toString(),
+        client,
+        session.getSessionId(),
+        session.getAuthenticationToken(),
+        true);
   }
 
   private static CompletableFuture<Unit> abandonSession(
       FsmContext<State, Event> ctx, OpcUaClient client, OpcUaSession session) {
 
-    return closeSession(
-        ctx, client, session.getSessionId(), session.getAuthenticationToken(), false);
+    return abandonSession(ctx, client, session.getSessionId(), session.getAuthenticationToken());
   }
 
   private static CompletableFuture<Unit> abandonSession(
       FsmContext<State, Event> ctx, OpcUaClient client, CreateSessionResponse session) {
 
-    return closeSession(
-        ctx, client, session.getSessionId(), session.getAuthenticationToken(), false);
+    return abandonSession(ctx, client, session.getSessionId(), session.getAuthenticationToken());
   }
 
-  private static CompletableFuture<Unit> closeSession(
-      FsmContext<State, Event> ctx,
+  private static CompletableFuture<Unit> abandonSession(
+      FsmContext<State, Event> ctx, OpcUaClient client, NodeId sessionId, NodeId authToken) {
+
+    if (!isChannelConnected(client)) {
+      try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+          MDCCloseable ignoredSessionId = putSessionId(sessionId)) {
+
+        LOGGER.debug("Skipping abandon CloseSession: transport channel is not connected");
+      }
+      return completedFuture(Unit.VALUE);
+    }
+
+    return closeSession(ctx.getUserContext().toString(), client, sessionId, authToken, false);
+  }
+
+  static CompletableFuture<Unit> closeSession(
+      String instanceId,
       OpcUaClient client,
       NodeId sessionId,
       NodeId authToken,
@@ -1378,7 +1542,7 @@ public class SessionFsmFactory {
 
       CloseSessionRequest request = new CloseSessionRequest(requestHeader, deleteSubscriptions);
 
-      try (MDCCloseable ignoredInstanceId = putInstanceId(ctx);
+      try (MDCCloseable ignoredInstanceId = MDC.putCloseable("instance-id", instanceId);
           MDCCloseable ignoredSessionId = putSessionId(sessionId)) {
 
         LOGGER.debug("Sending CloseSessionRequest...");
@@ -1388,7 +1552,13 @@ public class SessionFsmFactory {
           .getTransport()
           .sendRequestMessage(request)
           .whenCompleteAsync(
-              (csr, ex2) -> closeFuture.complete(Unit.VALUE),
+              (csr, ex2) -> {
+                if (ex2 != null) {
+                  closeFuture.completeExceptionally(unwrapCompletionException(ex2));
+                } else {
+                  closeFuture.complete(Unit.VALUE);
+                }
+              },
               client.getTransport().getConfig().getExecutor());
 
       return closeFuture;
