@@ -91,6 +91,15 @@
  * closure increments the timeout diagnostic; subscription cleanup and lifecycle notification run
  * once, outside the lock coordinating closure and timer replacement.
  *
+ * <p>Each Session also owns its active browse {@link
+ * org.eclipse.milo.opcua.sdk.server.ContinuationPoint}s in insertion order behind a single monitor.
+ * When a positive {@code MaxBrowseContinuationPoints} limit is configured, a new Browse request
+ * reclaims the oldest continuation points from prior requests as needed while never evicting
+ * entries allocated for earlier operations of the same request; a limit of zero imposes no cap.
+ * BrowseNext updates multi-page continuation points in place under the same monitor so concurrent
+ * Browse calls cannot claim a slot mid-page, and closing a Session clears any remaining
+ * continuation points and prevents further allocations.
+ *
  * <h2>Diagnostics returned to clients</h2>
  *
  * <p>A client asks for diagnostics with the {@code returnDiagnostics} mask of each request header.

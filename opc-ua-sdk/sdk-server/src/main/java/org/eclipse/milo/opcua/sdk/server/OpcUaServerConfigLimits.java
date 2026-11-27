@@ -191,6 +191,17 @@ public interface OpcUaServerConfigLimits {
     return uint(EncodingLimits.DEFAULT_MAX_MESSAGE_SIZE / 2);
   }
 
+  /**
+   * Get the maximum number of active browse continuation points held per Session.
+   *
+   * <p>When positive, new Browse requests reclaim the oldest continuation points from prior
+   * requests on the same Session as needed, and a single Browse request that requires more than
+   * this limit returns {@code Bad_NoContinuationPoints} for the excess operations (OPC UA Part 4
+   * §7.9). A value of {@code 0} indicates no limit (OPC UA Part 5 §6.3.2).
+   *
+   * @return the maximum number of browse continuation points per Session, or {@code 0} for no
+   *     limit.
+   */
   default UShort getMaxBrowseContinuationPoints() {
     return ushort(250);
   }
