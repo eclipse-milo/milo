@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.stack.core.security;
 
+import java.io.UncheckedIOException;
 import java.security.cert.X509Certificate;
 import java.util.List;
 
@@ -25,11 +26,16 @@ public interface CertificateQuarantine {
    * Get the list of rejected Certificates.
    *
    * @return the list of rejected {@link X509Certificate}s.
+   * @throws UncheckedIOException if a persistent implementation fails to read the rejected
+   *     certificates.
    */
   List<X509Certificate> getRejectedCertificates();
 
   /**
    * Add a Certificate to the list of rejected Certificates.
+   *
+   * <p>Implementations should handle persistence or pruning failures without throwing so that
+   * adding a rejected certificate during validation never replaces the validation result.
    *
    * @param certificate the {@link X509Certificate} to add.
    */
@@ -39,6 +45,8 @@ public interface CertificateQuarantine {
    * Remove a Certificate from the list of rejected Certificates.
    *
    * @param certificate the {@link X509Certificate} to remove.
+   * @throws UncheckedIOException if a persistent implementation fails to read, encode, or remove
+   *     the rejected certificate.
    */
   void removeRejectedCertificate(X509Certificate certificate);
 }

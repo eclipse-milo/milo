@@ -107,7 +107,9 @@
  * list lands only in that group's quarantine, so trusting it from another group's management
  * surface is not possible by accident. {@code CertificateManager.getRejectedCertificates()} is the
  * server-wide rejected list that {@code GetRejectedList} returns: the de-duplicated union over
- * {@code getCertificateGroups()}.
+ * {@code getCertificateGroups()}. If any group's quarantine fails to read its rejected
+ * certificates, the {@link java.io.UncheckedIOException} propagates rather than returning a partial
+ * union.
  *
  * <p>{@link org.eclipse.milo.opcua.stack.core.security.CertificateIdentity} represents one usable
  * identity of a group: its group, certificate type, key pair, and chain. {@link
@@ -151,7 +153,12 @@
  * certificate files by their SHA-1 thumbprint, remove all files matching a certificate's decoded
  * content regardless of filename, and skip hidden files, whose names start with {@code .}, and
  * subdirectories, so operating system metadata such as macOS {@code .DS_Store} files is never read
- * as a certificate or CRL.
+ * as a certificate or CRL. {@code FileBasedCertificateQuarantine} reports directory-listing,
+ * per-file read, encoding, and deletion failures from {@code getRejectedCertificates()} and {@code
+ * removeRejectedCertificate(X509Certificate)} as {@link java.io.UncheckedIOException}, still
+ * attempting every matching deletion on removal and attaching additional failures as suppressed
+ * exceptions; {@code addRejectedCertificate(X509Certificate)} logs storage and pruning failures
+ * without throwing so certificate validation results are never replaced.
  *
  * <p>{@link org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager} provides a
  * thread-safe mutable group registry. Applications own the groups and their backing stores,
