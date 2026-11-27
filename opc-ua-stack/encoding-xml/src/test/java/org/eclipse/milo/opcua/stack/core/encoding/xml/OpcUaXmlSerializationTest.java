@@ -13,6 +13,7 @@ package org.eclipse.milo.opcua.stack.core.encoding.xml;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.StringReader;
+import java.time.Instant;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.NamespaceTable;
@@ -424,6 +425,51 @@ public class OpcUaXmlSerializationTest {
         Arguments.of(new DateTime()),
         Arguments.of(DateTime.now()),
         Arguments.of(DateTime.MAX_DATE_TIME));
+  }
+
+  // Part 6 §5.3.1.6: pre-1970 sub-second DateTime values must serialize to their exact xs:dateTime
+  // text and round-trip to the identical 100-ns tick without shifting forward by 1 second.
+  @MethodSource("pre1970SubSecondDateTimeArguments")
+  @ParameterizedTest
+  void pre1970SubSecondDateTimeRoundTrip(DateTime value, String expectedIso8601) throws Exception {
+    String encoded;
+    try (var encoder = new OpcUaXmlEncoder(new DefaultEncodingContext())) {
+      encoder.encodeDateTime("Test", value);
+      encoded = encoder.getOutputString();
+    }
+
+    Diff diff =
+        DiffBuilder.compare("<Test>" + expectedIso8601 + "</Test>")
+            .withTest(encoded)
+            .ignoreWhitespace()
+            .build();
+
+    assertFalse(diff.hasDifferences(), diff.toString());
+
+    DateTime decoded;
+    try (var decoder = new OpcUaXmlDecoder(new DefaultEncodingContext())) {
+      decoder.setInput(new StringReader(encoded));
+      decoded = decoder.decodeDateTime("Test");
+    }
+
+    assertEquals(value, decoded);
+  }
+
+  private static Stream<Arguments> pre1970SubSecondDateTimeArguments() {
+    return Stream.of(
+        Arguments.of(new DateTime(-1L), "1600-12-31T23:59:59.999999900Z"),
+        Arguments.of(new DateTime(1L), "1601-01-01T00:00:00.000000100Z"),
+        Arguments.of(new DateTime(9_999L), "1601-01-01T00:00:00.000999900Z"),
+        Arguments.of(new DateTime(10_000L), "1601-01-01T00:00:00.001Z"),
+        Arguments.of(new DateTime(9_999_999L), "1601-01-01T00:00:00.999999900Z"),
+        Arguments.of(
+            new DateTime(Instant.parse("1969-12-31T23:59:59.500Z")), "1969-12-31T23:59:59.500Z"),
+        Arguments.of(
+            new DateTime(Instant.parse("1969-12-31T23:59:59.999000100Z")),
+            "1969-12-31T23:59:59.999000100Z"),
+        Arguments.of(
+            new DateTime(Instant.parse("1969-12-31T23:59:59.999999900Z")),
+            "1969-12-31T23:59:59.999999900Z"));
   }
 
   @MethodSource("guidArguments")

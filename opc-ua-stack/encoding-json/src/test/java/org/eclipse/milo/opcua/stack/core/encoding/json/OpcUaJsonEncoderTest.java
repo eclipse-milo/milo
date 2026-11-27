@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Random;
@@ -393,7 +394,51 @@ class OpcUaJsonEncoderTest {
       encoder.encodeDateTime("foo", now);
       encoder.jsonWriter.endObject();
       assertEquals("{\"foo\":\"" + isoNow + "\"}", encoder.getOutputString());
+
+      // Extreme Long.MIN_VALUE must clamp to MIN_ISO_8601_STRING rather than underflowing to max.
+      encoder.reset();
+      encoder.encodeDateTime(null, new DateTime(Long.MIN_VALUE));
+      assertEquals("\"" + DateTime.MIN_ISO_8601_STRING + "\"", encoder.getOutputString());
+
+      encoder.reset();
+      encoder.encodeDateTime(null, new DateTime(Long.MAX_VALUE));
+      assertEquals("\"" + DateTime.MAX_ISO_8601_STRING + "\"", encoder.getOutputString());
     }
+  }
+
+  // Part 6 §5.4.2.6: pre-1970 sub-second DateTime values must encode as their exact ISO-8601
+  // timestamp and decode back to the same 100-ns tick without shifting forward by 1 second.
+  @ParameterizedTest
+  @MethodSource("pre1970DateTimeArguments")
+  void pre1970SubSecondDateTimeRoundTrip(DateTime value, String expectedIso8601) throws Exception {
+    String json;
+    try (var encoder = new OpcUaJsonEncoder(context)) {
+      encoder.encodeDateTime(null, value);
+      json = encoder.getOutputString();
+    }
+
+    assertEquals("\"" + expectedIso8601 + "\"", json);
+
+    var decoder = new OpcUaJsonDecoder(context, json);
+    DateTime decoded = decoder.decodeDateTime(null);
+    assertEquals(value, decoded);
+  }
+
+  static Stream<Arguments> pre1970DateTimeArguments() {
+    return Stream.of(
+        Arguments.of(new DateTime(-1L), "1600-12-31T23:59:59.999999900Z"),
+        Arguments.of(new DateTime(1L), "1601-01-01T00:00:00.000000100Z"),
+        Arguments.of(new DateTime(9_999L), "1601-01-01T00:00:00.000999900Z"),
+        Arguments.of(new DateTime(10_000L), "1601-01-01T00:00:00.001Z"),
+        Arguments.of(new DateTime(9_999_999L), "1601-01-01T00:00:00.999999900Z"),
+        Arguments.of(
+            new DateTime(Instant.parse("1969-12-31T23:59:59.500Z")), "1969-12-31T23:59:59.500Z"),
+        Arguments.of(
+            new DateTime(Instant.parse("1969-12-31T23:59:59.999000100Z")),
+            "1969-12-31T23:59:59.999000100Z"),
+        Arguments.of(
+            new DateTime(Instant.parse("1969-12-31T23:59:59.999999900Z")),
+            "1969-12-31T23:59:59.999999900Z"));
   }
 
   @Test

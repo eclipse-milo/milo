@@ -47,7 +47,13 @@ public record DateTime(long utcTime) {
    * The delta in 100 nanosecond intervals between Java epoch (January 1, 1970) and UTC epoch (Jan
    * 1, 1601).
    */
-  private static final long EPOCH_DELTA = 116444736000000000L;
+  private static final long EPOCH_DELTA = 116_444_736_000_000_000L;
+
+  /** The delta in milliseconds between Java epoch (January 1, 1970) and UTC epoch (Jan 1, 1601). */
+  private static final long EPOCH_DELTA_MILLIS = 11_644_473_600_000L;
+
+  /** The delta in seconds between Java epoch (January 1, 1970) and UTC epoch (Jan 1, 1601). */
+  private static final long EPOCH_DELTA_SECONDS = 11_644_473_600L;
 
   public DateTime() {
     this(Instant.now());
@@ -72,7 +78,7 @@ public record DateTime(long utcTime) {
    * @return this time as milliseconds since Java epoch.
    */
   public long getJavaTime() {
-    return getJavaDate().getTime();
+    return utcToJava(utcTime);
   }
 
   /**
@@ -86,7 +92,9 @@ public record DateTime(long utcTime) {
    * @return this time as an {@link Instant}.
    */
   public Instant getJavaInstant() {
-    return Instant.ofEpochSecond(utcToJava(utcTime) / 1_000, (utcTime % 10_000_000) * 100);
+    long seconds = Math.floorDiv(utcTime, 10_000_000L) - EPOCH_DELTA_SECONDS;
+    long nanos = Math.floorMod(utcTime, 10_000_000L) * 100L;
+    return Instant.ofEpochSecond(seconds, nanos);
   }
 
   public boolean isValid() {
@@ -177,6 +185,6 @@ public record DateTime(long utcTime) {
   }
 
   private static long utcToJava(long utcTime) {
-    return (utcTime - EPOCH_DELTA) / 10_000;
+    return Math.floorDiv(utcTime, 10_000L) - EPOCH_DELTA_MILLIS;
   }
 }
