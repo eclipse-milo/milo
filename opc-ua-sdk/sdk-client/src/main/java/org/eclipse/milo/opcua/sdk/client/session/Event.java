@@ -12,9 +12,13 @@ package org.eclipse.milo.opcua.sdk.client.session;
 
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
+import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionResponse;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
+import org.jspecify.annotations.Nullable;
 
 interface Event {
 
@@ -39,6 +43,20 @@ interface Event {
 
   class GetSession implements Event {
     final CompletableFuture<OpcUaSession> future = new CompletableFuture<>();
+
+    @Override
+    public String toString() {
+      return getClass().getSimpleName();
+    }
+  }
+
+  class ChangeIdentity implements Event {
+    final IdentityProvider identityProvider;
+    final CompletableFuture<OpcUaSession> future = new CompletableFuture<>();
+
+    ChangeIdentity(IdentityProvider identityProvider) {
+      this.identityProvider = identityProvider;
+    }
 
     @Override
     public String toString() {
@@ -232,6 +250,50 @@ interface Event {
   }
 
   class ConnectionLost implements Event {
+    @Override
+    public String toString() {
+      return getClass().getSimpleName();
+    }
+  }
+
+  class ChangeIdentitySuccess implements Event {
+    final SessionFsm.ChangeIdentityAttempt attempt;
+    final OpcUaSession session;
+    final StatusCode serviceResult;
+    final ByteString serverNonce;
+    final @Nullable ByteString receiverEphemeralPublicKey;
+    final @Nullable SecurityPolicy receiverEphemeralPublicKeyPolicy;
+
+    ChangeIdentitySuccess(
+        SessionFsm.ChangeIdentityAttempt attempt,
+        OpcUaSession session,
+        StatusCode serviceResult,
+        ByteString serverNonce,
+        @Nullable ByteString receiverEphemeralPublicKey,
+        @Nullable SecurityPolicy receiverEphemeralPublicKeyPolicy) {
+      this.attempt = attempt;
+      this.session = session;
+      this.serviceResult = serviceResult;
+      this.serverNonce = serverNonce;
+      this.receiverEphemeralPublicKey = receiverEphemeralPublicKey;
+      this.receiverEphemeralPublicKeyPolicy = receiverEphemeralPublicKeyPolicy;
+    }
+
+    @Override
+    public String toString() {
+      return getClass().getSimpleName();
+    }
+  }
+
+  class ChangeIdentityFailure implements Event {
+    final SessionFsm.ChangeIdentityAttempt attempt;
+    final Throwable failure;
+
+    ChangeIdentityFailure(SessionFsm.ChangeIdentityAttempt attempt, Throwable failure) {
+      this.attempt = attempt;
+      this.failure = failure;
+    }
+
     @Override
     public String toString() {
       return getClass().getSimpleName();

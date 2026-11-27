@@ -14,15 +14,18 @@ import com.digitalpetri.fsm.Fsm;
 import com.digitalpetri.fsm.FsmContext;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.OpcUaSession;
 import org.eclipse.milo.opcua.sdk.client.SessionActivityListener;
+import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.structured.CreateSessionResponse;
 import org.eclipse.milo.opcua.stack.core.util.Unit;
@@ -37,7 +40,7 @@ public class SessionFsm {
 
   private final Fsm<State, Event> fsm;
 
-  SessionFsm(Fsm<State, Event> fsm, Executor executor) {
+  SessionFsm(Fsm<State, Event> fsm, Executor executor, IdentityProvider initialIdentityProvider) {
     this.fsm = fsm;
 
     sessionInitializers =
@@ -53,6 +56,12 @@ public class SessionFsm {
               KEY_SESSION_ACTIVITY_LISTENERS.set(ctx, new SessionActivityListeners(executor));
               return KEY_SESSION_ACTIVITY_LISTENERS.get(ctx).sessionActivityListeners;
             });
+
+    fsm.getFromContext(
+        ctx -> {
+          KEY_IDENTITY_PROVIDER.set(ctx, initialIdentityProvider);
+          return null;
+        });
   }
 
   public CompletableFuture<OpcUaSession> openSession() {
@@ -71,13 +80,34 @@ public class SessionFsm {
     return closeSession.future;
   }
 
+  /**
+   * Change the user identity of the active Session using {@code identityProvider}.
+   *
+   * <p>Requires the state machine to be in {@link State#Active}. Calls outside {@code Active} fail
+   * immediately without waiting for session establishment or recovery. On success, {@code
+   * identityProvider} becomes the active provider for subsequent reactivations and new Sessions.
+   *
+   * @param identityProvider the new {@link IdentityProvider} to authenticate with.
+   * @return a {@link CompletableFuture} that completes with the active {@link OpcUaSession} after
+   *     the Server accepts the identity change, or completes exceptionally on failure.
+   */
+  public CompletableFuture<OpcUaSession> changeIdentity(IdentityProvider identityProvider) {
+    Objects.requireNonNull(identityProvider, "identityProvider");
+
+    Event.ChangeIdentity changeIdentity = new Event.ChangeIdentity(identityProvider);
+
+    fsm.fireEvent(changeIdentity);
+
+    return changeIdentity.future;
+  }
+
   public CompletableFuture<OpcUaSession> getSession() {
     CompletableFuture<OpcUaSession> future =
         fsm.getFromContext(
             ctx -> {
               State state = ctx.currentState();
 
-              if (state == State.Active) {
+              if (state == State.Active || state == State.ChangingIdentity) {
                 SessionFuture sf = KEY_SESSION_FUTURE.get(ctx);
 
                 assert sf != null;
@@ -192,6 +222,35 @@ public class SessionFsm {
 
   static final FsmContext.Key<SessionActivityListeners> KEY_SESSION_ACTIVITY_LISTENERS =
       new FsmContext.Key<>("sessionActivityListeners", SessionActivityListeners.class);
+
+  /**
+   * The active {@link IdentityProvider} used for Session creation, activation, reactivation, and
+   * identity-change pre-negotiation. Seeded from {@link
+   * org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig#getIdentityProvider()} and replaced only
+   * when an explicit {@link #changeIdentity(IdentityProvider)} succeeds.
+   */
+  static final FsmContext.Key<IdentityProvider> KEY_IDENTITY_PROVIDER =
+      new FsmContext.Key<>("identityProvider", IdentityProvider.class);
+
+  static final FsmContext.Key<ChangeIdentityAttempt> KEY_CHANGE_IDENTITY_ATTEMPT =
+      new FsmContext.Key<>("changeIdentityAttempt", ChangeIdentityAttempt.class);
+
+  static final class ChangeIdentityAttempt {
+    final Event.ChangeIdentity event;
+    private final AtomicBoolean active = new AtomicBoolean(true);
+
+    ChangeIdentityAttempt(Event.ChangeIdentity event) {
+      this.event = event;
+    }
+
+    boolean isActive() {
+      return active.get();
+    }
+
+    boolean deactivate() {
+      return active.compareAndSet(true, false);
+    }
+  }
 
   static class CloseFuture {
     final CompletableFuture<Unit> future = new CompletableFuture<>();
