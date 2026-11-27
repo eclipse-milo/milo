@@ -581,6 +581,50 @@ class FileBasedCertificateQuarantineTest extends CertificateQuarantineTest {
           Files.exists(directory.resolve(thirdThumbprint + ".der")),
           "new rejected certificate must still be written when pruning fails");
     }
+
+    // Unchecked storage failures (UncheckedIOException or SecurityException) during pruning must
+    // also be swallowed so addRejectedCertificate still attempts the write and never replaces the
+    // validator's UaException.
+    @Test
+    void addRejectedCertificateSwallowsUncheckedPruningErrorsAndWritesNewCertificate()
+        throws Exception {
+      X509Certificate first = newCertificate();
+      X509Certificate second = newCertificate();
+      X509Certificate third = newCertificate();
+
+      Path firstFile = Files.write(directory.resolve("first.der"), first.getEncoded());
+      Files.setLastModifiedTime(firstFile, FileTime.fromMillis(1_000));
+      Path secondFile = Files.write(directory.resolve("second.der"), second.getEncoded());
+      Files.setLastModifiedTime(secondFile, FileTime.fromMillis(2_000));
+      Path unstatableFile = Files.write(directory.resolve("unstatable.der"), second.getEncoded());
+
+      var quarantine =
+          new FileBasedCertificateQuarantine(directory.toFile(), 2) {
+            @Override
+            BasicFileAttributes readFileAttributes(Path path) throws IOException {
+              if (path.equals(unstatableFile)) {
+                throw new UncheckedIOException(new AccessDeniedException(path.toString()));
+              }
+              return super.readFileAttributes(path);
+            }
+
+            @Override
+            boolean deleteCertificateFile(Path path) throws IOException {
+              if (path.equals(firstFile)) {
+                throw new SecurityException("simulated security manager denial: " + path);
+              }
+              return super.deleteCertificateFile(path);
+            }
+          };
+
+      assertDoesNotThrow(() -> quarantine.addRejectedCertificate(third));
+
+      String thirdThumbprint =
+          ByteBufUtil.hexDump(CertificateUtil.thumbprint(third).bytesOrEmpty());
+      assertTrue(
+          Files.exists(directory.resolve(thirdThumbprint + ".der")),
+          "new rejected certificate must still be written when unchecked pruning errors occur");
+    }
   }
 
   private void assumePosixAndNotRoot() {

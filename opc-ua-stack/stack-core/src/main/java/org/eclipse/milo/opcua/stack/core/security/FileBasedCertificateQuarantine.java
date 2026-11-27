@@ -240,19 +240,19 @@ public class FileBasedCertificateQuarantine implements CertificateQuarantine {
           continue;
         }
 
-        boolean matchesThumbprint =
-            decodeCertificateFile(entry)
-                .map(
-                    c -> {
-                      try {
-                        return CertificateUtil.thumbprint(c).equals(thumbprint);
-                      } catch (UaException e) {
-                        return false;
-                      }
-                    })
-                .orElse(false);
+        Optional<X509Certificate> decoded = decodeCertificateFile(entry);
+        if (decoded.isEmpty()) {
+          continue;
+        }
 
-        if (matchesThumbprint) {
+        ByteString entryThumbprint;
+        try {
+          entryThumbprint = CertificateUtil.thumbprint(decoded.get());
+        } catch (UaException e) {
+          throw new IOException("Failed to compute thumbprint for " + entry, e);
+        }
+
+        if (entryThumbprint.equals(thumbprint)) {
           try {
             deleteCertificateFile(entry);
           } catch (IOException e) {
@@ -284,7 +284,7 @@ public class FileBasedCertificateQuarantine implements CertificateQuarantine {
     List<Path> entries;
     try {
       entries = listEntries(rejectedDir);
-    } catch (IOException e) {
+    } catch (IOException | UncheckedIOException | SecurityException e) {
       LOGGER.warn("Error listing rejected certificates for pruning in {}", rejectedDir, e);
       return;
     }
@@ -298,7 +298,7 @@ public class FileBasedCertificateQuarantine implements CertificateQuarantine {
         }
       } catch (NoSuchFileException ignored) {
         // Entry disappeared before its attributes were read.
-      } catch (IOException e) {
+      } catch (IOException | UncheckedIOException | SecurityException e) {
         LOGGER.warn("Error reading rejected certificate attributes: {}", entry, e);
       }
     }
@@ -316,7 +316,7 @@ public class FileBasedCertificateQuarantine implements CertificateQuarantine {
               entry -> {
                 try {
                   deleteCertificateFile(entry.path());
-                } catch (IOException e) {
+                } catch (IOException | UncheckedIOException | SecurityException e) {
                   LOGGER.warn("Unable to delete rejected certificate: {}", entry.path(), e);
                 }
               });
