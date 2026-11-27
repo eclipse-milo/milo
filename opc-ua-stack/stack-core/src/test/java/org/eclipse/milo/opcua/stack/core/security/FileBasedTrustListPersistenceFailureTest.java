@@ -285,11 +285,72 @@ class FileBasedTrustListPersistenceFailureTest {
       }
     }
 
-    // An unreadable certificate file encountered while scanning for removal must fail the update
-    // rather than pretending the file does not match and dropping the certificate from memory.
+    // A file that cannot be read must not stop a removal: the removed certificate leaves memory and
+    // disk at once, and the unreadable file, which holds another certificate, is left alone.
+    @ParameterizedTest
+    @CsvSource({"trusted,remove", "trusted,replace", "issuer,remove", "issuer,replace"})
+    void removalBesideAnUnreadableFileRemovesCertificateFromMemoryAndDisk(
+        String list, String operation) throws Exception {
+
+      Dirs dirs = createDirs(baseDir);
+      Path certsDir = list.equals("trusted") ? dirs.trustedCerts() : dirs.issuerCerts();
+      Path removedFile = certsDir.resolve("removed.der");
+      Path unreadable = certsDir.resolve("unreadable.der");
+      Files.write(removedFile, RETAINED.certificate().getEncoded());
+      Files.write(unreadable, SECOND.certificate().getEncoded());
+
+      var blockRead = new AtomicBoolean(false);
+
+      try (var manager =
+          new FaultInjectingTrustListManager(
+              dirs,
+              p -> false,
+              p -> false,
+              p -> false,
+              path -> blockRead.get() && path.equals(unreadable))) {
+        manager.initialize();
+        var validator =
+            new DefaultClientCertificateValidator(manager, new MemoryCertificateQuarantine());
+        DateTime before = manager.getLastUpdateTime();
+        awaitClockTickAfter(before);
+
+        blockRead.set(true);
+        ByteString thumbprint = CertificateUtil.thumbprint(RETAINED.certificate());
+        if (operation.equals("remove")) {
+          boolean removed =
+              list.equals("trusted")
+                  ? manager.removeTrustedCertificate(thumbprint)
+                  : manager.removeIssuerCertificate(thumbprint);
+          assertTrue(removed);
+        } else if (list.equals("trusted")) {
+          manager.setTrustedCertificates(List.of(SECOND.certificate()));
+        } else {
+          manager.setIssuerCertificates(List.of(SECOND.certificate()));
+        }
+
+        assertFalse(Files.exists(removedFile));
+        assertTrue(Files.exists(unreadable), "the unreadable file must be left alone");
+        assertEquals(List.of(SECOND.certificate()), certificates(manager, list));
+        assertTrue(manager.getLastUpdateTime().getUtcTime() > before.getUtcTime());
+
+        if (list.equals("trusted")) {
+          assertThrows(
+              UaException.class,
+              () ->
+                  validator.validateCertificateChain(List.of(RETAINED.certificate()), null, null));
+        }
+      }
+
+      try (var reopened = FileBasedTrustListManager.createAndInitialize(baseDir)) {
+        assertEquals(List.of(SECOND.certificate()), certificates(reopened, list));
+      }
+    }
+
+    // A file that cannot be read cannot be checked, so a removal leaves it on disk even when it
+    // holds a copy of the certificate. The removal still takes effect for every readable copy and
+    // for memory, so the validator stops trusting the certificate at once.
     @Test
-    void unreadableCertificateFileFailsRemovalDeletesOtherCopiesAndRetainsCertificate()
-        throws Exception {
+    void unreadableCopyIsLeftOnDiskWhileRemovalUntrustsCertificate() throws Exception {
       Dirs dirs = createDirs(baseDir);
       Path unreadable = dirs.trustedCerts().resolve("a-unreadable.der");
       Path deletable = dirs.trustedCerts().resolve("b-deletable.der");
@@ -313,27 +374,23 @@ class FileBasedTrustListPersistenceFailureTest {
 
         blockRead.set(true);
         ByteString thumbprint = CertificateUtil.thumbprint(RETAINED.certificate());
-        UncheckedIOException thrown =
-            assertThrows(
-                UncheckedIOException.class, () -> manager.removeTrustedCertificate(thumbprint));
+        assertTrue(manager.removeTrustedCertificate(thumbprint));
 
-        assertInstanceOf(AccessDeniedException.class, thrown.getCause());
-        assertEquals(1, thrown.getCause().getSuppressed().length);
-        assertInstanceOf(AccessDeniedException.class, thrown.getCause().getSuppressed()[0]);
-        assertTrue(Files.exists(unreadable));
-        assertFalse(Files.exists(deletable), "readable duplicate copy must still be removed");
-        assertEquals(List.of(RETAINED.certificate()), manager.getTrustedCertificates());
-        assertEquals(before, manager.getLastUpdateTime());
-        assertDoesNotThrow(
+        assertTrue(Files.exists(unreadable), "the unreadable copy must be left on disk");
+        assertFalse(Files.exists(deletable), "the readable copy must be deleted");
+        assertEquals(List.of(), manager.getTrustedCertificates());
+        assertTrue(manager.getLastUpdateTime().getUtcTime() > before.getUtcTime());
+        assertThrows(
+            UaException.class,
             () -> validator.validateCertificateChain(List.of(RETAINED.certificate()), null, null));
       }
     }
 
-    // A metadata lookup failure (e.g., stat denied before reading bytes) during removal must fail
-    // the update, still delete other readable copies, and retain the certificate in memory.
+    // A metadata lookup failure (e.g., stat denied before reading bytes) is a file that cannot be
+    // read: the removal leaves that file on disk, deletes the readable copy, and untrusts the
+    // certificate.
     @Test
-    void metadataLookupFailureDuringCertificateRemovalDeletesOtherCopiesAndRetainsCertificate()
-        throws Exception {
+    void metadataLookupFailureLeavesCopyOnDiskWhileRemovalUntrustsCertificate() throws Exception {
       Dirs dirs = createDirs(baseDir);
       Path unstatable = dirs.trustedCerts().resolve("a-unstatable.der");
       Path deletable = dirs.trustedCerts().resolve("b-deletable.der");
@@ -358,18 +415,14 @@ class FileBasedTrustListPersistenceFailureTest {
 
         blockAttributes.set(true);
         ByteString thumbprint = CertificateUtil.thumbprint(RETAINED.certificate());
-        UncheckedIOException thrown =
-            assertThrows(
-                UncheckedIOException.class, () -> manager.removeTrustedCertificate(thumbprint));
+        assertTrue(manager.removeTrustedCertificate(thumbprint));
 
-        assertInstanceOf(AccessDeniedException.class, thrown.getCause());
-        assertEquals(1, thrown.getCause().getSuppressed().length);
-        assertInstanceOf(AccessDeniedException.class, thrown.getCause().getSuppressed()[0]);
-        assertTrue(Files.exists(unstatable));
-        assertFalse(Files.exists(deletable), "readable duplicate copy must still be removed");
-        assertEquals(List.of(RETAINED.certificate()), manager.getTrustedCertificates());
-        assertEquals(before, manager.getLastUpdateTime());
-        assertDoesNotThrow(
+        assertTrue(Files.exists(unstatable), "the unreadable copy must be left on disk");
+        assertFalse(Files.exists(deletable), "the readable copy must be deleted");
+        assertEquals(List.of(), manager.getTrustedCertificates());
+        assertTrue(manager.getLastUpdateTime().getUtcTime() > before.getUtcTime());
+        assertThrows(
+            UaException.class,
             () -> validator.validateCertificateChain(List.of(RETAINED.certificate()), null, null));
       }
     }
@@ -502,10 +555,54 @@ class FileBasedTrustListPersistenceFailureTest {
       }
     }
 
-    // An unreadable CRL file encountered while scanning for removal must fail the update, delete
-    // other readable copies, and retain the CRL in memory rather than treating it as absent.
+    // A file that cannot be read must not stop a CRL removal: the removed CRL leaves memory and
+    // disk at once, and the unreadable file, which holds another CRL, is left alone.
+    @ParameterizedTest
+    @ValueSource(strings = {"trusted", "issuer"})
+    void removalBesideAnUnreadableFileRemovesCrlFromMemoryAndDisk(String list) throws Exception {
+      Dirs dirs = createDirs(baseDir);
+      Path crlDir = list.equals("trusted") ? dirs.trustedCrl() : dirs.issuerCrl();
+      Path removedFile = crlDir.resolve("removed.crl");
+      Path unreadable = crlDir.resolve("unreadable.crl");
+      Files.write(removedFile, RETAINED.crl().getEncoded());
+      Files.write(unreadable, SECOND.crl().getEncoded());
+
+      var blockRead = new AtomicBoolean(false);
+
+      try (var manager =
+          new FaultInjectingTrustListManager(
+              dirs,
+              p -> false,
+              p -> false,
+              p -> false,
+              path -> blockRead.get() && path.equals(unreadable))) {
+        manager.initialize();
+        DateTime before = manager.getLastUpdateTime();
+        awaitClockTickAfter(before);
+
+        blockRead.set(true);
+        if (list.equals("trusted")) {
+          manager.setTrustedCrls(List.of(SECOND.crl()));
+        } else {
+          manager.setIssuerCrls(List.of(SECOND.crl()));
+        }
+
+        assertFalse(Files.exists(removedFile));
+        assertTrue(Files.exists(unreadable), "the unreadable file must be left alone");
+        assertEquals(List.of(SECOND.crl()), crls(manager, list));
+        assertTrue(manager.getLastUpdateTime().getUtcTime() > before.getUtcTime());
+      }
+
+      try (var reopened = FileBasedTrustListManager.createAndInitialize(baseDir)) {
+        assertEquals(List.of(SECOND.crl()), crls(reopened, list));
+      }
+    }
+
+    // A file that cannot be read cannot be checked, so a CRL removal leaves it on disk even when it
+    // holds a copy of the CRL. The removal still takes effect for every readable copy and for
+    // memory.
     @Test
-    void unreadableCrlFileFailsRemovalDeletesOtherCopiesAndRetainsCrl() throws Exception {
+    void unreadableCopyIsLeftOnDiskWhileRemovalDropsCrl() throws Exception {
       Dirs dirs = createDirs(baseDir);
       Path unreadable = dirs.trustedCrl().resolve("a-unreadable.crl");
       Path deletable = dirs.trustedCrl().resolve("b-deletable.crl");
@@ -526,23 +623,19 @@ class FileBasedTrustListPersistenceFailureTest {
         awaitClockTickAfter(before);
 
         blockRead.set(true);
-        UncheckedIOException thrown =
-            assertThrows(UncheckedIOException.class, () -> manager.setTrustedCrls(List.of()));
+        manager.setTrustedCrls(List.of());
 
-        assertInstanceOf(AccessDeniedException.class, thrown.getCause());
-        assertEquals(1, thrown.getCause().getSuppressed().length);
-        assertInstanceOf(AccessDeniedException.class, thrown.getCause().getSuppressed()[0]);
-        assertTrue(Files.exists(unreadable));
-        assertFalse(Files.exists(deletable), "readable duplicate copy must still be removed");
-        assertEquals(List.of(RETAINED.crl()), manager.getTrustedCrls());
-        assertEquals(before, manager.getLastUpdateTime());
+        assertTrue(Files.exists(unreadable), "the unreadable copy must be left on disk");
+        assertFalse(Files.exists(deletable), "the readable copy must be deleted");
+        assertEquals(List.of(), manager.getTrustedCrls());
+        assertTrue(manager.getLastUpdateTime().getUtcTime() > before.getUtcTime());
       }
     }
 
-    // A metadata lookup failure during CRL removal must fail the update, delete other readable
-    // copies, and keep the CRL in memory rather than treating the file as absent.
+    // A metadata lookup failure is a file that cannot be read: the CRL removal leaves that file on
+    // disk, deletes the readable copy, and drops the CRL from memory.
     @Test
-    void metadataLookupFailureDuringCrlRemovalDeletesOtherCopiesAndRetainsCrl() throws Exception {
+    void metadataLookupFailureLeavesCopyOnDiskWhileRemovalDropsCrl() throws Exception {
       Dirs dirs = createDirs(baseDir);
       Path unstatable = dirs.trustedCrl().resolve("a-unstatable.crl");
       Path deletable = dirs.trustedCrl().resolve("b-deletable.crl");
@@ -564,16 +657,12 @@ class FileBasedTrustListPersistenceFailureTest {
         awaitClockTickAfter(before);
 
         blockAttributes.set(true);
-        UncheckedIOException thrown =
-            assertThrows(UncheckedIOException.class, () -> manager.setTrustedCrls(List.of()));
+        manager.setTrustedCrls(List.of());
 
-        assertInstanceOf(AccessDeniedException.class, thrown.getCause());
-        assertEquals(1, thrown.getCause().getSuppressed().length);
-        assertInstanceOf(AccessDeniedException.class, thrown.getCause().getSuppressed()[0]);
-        assertTrue(Files.exists(unstatable));
-        assertFalse(Files.exists(deletable), "readable duplicate copy must still be removed");
-        assertEquals(List.of(RETAINED.crl()), manager.getTrustedCrls());
-        assertEquals(before, manager.getLastUpdateTime());
+        assertTrue(Files.exists(unstatable), "the unreadable copy must be left on disk");
+        assertFalse(Files.exists(deletable), "the readable copy must be deleted");
+        assertEquals(List.of(), manager.getTrustedCrls());
+        assertTrue(manager.getLastUpdateTime().getUtcTime() > before.getUtcTime());
       }
     }
   }
@@ -748,21 +837,18 @@ class FileBasedTrustListPersistenceFailureTest {
     }
 
     // A mid-stream I/O error while decoding must propagate as IOException even when CertificateUtil
-    // wraps it in UaException, while genuinely malformed certificate data is still skipped.
+    // wraps it in UaException, so a reload keeps the previous entries instead of dropping the file
+    // as malformed, while genuinely malformed certificate data is still skipped.
     @Test
     void midStreamReadFailurePropagatesAsIoExceptionWhileCorruptFileIsSkipped() throws Exception {
       Dirs dirs = createDirs(baseDir);
       Path failingCert = dirs.trustedCerts().resolve("a-failing-stream.der");
-      Path deletableCert = dirs.trustedCerts().resolve("b-deletable.der");
       Path corruptCert = dirs.trustedCerts().resolve("corrupt.der");
       Files.write(failingCert, RETAINED.certificate().getEncoded());
-      Files.write(deletableCert, RETAINED.certificate().getEncoded());
       Files.writeString(corruptCert, "not a valid certificate");
 
       Path failingCrl = dirs.trustedCrl().resolve("a-failing-stream.crl");
-      Path deletableCrl = dirs.trustedCrl().resolve("b-deletable.crl");
       Files.write(failingCrl, RETAINED.crl().getEncoded());
-      Files.write(deletableCrl, RETAINED.crl().getEncoded());
 
       var failMidStream = new AtomicBoolean(false);
 
@@ -784,26 +870,23 @@ class FileBasedTrustListPersistenceFailureTest {
 
         failMidStream.set(true);
 
-        ByteString thumbprint = CertificateUtil.thumbprint(RETAINED.certificate());
-        UncheckedIOException certFailure =
-            assertThrows(
-                UncheckedIOException.class, () -> manager.removeTrustedCertificate(thumbprint));
-        assertTrue(
-            certFailure.getCause().getMessage().contains("simulated mid-stream read failure"));
-        assertEquals(1, certFailure.getCause().getSuppressed().length);
-        assertTrue(Files.exists(failingCert));
-        assertFalse(Files.exists(deletableCert));
-        assertTrue(Files.exists(corruptCert));
-        assertEquals(List.of(RETAINED.certificate()), manager.getTrustedCertificates());
-        assertEquals(before, manager.getLastUpdateTime());
+        IOException certFailure =
+            assertThrows(IOException.class, () -> manager.readCertificates(dirs.trustedCerts()));
+        assertTrue(certFailure.getMessage().contains("simulated mid-stream read failure"));
 
-        UncheckedIOException crlFailure =
-            assertThrows(UncheckedIOException.class, () -> manager.setTrustedCrls(List.of()));
-        assertTrue(
-            crlFailure.getCause().getMessage().contains("simulated mid-stream read failure"));
-        assertEquals(1, crlFailure.getCause().getSuppressed().length);
-        assertTrue(Files.exists(failingCrl));
-        assertFalse(Files.exists(deletableCrl));
+        IOException crlFailure =
+            assertThrows(IOException.class, () -> manager.readCrls(dirs.trustedCrl()));
+        assertTrue(crlFailure.getMessage().contains("simulated mid-stream read failure"));
+
+        manager.synchronize(
+            "trusted certificates",
+            current ->
+                current.withTrustedCertificates(manager.readCertificates(dirs.trustedCerts())));
+        manager.synchronize(
+            "trusted CRLs",
+            current -> current.withTrustedCrls(manager.readCrls(dirs.trustedCrl())));
+
+        assertEquals(List.of(RETAINED.certificate()), manager.getTrustedCertificates());
         assertEquals(List.of(RETAINED.crl()), manager.getTrustedCrls());
         assertEquals(before, manager.getLastUpdateTime());
       }
