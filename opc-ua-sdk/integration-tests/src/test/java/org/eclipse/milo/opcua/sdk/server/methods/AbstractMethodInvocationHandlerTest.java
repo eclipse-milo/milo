@@ -20,6 +20,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
 import java.util.List;
@@ -143,16 +144,19 @@ public class AbstractMethodInvocationHandlerTest extends AbstractClientServerTes
 
     UaObjectNode objectsNode = addressSpace.getObjectNode(NodeIds.ObjectsFolder);
 
-    try {
-      objectsNode.callMethod(
-          new QualifiedName(2, "onlyAcceptsPositiveInputs()"), new Variant[] {new Variant(-1)});
-    } catch (UaMethodException e) {
-      LOGGER.debug("result: {}", e.getStatusCode());
-      LOGGER.debug("inputArgumentResults: {}", Arrays.toString(e.getInputArgumentResults()));
+    UaMethodException e =
+        assertThrows(
+            UaMethodException.class,
+            () ->
+                objectsNode.callMethod(
+                    new QualifiedName(2, "onlyAcceptsPositiveInputs()"),
+                    new Variant[] {new Variant(-1)}));
 
-      assertEquals(StatusCode.of(Bad_InvalidArgument), e.getStatusCode());
-      assertEquals(StatusCode.of(Bad_OutOfRange), e.getInputArgumentResults()[0]);
-    }
+    LOGGER.debug("result: {}", e.getStatusCode());
+    LOGGER.debug("inputArgumentResults: {}", Arrays.toString(e.getInputArgumentResults()));
+
+    assertEquals(StatusCode.of(Bad_InvalidArgument), e.getStatusCode());
+    assertEquals(StatusCode.of(Bad_OutOfRange), e.getInputArgumentResults()[0]);
   }
 
   @Test
