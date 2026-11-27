@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.stack.core.security;
 
+import java.io.UncheckedIOException;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -76,6 +77,8 @@ public interface TrustListManager extends AutoCloseable {
    *
    * @param update the transformation to apply.
    * @return the committed snapshot, or the current snapshot if nothing was committed.
+   * @throws UncheckedIOException if a persistent implementation fails to store or remove trust list
+   *     entries.
    */
   default TrustListSnapshot update(UnaryOperator<TrustListSnapshot> update) {
     TrustListSnapshot current = getSnapshot();
@@ -100,6 +103,8 @@ public interface TrustListManager extends AutoCloseable {
    * the atomicity and last update time contract.
    *
    * @param snapshot the replacement trust-list state.
+   * @throws UncheckedIOException if a persistent implementation fails to store or remove trust list
+   *     entries.
    */
   default void replaceAll(TrustListSnapshot snapshot) {
     Objects.requireNonNull(snapshot);
@@ -139,6 +144,7 @@ public interface TrustListManager extends AutoCloseable {
    * Set a new list of Issuer CRLs. This replaces any existing Issuer CRLs.
    *
    * @param issuerCrls a new list of issuer {@link X509CRL}s.
+   * @throws UncheckedIOException if a persistent implementation fails to store or remove entries.
    */
   void setIssuerCrls(List<X509CRL> issuerCrls);
 
@@ -146,6 +152,7 @@ public interface TrustListManager extends AutoCloseable {
    * Set a new list of Trusted CRLs. This replaces any existing Trusted CRLs.
    *
    * @param trustedCrls a new list of trusted {@link X509CRL}s.
+   * @throws UncheckedIOException if a persistent implementation fails to store or remove entries.
    */
   void setTrustedCrls(List<X509CRL> trustedCrls);
 
@@ -153,6 +160,7 @@ public interface TrustListManager extends AutoCloseable {
    * Set a new list of Issuer Certificates. This replaces any existing Issuer Certificates.
    *
    * @param issuerCertificates a new list of issuer {@link X509Certificate}s.
+   * @throws UncheckedIOException if a persistent implementation fails to store or remove entries.
    */
   void setIssuerCertificates(List<X509Certificate> issuerCertificates);
 
@@ -160,6 +168,7 @@ public interface TrustListManager extends AutoCloseable {
    * Set a new list of Trusted Certificates. This replaces any existing Trusted Certificates.
    *
    * @param trustedCertificates a new list of trusted {@link X509Certificate}s.
+   * @throws UncheckedIOException if a persistent implementation fails to store or remove entries.
    */
   void setTrustedCertificates(List<X509Certificate> trustedCertificates);
 
@@ -167,6 +176,7 @@ public interface TrustListManager extends AutoCloseable {
    * Add {@code certificate} to the Issuer Certificates list.
    *
    * @param certificate the {@link X509Certificate} to add to the Issuer Certificates list.
+   * @throws UncheckedIOException if a persistent implementation fails to store the certificate.
    */
   void addIssuerCertificate(X509Certificate certificate);
 
@@ -174,6 +184,7 @@ public interface TrustListManager extends AutoCloseable {
    * Add {@code certificate} to the Trusted Certificates list.
    *
    * @param certificate the {@link X509Certificate} to add to the Trusted Certificates list.
+   * @throws UncheckedIOException if a persistent implementation fails to store the certificate.
    */
   void addTrustedCertificate(X509Certificate certificate);
 
@@ -182,6 +193,7 @@ public interface TrustListManager extends AutoCloseable {
    *
    * @param thumbprint the certificate thumbprint.
    * @return {@code true} if a certificate with a matching thumbprint was found.
+   * @throws UncheckedIOException if a persistent implementation fails to remove the certificate.
    */
   boolean removeIssuerCertificate(ByteString thumbprint);
 
@@ -190,6 +202,7 @@ public interface TrustListManager extends AutoCloseable {
    *
    * @param thumbprint the certificate thumbprint.
    * @return {@code true} if a certificate with a matching thumbprint was found.
+   * @throws UncheckedIOException if a persistent implementation fails to remove the certificate.
    */
   boolean removeTrustedCertificate(ByteString thumbprint);
 

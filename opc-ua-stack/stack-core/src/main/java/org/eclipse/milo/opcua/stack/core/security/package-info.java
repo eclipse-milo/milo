@@ -140,9 +140,13 @@
  *
  * <p>{@link org.eclipse.milo.opcua.stack.core.security.FileBasedTrustListManager} accepts imported
  * certificate and CRL files independently of their names. Removal finds those files by their
- * decoded contents; removing CRLs from a bundle preserves its unrelated entries. Persistence
- * remains best-effort on I/O failure, and a subsequent directory reload reconciles the published
- * snapshot with the files that remain. Both it and {@link
+ * decoded contents; removing CRLs from a bundle preserves its unrelated entries. Updates write
+ * certificate and CRL files by syncing a hidden temporary file and renaming it into place with
+ * {@code ATOMIC_MOVE} when supported by the filesystem, falling back to {@code REPLACE_EXISTING}
+ * otherwise. If any write or delete fails, affected directories are re-read under the manager's
+ * lock to reconcile memory with disk before throwing {@link java.io.UncheckedIOException}; if
+ * re-reading an affected directory also fails, that directory retains its previous in-memory
+ * entries and the read error is attached as a suppressed exception. Both it and {@link
  * org.eclipse.milo.opcua.stack.core.security.FileBasedCertificateQuarantine} name written
  * certificate files by their SHA-1 thumbprint, remove all files matching a certificate's decoded
  * content regardless of filename, and skip hidden files, whose names start with {@code .}, and

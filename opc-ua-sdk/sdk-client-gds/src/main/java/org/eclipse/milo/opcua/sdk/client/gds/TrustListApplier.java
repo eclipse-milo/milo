@@ -12,6 +12,7 @@ package org.eclipse.milo.opcua.sdk.client.gds;
 
 import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
+import java.io.UncheckedIOException;
 import java.security.GeneralSecurityException;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
@@ -54,6 +55,7 @@ public final class TrustListApplier {
    * @param manager the {@link TrustListManager} to update.
    * @throws UaException if an entry cannot be decoded; {@link StatusCodes#Bad_CertificateInvalid}
    *     for a certificate, {@link StatusCodes#Bad_DecodingError} for a CRL.
+   * @throws UncheckedIOException if {@code manager} fails to persist the updated trust lists.
    */
   public static void apply(TrustListDataType trustList, TrustListManager manager)
       throws UaException {

@@ -17,6 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -195,6 +197,29 @@ public class TrustListApplierTest {
       assertEquals(StatusCodes.Bad_CertificateInvalid, e.getStatusCode().value());
       assertEquals(List.of(OLD_TRUSTED_CRL), manager.getTrustedCrls());
       assertEquals(0, manager.updates.get());
+    }
+
+    // Persistence failures from a file-backed TrustListManager must surface to the caller rather
+    // than reporting a GDS pull as applied when it did not reach disk.
+    @Test
+    void persistenceFailureFromManagerPropagatesUncheckedIoException() {
+      var expected = new UncheckedIOException(new IOException("disk full"));
+      var failingManager =
+          new MemoryTrustListManager() {
+            @Override
+            public TrustListSnapshot update(UnaryOperator<TrustListSnapshot> update) {
+              throw expected;
+            }
+          };
+
+      UncheckedIOException thrown =
+          assertThrows(
+              UncheckedIOException.class,
+              () ->
+                  TrustListApplier.apply(
+                      newTrustList(TrustListMasks.TrustedCertificates.getValue()), failingManager));
+
+      assertSame(expected, thrown);
     }
   }
 
