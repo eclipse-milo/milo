@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -82,7 +83,8 @@ public class SessionValidationTest extends AbstractClientServerTest {
         });
 
     try {
-      UaException connectFailure = assertThrows(UaException.class, mismatchedClient::connect);
+      UaException connectFailure =
+          assertThrowsExactly(UaException.class, mismatchedClient::connect);
 
       assertEquals(StatusCodes.Bad_SecurityChecksFailed, connectFailure.getStatusCode().value());
 

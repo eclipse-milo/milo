@@ -29,9 +29,10 @@ import org.eclipse.milo.opcua.stack.core.UaException;
  * try {
  *   client.connect();
  * } catch (UaException e) {
- *   if (UaException.extract(e, SessionEndpointMismatchException.class).isPresent()) {
- *     // Rediscover endpoints and reconnect with the updated configuration.
+ *   if (UaException.extract(e, SessionEndpointMismatchException.class).isEmpty()) {
+ *     throw e;
  *   }
+ *   // Rediscover endpoints and reconnect with the updated configuration.
  * }
  * }</pre>
  *
