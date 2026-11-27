@@ -55,6 +55,7 @@ final class EndpointRefresh {
   private volatile EndpointConfiguration current;
   private boolean active;
   private boolean refreshing;
+  private int pendingCancels;
   private long generation;
   private long nextRefresh;
   private long cooldownNanos;
@@ -132,10 +133,11 @@ final class EndpointRefresh {
       refreshing = false;
       toCancel = inFlight;
       inFlight = null;
+      if (toCancel != null) {
+        pendingCancels++;
+      }
     }
-    if (toCancel != null) {
-      toCancel.cancel(true);
-    }
+    cancelOutsideLock(toCancel);
   }
 
   /**
@@ -154,7 +156,11 @@ final class EndpointRefresh {
     final EndpointResolver currentResolver;
     final long epoch;
     synchronized (this) {
-      if (!active || resolver == null || refreshing || nanoTime.getAsLong() - nextRefresh < 0) {
+      if (!active
+          || resolver == null
+          || refreshing
+          || pendingCancels > 0
+          || nanoTime.getAsLong() - nextRefresh < 0) {
         return;
       }
       nextRefresh = nanoTime.getAsLong() + cooldownNanos;
@@ -201,11 +207,12 @@ final class EndpointRefresh {
         inFlight = source;
       } else {
         cancelledBeforeAttach = true;
+        pendingCancels++;
       }
     }
 
     if (cancelledBeforeAttach) {
-      source.cancel(true);
+      cancelOutsideLock(source);
       return;
     }
 
@@ -231,6 +238,9 @@ final class EndpointRefresh {
       refreshing = false;
       inFlight = null;
       cancelSource = !source.isDone();
+      if (cancelSource) {
+        pendingCancels++;
+      }
 
       if (error != null) {
         Throwable failure = normalizeFailure(error);
@@ -259,11 +269,27 @@ final class EndpointRefresh {
       }
     }
 
-    if (cancelSource) {
-      source.cancel(true);
+    try {
+      if (cancelSource) {
+        cancelOutsideLock(source);
+      }
+    } finally {
+      if (shouldNotify) {
+        notificationQueue.submit(this::drainNotifications);
+      }
     }
-    if (shouldNotify) {
-      notificationQueue.submit(this::drainNotifications);
+  }
+
+  private void cancelOutsideLock(@Nullable CompletableFuture<EndpointConfiguration> toCancel) {
+    if (toCancel == null) {
+      return;
+    }
+    try {
+      toCancel.cancel(true);
+    } finally {
+      synchronized (this) {
+        pendingCancels--;
+      }
     }
   }
 

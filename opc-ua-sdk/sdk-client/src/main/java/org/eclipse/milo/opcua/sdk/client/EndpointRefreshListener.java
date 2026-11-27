@@ -31,7 +31,8 @@ import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
  *   @Override
  *   public void onEndpointRefreshed(
  *       EndpointConfiguration previous, EndpointConfiguration current) {
- *     // client.getEndpoint() already returns current.endpoint() here.
+ *     // Use current.endpoint() for this transition; client.getEndpoint() holds the latest
+ *     // adopted endpoint.
  *   }
  *
  *   @Override
@@ -58,10 +59,13 @@ public interface EndpointRefreshListener {
    * Called when an endpoint refresh adopts a replacement whose selected {@link EndpointDescription}
    * differs from the previous one, such as after a server certificate rotation.
    *
-   * <p>When this callback runs, {@link OpcUaClient#getEndpoint()} already returns {@code
-   * current.endpoint()}. This callback is not invoked when a refresh succeeds with an unchanged
-   * selected endpoint, even if other entries in {@link EndpointConfiguration#discoveryEndpoints()}
-   * changed.
+   * <p>The client adopts {@code current} before enqueuing this callback, so {@link
+   * OpcUaClient#getEndpoint()} reflects {@code current.endpoint()} unless a newer refresh has
+   * already superseded it by the time this asynchronous callback runs. Use {@code
+   * current.endpoint()} for the endpoint adopted in this transition and {@link
+   * OpcUaClient#getEndpoint()} for the client's latest selection. This callback is not invoked when
+   * a refresh succeeds with an unchanged selected endpoint, even if other entries in {@link
+   * EndpointConfiguration#discoveryEndpoints()} changed.
    *
    * @param previous the {@link EndpointConfiguration} held before the refresh.
    * @param current the newly adopted {@link EndpointConfiguration}.

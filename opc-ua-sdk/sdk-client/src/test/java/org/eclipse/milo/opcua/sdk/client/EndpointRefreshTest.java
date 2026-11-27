@@ -1031,6 +1031,75 @@ class EndpointRefreshTest {
       assertEquals(List.of("refreshed", "refreshed", "failed"), keptEvents);
     }
 
+    // A retry triggered by another failure (or an immediate stop()+start()) must not start a new
+    // resolution while the previous attempt's future cancellation is still running outside the
+    // monitor, preserving EndpointResolver's one-resolution-at-a-time guarantee.
+    @Test
+    void retryDoesNotOverlapPendingCancellationAfterTimeoutOrStop() throws Exception {
+      var cancelEntered = new CountDownLatch(1);
+      var releaseCancel = new CountDownLatch(1);
+      var cancelFinished = new CountDownLatch(1);
+      var calls = new AtomicInteger();
+
+      CompletableFuture<EndpointConfiguration> first =
+          new CompletableFuture<>() {
+            @Override
+            public boolean cancel(boolean mayInterruptIfRunning) {
+              cancelEntered.countDown();
+              try {
+                releaseCancel.await(5, TimeUnit.SECONDS);
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+              }
+              boolean cancelled = super.cancel(mayInterruptIfRunning);
+              cancelFinished.countDown();
+              return cancelled;
+            }
+          };
+
+      EndpointResolver resolver =
+          new EndpointResolver() {
+            @Override
+            public CompletableFuture<EndpointConfiguration> resolve() {
+              return calls.incrementAndGet() == 1
+                  ? first
+                  : CompletableFuture.completedFuture(endpoint(2));
+            }
+
+            @Override
+            public Duration getTimeout() {
+              return Duration.ofMillis(20);
+            }
+
+            @Override
+            public Duration getRefreshCooldown() {
+              return Duration.ZERO;
+            }
+          };
+
+      var refresh = new EndpointRefresh(endpoint(1), resolver);
+      refresh.start();
+      refresh.onConnectFailure(CERTIFICATE_INVALID);
+
+      assertTrue(cancelEntered.await(5, TimeUnit.SECONDS), "timeout should begin cancelling first");
+
+      // While cancel(true) is still in flight outside the monitor, a new failure must not overlap.
+      refresh.onConnectFailure(CERTIFICATE_INVALID);
+      assertEquals(1, calls.get(), "resolver.resolve() must not be called before cancel finishes");
+
+      releaseCancel.countDown();
+      assertTrue(cancelFinished.await(5, TimeUnit.SECONDS));
+
+      // Wait briefly for the finally block to release pendingCancels, then verify a retry runs.
+      long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+      while (calls.get() < 2 && System.nanoTime() < deadline) {
+        refresh.onConnectFailure(CERTIFICATE_INVALID);
+        Thread.yield();
+      }
+      assertEquals(2, calls.get(), "retry must proceed once cancellation completes");
+      assertEquals(endpoint(2), refresh.current());
+    }
+
     // Callbacks must run outside EndpointRefresh's monitor so calling stop() re-entrantly or from
     // another thread while a callback is active never deadlocks.
     @Test
