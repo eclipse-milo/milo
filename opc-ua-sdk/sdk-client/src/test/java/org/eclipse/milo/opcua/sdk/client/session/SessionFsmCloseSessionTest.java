@@ -268,6 +268,38 @@ class SessionFsmCloseSessionTest {
     }
   }
 
+  // Regression test for channel drop racing with Active entry: if the channel drops right before
+  // addTransitionListener() registers, the post-registration channel liveness check must still
+  // detect the loss, move SessionFsm to ReactivatingWait, and skip CloseSession on disconnect.
+  @Test
+  void channelDropBeforeTransitionListenerRegistrationTriggersRecoveryAndSkipsCloseSession()
+      throws Exception {
+
+    var transport = new StubSessionTransport();
+    transport.setOnBeforeAddTransitionListener(
+        () -> transport.loseChannel(ChannelState.RECONNECTING));
+    OpcUaClient client = newClient(transport);
+
+    try {
+      client.connectAsync().get(5, TimeUnit.SECONDS);
+
+      awaitState(
+          client,
+          State.ReactivatingWait,
+          "channel drop before addTransitionListener must still trigger ConnectionLost");
+
+      client.disconnectAsync().get(5, TimeUnit.SECONDS);
+
+      assertEquals(
+          0,
+          transport.closeSessionCalls.get(),
+          "CloseSession must be skipped when channel dropped during Active entry");
+      assertEquals(State.Inactive, client.getSessionFsm().getState());
+    } finally {
+      transport.cleanup();
+    }
+  }
+
   // Regression test for #2239 debug-logging edge case: closeSession() must propagate a Server
   // rejection or transport failure on its returned future so SessionFsm logs "CloseSession failed"
   // rather than "Session closed", while disconnectAsync() still swallows the error and settles in
@@ -401,6 +433,8 @@ class SessionFsmCloseSessionTest {
     private volatile @Nullable EmbeddedChannel currentChannel;
     private final AtomicReference<Throwable> nextReadFailure = new AtomicReference<>();
     private final AtomicReference<Throwable> nextCloseFailure = new AtomicReference<>();
+    private final AtomicReference<@Nullable Runnable> onBeforeAddTransitionListener =
+        new AtomicReference<>();
 
     @Override
     public OpcClientTransportConfig getConfig() {
@@ -484,6 +518,10 @@ class SessionFsmCloseSessionTest {
 
     @Override
     public void addTransitionListener(TransitionListener listener) {
+      Runnable hook = onBeforeAddTransitionListener.getAndSet(null);
+      if (hook != null) {
+        hook.run();
+      }
       listeners.add(listener);
     }
 
@@ -508,6 +546,10 @@ class SessionFsmCloseSessionTest {
 
     void failNextCloseWith(Throwable failure) {
       nextCloseFailure.set(failure);
+    }
+
+    void setOnBeforeAddTransitionListener(Runnable hook) {
+      onBeforeAddTransitionListener.set(hook);
     }
 
     void dropChannelWithoutNotification(ChannelState nextState) {

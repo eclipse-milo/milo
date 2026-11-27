@@ -754,16 +754,6 @@ public class SessionFsmFactory {
 
               OpcClientTransport transport = client.getTransport();
 
-              if (transport instanceof CurrentChannelProvider channelProvider) {
-                Channel currentChannel = channelProvider.getCurrentChannel();
-                if (currentChannel != null && currentChannel.isActive()) {
-                  KEY_SESSION_CHANNEL.set(ctx, currentChannel);
-                } else {
-                  KEY_SESSION_CHANNEL.remove(ctx);
-                  KEY_SESSION_CHANNEL_LOST.set(ctx, Boolean.TRUE);
-                }
-              }
-
               if (transport instanceof ChannelStateObservable observable) {
                 ChannelStateObservable.TransitionListener listener =
                     connected -> {
@@ -779,15 +769,32 @@ public class SessionFsmFactory {
 
                 observable.addTransitionListener(listener);
                 KEY_CHANNEL_STATE_TRANSITION_LISTENER.set(ctx, listener);
+              }
 
-                // The listener is registered only on the transition into Active. If the channel
-                // went inactive between the SecureChannel handshake and reaching Active, the
-                // transport already emitted connected=false before the listener was attached and
-                // recovery would otherwise wait for the next request to fail. Fire the lost-event
-                // synthetically so the FSM begins recovery immediately.
-                if (Boolean.TRUE.equals(KEY_SESSION_CHANNEL_LOST.get(ctx))) {
-                  ctx.fireEvent(new Event.ConnectionLost());
+              // Capture the active channel and check for channel loss only after registering the
+              // TransitionListener above, so a drop cannot slip between the liveness check and
+              // listener registration.
+              if (transport instanceof CurrentChannelProvider channelProvider) {
+                Channel currentChannel = channelProvider.getCurrentChannel();
+                if (currentChannel != null && currentChannel.isActive()) {
+                  KEY_SESSION_CHANNEL.set(ctx, currentChannel);
+                } else {
+                  KEY_SESSION_CHANNEL.remove(ctx);
+                  KEY_SESSION_CHANNEL_LOST.set(ctx, Boolean.TRUE);
                 }
+              } else if (transport instanceof ChannelStateObservable observable
+                  && observable.getChannelState()
+                      != ChannelStateObservable.ChannelState.CONNECTED) {
+                KEY_SESSION_CHANNEL_LOST.set(ctx, Boolean.TRUE);
+              }
+
+              if (transport instanceof ChannelStateObservable
+                  && Boolean.TRUE.equals(KEY_SESSION_CHANNEL_LOST.get(ctx))) {
+                // If the channel went inactive between the SecureChannel handshake and registering
+                // the listener above, the transport already emitted connected=false before the
+                // listener was attached. Fire ConnectionLost synthetically so recovery starts
+                // immediately instead of waiting for the next request or keep-alive to fail.
+                ctx.fireEvent(new Event.ConnectionLost());
               }
 
               client
