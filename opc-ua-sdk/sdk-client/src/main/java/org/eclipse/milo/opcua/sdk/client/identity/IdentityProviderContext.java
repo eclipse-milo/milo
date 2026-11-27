@@ -32,9 +32,15 @@ import org.jspecify.annotations.Nullable;
  * server's receiver public key and the client's application certificate identity to produce an
  * {@code EccEncryptedSecret}.
  *
+ * <p>The server certificate returned in the CreateSession response is in {@link
+ * #getChannelSignatureInputs()}. OPC UA Part 4 (5.7.3.1) has a token's secret encrypted to that
+ * certificate and its signature computed over it. On an endpoint whose SecurityPolicy is {@code
+ * None} it can differ from the certificate in {@link #getEndpoint()}, after the server renews its
+ * certificate.
+ *
  * <p>The SDK also passes the client's server-certificate validator. A provider that encrypts a
- * secret to the endpoint's server certificate uses it where the SecureChannel has not already
- * checked that certificate, such as on an endpoint whose SecurityPolicy is {@code None}.
+ * secret to the server's certificate uses it where the SecureChannel has not already checked that
+ * certificate, such as on an endpoint whose SecurityPolicy is {@code None}.
  */
 public final class IdentityProviderContext {
 

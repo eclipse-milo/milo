@@ -24,8 +24,9 @@ import org.jspecify.annotations.NullMarked;
  * context's {@link IdentityProviderContext#getServerNonce()}). Providers pass them to {@link
  * org.eclipse.milo.opcua.stack.core.security.ChannelBoundSignatureData#userTokenSignatureData}.
  *
- * <p>Legacy user-token policies do not need these inputs; the context populates them regardless,
- * but only the enhancement layouts consume the channel thumbprint and channel certificates.
+ * <p>Legacy user-token policies use only {@code serverCertificate}: OPC UA Part 4 (5.7.3.1) has a
+ * legacy token's secret encrypted to it and its signature computed over its leaf. Only the
+ * enhancement layouts consume the channel thumbprint and channel certificates.
  *
  * @param channelThumbprint the first OpenSecureChannel response signature, or {@link
  *     ByteString#NULL_VALUE} when the carrying SecureChannel is unsecured ({@code SecurityMode}

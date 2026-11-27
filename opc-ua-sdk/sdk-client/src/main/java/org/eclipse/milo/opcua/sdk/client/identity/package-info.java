@@ -44,11 +44,19 @@
  * ephemeral key and the local client certificate identity selected for the user-token security
  * policy.
  *
+ * <p>The context also carries the server certificate returned in the CreateSession response, in
+ * {@link org.eclipse.milo.opcua.sdk.client.identity.ChannelSignatureInputs}. OPC UA Part 4
+ * (5.7.3.1) has a token's secret encrypted to that certificate and its signature computed over it,
+ * so the built-in username and X.509 providers use it rather than the endpoint's certificate. On a
+ * secured endpoint the two are the same, because the client checks that they match at
+ * CreateSession. On an endpoint whose SecurityPolicy is {@code None} they differ once the server
+ * renews its certificate after the client cached the endpoint.
+ *
  * <p>The context also carries the client's server-certificate validator. A secured {@code opc.tcp}
- * SecureChannel has already checked the endpoint's certificate, but on an endpoint whose
- * SecurityPolicy is {@code None} nothing has, and the username provider validates that certificate
- * before encrypting the password to it: with its own validator when it was given one, otherwise
- * with the client's.
+ * SecureChannel has already checked the server's certificate, but on an endpoint whose
+ * SecurityPolicy is {@code None} nothing has, and the username provider validates the CreateSession
+ * certificate before encrypting the password to it: with its own validator when it was given one,
+ * otherwise with the client's.
  *
  * <h2>CreateSession negotiation</h2>
  *
