@@ -1099,7 +1099,7 @@ public class SessionFsmFactory {
                   client,
                   event.session,
                   event.endpoint,
-                  event.currentProvider,
+                  Optional.ofNullable(event.currentEnhancedPolicy),
                   event.attempt,
                   event.serverNonce,
                   Optional.of(event.targetEnhancedPolicy),
@@ -2598,6 +2598,8 @@ public class SessionFsmFactory {
       EndpointDescription endpoint = session.getEndpoint().orElse(client.getConfig().getEndpoint());
       IdentityProvider newProvider = attempt.event.identityProvider;
 
+      Optional<SecurityPolicy> currentEnhancedPolicy =
+          currentProvider.getEnhancedUserTokenSecurityPolicy(endpoint);
       Optional<SecurityPolicy> newEnhancedPolicy =
           newProvider.getEnhancedUserTokenSecurityPolicy(endpoint);
 
@@ -2607,7 +2609,14 @@ public class SessionFsmFactory {
         // pre-negotiation ActivateSession under the current identity before encrypting the new
         // user identity token.
         preNegotiateEnhancedUserTokenKey(
-            ctx, client, session, endpoint, currentProvider, attempt, newEnhancedPolicy.get());
+            ctx,
+            client,
+            session,
+            endpoint,
+            currentProvider,
+            currentEnhancedPolicy,
+            attempt,
+            newEnhancedPolicy.get());
         return;
       }
 
@@ -2619,7 +2628,7 @@ public class SessionFsmFactory {
           client,
           session,
           endpoint,
-          currentProvider,
+          currentEnhancedPolicy,
           attempt,
           session.getServerNonce(),
           newEnhancedPolicy,
@@ -2635,14 +2644,13 @@ public class SessionFsmFactory {
       OpcUaSession session,
       EndpointDescription endpoint,
       IdentityProvider currentProvider,
+      Optional<SecurityPolicy> currentEnhancedPolicy,
       SessionFsm.ChangeIdentityAttempt attempt,
       SecurityPolicy targetEnhancedPolicy) {
 
-    Optional<SecurityPolicy> currentEnhancedPolicy;
     ActivateSessionRequest request;
     try {
       ByteString serverNonce = session.getServerNonce();
-      currentEnhancedPolicy = currentProvider.getEnhancedUserTokenSecurityPolicy(endpoint);
       Optional<ByteString> currentKey =
           resolveReceiverEphemeralPublicKey(session, currentEnhancedPolicy);
 
@@ -2752,7 +2760,7 @@ public class SessionFsmFactory {
                         attempt,
                         session,
                         endpoint,
-                        currentProvider,
+                        currentEnhancedPolicy.orElse(null),
                         nextServerNonce,
                         targetEnhancedPolicy,
                         negotiatedKey));
@@ -2769,17 +2777,15 @@ public class SessionFsmFactory {
       OpcUaClient client,
       OpcUaSession session,
       EndpointDescription endpoint,
-      IdentityProvider currentProvider,
+      Optional<SecurityPolicy> retainedEnhancedPolicy,
       SessionFsm.ChangeIdentityAttempt attempt,
       ByteString serverNonce,
       Optional<SecurityPolicy> newEnhancedPolicy,
       Optional<ByteString> receiverEphemeralPublicKey) {
 
-    Optional<SecurityPolicy> currentEnhancedPolicy = Optional.empty();
     ActivateSessionRequest request;
     try {
       IdentityProvider newProvider = attempt.event.identityProvider;
-      currentEnhancedPolicy = currentProvider.getEnhancedUserTokenSecurityPolicy(endpoint);
 
       SignedIdentityToken signedIdentityToken =
           newProvider.getIdentityToken(
@@ -2822,8 +2828,8 @@ public class SessionFsmFactory {
       // step-2 token construction failed, recover a fresh Session so the retained provider is not
       // left without its single-use key.
       boolean recoverSession =
-          currentEnhancedPolicy.isPresent()
-              && resolveReceiverEphemeralPublicKey(session, currentEnhancedPolicy).isEmpty();
+          retainedEnhancedPolicy.isPresent()
+              && resolveReceiverEphemeralPublicKey(session, retainedEnhancedPolicy).isEmpty();
       fireChangeIdentityFailure(ctx, session, attempt, ex, recoverSession);
       return;
     }
@@ -2833,8 +2839,6 @@ public class SessionFsmFactory {
 
       LOGGER.debug("Sending identity-change ActivateSessionRequest...");
     }
-
-    final Optional<SecurityPolicy> retainedEnhancedPolicy = currentEnhancedPolicy;
 
     CompletableFuture<UaResponseMessageType> responseFuture;
     try {
@@ -2931,8 +2935,7 @@ public class SessionFsmFactory {
                   || code == StatusCodes.Bad_UserSignatureInvalid
                   || code == StatusCodes.Bad_IdentityChangeNotSupported
                   || code == StatusCodes.Bad_ApplicationSignatureInvalid
-                  || code == StatusCodes.Bad_SecurityPolicyRejected
-                  || code == StatusCodes.Bad_InvalidArgument;
+                  || code == StatusCodes.Bad_SecurityPolicyRejected;
             })
         .orElse(false);
   }

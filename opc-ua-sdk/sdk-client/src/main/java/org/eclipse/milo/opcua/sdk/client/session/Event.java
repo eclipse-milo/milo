@@ -261,7 +261,7 @@ interface Event {
     final SessionFsm.ChangeIdentityAttempt attempt;
     final OpcUaSession session;
     final EndpointDescription endpoint;
-    final IdentityProvider currentProvider;
+    final @Nullable SecurityPolicy currentEnhancedPolicy;
     final ByteString serverNonce;
     final SecurityPolicy targetEnhancedPolicy;
     final ByteString receiverEphemeralPublicKey;
@@ -270,14 +270,14 @@ interface Event {
         SessionFsm.ChangeIdentityAttempt attempt,
         OpcUaSession session,
         EndpointDescription endpoint,
-        IdentityProvider currentProvider,
+        @Nullable SecurityPolicy currentEnhancedPolicy,
         ByteString serverNonce,
         SecurityPolicy targetEnhancedPolicy,
         ByteString receiverEphemeralPublicKey) {
       this.attempt = attempt;
       this.session = session;
       this.endpoint = endpoint;
-      this.currentProvider = currentProvider;
+      this.currentEnhancedPolicy = currentEnhancedPolicy;
       this.serverNonce = serverNonce;
       this.targetEnhancedPolicy = targetEnhancedPolicy;
       this.receiverEphemeralPublicKey = receiverEphemeralPublicKey;
