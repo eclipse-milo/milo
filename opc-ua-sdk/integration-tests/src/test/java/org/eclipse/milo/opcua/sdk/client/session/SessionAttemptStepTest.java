@@ -167,8 +167,7 @@ class SessionAttemptStepTest {
     }
   }
 
-  // Initializers whose futures fail are logged and ignored; what fails the step is an error in
-  // running them, here an initializer that throws when the one before it completes.
+  // An initializer whose future fails is logged and ignored; one that throws fails the step.
   @Test
   void failedInitializationIsReportedAsInitialize() throws Exception {
     try (var fixture = new Fixture()) {
@@ -176,7 +175,6 @@ class SessionAttemptStepTest {
       fixture.client.addSessionActivityListener(listener);
 
       var throwOnce = new AtomicBoolean(true);
-      fixture.client.addSessionInitializer((client, session) -> completedFuture(Unit.VALUE));
       fixture.client.addSessionInitializer(
           (client, session) -> {
             if (throwOnce.getAndSet(false)) {
