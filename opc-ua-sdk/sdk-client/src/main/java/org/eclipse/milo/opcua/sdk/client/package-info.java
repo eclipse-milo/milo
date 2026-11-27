@@ -31,6 +31,16 @@
  * late results are discarded. Applications implementing a resolver must release its resources when
  * its future is cancelled.
  *
+ * <p>{@link org.eclipse.milo.opcua.sdk.client.OpcUaClient#getEndpoint()} exposes the endpoint the
+ * client currently connects with: the adopted refreshed endpoint after a refresh, or the immutable
+ * {@link org.eclipse.milo.opcua.sdk.client.OpcUaClientConfig#getEndpoint()} before. Applications
+ * can register an {@link org.eclipse.milo.opcua.sdk.client.EndpointRefreshListener} on {@link
+ * org.eclipse.milo.opcua.sdk.client.OpcUaClient} to observe adopted endpoint changes and refresh
+ * failures (resolver errors, timeouts normalized to {@code Bad_Timeout}, and equivalence rejections
+ * with {@code Bad_ConfigurationError}). Listener callbacks run sequentially on the transport's
+ * executor outside refresh locks, with per-listener error isolation, and are suppressed if the
+ * client disconnects before a refresh completes.
+ *
  * <p>Connection metadata is separate from established security bindings. SecureChannels retain
  * their original certificates for their whole lifetime. Sessions retain their creation endpoint,
  * client certificate and server certificate. Reactivation uses those Session inputs together with
