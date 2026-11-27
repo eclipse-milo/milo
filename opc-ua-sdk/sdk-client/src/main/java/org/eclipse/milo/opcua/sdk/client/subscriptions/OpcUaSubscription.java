@@ -824,7 +824,9 @@ public class OpcUaSubscription {
    * Add a MonitoredItem to this Subscription.
    *
    * <p>This item will not be created on the server until {@link #synchronizeMonitoredItems()} is
-   * called.
+   * called. Adding a detached or previously deleted item clears any operation results left over
+   * from its previous server-side lifecycle; re-adding an item that is only queued for deletion
+   * restores it without clearing results from the still-live server-side MonitoredItem.
    *
    * @param item the MonitoredItem to add.
    * @throws UaRuntimeException if the Subscription has not been created yet.
@@ -845,8 +847,9 @@ public class OpcUaSubscription {
         }
         // else: item belongs to a different Subscription or context, ignore.
       } else {
-        // Brand-new or previously detached item: claim ownership atomically under item.stateLock
-        // so concurrent addMonitoredItem() calls on two Subscriptions can never both map it.
+        // Brand-new or previously detached item: claim ownership and clear any prior operation
+        // results atomically under item.stateLock so concurrent addMonitoredItem() calls on two
+        // Subscriptions can never both map it.
         UInteger clientHandle = clientHandleSequence.nextClientHandle();
         if (item.tryClaim(this, clientHandle)) {
           monitoredItems.put(clientHandle, item);
@@ -1613,7 +1616,9 @@ public class OpcUaSubscription {
    * <p>If the item is still on the incarnation captured when the request was prepared, the Server
    * acted on that deletion so the item's server state is cleared. If the application added the item
    * back to this Subscription while the delete was in flight, retain the ClientHandle captured for
-   * the request so a later {@link #createMonitoredItems()} can recreate it; otherwise detach it and
+   * the request and clear its prior operation results so a later {@link #createMonitoredItems()} or
+   * {@link #createMonitoredItems(Predicate)} starts its new server-side lifecycle clean; otherwise
+   * detach it with its operation results readable until it is added to a Subscription again, and
    * remove the pending deletion. If the item has already moved to a newer incarnation, ignore the
    * stale response and leave both the item and any newer pending deletion untouched.
    */

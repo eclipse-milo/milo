@@ -335,6 +335,9 @@ public class OpcUaMonitoredItem {
   /**
    * Get the result of the most recent CreateMonitoredItems service call, if one has been made.
    *
+   * <p>Cleared when the owning Subscription is reset while tracking this item, or when a deleted or
+   * detached item is added to a Subscription again; remains readable while detached.
+   *
    * @return the result of the most recent CreateMonitoredItems service call, if one has been made.
    */
   public Optional<StatusCode> getCreateResult() {
@@ -343,6 +346,9 @@ public class OpcUaMonitoredItem {
 
   /**
    * Get the result of the most recent ModifyMonitoredItems service call, if one has been made.
+   *
+   * <p>Cleared when the owning Subscription is reset while tracking this item, or when a deleted or
+   * detached item is added to a Subscription again; remains readable while detached.
    *
    * @return the result of the most recent ModifyMonitoredItems service call, if one has been made.
    */
@@ -353,6 +359,9 @@ public class OpcUaMonitoredItem {
   /**
    * Get the result of the most recent DeleteMonitoredItems service call, if one has been made.
    *
+   * <p>Cleared when the owning Subscription is reset while tracking this item, or when a deleted or
+   * detached item is added to a Subscription again; remains readable while detached.
+   *
    * @return the result of the most recent DeleteMonitoredItems service call, if one has been made.
    */
   public Optional<StatusCode> getDeleteResult() {
@@ -361,6 +370,9 @@ public class OpcUaMonitoredItem {
 
   /**
    * Get the result of the most recent SetMonitoringMode service call, if one has been made.
+   *
+   * <p>Cleared when the owning Subscription is reset while tracking this item, or when a deleted or
+   * detached item is added to a Subscription again; remains readable while detached.
    *
    * @return the result of the most recent SetMonitoringMode service call, if one has been made.
    */
@@ -440,6 +452,7 @@ public class OpcUaMonitoredItem {
 
       this.owner = subscription;
       this.clientHandle = clientHandle;
+      clearResultsLocked();
       return true;
     }
   }
@@ -731,12 +744,12 @@ public class OpcUaMonitoredItem {
 
     if (readdedClientHandle != null) {
       clientHandle = readdedClientHandle;
+      clearResultsLocked();
     } else {
       clientHandle = null;
       owner = null;
+      deleteResult = statusCode;
     }
-
-    deleteResult = statusCode;
   }
 
   Optional<PreparedSetMonitoringModeRequest> tryBeginSetMonitoringMode() {
@@ -880,11 +893,16 @@ public class OpcUaMonitoredItem {
       serverState = null;
       modifications = null;
 
-      createResult = null;
-      modifyResult = null;
-      deleteResult = null;
-      setMonitoringModeResult = null;
+      clearResultsLocked();
     }
+  }
+
+  /** Must be called while holding {@link #stateLock}. */
+  private void clearResultsLocked() {
+    createResult = null;
+    modifyResult = null;
+    deleteResult = null;
+    setMonitoringModeResult = null;
   }
 
   /** Must be called while holding {@link #stateLock}. */

@@ -36,7 +36,9 @@
  * ModifyMonitoredItems call is in flight are preserved: a Good response leaves the item
  * unsynchronized so the next synchronization pass sends the latest desired parameters, while a
  * failed CreateMonitoredItems leaves the item {@code INITIAL} so the next create attempt uses them
- * directly.
+ * directly. Operation results remain readable after a MonitoredItem is deleted and are cleared when
+ * the item is added to a Subscription again (including when a re-added item's in-flight deletion
+ * completes) or when the Subscription is reset.
  *
  * <p>Discovering a monitored-item partition limit may wait for Session activation and server I/O.
  * Reset invalidates that cache without waiting for an in-progress lookup, because Session recovery
