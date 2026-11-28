@@ -668,6 +668,120 @@ class FileBasedTrustListPersistenceFailureTest {
   }
 
   @Nested
+  class LoadsAndReloads {
+
+    // One file that cannot be read must not empty its directory's list. A load skips it, whether
+    // opening, inspecting, or reading it fails, and keeps what the readable files hold.
+    @ParameterizedTest
+    @ValueSource(strings = {"open", "attributes", "mid-stream"})
+    void loadSkipsAFileItCannotReadAndLoadsTheRest(String failure) throws Exception {
+      Dirs dirs = createDirs(baseDir);
+      Files.write(dirs.trustedCerts().resolve("retained.der"), RETAINED.certificate().getEncoded());
+      Files.write(dirs.issuerCerts().resolve("retained.der"), RETAINED.certificate().getEncoded());
+      Files.write(dirs.trustedCrl().resolve("retained.crl"), RETAINED.crl().getEncoded());
+      Files.write(dirs.issuerCrl().resolve("retained.crl"), RETAINED.crl().getEncoded());
+      Files.writeString(dirs.trustedCerts().resolve("corrupt.der"), "not a valid certificate");
+
+      Set<Path> unreadable =
+          Set.of(
+              Files.write(
+                  dirs.trustedCerts().resolve("unreadable.der"), SECOND.certificate().getEncoded()),
+              Files.write(
+                  dirs.issuerCerts().resolve("unreadable.der"), SECOND.certificate().getEncoded()),
+              Files.write(dirs.trustedCrl().resolve("unreadable.crl"), SECOND.crl().getEncoded()),
+              Files.write(dirs.issuerCrl().resolve("unreadable.crl"), SECOND.crl().getEncoded()));
+
+      try (var manager = managerFailingReads(dirs, failure, unreadable::contains)) {
+        manager.initialize();
+        var validator =
+            new DefaultClientCertificateValidator(manager, new MemoryCertificateQuarantine());
+
+        assertEquals(List.of(RETAINED.certificate()), manager.getTrustedCertificates());
+        assertEquals(List.of(RETAINED.certificate()), manager.getIssuerCertificates());
+        assertEquals(List.of(RETAINED.crl()), manager.getTrustedCrls());
+        assertEquals(List.of(RETAINED.crl()), manager.getIssuerCrls());
+        assertDoesNotThrow(
+            () -> validator.validateCertificateChain(List.of(RETAINED.certificate()), null, null));
+      }
+    }
+
+    // A reload must apply the directory's changes while another file in it cannot be read: a
+    // certificate whose file is deleted by hand stops being trusted, and one added by hand starts.
+    @Test
+    void reloadBesideAnUnreadableFileAppliesTheDirectorysChanges() throws Exception {
+      Dirs dirs = createDirs(baseDir);
+      Path retainedFile = dirs.trustedCerts().resolve("retained.der");
+      Path unreadable = dirs.trustedCerts().resolve("unreadable.der");
+      Files.write(retainedFile, RETAINED.certificate().getEncoded());
+      Files.write(unreadable, SECOND.certificate().getEncoded());
+
+      var blockRead = new AtomicBoolean(false);
+
+      // No initialize(), so no watcher thread races the changes below; the test reloads directly.
+      try (var manager =
+          new FaultInjectingTrustListManager(
+              dirs,
+              p -> false,
+              p -> false,
+              p -> false,
+              path -> blockRead.get() && path.equals(unreadable))) {
+        var validator =
+            new DefaultClientCertificateValidator(manager, new MemoryCertificateQuarantine());
+
+        reloadTrustedCertificates(manager, dirs);
+        assertEquals(
+            Set.of(RETAINED.certificate(), SECOND.certificate()),
+            Set.copyOf(manager.getTrustedCertificates()));
+        DateTime before = manager.getLastUpdateTime();
+        awaitClockTickAfter(before);
+
+        blockRead.set(true);
+        Files.delete(retainedFile);
+        Files.write(dirs.trustedCerts().resolve("third.der"), THIRD.certificate().getEncoded());
+        reloadTrustedCertificates(manager, dirs);
+
+        assertEquals(
+            List.of(THIRD.certificate()),
+            manager.getTrustedCertificates(),
+            "the list holds what the readable files hold");
+        assertTrue(manager.getLastUpdateTime().getUtcTime() > before.getUtcTime());
+        assertThrows(
+            UaException.class,
+            () -> validator.validateCertificateChain(List.of(RETAINED.certificate()), null, null));
+        assertDoesNotThrow(
+            () -> validator.validateCertificateChain(List.of(THIRD.certificate()), null, null));
+      }
+    }
+
+    // When the directory itself cannot be listed, nothing about its contents is known, so a reload
+    // keeps the previous entries rather than publishing an empty list.
+    @Test
+    void reloadOfADirectoryThatCannotBeListedKeepsThePreviousEntries() throws Exception {
+      Dirs dirs = createDirs(baseDir);
+      Files.write(dirs.trustedCerts().resolve("retained.der"), RETAINED.certificate().getEncoded());
+
+      var failList = new AtomicBoolean(false);
+
+      try (var manager =
+          new FaultInjectingTrustListManager(
+              dirs,
+              p -> false,
+              p -> false,
+              dir -> failList.get() && dir.equals(dirs.trustedCerts()))) {
+        reloadTrustedCertificates(manager, dirs);
+        DateTime before = manager.getLastUpdateTime();
+        awaitClockTickAfter(before);
+
+        failList.set(true);
+        reloadTrustedCertificates(manager, dirs);
+
+        assertEquals(List.of(RETAINED.certificate()), manager.getTrustedCertificates());
+        assertEquals(before, manager.getLastUpdateTime());
+      }
+    }
+  }
+
+  @Nested
   class PartialUpdatesAndReconciliation {
 
     // When one entry in a multi-item update persists and a later entry fails, the reconciled
@@ -755,140 +869,52 @@ class FileBasedTrustListPersistenceFailureTest {
       }
     }
 
-    // If an individual file cannot be read during failure reconciliation, that directory must
-    // retain its previous in-memory entries instead of silently dropping the unreadable file.
+    // When a removal fails part way while another file cannot be read, the reconcile must still
+    // re-read the readable files: an entry whose file was deleted leaves memory, and one whose
+    // delete failed stays.
     @Test
-    void unreadableFileDuringReconciliationRetainsPreviousEntries() throws Exception {
+    void failedRemovalBesideAnUnreadableFileReconcilesToTheReadableFiles() throws Exception {
       Dirs dirs = createDirs(baseDir);
-      Path unreadable = dirs.trustedCerts().resolve("retained.der");
-      Files.write(unreadable, RETAINED.certificate().getEncoded());
-      blockTargetWithNonEmptyDirectory(
-          dirs.trustedCerts().resolve(thumbprintHex(SECOND.certificate().getEncoded()) + ".der"));
+      Path deleted = dirs.trustedCerts().resolve("a-deleted.der");
+      Path undeletable = dirs.trustedCerts().resolve("b-undeletable.der");
+      Path unreadable = dirs.trustedCerts().resolve("c-unreadable.der");
+      Files.write(deleted, RETAINED.certificate().getEncoded());
+      Files.write(undeletable, SECOND.certificate().getEncoded());
+      Files.write(unreadable, THIRD.certificate().getEncoded());
 
       var blockRead = new AtomicBoolean(false);
 
       try (var manager =
           new FaultInjectingTrustListManager(
               dirs,
-              p -> false,
+              undeletable::equals,
               p -> false,
               p -> false,
               path -> blockRead.get() && path.equals(unreadable))) {
         manager.initialize();
-        DateTime before = manager.getLastUpdateTime();
-        awaitClockTickAfter(before);
+        var validator =
+            new DefaultClientCertificateValidator(manager, new MemoryCertificateQuarantine());
+        assertEquals(
+            Set.of(RETAINED.certificate(), SECOND.certificate(), THIRD.certificate()),
+            Set.copyOf(manager.getTrustedCertificates()));
 
         blockRead.set(true);
         UncheckedIOException thrown =
             assertThrows(
                 UncheckedIOException.class,
-                () -> manager.addTrustedCertificate(SECOND.certificate()));
+                () -> manager.setTrustedCertificates(List.of(THIRD.certificate())));
 
-        assertEquals(1, thrown.getCause().getSuppressed().length);
-        assertInstanceOf(AccessDeniedException.class, thrown.getCause().getSuppressed()[0]);
-        assertEquals(List.of(RETAINED.certificate()), manager.getTrustedCertificates());
-        assertEquals(before, manager.getLastUpdateTime());
-      }
-    }
-
-    // A metadata lookup failure during reconciliation or watcher reload must retain previous
-    // entries rather than publishing an empty list.
-    @Test
-    void metadataLookupFailureDuringReconciliationAndSynchronizeRetainsPreviousEntries()
-        throws Exception {
-      Dirs dirs = createDirs(baseDir);
-      Path unstatable = dirs.trustedCerts().resolve("retained.der");
-      Files.write(unstatable, RETAINED.certificate().getEncoded());
-      blockTargetWithNonEmptyDirectory(
-          dirs.trustedCerts().resolve(thumbprintHex(SECOND.certificate().getEncoded()) + ".der"));
-
-      var blockAttributes = new AtomicBoolean(false);
-
-      try (var manager =
-          new FaultInjectingTrustListManager(
-              dirs,
-              p -> false,
-              p -> false,
-              p -> false,
-              p -> false,
-              path -> blockAttributes.get() && path.equals(unstatable))) {
-        manager.initialize();
-        DateTime before = manager.getLastUpdateTime();
-        awaitClockTickAfter(before);
-
-        blockAttributes.set(true);
-        UncheckedIOException thrown =
-            assertThrows(
-                UncheckedIOException.class,
-                () -> manager.addTrustedCertificate(SECOND.certificate()));
-
-        assertEquals(1, thrown.getCause().getSuppressed().length);
-        assertInstanceOf(AccessDeniedException.class, thrown.getCause().getSuppressed()[0]);
-        assertEquals(List.of(RETAINED.certificate()), manager.getTrustedCertificates());
-        assertEquals(before, manager.getLastUpdateTime());
-
-        manager.synchronize(
-            "trusted certificates",
-            current ->
-                current.withTrustedCertificates(manager.readCertificates(dirs.trustedCerts())));
-        assertEquals(List.of(RETAINED.certificate()), manager.getTrustedCertificates());
-        assertEquals(before, manager.getLastUpdateTime());
-      }
-    }
-
-    // A mid-stream I/O error while decoding must propagate as IOException even when CertificateUtil
-    // wraps it in UaException, so a reload keeps the previous entries instead of dropping the file
-    // as malformed, while genuinely malformed certificate data is still skipped.
-    @Test
-    void midStreamReadFailurePropagatesAsIoExceptionWhileCorruptFileIsSkipped() throws Exception {
-      Dirs dirs = createDirs(baseDir);
-      Path failingCert = dirs.trustedCerts().resolve("a-failing-stream.der");
-      Path corruptCert = dirs.trustedCerts().resolve("corrupt.der");
-      Files.write(failingCert, RETAINED.certificate().getEncoded());
-      Files.writeString(corruptCert, "not a valid certificate");
-
-      Path failingCrl = dirs.trustedCrl().resolve("a-failing-stream.crl");
-      Files.write(failingCrl, RETAINED.crl().getEncoded());
-
-      var failMidStream = new AtomicBoolean(false);
-
-      try (var manager =
-          new FaultInjectingTrustListManager(
-              dirs,
-              p -> false,
-              p -> false,
-              p -> false,
-              p -> false,
-              p -> false,
-              path ->
-                  failMidStream.get() && (path.equals(failingCert) || path.equals(failingCrl)))) {
-        manager.initialize();
-        assertEquals(List.of(RETAINED.certificate()), manager.getTrustedCertificates());
-        assertEquals(List.of(RETAINED.crl()), manager.getTrustedCrls());
-        DateTime before = manager.getLastUpdateTime();
-        awaitClockTickAfter(before);
-
-        failMidStream.set(true);
-
-        IOException certFailure =
-            assertThrows(IOException.class, () -> manager.readCertificates(dirs.trustedCerts()));
-        assertTrue(certFailure.getMessage().contains("simulated mid-stream read failure"));
-
-        IOException crlFailure =
-            assertThrows(IOException.class, () -> manager.readCrls(dirs.trustedCrl()));
-        assertTrue(crlFailure.getMessage().contains("simulated mid-stream read failure"));
-
-        manager.synchronize(
-            "trusted certificates",
-            current ->
-                current.withTrustedCertificates(manager.readCertificates(dirs.trustedCerts())));
-        manager.synchronize(
-            "trusted CRLs",
-            current -> current.withTrustedCrls(manager.readCrls(dirs.trustedCrl())));
-
-        assertEquals(List.of(RETAINED.certificate()), manager.getTrustedCertificates());
-        assertEquals(List.of(RETAINED.crl()), manager.getTrustedCrls());
-        assertEquals(before, manager.getLastUpdateTime());
+        assertTrue(thrown.getCause().getMessage().contains("simulated delete failure"));
+        assertEquals(0, thrown.getCause().getSuppressed().length, "the re-read must succeed");
+        assertFalse(Files.exists(deleted));
+        assertTrue(Files.exists(undeletable));
+        assertEquals(
+            List.of(SECOND.certificate()),
+            manager.getTrustedCertificates(),
+            "the list holds what the readable files hold");
+        assertThrows(
+            UaException.class,
+            () -> validator.validateCertificateChain(List.of(RETAINED.certificate()), null, null));
       }
     }
   }
@@ -904,6 +930,31 @@ class FileBasedTrustListPersistenceFailureTest {
   private static FileBasedTrustListManager createManager(Dirs dirs) {
     return new FileBasedTrustListManager(
         dirs.issuerCerts(), dirs.issuerCrl(), dirs.trustedCerts(), dirs.trustedCrl());
+  }
+
+  /**
+   * Create a manager that cannot read the matching files: opening them, reading their attributes,
+   * or reading their contents part way fails, as {@code failure} names.
+   */
+  private static FileBasedTrustListManager managerFailingReads(
+      Dirs dirs, String failure, Predicate<Path> unreadable) {
+
+    Predicate<Path> never = p -> false;
+
+    return switch (failure) {
+      case "open" -> new FaultInjectingTrustListManager(dirs, never, never, never, unreadable);
+      case "attributes" ->
+          new FaultInjectingTrustListManager(dirs, never, never, never, never, unreadable);
+      case "mid-stream" ->
+          new FaultInjectingTrustListManager(dirs, never, never, never, never, never, unreadable);
+      default -> throw new IllegalArgumentException(failure);
+    };
+  }
+
+  private static void reloadTrustedCertificates(FileBasedTrustListManager manager, Dirs dirs) {
+    manager.synchronize(
+        "trusted certificates",
+        current -> current.withTrustedCertificates(manager.readCertificates(dirs.trustedCerts())));
   }
 
   private static void blockTargetWithNonEmptyDirectory(Path target) throws IOException {
