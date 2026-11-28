@@ -308,7 +308,9 @@ class FileBasedTrustListPersistenceFailureTest {
               p -> false,
               p -> false,
               path -> blockRead.get() && path.equals(unreadable))) {
-        manager.initialize();
+        // No initialize(): a watcher reload after the delete would skip the unreadable file and
+        // drop SECOND from memory before the assertions run.
+        reloadAll(manager, dirs);
         var validator =
             new DefaultClientCertificateValidator(manager, new MemoryCertificateQuarantine());
         DateTime before = manager.getLastUpdateTime();
@@ -576,7 +578,9 @@ class FileBasedTrustListPersistenceFailureTest {
               p -> false,
               p -> false,
               path -> blockRead.get() && path.equals(unreadable))) {
-        manager.initialize();
+        // No initialize(): a watcher reload after the delete would skip the unreadable file and
+        // drop SECOND from memory before the assertions run.
+        reloadAll(manager, dirs);
         DateTime before = manager.getLastUpdateTime();
         awaitClockTickAfter(before);
 
@@ -728,7 +732,7 @@ class FileBasedTrustListPersistenceFailureTest {
         var validator =
             new DefaultClientCertificateValidator(manager, new MemoryCertificateQuarantine());
 
-        reloadTrustedCertificates(manager, dirs);
+        reloadAll(manager, dirs);
         assertEquals(
             Set.of(RETAINED.certificate(), SECOND.certificate()),
             Set.copyOf(manager.getTrustedCertificates()));
@@ -738,7 +742,7 @@ class FileBasedTrustListPersistenceFailureTest {
         blockRead.set(true);
         Files.delete(retainedFile);
         Files.write(dirs.trustedCerts().resolve("third.der"), THIRD.certificate().getEncoded());
-        reloadTrustedCertificates(manager, dirs);
+        reloadAll(manager, dirs);
 
         assertEquals(
             List.of(THIRD.certificate()),
@@ -768,12 +772,12 @@ class FileBasedTrustListPersistenceFailureTest {
               p -> false,
               p -> false,
               dir -> failList.get() && dir.equals(dirs.trustedCerts()))) {
-        reloadTrustedCertificates(manager, dirs);
+        reloadAll(manager, dirs);
         DateTime before = manager.getLastUpdateTime();
         awaitClockTickAfter(before);
 
         failList.set(true);
-        reloadTrustedCertificates(manager, dirs);
+        reloadAll(manager, dirs);
 
         assertEquals(List.of(RETAINED.certificate()), manager.getTrustedCertificates());
         assertEquals(before, manager.getLastUpdateTime());
@@ -951,10 +955,22 @@ class FileBasedTrustListPersistenceFailureTest {
     };
   }
 
-  private static void reloadTrustedCertificates(FileBasedTrustListManager manager, Dirs dirs) {
+  /**
+   * Load or reload all four directories as the watcher would. Tests that change files beside an
+   * unreadable one use this instead of {@code initialize()}, so no watcher thread reloads a
+   * directory between their changes and their assertions.
+   */
+  private static void reloadAll(FileBasedTrustListManager manager, Dirs dirs) {
+    manager.synchronize(
+        "issuer certificates",
+        current -> current.withIssuerCertificates(manager.readCertificates(dirs.issuerCerts())));
+    manager.synchronize(
+        "issuer CRLs", current -> current.withIssuerCrls(manager.readCrls(dirs.issuerCrl())));
     manager.synchronize(
         "trusted certificates",
         current -> current.withTrustedCertificates(manager.readCertificates(dirs.trustedCerts())));
+    manager.synchronize(
+        "trusted CRLs", current -> current.withTrustedCrls(manager.readCrls(dirs.trustedCrl())));
   }
 
   private static void blockTargetWithNonEmptyDirectory(Path target) throws IOException {
