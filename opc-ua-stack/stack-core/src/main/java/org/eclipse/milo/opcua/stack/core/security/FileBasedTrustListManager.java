@@ -73,14 +73,17 @@ import org.slf4j.LoggerFactory;
  * with {@code ATOMIC_MOVE} when supported by the filesystem, falling back to {@code
  * REPLACE_EXISTING} otherwise, and publish all four lists together. If any write or delete fails,
  * affected directories are re-read under the manager's lock to reconcile memory with disk before
- * throwing {@link UncheckedIOException}; if re-reading an affected directory also fails, that
- * directory retains its previous in-memory entries and the read error is attached as a suppressed
- * exception. A directory reload triggered by the watcher replaces only the list for that directory.
+ * throwing {@link UncheckedIOException}; if an affected directory cannot be listed, it retains its
+ * previous in-memory entries and the listing error is attached as a suppressed exception. A
+ * directory reload triggered by the watcher replaces only the list for that directory.
  *
- * <p>A reload decodes every regular file in a directory, whatever its extension, and logs and skips
- * files that fail to decode. Hidden files, whose names start with {@code .}, and subdirectories are
- * not read, so files such as the {@code .DS_Store} that macOS Finder creates neither appear in the
- * trust list nor produce warnings.
+ * <p>A load or reload decodes every regular file in a directory, whatever its extension, and logs
+ * and skips each file that cannot be read or fails to decode, so the list holds what the readable
+ * files hold. An entry whose only file cannot be read is therefore absent: a certificate there is
+ * not trusted, and a CRL there revokes nothing, until a reload can read the file. A directory that
+ * cannot be listed keeps its previous entries. Hidden files, whose names start with {@code .}, and
+ * subdirectories are not read, so files such as the {@code .DS_Store} that macOS Finder creates
+ * neither appear in the trust list nor produce warnings.
  *
  * <p>A removal looks for the removed entries in every regular file of the directory, whatever its
  * name. A file that cannot be read is logged and skipped, and does not fail the removal: the
@@ -255,9 +258,9 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
    *
    * <p>Files for added and removed entries are persisted before the snapshot is published. If any
    * write or delete fails, the affected directories are re-read under the manager's lock to
-   * reconcile memory with disk before throwing {@link UncheckedIOException}; if re-reading an
-   * affected directory also fails, that directory retains its previous in-memory entries and the
-   * read error is attached as a suppressed exception.
+   * reconcile memory with disk before throwing {@link UncheckedIOException}; if an affected
+   * directory cannot be listed, it retains its previous in-memory entries and the listing error is
+   * attached as a suppressed exception.
    *
    * @throws IllegalStateException if this manager has been closed.
    * @throws UncheckedIOException if persisting or removing any affected file fails.
@@ -556,9 +559,10 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
   }
 
   /**
-   * Reload one directory and publish the current snapshot with that directory's list replaced. If
-   * the directory or any of its files cannot be read, the previous snapshot is kept. If this
-   * manager has been closed, the reload is skipped and cannot repopulate the cleared snapshot.
+   * Reload one directory and publish the current snapshot with that directory's list replaced.
+   * Files that cannot be read are skipped; if the directory cannot be listed, the previous snapshot
+   * is kept. If this manager has been closed, the reload is skipped and cannot repopulate the
+   * cleared snapshot.
    */
   void synchronize(String name, Reload reload) {
     LOGGER.debug("Synchronizing {}...", name);
@@ -593,9 +597,7 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
   List<X509Certificate> readCertificates(Path directory) throws IOException {
     var certificates = new ArrayList<X509Certificate>();
     for (Path entry : listEntries(directory)) {
-      if (isRegularFile(entry)) {
-        decodeCertificateFile(entry).ifPresent(certificates::add);
-      }
+      decodeIfReadable(entry, this::decodeCertificateFile).ifPresent(certificates::add);
     }
     return List.copyOf(certificates);
   }
@@ -603,11 +605,31 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
   List<X509CRL> readCrls(Path directory) throws IOException {
     var crls = new ArrayList<X509CRL>();
     for (Path entry : listEntries(directory)) {
-      if (isRegularFile(entry)) {
-        decodeCrlFile(entry).ifPresent(crls::addAll);
-      }
+      decodeIfReadable(entry, this::decodeCrlFile).ifPresent(crls::addAll);
     }
     return List.copyOf(crls);
+  }
+
+  @FunctionalInterface
+  private interface FileDecoder<T> {
+    Optional<T> decode(Path file) throws IOException;
+  }
+
+  /**
+   * Decode a directory entry, or return empty if it is not a regular file. A file that cannot be
+   * read is logged and skipped, so one such file cannot fail the load, reload, or removal of the
+   * files that can be read.
+   */
+  private <T> Optional<T> decodeIfReadable(Path entry, FileDecoder<T> decoder) {
+    try {
+      return isRegularFile(entry) ? decoder.decode(entry) : Optional.empty();
+    } catch (IOException e) {
+      // This repeats on every reload of the directory, so the stack trace is logged at DEBUG.
+      LOGGER.warn("Skipped unreadable file {}: {}", entry, e.toString());
+      LOGGER.debug("Skipped unreadable file {}", entry, e);
+
+      return Optional.empty();
+    }
   }
 
   /** List the entries in {@code directory} whose names do not start with {@code .}. */
@@ -786,7 +808,7 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
     IOException failure = null;
 
     for (Path entry : listEntries(directory)) {
-      if (decodeForRemoval(entry, this::decodeCertificateFile)
+      if (decodeIfReadable(entry, this::decodeCertificateFile)
           .filter(certificates::contains)
           .isEmpty()) {
         continue;
@@ -803,25 +825,6 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
 
     if (failure != null) {
       throw failure;
-    }
-  }
-
-  @FunctionalInterface
-  private interface FileDecoder<T> {
-    Optional<T> decode(Path file) throws IOException;
-  }
-
-  /**
-   * Decode a directory entry while looking for the files of removed entries. A file that cannot be
-   * read is logged and skipped, so it cannot fail the removal of the files that can be read.
-   */
-  private <T> Optional<T> decodeForRemoval(Path entry, FileDecoder<T> decoder) {
-    try {
-      return isRegularFile(entry) ? decoder.decode(entry) : Optional.empty();
-    } catch (IOException e) {
-      LOGGER.warn(
-          "Skipped unreadable file {} during removal; what it holds stays on disk", entry, e);
-      return Optional.empty();
     }
   }
 
@@ -845,7 +848,7 @@ public class FileBasedTrustListManager implements TrustListManager, Closeable {
     IOException failure = null;
 
     for (Path entry : listEntries(directory)) {
-      List<X509CRL> contents = decodeForRemoval(entry, this::decodeCrlFile).orElse(List.of());
+      List<X509CRL> contents = decodeIfReadable(entry, this::decodeCrlFile).orElse(List.of());
       List<X509CRL> retained = contents.stream().filter(crl -> !removed.contains(crl)).toList();
       if (retained.size() == contents.size()) {
         continue;

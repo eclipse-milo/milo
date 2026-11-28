@@ -146,9 +146,10 @@
  * certificate and CRL files by syncing a hidden temporary file and renaming it into place with
  * {@code ATOMIC_MOVE} when supported by the filesystem, falling back to {@code REPLACE_EXISTING}
  * otherwise. If any write or delete fails, affected directories are re-read under the manager's
- * lock to reconcile memory with disk before throwing {@link java.io.UncheckedIOException}; if
- * re-reading an affected directory also fails, that directory retains its previous in-memory
- * entries and the read error is attached as a suppressed exception. Both it and {@link
+ * lock to reconcile memory with disk before throwing {@link java.io.UncheckedIOException}; if an
+ * affected directory cannot be listed, it retains its previous in-memory entries and the listing
+ * error is attached as a suppressed exception. Loads, reloads, and removals log and skip each file
+ * they cannot read, so the trust list holds what the readable files hold. Both it and {@link
  * org.eclipse.milo.opcua.stack.core.security.FileBasedCertificateQuarantine} name written
  * certificate files by their SHA-1 thumbprint, remove all files matching a certificate's decoded
  * content regardless of filename, and skip hidden files, whose names start with {@code .}, and
