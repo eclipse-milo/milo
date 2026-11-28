@@ -35,6 +35,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
 import org.eclipse.milo.opcua.sdk.client.model.ObjectTypeInitializer;
 import org.eclipse.milo.opcua.sdk.client.model.VariableTypeInitializer;
 import org.eclipse.milo.opcua.sdk.client.reverse.DiscoveryFirstReverseConnectClient;
@@ -1091,6 +1092,79 @@ public class OpcUaClient {
    */
   public CompletableFuture<OpcUaSession> getSessionAsync() {
     return sessionFsm.getSession();
+  }
+
+  /**
+   * Change the user identity associated with the active Session using {@code identityProvider}.
+   *
+   * <p>Re-activates the current Session on its existing SecureChannel so active Subscriptions and
+   * MonitoredItems remain in place while the Server re-evaluates permissions under the new user. On
+   * success, {@code identityProvider} replaces the active identity provider for subsequent
+   * reactivations and new Sessions opened by this client; {@link
+   * OpcUaClientConfig#getIdentityProvider()} remains unchanged. The returned {@link OpcUaSession}
+   * exposes the Server's service result via {@link
+   * OpcUaSession#getLastActivateSessionServiceResult()} (for example, {@code
+   * Good_PasswordChangeRequired}).
+   *
+   * <p>On failure, the previous identity provider remains in effect. When the Server definitively
+   * refuses the identity change and the Session remains usable under the previous provider, the
+   * Session stays active without reconnecting; when the outcome is ambiguous (for example, a
+   * transport timeout or post-commit response fault) or the retained enhanced provider's single-use
+   * ephemeral key was consumed, the client abandons the Session and establishes a replacement
+   * Session under the retained provider. Calls made while the Session is not active fail
+   * immediately with {@code Bad_SessionClosed} (disconnected or closing), {@code
+   * Bad_SessionNotActivated} (connecting or reconnecting), or {@code Bad_InvalidState} (another
+   * identity change is already in progress).
+   *
+   * @param identityProvider the new {@link IdentityProvider} to authenticate with.
+   * @return the active {@link OpcUaSession} after the identity change succeeds.
+   * @throws UaException if the identity change fails or cannot be started in the current state.
+   */
+  public OpcUaSession changeIdentity(IdentityProvider identityProvider) throws UaException {
+    Objects.requireNonNull(identityProvider, "identityProvider");
+
+    try {
+      return changeIdentityAsync(identityProvider).get();
+    } catch (ExecutionException e) {
+      throw new UaException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new UaException(StatusCodes.Bad_UnexpectedError, e);
+    }
+  }
+
+  /**
+   * Asynchronously change the user identity associated with the active Session using {@code
+   * identityProvider}.
+   *
+   * <p>Re-activates the current Session on its existing SecureChannel so active Subscriptions and
+   * MonitoredItems remain in place while the Server re-evaluates permissions under the new user. On
+   * success, {@code identityProvider} replaces the active identity provider for subsequent
+   * reactivations and new Sessions opened by this client; {@link
+   * OpcUaClientConfig#getIdentityProvider()} remains unchanged. The completed {@link OpcUaSession}
+   * exposes the Server's service result via {@link
+   * OpcUaSession#getLastActivateSessionServiceResult()} (for example, {@code
+   * Good_PasswordChangeRequired}).
+   *
+   * <p>On failure, the previous identity provider remains in effect. When the Server definitively
+   * refuses the identity change and the Session remains usable under the previous provider, the
+   * Session stays active without reconnecting; when the outcome is ambiguous (for example, a
+   * transport timeout or post-commit response fault) or the retained enhanced provider's single-use
+   * ephemeral key was consumed, the client abandons the Session and establishes a replacement
+   * Session under the retained provider. Calls made while the Session is not active fail
+   * immediately with {@code Bad_SessionClosed} (disconnected or closing), {@code
+   * Bad_SessionNotActivated} (connecting or reconnecting), or {@code Bad_InvalidState} (another
+   * identity change is already in progress).
+   *
+   * @param identityProvider the new {@link IdentityProvider} to authenticate with.
+   * @return a {@link CompletableFuture} that completes with the active {@link OpcUaSession} on
+   *     success, or completes exceptionally if the identity change fails or cannot be started in
+   *     the current state.
+   */
+  public CompletableFuture<OpcUaSession> changeIdentityAsync(IdentityProvider identityProvider) {
+    Objects.requireNonNull(identityProvider, "identityProvider");
+
+    return sessionFsm.changeIdentity(identityProvider);
   }
 
   /**

@@ -199,7 +199,15 @@ public interface OpcUaClientConfig {
   UInteger getMaxPendingPublishRequests();
 
   /**
-   * @return an {@link IdentityProvider} to use when activating a session.
+   * Get the initial {@link IdentityProvider} used when activating a session.
+   *
+   * <p>The configuration itself is immutable. Calling {@link
+   * OpcUaClient#changeIdentity(IdentityProvider)} or {@link
+   * OpcUaClient#changeIdentityAsync(IdentityProvider)} overrides the active identity provider for
+   * subsequent reactivations and new Sessions opened by that client without changing the value
+   * returned here.
+   *
+   * @return the initial {@link IdentityProvider} configured for the client.
    */
   IdentityProvider getIdentityProvider();
 

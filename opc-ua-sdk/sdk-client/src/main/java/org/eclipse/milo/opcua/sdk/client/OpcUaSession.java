@@ -11,8 +11,10 @@
 package org.eclipse.milo.opcua.sdk.client;
 
 import com.google.common.base.MoreObjects;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
@@ -24,9 +26,12 @@ import org.jspecify.annotations.Nullable;
 
 public class OpcUaSession extends ConcurrentHashMap<String, Object> implements UaSession {
 
+  private record ReceiverEphemeralKey(
+      ByteString publicKey, @Nullable SecurityPolicy securityPolicy) {}
+
   private volatile ByteString serverNonce = ByteString.NULL_VALUE;
   private volatile ByteString clientNonce = ByteString.NULL_VALUE;
-  private volatile ByteString userTokenReceiverEphemeralPublicKey = ByteString.NULL_VALUE;
+  private volatile @Nullable ReceiverEphemeralKey userTokenReceiverEphemeralKey;
   private volatile @Nullable StatusCode lastActivateSessionServiceResult;
 
   private final NodeId authToken;
@@ -178,18 +183,50 @@ public class OpcUaSession extends ConcurrentHashMap<String, Object> implements U
   }
 
   /**
-   * Get the server session public key used for enhanced username-token reactivation.
+   * Get the server session public key used for enhanced username-token activation.
    *
-   * <p>The key is learned from the CreateSession additional header and reused when the session is
-   * reactivated on the same negotiated user-token policy. Both ECC and RSA-DH policies store their
-   * ephemeral receiver key here.
+   * <p>The key is learned from the CreateSession or ActivateSession additional header and reused
+   * when the session is reactivated or changes identity on the same negotiated user-token policy.
+   * Both ECC and RSA-DH policies store their ephemeral receiver key here.
    *
    * @return the receiver public key advertised by the server for enhanced username-token
    *     encryption.
    */
   public Optional<ByteString> getUserTokenReceiverEphemeralPublicKey() {
-    return userTokenReceiverEphemeralPublicKey.isNotNull()
-        ? Optional.of(userTokenReceiverEphemeralPublicKey)
+    ReceiverEphemeralKey key = userTokenReceiverEphemeralKey;
+    return key != null && key.publicKey().isNotNull()
+        ? Optional.of(key.publicKey())
+        : Optional.empty();
+  }
+
+  /**
+   * Get the server session public key negotiated for {@code securityPolicy}, if one is currently
+   * held.
+   *
+   * @param securityPolicy the enhanced user-token security policy to match.
+   * @return the receiver public key advertised by the server for {@code securityPolicy}, or empty
+   *     if no key is held or the held key was negotiated for a different policy.
+   */
+  public Optional<ByteString> getUserTokenReceiverEphemeralPublicKey(
+      SecurityPolicy securityPolicy) {
+    Objects.requireNonNull(securityPolicy, "securityPolicy");
+    ReceiverEphemeralKey key = userTokenReceiverEphemeralKey;
+    return key != null && key.publicKey().isNotNull() && securityPolicy.equals(key.securityPolicy())
+        ? Optional.of(key.publicKey())
+        : Optional.empty();
+  }
+
+  /**
+   * Get the enhanced user-token security policy the held receiver ephemeral public key was
+   * negotiated for, if known.
+   *
+   * @return the negotiated enhanced user-token security policy, or empty if no key or policy is
+   *     held.
+   */
+  public Optional<SecurityPolicy> getUserTokenReceiverEphemeralPublicKeyPolicy() {
+    ReceiverEphemeralKey key = userTokenReceiverEphemeralKey;
+    return key != null && key.publicKey().isNotNull()
+        ? Optional.ofNullable(key.securityPolicy())
         : Optional.empty();
   }
 
@@ -200,7 +237,31 @@ public class OpcUaSession extends ConcurrentHashMap<String, Object> implements U
    */
   public void setUserTokenReceiverEphemeralPublicKey(
       ByteString userTokenReceiverEphemeralPublicKey) {
-    this.userTokenReceiverEphemeralPublicKey = userTokenReceiverEphemeralPublicKey;
+    setUserTokenReceiverEphemeralPublicKey(userTokenReceiverEphemeralPublicKey, null);
+  }
+
+  /**
+   * Store the server session public key returned during enhanced username-token negotiation along
+   * with the enhanced user-token policy it was negotiated for.
+   *
+   * @param userTokenReceiverEphemeralPublicKey the receiver public key advertised by the server.
+   * @param securityPolicy the enhanced user-token security policy the key was negotiated for, or
+   *     {@code null} if unknown.
+   */
+  public void setUserTokenReceiverEphemeralPublicKey(
+      ByteString userTokenReceiverEphemeralPublicKey, @Nullable SecurityPolicy securityPolicy) {
+    if (userTokenReceiverEphemeralPublicKey == null
+        || userTokenReceiverEphemeralPublicKey.isNull()) {
+      userTokenReceiverEphemeralKey = null;
+    } else {
+      userTokenReceiverEphemeralKey =
+          new ReceiverEphemeralKey(userTokenReceiverEphemeralPublicKey, securityPolicy);
+    }
+  }
+
+  /** Clear any stored server ephemeral public key for enhanced username-token encryption. */
+  public void clearUserTokenReceiverEphemeralPublicKey() {
+    userTokenReceiverEphemeralKey = null;
   }
 
   public void setLastActivateSessionServiceResult(

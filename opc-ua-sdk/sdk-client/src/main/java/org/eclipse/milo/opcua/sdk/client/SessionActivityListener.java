@@ -10,6 +10,7 @@
 
 package org.eclipse.milo.opcua.sdk.client;
 
+import org.eclipse.milo.opcua.sdk.client.identity.IdentityProvider;
 import org.eclipse.milo.opcua.stack.core.UaException;
 import org.eclipse.milo.opcua.stack.core.UaServiceFaultException;
 import org.eclipse.milo.opcua.stack.transport.client.ChannelStateObservable;
@@ -39,6 +40,23 @@ public interface SessionActivityListener {
    * informational purposes.
    */
   default void onSessionInactive(UaSession session) {}
+
+  /**
+   * The user identity associated with the active {@link UaSession} changed via {@link
+   * OpcUaClient#changeIdentity(IdentityProvider)} or {@link
+   * OpcUaClient#changeIdentityAsync(IdentityProvider)}.
+   *
+   * <p>This callback is not invoked during initial Session activation or Session reactivation after
+   * a connection loss, nor when an identity change fails. Changing the identity of an active
+   * Session does not trigger {@link #onSessionInactive(UaSession)} or {@link
+   * #onSessionActive(UaSession)}.
+   *
+   * <p>Holding a reference to this session is not necessary or advised; it is provided merely for
+   * informational purposes.
+   *
+   * @param session the active {@link UaSession} whose user identity changed.
+   */
+  default void onSessionIdentityChanged(UaSession session) {}
 
   /**
    * An attempt to establish or recover a Session failed at {@code step}, and the client will try

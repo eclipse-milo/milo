@@ -18,6 +18,7 @@ public enum State {
   Transferring,
   Initializing,
   Active,
+  ChangingIdentity,
   Closing,
   ReactivatingWait,
   Reactivating
