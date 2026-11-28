@@ -169,5 +169,11 @@
  * use that original certificate. Enhanced signatures also include the replacement channel's
  * certificate and thumbprint. A certificate rotation can remove old-thumbprint lookup without
  * rewriting the security information of retained Sessions.
+ *
+ * <p>A secured SecureChannel stays bound to the certificate it was opened with, so Sessions created
+ * on it use the endpoint the transport selected for it. A {@code SecurityPolicy.None} channel is
+ * bound to no certificate, so Sessions created on it take their endpoint, and the certificate
+ * CreateSession returns, from the current endpoint descriptions. A None channel opened before an
+ * in-place renewal therefore gives new Sessions the renewed certificate.
  */
 package org.eclipse.milo.opcua.sdk.server;

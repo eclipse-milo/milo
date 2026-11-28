@@ -1109,11 +1109,17 @@ public class SessionManager {
    * Get the {@link EndpointDescription} the Session carried by {@code context} must be associated
    * with.
    *
-   * <p>The authoritative source is the endpoint the transport selected for the SecureChannel during
-   * OpenSecureChannel; a Session is always bound to that endpoint, never to an independent
-   * re-derivation. A context without a propagated selection (a discovery-only unsecured channel)
-   * falls back to the same selection-key lookup the transport uses, which yields exactly one
-   * endpoint or none -- never an arbitrary pick among multiple candidates.
+   * <p>On a secured channel the authoritative source is the endpoint the transport selected for the
+   * SecureChannel during OpenSecureChannel. The channel stays bound to the certificate it was
+   * opened with, so the Session is bound to that endpoint, never to an independent re-derivation.
+   *
+   * <p>A SecurityPolicy.None channel is bound to no certificate. Its selection key names the same
+   * endpoint for the life of the channel, but the certificate that endpoint advertises changes when
+   * the server certificate is renewed in place. The endpoint is therefore resolved from the current
+   * endpoint descriptions, so CreateSession returns a certificate whose key the server still holds.
+   * The same lookup serves a context without a propagated selection (a discovery-only unsecured
+   * channel). It uses the selection key the transport uses, which yields exactly one endpoint or
+   * none -- never an arbitrary pick among multiple candidates.
    *
    * @param context the {@link ServiceRequestContext} carrying the channel's endpoint selection.
    * @return the {@link EndpointDescription} to associate the Session with.
@@ -1123,14 +1129,16 @@ public class SessionManager {
   private EndpointDescription findSessionEndpoint(ServiceRequestContext context)
       throws UaException {
 
-    Optional<EndpointDescription> selectedEndpoint = context.getEndpoint();
-
-    if (selectedEndpoint.isPresent()) {
-      return selectedEndpoint.get();
-    }
-
     SecureChannel secureChannel = context.getSecureChannel();
     SecurityPolicy securityPolicy = secureChannel.getSecurityPolicy();
+
+    if (securityPolicy != SecurityPolicy.None) {
+      Optional<EndpointDescription> selectedEndpoint = context.getEndpoint();
+
+      if (selectedEndpoint.isPresent()) {
+        return selectedEndpoint.get();
+      }
+    }
 
     ByteString certificateThumbprint = ByteString.NULL_VALUE;
     if (securityPolicy != SecurityPolicy.None) {

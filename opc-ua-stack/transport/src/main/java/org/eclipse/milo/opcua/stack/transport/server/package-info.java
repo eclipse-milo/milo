@@ -35,7 +35,10 @@
  * selected endpoint then accompanies every inbound request via {@link
  * org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext#getEndpoint}, so the
  * application layers (Session creation and activation in particular) consume the channel's
- * selection instead of re-deriving it.
+ * selection instead of re-deriving it. A SecurityPolicy.None channel is the exception: no
+ * certificate binds it to the endpoint it selected, so the endpoint it carries keeps advertising
+ * the certificate that was current when it opened, and the application may resolve the same key
+ * against its current endpoints instead.
  *
  * <p>An unsecured (SecurityPolicy.None) channel that matches no explicit None endpoint carries no
  * endpoint selection at all: it is a discovery-only channel, on which the application may still
