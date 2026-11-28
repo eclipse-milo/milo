@@ -14,6 +14,16 @@
  * OpenSecureChannel and symmetric service traffic share the directional sequence stream across
  * token renewals.
  *
+ * <p>A connection starts in {@link
+ * org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientAcknowledgeHandler}, which sends
+ * {@code Hello} and waits for {@code Acknowledge}, then installs {@link
+ * org.eclipse.milo.opcua.stack.transport.client.uasc.UascClientMessageHandler} to open the
+ * SecureChannel. Both complete the transport's handshake future. A failure after that handoff is
+ * wrapped in a {@link
+ * org.eclipse.milo.opcua.stack.transport.client.SecureChannelHandshakeException} and one before it
+ * is not. A reply that either handler cannot decode fails the handshake with a {@link
+ * org.eclipse.milo.opcua.stack.core.UaException}, never with Netty's decoder wrapper.
+ *
  * <p>Intermediate response chunks remain retained until a final or Abort chunk arrives. The core
  * decoder then validates security and sequence state and takes ownership of those buffers. An
  * authenticated Abort fails the affected request without invalidating the channel's sequence

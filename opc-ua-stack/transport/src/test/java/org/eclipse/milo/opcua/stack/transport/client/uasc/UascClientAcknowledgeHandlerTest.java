@@ -30,14 +30,17 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.ReferenceCountUtil;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.channel.EncodingLimits;
 import org.eclipse.milo.opcua.stack.core.channel.messages.AcknowledgeMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.ErrorMessage;
 import org.eclipse.milo.opcua.stack.core.channel.messages.TcpMessageEncoder;
@@ -60,6 +63,9 @@ import org.eclipse.milo.opcua.stack.transport.client.ClientApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.client.SecureChannelHandshakeException;
 import org.eclipse.milo.opcua.stack.transport.client.uasc.InboundUascResponseHandler.DelegatingUascResponseHandler;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class UascClientAcknowledgeHandlerTest {
 
@@ -196,6 +202,142 @@ class UascClientAcknowledgeHandlerTest {
       channel.finishAndReleaseAll();
       wheelTimer.stop();
     }
+  }
+
+  // A reply to Hello that cannot be decoded, such as an HTTP response from a listener that is not
+  // an OPC UA server, must fail the handshake with a UaException, not Netty's DecoderException
+  // wrapper, so callers can tell an unusable peer from a programming error. The header's message
+  // type is checked before its length (Part 6 §7.1.5: each Message starts with a 4-byte sequence
+  // that identifies its type), so a peer that does not speak UA-TCP reads as
+  // Bad_TcpMessageTypeInvalid.
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("undecodableRepliesToHello")
+  void undecodableReplyToHelloFailsHandshakeWithUaException(
+      String reply, ByteBuf replyBytes, long expectedStatusCode) {
+
+    var wheelTimer = new HashedWheelTimer();
+    var channel = new EmbeddedChannel();
+    var handshakeFuture = new CompletableFuture<ClientSecureChannel>();
+
+    try {
+      var handler =
+          new UascClientAcknowledgeHandler(
+              config(wheelTimer, 60_000),
+              application(),
+              new AtomicLong(1L)::getAndIncrement,
+              handshakeFuture);
+
+      channel.pipeline().addLast(handler);
+      drainOutbound(channel);
+
+      channel.writeInbound(replyBytes);
+      channel.runPendingTasks();
+
+      ExecutionException failure =
+          assertThrows(ExecutionException.class, () -> handshakeFuture.get(1, TimeUnit.SECONDS));
+
+      UaException cause =
+          assertInstanceOf(
+              UaException.class,
+              failure.getCause(),
+              "an undecodable reply must fail the handshake with a UaException");
+      assertFalse(
+          cause instanceof SecureChannelHandshakeException,
+          "a failure before Acknowledge must not be marked as a SecureChannel handshake failure");
+      assertEquals(expectedStatusCode, cause.getStatusCode().value());
+      assertFalse(channel.isOpen(), "an undecodable reply must close the channel");
+    } finally {
+      channel.finishAndReleaseAll();
+      wheelTimer.stop();
+    }
+  }
+
+  static Stream<Arguments> undecodableRepliesToHello() {
+    ByteBuf httpResponse =
+        Unpooled.copiedBuffer(
+            "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n", StandardCharsets.US_ASCII);
+
+    return Stream.of(
+        Arguments.of("HTTP response", httpResponse, StatusCodes.Bad_TcpMessageTypeInvalid),
+        Arguments.of(
+            "unknown message type", header("XYZ", 8), StatusCodes.Bad_TcpMessageTypeInvalid),
+        Arguments.of(
+            "Acknowledge larger than the chunk size",
+            header("ACK", EncodingLimits.DEFAULT_MAX_CHUNK_SIZE + 1),
+            StatusCodes.Bad_TcpMessageTooLarge),
+        Arguments.of("Acknowledge without a body", header("ACK", 8), StatusCodes.Bad_DecodingError),
+        Arguments.of("Error without a body", header("ERR", 8), StatusCodes.Bad_DecodingError));
+  }
+
+  // After Acknowledge, UascClientMessageHandler decodes the OpenSecureChannel reply. A reply it
+  // cannot decode must fail the handshake with a SecureChannelHandshakeException whose cause is a
+  // UaException, without Netty's DecoderException between them. A decoding failure that carries a
+  // status, such as an encoding limit, keeps that status.
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("undecodableRepliesToOpenSecureChannel")
+  void undecodableReplyToOpenSecureChannelFailsHandshakeWithUaExceptionCause(
+      String reply, ByteBuf replyBytes, long expectedStatusCode) throws Exception {
+
+    var wheelTimer = new HashedWheelTimer();
+    var channel = new EmbeddedChannel();
+    var handshakeFuture = new CompletableFuture<ClientSecureChannel>();
+
+    try {
+      channel.pipeline().addLast(new DelegatingUascResponseHandler(NoopResponseHandler.INSTANCE));
+      channel
+          .pipeline()
+          .addLast(
+              new UascClientAcknowledgeHandler(
+                  config(wheelTimer, 60_000),
+                  application(),
+                  new AtomicLong(1L)::getAndIncrement,
+                  handshakeFuture));
+      drainOutbound(channel);
+
+      channel.writeInbound(TcpMessageEncoder.encode(new AcknowledgeMessage(0, 65535, 65535, 0, 0)));
+      channel.runPendingTasks();
+      drainOutbound(channel);
+
+      assertNotNull(
+          channel.pipeline().get(UascClientMessageHandler.class),
+          "Acknowledge must install UascClientMessageHandler");
+
+      channel.writeInbound(replyBytes);
+      channel.runPendingTasks();
+
+      ExecutionException failure =
+          assertThrows(ExecutionException.class, () -> handshakeFuture.get(1, TimeUnit.SECONDS));
+
+      Throwable handshakeFailure =
+          assertInstanceOf(SecureChannelHandshakeException.class, failure.getCause());
+      UaException cause =
+          assertInstanceOf(
+              UaException.class,
+              handshakeFailure.getCause(),
+              "the SecureChannelHandshakeException must wrap a UaException");
+      assertEquals(expectedStatusCode, cause.getStatusCode().value());
+      assertFalse(channel.isOpen(), "an undecodable reply must close the channel");
+    } finally {
+      channel.finishAndReleaseAll();
+      wheelTimer.stop();
+    }
+  }
+
+  static Stream<Arguments> undecodableRepliesToOpenSecureChannel() {
+    // An OpenSecureChannel header and SecureChannelId, then the length of the SecurityPolicy URI
+    // that begins the asymmetric security header.
+    ByteBuf oversizedSecurityPolicyUri = header("OPN", 16).writeIntLE(0).writeIntLE(256);
+
+    return Stream.of(
+        Arguments.of("Hello", header("HEL", 8), StatusCodes.Bad_TcpMessageTypeInvalid),
+        Arguments.of(
+            "OpenSecureChannel with an oversized SecurityPolicy URI",
+            oversizedSecurityPolicyUri,
+            StatusCodes.Bad_EncodingLimitsExceeded),
+        Arguments.of(
+            "OpenSecureChannel without a security header",
+            header("OPN", 12).writeIntLE(0),
+            StatusCodes.Bad_DecodingError));
   }
 
   // After Acknowledge, UascClientAcknowledgeHandler remains in the pipeline until OPN succeeds.
@@ -491,6 +633,20 @@ class UascClientAcknowledgeHandlerTest {
       channel.finishAndReleaseAll();
       wheelTimer.stop();
     }
+  }
+
+  /**
+   * A UA-TCP message header with a final chunk type and no body.
+   *
+   * @param messageType the three ASCII characters of the message type.
+   * @param messageSize the message size the header declares, including the header.
+   */
+  private static ByteBuf header(String messageType, long messageSize) {
+    ByteBuf buffer = Unpooled.buffer(8);
+    buffer.writeCharSequence(messageType, StandardCharsets.US_ASCII);
+    buffer.writeByte('F');
+    buffer.writeIntLE((int) messageSize);
+    return buffer;
   }
 
   private static void drainOutbound(EmbeddedChannel channel) {

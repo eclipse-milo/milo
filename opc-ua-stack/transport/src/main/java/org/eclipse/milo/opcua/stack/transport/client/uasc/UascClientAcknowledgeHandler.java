@@ -251,7 +251,7 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
     // If the handshake hasn't completed yet this cause will be more
     // accurate than the generic "connection closed" exception that
     // channelInactive() will use.
-    failHandshake(cause);
+    failHandshake(HandshakeFailures.of(cause));
 
     ctx.close();
   }
@@ -314,12 +314,12 @@ public class UascClientAcknowledgeHandler extends ByteToMessageCodec<UaRequestMe
     int maxChunkSize = application.getEncodingContext().getEncodingLimits().getMaxChunkSize();
 
     if (buffer.readableBytes() >= 8) {
+      // The message type comes first on the wire, so a peer that does not speak UA-TCP, such as an
+      // HTTP server, is reported as an invalid message type rather than an oversized message.
+      MessageType messageType = MessageType.fromMediumInt(buffer.getMediumLE(buffer.readerIndex()));
       int messageLength = getMessageLength(buffer, maxChunkSize);
 
       if (buffer.readableBytes() >= messageLength) {
-        MessageType messageType =
-            MessageType.fromMediumInt(buffer.getMediumLE(buffer.readerIndex()));
-
         switch (messageType) {
           case Acknowledge:
             onAcknowledge(ctx, buffer.readSlice(messageLength));

@@ -186,7 +186,7 @@ public class UascClientMessageHandler extends ByteToMessageCodec<UascRequest> {
     // If the handshake hasn't completed yet this cause will be more
     // accurate than the generic "connection closed" exception that
     // channelInactive() will use.
-    failHandshake(cause);
+    failHandshake(HandshakeFailures.of(cause));
 
     ctx.close();
   }
