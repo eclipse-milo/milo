@@ -391,156 +391,121 @@ class ServerCertificateRotationTest {
   @ValueSource(booleans = {true, false})
   void reactivatesRetainedNoneSessionWithEncryptedUsernameAfterRenewal(boolean sameKey)
       throws Exception {
-    var serverTrust = new MemoryTrustListManager();
-    var serverQuarantine = new MemoryCertificateQuarantine();
-    var serverGroup =
-        new DefaultCertificateGroup(
-            serverTrust,
-            new MemoryCertificateStore(),
-            serverQuarantine,
-            new DefaultServerCertificateValidator(serverTrust, serverQuarantine));
 
-    KeyPair originalKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
-    X509Certificate originalCertificate =
-        SelfSignedCertificateBuilder.forRsaApplicationCertificate(originalKeyPair)
-            .setCommonName("None renewal server")
-            .setApplicationUri(SERVER_URI)
-            .addDnsName("localhost")
-            .build();
-    serverGroup.updateCertificate(
-        NodeIds.RsaSha256ApplicationCertificateType,
-        originalKeyPair,
-        new X509Certificate[] {originalCertificate});
-
-    var certificateManager = new DefaultCertificateManager(serverGroup);
-    List<String> acceptedUsers = new CopyOnWriteArrayList<>();
-
-    int port = TestPortAllocator.allocatePort();
-    EndpointConfig endpoint =
-        EndpointConfig.newBuilder()
-            .setBindAddress("localhost")
-            .setHostname("localhost")
-            .setBindPort(port)
-            .setPath("/none-rotation")
-            .setEndpointCertificateConfig(
-                EndpointCertificateConfig.newBuilder()
-                    .setCertificateTypeId(NodeIds.RsaSha256ApplicationCertificateType)
-                    .build())
-            .setSecurityPolicy(SecurityPolicy.None)
-            .setSecurityMode(MessageSecurityMode.None)
-            .setTransportProfile(TransportProfile.TCP_UASC_UABINARY)
-            .addTokenPolicy(USER_TOKEN_POLICY_USERNAME)
-            .build();
-
-    OpcUaServerConfig serverConfig =
-        OpcUaServerConfig.builder()
-            .setApplicationUri(SERVER_URI)
-            .setApplicationName(LocalizedText.english("None renewal server"))
-            .setProductUri("urn:milo:rotation")
-            .setEndpoints(Set.of(endpoint))
-            .setCertificateManager(certificateManager)
-            .setIdentityValidator(
-                new UsernameIdentityValidator(
-                    challenge -> {
-                      boolean ok =
-                          "user".equals(challenge.getUsername())
-                              && "password".equals(challenge.getPassword());
-                      if (ok) {
-                        acceptedUsers.add(challenge.getUsername());
-                      }
-                      return ok;
-                    }))
-            .build();
-
-    OpcUaServer noneServer =
-        new OpcUaServer(
-            serverConfig,
-            profile -> new OpcTcpServerTransport(OpcTcpServerTransportConfig.newBuilder().build()));
-    noneServer.startup().get(10, TimeUnit.SECONDS);
-
-    OpcUaClient noneClient = null;
-    try {
-      EndpointDescription discovered =
-          DiscoveryClient.getEndpoints(endpoint.getEndpointUrl()).get(10, TimeUnit.SECONDS).get(0);
-
+    try (var noneServer = new NoneEndpointServer()) {
       var clientTrust = new MemoryTrustListManager();
-      clientTrust.addTrustedCertificate(originalCertificate);
-      var clientValidator =
-          new DefaultClientCertificateValidator(clientTrust, new MemoryCertificateQuarantine());
+      clientTrust.addTrustedCertificate(noneServer.originalCertificate);
+      OpcUaClient noneClient = noneServer.newClient(clientTrust);
 
-      noneClient =
-          OpcUaClient.create(
-              OpcUaClientConfig.builder()
-                  .setEndpoint(discovered)
-                  .setIdentityProvider(new UsernameProvider("user", "password"))
-                  .setCertificateValidator(clientValidator)
-                  .setRequestTimeout(uint(5_000))
-                  .build());
+      try {
+        var activeSessions = new LinkedBlockingQueue<OpcUaSession>();
+        noneClient.addSessionActivityListener(
+            new SessionActivityListener() {
+              @Override
+              public void onSessionActive(UaSession session) {
+                activeSessions.add((OpcUaSession) session);
+              }
+            });
 
-      var activeSessions = new LinkedBlockingQueue<OpcUaSession>();
-      noneClient.addSessionActivityListener(
-          new SessionActivityListener() {
-            @Override
-            public void onSessionActive(UaSession session) {
-              activeSessions.add((OpcUaSession) session);
-            }
+        noneClient.connectAsync().get(10, TimeUnit.SECONDS);
+        OpcUaSession originalSession = activeSessions.poll(5, TimeUnit.SECONDS);
+        assertNotNull(originalSession);
+        assertEquals(List.of("user"), noneServer.acceptedUsers);
 
-            @Override
-            public void onSessionInactive(UaSession session) {}
-          });
+        X509Certificate renewedCertificate = noneServer.renewCertificate(sameKey);
+        clientTrust.addTrustedCertificate(renewedCertificate);
 
-      noneClient.connectAsync().get(10, TimeUnit.SECONDS);
-      OpcUaSession originalSession = activeSessions.poll(5, TimeUnit.SECONDS);
-      assertNotNull(originalSession);
-      assertEquals(List.of("user"), acceptedUsers);
+        assertTrue(
+            noneServer
+                .certificateManager
+                .getKeyPair(CertificateUtil.thumbprint(noneServer.originalCertificate))
+                .isEmpty(),
+            "renewal must remove the original certificate thumbprint from the manager");
 
-      KeyPair renewedKeyPair =
-          sameKey ? originalKeyPair : SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
-      X509Certificate renewedCertificate =
-          SelfSignedCertificateBuilder.forRsaApplicationCertificate(renewedKeyPair)
-              .setCommonName("None renewal server")
-              .setApplicationUri(SERVER_URI)
-              .addDnsName("localhost")
-              .build();
-      clientTrust.addTrustedCertificate(renewedCertificate);
-      serverGroup.updateCertificate(
-          NodeIds.RsaSha256ApplicationCertificateType,
-          renewedKeyPair,
-          new X509Certificate[] {renewedCertificate});
-      noneServer.resetEndpointDescriptionCache();
+        activeSessions.clear();
+        ((OpcTcpClientTransport) noneClient.getTransport())
+            .getChannelFsm()
+            .getChannel()
+            .get(5, TimeUnit.SECONDS)
+            .close()
+            .sync();
 
-      assertTrue(
-          certificateManager.getKeyPair(CertificateUtil.thumbprint(originalCertificate)).isEmpty(),
-          "renewal must remove the original certificate thumbprint from the manager");
-
-      activeSessions.clear();
-      ((OpcTcpClientTransport) noneClient.getTransport())
-          .getChannelFsm()
-          .getChannel()
-          .get(5, TimeUnit.SECONDS)
-          .close()
-          .sync();
-
-      OpcUaSession recovered = activeSessions.poll(15, TimeUnit.SECONDS);
-      assertNotNull(recovered, "client must recover after connection drop");
-      assertSame(
-          originalSession,
-          recovered,
-          "server must reactivate the existing None Session instead of forcing a new Session");
-      assertEquals(List.of("user", "user"), acceptedUsers);
-      assertTrue(
-          noneClient
-              .readValuesAsync(
-                  0, TimestampsToReturn.Neither, List.of(NodeIds.Server_ServerStatus_CurrentTime))
-              .get(5, TimeUnit.SECONDS)
-              .get(0)
-              .getStatusCode()
-              .isGood());
-    } finally {
-      if (noneClient != null) {
+        OpcUaSession recovered = activeSessions.poll(15, TimeUnit.SECONDS);
+        assertNotNull(recovered, "client must recover after connection drop");
+        assertSame(
+            originalSession,
+            recovered,
+            "server must reactivate the existing None Session instead of forcing a new Session");
+        assertEquals(List.of("user", "user"), noneServer.acceptedUsers);
+        assertTrue(
+            noneClient
+                .readValuesAsync(
+                    0, TimestampsToReturn.Neither, List.of(NodeIds.Server_ServerStatus_CurrentTime))
+                .get(5, TimeUnit.SECONDS)
+                .get(0)
+                .getStatusCode()
+                .isGood());
+      } finally {
         noneClient.disconnectAsync().get(8, TimeUnit.SECONDS);
       }
-      noneServer.shutdown().get(10, TimeUnit.SECONDS);
+    }
+  }
+
+  // Part 4 §5.7.3.1: the client encrypts its password to the serverCertificate CreateSession
+  // returns. After an in-place certificate renewal (with the same key or a new key), a new Session
+  // created on a None SecureChannel opened before the renewal must get the renewed certificate, so
+  // the server accepts the password without the client opening a new SecureChannel.
+  @ParameterizedTest(name = "sameKey={0}")
+  @ValueSource(booleans = {true, false})
+  void createsNewNoneSessionOnSecureChannelOpenedBeforeRenewal(boolean sameKey) throws Exception {
+
+    try (var noneServer = new NoneEndpointServer()) {
+      var clientTrust = new MemoryTrustListManager();
+      clientTrust.addTrustedCertificate(noneServer.originalCertificate);
+      OpcUaClient noneClient = noneServer.newClient(clientTrust);
+
+      try {
+        var activeSessions = new LinkedBlockingQueue<OpcUaSession>();
+        noneClient.addSessionActivityListener(
+            new SessionActivityListener() {
+              @Override
+              public void onSessionActive(UaSession session) {
+                activeSessions.add((OpcUaSession) session);
+              }
+            });
+
+        noneClient.connectAsync().get(10, TimeUnit.SECONDS);
+        OpcUaSession originalSession = activeSessions.poll(5, TimeUnit.SECONDS);
+        assertNotNull(originalSession);
+
+        var transport = (OpcTcpClientTransport) noneClient.getTransport();
+        long channelId = transport.getSecureChannel().orElseThrow().getChannelId();
+
+        X509Certificate renewedCertificate = noneServer.renewCertificate(sameKey);
+        clientTrust.addTrustedCertificate(renewedCertificate);
+
+        // The server ends the Session, as a session timeout or an administrator would. The client
+        // learns of it from its next request, or from a keep-alive, and creates a new Session on
+        // the SecureChannel it already has.
+        noneServer.server.getSessionManager().killSession(originalSession.getSessionId(), true);
+        noneClient.readValuesAsync(
+            0, TimestampsToReturn.Neither, List.of(NodeIds.Server_ServerStatus_CurrentTime));
+
+        OpcUaSession newSession = activeSessions.poll(15, TimeUnit.SECONDS);
+        assertNotNull(newSession, "client must create a new Session after the server ends its own");
+        assertNotEquals(originalSession.getSessionId(), newSession.getSessionId());
+        assertEquals(
+            ByteString.of(renewedCertificate.getEncoded()),
+            newSession.getServerCertificate(),
+            "CreateSession must return the renewed certificate");
+        assertEquals(
+            channelId,
+            transport.getSecureChannel().orElseThrow().getChannelId(),
+            "the new Session must be created on the SecureChannel opened before the renewal");
+        assertEquals(List.of("user", "user"), noneServer.acceptedUsers);
+      } finally {
+        noneClient.disconnectAsync().get(8, TimeUnit.SECONDS);
+      }
     }
   }
 
@@ -1271,6 +1236,138 @@ class ServerCertificateRotationTest {
       } finally {
         server.shutdown().get(5, TimeUnit.SECONDS);
       }
+    }
+  }
+
+  /**
+   * A running server with one SecurityPolicy.None endpoint whose UserName token policy encrypts the
+   * password with Basic256Sha256, for tests that renew its certificate in place.
+   */
+  private static final class NoneEndpointServer implements AutoCloseable {
+    final DefaultCertificateGroup certificateGroup;
+    final DefaultCertificateManager certificateManager;
+    final KeyPair originalKeyPair;
+    final X509Certificate originalCertificate;
+    final List<String> acceptedUsers = new CopyOnWriteArrayList<>();
+    final EndpointConfig endpoint;
+    final OpcUaServer server;
+
+    NoneEndpointServer() throws Exception {
+      var trust = new MemoryTrustListManager();
+      var quarantine = new MemoryCertificateQuarantine();
+      certificateGroup =
+          new DefaultCertificateGroup(
+              trust,
+              new MemoryCertificateStore(),
+              quarantine,
+              new DefaultServerCertificateValidator(trust, quarantine));
+
+      originalKeyPair = SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+      originalCertificate = certificate(originalKeyPair);
+      certificateGroup.updateCertificate(
+          NodeIds.RsaSha256ApplicationCertificateType,
+          originalKeyPair,
+          new X509Certificate[] {originalCertificate});
+
+      certificateManager = new DefaultCertificateManager(certificateGroup);
+
+      endpoint =
+          EndpointConfig.newBuilder()
+              .setBindAddress("localhost")
+              .setHostname("localhost")
+              .setBindPort(TestPortAllocator.allocatePort())
+              .setPath("/none-rotation")
+              .setEndpointCertificateConfig(
+                  EndpointCertificateConfig.newBuilder()
+                      .setCertificateTypeId(NodeIds.RsaSha256ApplicationCertificateType)
+                      .build())
+              .setSecurityPolicy(SecurityPolicy.None)
+              .setSecurityMode(MessageSecurityMode.None)
+              .setTransportProfile(TransportProfile.TCP_UASC_UABINARY)
+              .addTokenPolicy(USER_TOKEN_POLICY_USERNAME)
+              .build();
+
+      OpcUaServerConfig serverConfig =
+          OpcUaServerConfig.builder()
+              .setApplicationUri(SERVER_URI)
+              .setApplicationName(LocalizedText.english("None renewal server"))
+              .setProductUri("urn:milo:rotation")
+              .setEndpoints(Set.of(endpoint))
+              .setCertificateManager(certificateManager)
+              .setIdentityValidator(
+                  new UsernameIdentityValidator(
+                      challenge -> {
+                        boolean ok =
+                            "user".equals(challenge.getUsername())
+                                && "password".equals(challenge.getPassword());
+                        if (ok) {
+                          acceptedUsers.add(challenge.getUsername());
+                        }
+                        return ok;
+                      }))
+              .build();
+
+      server =
+          new OpcUaServer(
+              serverConfig,
+              profile ->
+                  new OpcTcpServerTransport(OpcTcpServerTransportConfig.newBuilder().build()));
+      server.startup().get(10, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Create a client for the None endpoint that signs in with a password the server's token policy
+     * encrypts.
+     *
+     * @param clientTrust the certificates the client trusts as the server's.
+     * @return a client that has not connected yet.
+     */
+    OpcUaClient newClient(MemoryTrustListManager clientTrust) throws Exception {
+      EndpointDescription discovered =
+          DiscoveryClient.getEndpoints(endpoint.getEndpointUrl()).get(10, TimeUnit.SECONDS).get(0);
+
+      return OpcUaClient.create(
+          OpcUaClientConfig.builder()
+              .setEndpoint(discovered)
+              .setIdentityProvider(new UsernameProvider("user", "password"))
+              .setCertificateValidator(
+                  new DefaultClientCertificateValidator(
+                      clientTrust, new MemoryCertificateQuarantine()))
+              .setRequestTimeout(uint(5_000))
+              .build());
+    }
+
+    /**
+     * Renew the server certificate in place and advertise the renewed certificate.
+     *
+     * @param sameKey true to keep the original key pair, false to generate a new one.
+     * @return the renewed certificate.
+     */
+    X509Certificate renewCertificate(boolean sameKey) throws Exception {
+      KeyPair renewedKeyPair =
+          sameKey ? originalKeyPair : SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
+      X509Certificate renewedCertificate = certificate(renewedKeyPair);
+
+      certificateGroup.updateCertificate(
+          NodeIds.RsaSha256ApplicationCertificateType,
+          renewedKeyPair,
+          new X509Certificate[] {renewedCertificate});
+      server.resetEndpointDescriptionCache();
+
+      return renewedCertificate;
+    }
+
+    private static X509Certificate certificate(KeyPair keyPair) throws Exception {
+      return SelfSignedCertificateBuilder.forRsaApplicationCertificate(keyPair)
+          .setCommonName("None renewal server")
+          .setApplicationUri(SERVER_URI)
+          .addDnsName("localhost")
+          .build();
+    }
+
+    @Override
+    public void close() throws Exception {
+      server.shutdown().get(10, TimeUnit.SECONDS);
     }
   }
 

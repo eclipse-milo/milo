@@ -58,8 +58,11 @@ public interface ServiceRequestContext {
    * arrived on.
    *
    * <p>The endpoint is selected once, during the initial OpenSecureChannel, from the channel's
-   * wire-observable inputs (see {@link EndpointSelectionKey}), and is the endpoint any Session
-   * created or activated on the channel must be associated with.
+   * wire-observable inputs (see {@link EndpointSelectionKey}). On a secured channel it is the
+   * endpoint any Session created or activated on the channel must be associated with. A
+   * SecurityPolicy.None channel is bound to no certificate, so its endpoint keeps advertising the
+   * certificate that was current when the channel opened, even after the server renews its
+   * certificate in place.
    *
    * <p>Empty when no endpoint is associated with the channel: an unsecured channel that matched no
    * explicit SecurityPolicy.None endpoint is a discovery-only channel.

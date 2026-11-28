@@ -69,10 +69,12 @@ import org.eclipse.milo.opcua.stack.core.util.CipherFactory;
 import org.eclipse.milo.opcua.stack.core.util.NonceUtil;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateBuilder;
 import org.eclipse.milo.opcua.stack.core.util.SelfSignedCertificateGenerator;
+import org.eclipse.milo.opcua.stack.transport.server.EndpointSelectionKey;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransport;
 import org.eclipse.milo.opcua.stack.transport.server.OpcServerTransportFactory;
 import org.eclipse.milo.opcua.stack.transport.server.ServerApplicationContext;
 import org.eclipse.milo.opcua.stack.transport.server.ServiceRequestContext;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -217,6 +219,38 @@ class SessionNoneEndpointCertificateRenewalTest {
         createSessionCertBytes, session.getOriginalServerCertificate().createSessionCertificate());
   }
 
+  // Part 4 §5.7.3.1: the client encrypts its password to the serverCertificate CreateSession
+  // returns. On a None channel opened before an in-place renewal (with either the same key or a new
+  // key), CreateSession must return the renewed certificate, whose key the server still holds, not
+  // the certificate the channel's endpoint advertised when the channel opened.
+  @ParameterizedTest(name = "sameKey={0}")
+  @ValueSource(booleans = {true, false})
+  void newSessionOnNoneChannelOpenedBeforeRenewalUsesRenewedCertificate(boolean sameKey)
+      throws Exception {
+
+    ServiceRequestContext channelOpenedBeforeRenewal =
+        new NoneServiceRequestContext(3L, selectNoneEndpoint());
+
+    X509Certificate renewedCertificate = renewCertificateInPlace(sameKey);
+
+    assertEquals(
+        ByteString.of(originalCertificate.getEncoded()),
+        channelOpenedBeforeRenewal.getEndpoint().orElseThrow().getServerCertificate(),
+        "the channel's selected endpoint must still advertise the original certificate");
+
+    CreateSessionResponse created =
+        sessions.createSession(channelOpenedBeforeRenewal, createSessionRequest());
+
+    assertEquals(ByteString.of(renewedCertificate.getEncoded()), created.getServerCertificate());
+
+    sessions.activateSession(
+        channelOpenedBeforeRenewal,
+        activateEncryptedUsername(
+            created.getAuthenticationToken(), renewedCertificate, created.getServerNonce()));
+
+    assertEquals(List.of(USERNAME), authenticatedUsers);
+  }
+
   // Control check: after a new-key renewal, decrypting with the retained CreateSession key pair
   // must reject a token encrypted to the replacement certificate's new public key.
   @Test
@@ -349,6 +383,19 @@ class SessionNoneEndpointCertificateRenewalTest {
         ubyte(0));
   }
 
+  /** Select the None endpoint the way the transport does when a None SecureChannel opens. */
+  private EndpointDescription selectNoneEndpoint() {
+    EndpointSelectionKey selectionKey =
+        EndpointSelectionKey.of(
+            TransportProfile.TCP_UASC_UABINARY,
+            ENDPOINT_URL,
+            SecurityPolicy.None,
+            MessageSecurityMode.None,
+            null);
+
+    return server.getApplicationContext().selectEndpoint(selectionKey, ENDPOINT_URL).orElseThrow();
+  }
+
   private X509Certificate renewCertificateInPlace(boolean sameKey) throws Exception {
     KeyPair nextKeyPair =
         sameKey ? originalKeyPair : SelfSignedCertificateGenerator.generateRsaKeyPair(2048);
@@ -440,8 +487,20 @@ class SessionNoneEndpointCertificateRenewalTest {
   private static final class NoneServiceRequestContext implements ServiceRequestContext {
 
     private final ServerSecureChannel secureChannel = new ServerSecureChannel();
+    private final @Nullable EndpointDescription selectedEndpoint;
 
     NoneServiceRequestContext(long channelId) {
+      this(channelId, null);
+    }
+
+    /**
+     * @param channelId the SecureChannel id.
+     * @param selectedEndpoint the endpoint the transport selected when the channel opened, or null
+     *     for a channel with no propagated selection.
+     */
+    NoneServiceRequestContext(long channelId, @Nullable EndpointDescription selectedEndpoint) {
+      this.selectedEndpoint = selectedEndpoint;
+
       secureChannel.setChannelId(channelId);
       secureChannel.setSecurityPolicy(SecurityPolicy.None);
       secureChannel.setMessageSecurityMode(MessageSecurityMode.None);
@@ -469,7 +528,7 @@ class SessionNoneEndpointCertificateRenewalTest {
 
     @Override
     public Optional<EndpointDescription> getEndpoint() {
-      return Optional.empty();
+      return Optional.ofNullable(selectedEndpoint);
     }
 
     @Override
